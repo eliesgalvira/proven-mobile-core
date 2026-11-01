@@ -7,3 +7,4 @@ import ./proofs/suci.bend as PS
 import ./proofs/nas.bend as PN
 import ./proofs/mm.bend as PM
 import ./proofs/mobile_id.bend as PI
+import ./proofs/sm.bend as PSM

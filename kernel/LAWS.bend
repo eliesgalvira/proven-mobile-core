@@ -14,6 +14,7 @@ import ./nas/security.bend as N
 import ./nas/ie.bend as I
 import ./nas/mm.bend as Mm
 import ./nas/mobile_id.bend as Mi
+import ./nas/sm.bend as Sm
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -344,3 +345,21 @@ law nas.payload_container.suffix:
   for +rest: B.Bytes()
   for +e: {I.lve(bs) == Done{(I.LenBody{len, body}, rest)} : B.Read(I.LenBody)}
   {List.length(&2, U32, body) == U32.to_nat(len) : Nat} & {List.drop(&2, U32, bs, 2n) == List.append(&2, U32, body, rest) : B.Bytes()}
+
+law nas.sm.roundtrip:
+  for +m: Sm.Sm
+  for +v: {Sm.Sm.valid(m) == True{} : Bool}
+  {Sm.Sm.read(Sm.Sm.write(m)) == Done{m} : Result<&2, &2, B.Err, Sm.Sm>}
+
+law nas.sm.decode_valid:
+  for +bs: B.Bytes()
+  for +m: Sm.Sm
+  for +e: {Sm.Sm.read(bs) == Done{m} : Result<&2, &2, B.Err, Sm.Sm>}
+  {Sm.Sm.valid(m) == True{} : Bool}
+
+law nas.sm.suffix:
+  for +bs: B.Bytes()
+  for +m: Sm.Sm
+  for +e: {Sm.Sm.read(bs) == Done{m} : Result<&2, &2, B.Err, Sm.Sm>}
+  for +ab: {B.all_bytes(bs) == True{} : Bool}
+  {Sm.Sm.write(m) == bs : B.Bytes()}
