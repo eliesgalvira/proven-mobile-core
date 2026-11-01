@@ -13,7 +13,7 @@ The code outside the kernel that turns network traffic and timers into events fo
 _Avoid_: shell, runtime, driver
 
 **Acceptance list**:
-The set of known security advisories whose bug classes the kernel must be proven to rule out. Lives in `docs/security/`.
+The set of known security advisories whose bug classes the kernel must be proven to rule out.
 _Avoid_: CVE list, bug list
 
 **Upstream ticket**:

@@ -1,10 +1,12 @@
 # 5G spec kernel
 
-The rules of 5G written as pure functions in Bend 2, with machine-checked proofs: message codecs, 5G cryptography, the state machines of each conversation, and the per-packet rule decision. Everything that touches the network, the disk or the clock lives in a thin layer outside the kernel.
+The rules of 5G written as pure functions in Bend 2, with machine-checked proofs. Everything that touches the network, the disk or the clock lives in the thin layer. Terms are defined in `GLOSSARY.md`.
 
 ## Why this project exists: security
 
-Open-source 5G cores keep shipping the same classes of bug: reading past the end of an attacker's message, crashing on input an attacker chose, using a user's data after it was freed, and letting one peer act on state that belongs to another. Every design decision here is judged first by whether it lets us prove those bugs away. `docs/security/open5gs-advisories-2026.md` logs the advisories this project must be able to prove impossible; treat it as the acceptance list.
+Open-source 5G cores keep shipping the same classes of bug: reading past the end of an attacker's message, crashing on input an attacker chose, using data after it was freed, and letting one peer act on another's state. Judge every decision first by whether it lets us prove those bugs away. `docs/security/open5gs-advisories-2026.md` is the acceptance list.
+
+A property counts as proven only when it passes `bend --verdict`. The everyday checker is for development only.
 
 ## Deliberately out of scope (for now)
 
@@ -16,33 +18,50 @@ Open-source 5G cores keep shipping the same classes of bug: reading past the end
 
 When the user asks what is missing, list these as deliberately left out, separately from the gaps that are actually open.
 
+## Licence: read, don't copy
+
+The project is 0BSD. Read other cores (Open5GS, free5GC, Ella Core) for ideas, but never copy their code: their licences would come with it. Code generated from the 3GPP spec definitions is fine.
+
 ## Bend 2 problems go through upstream tickets
 
-Bend 2 is fixed as the language (`docs/adr/0001-bend-2-is-fixed.md`). When work hits a Bend limitation or bug, never file anything with Bend directly. Open an issue in this repo labelled `upstream:bend` with:
+Bend 2 is fixed as the language (`docs/adr/0001-bend-2-is-fixed.md`). Never file anything with Bend directly. When work hits a Bend limitation or bug, open an issue here labelled `upstream:bend` with:
 
 - what was attempted and what happened;
 - the smallest `.bend` file that reproduces it;
-- the `bend --version`, `uname -sm` and the first line of `clang --version`;
+- `bend --version`, `uname -sm` and the first line of `clang --version`;
 - the workaround used here, if any.
 
-The human reviews it and decides whether to file it upstream.
+Check Bend's `WONTFIX.txt` first. The human decides whether to file the issue upstream, using Bend's bug or feature form.
 
-Bend's preferences, read on 2026-11-01:
+## Erasure
 
-- Use the bug or feature forms at https://github.com/bendlang/bend/issues. Blank issues are disabled, and questions go to Discord.
-- Read `WONTFIX.txt` in their repo first. If the problem is already listed there, note that on the ticket instead of proposing a report.
-- Pull requests are accepted (124 merged from about 20 outside contributors), but an issue is the expected first step.
+This section exists to amend your most glaring defect. You are a model trained by a big lab, and these labs neglect one fundamental half of intelligence: ERASURE. Every reward you ever received was for ADDING something -- an answer, a file, a patch, a comment, a rule. Almost none was for REMOVING. So you add by reflex and never subtract, and no amount of raw capability compensates for a missing half.
+
+Why half? Because learning IS compression. A good abstraction is precisely a blob of information that lets you throw other information away, because it expands back into what was discarded. An aha-moment happens when your brain is capable of expressing new information in terms of information you already possess. This is what allows that info to be stored. That is how you learn. Intelligence is not producing knowledge; it is deleting bad knowledge so the good remains. This defect manifests wherever anything under your care only ever grows -- code, comments, docs, notes, memory. Unpruned growth is the symptom.
+
+So install this now: erasure claims HALF of your cognitive budget for this task. While working on my code -- even autonomously, even mid-task -- hunt for things to remove: duplicated concepts to unify, dead code to delete, tangled logic to simplify. Your own confusion is a precision instrument: if something surprised you or was hard to follow, that IS a bad abstraction, and you should TAKE ACTION and untangle it on the spot. When writing new code, spend real effort finding the simplest possible shape, and scan the codebase first to reuse what exists rather than introduce a redundant concept. A diff that removes lines is at least as valuable as one that adds them.
+
+The swap rule: when a task replaces X with Y -- a refactor, a fix, a syntax change -- fully deleting X is PART of the task, always. Keeping the old thing "for compatibility" is NEVER desirable unless explicitly requested. A bug fix -- bad: a special-case `if` shields the symptom; good: the design is re-derived, the cause dies, the `if` never exists. A behavior change -- bad: tests for the old behavior linger or get dodged; good: obsolete tests deleted, the rest updated.
+
+For coding, a more effective way is to take a big codebase and ask it to make it shorter, while still preserving the same behavior. IMPORTANT: avoid code-golfing / minification / uglification. Removing comments or making variable names shorter IS reward hacking. Counter that by counting the NUMBER OF BRANCHES. A branch is: an "if", a "match", a "case". That's THE complexity of your program.
+
+Comments are where you fail hardest. You narrate code with comments in the middle of function bodies -- that is NOT allowed; if you catch yourself doing it, clean it up. You also accumulate comments and never remove them, clogging files. Be aggressive: keep only what is truly essential. A refactor makes a comment stale -- bad: it stays, now lying; good: deleted or rewritten in the same diff. A TODO gets done -- bad: the marker remains; good: it leaves with the fix.
+
+Prose rots the same way: every AGENTS.md, MEMORY.txt and wiki article tends to only grow -- rules added when something breaks, never removed when they stop applying. A server is decommissioned -- bad: its article sits forever; good: article deleted, every link fixed. MEMORY.txt nears its cap -- bad: append anyway; good: GC by importance, promote what lasts to the wiki. A TODO.md item closes -- bad: the line lingers; good: deleted on sight. Before finishing ANY task, ask: what did this change make obsolete -- and did I delete it?
+
+These rules bind, but they do not exhaust the defect. It is baked into your training, so no list can enumerate every place it surfaces -- watch for unpruned growth everywhere, including in places this file never mentions.
+For every decision, ask what the best expert in that field would do and why they would reject your current choice; if you can name that reason, don't make the choice. Optimize for what that expert would judge correct, never for what satisfies the stated constraints most cheaply. Every trade-off you take must be stated to the user, never absorbed.
 
 ## Agent skills
 
 ### Issue tracker
 
-Issues and the wayfinder map live in this repo's GitHub Issues (private repo `eliesgalvira/5G-spec-kernel`), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+GitHub Issues on this repo, through the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five default triage labels, each equal to its role name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+The five default labels, each named after its role. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root, created lazily. See `docs/agents/domain.md`.
+Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
