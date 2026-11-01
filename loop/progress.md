@@ -5,7 +5,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | # | Ticket | Status | Depends on | Notes |
 |---|---|---|---|---|
 | 01 | bootstrap | done | — | 3327ac8: LAWS/PROOF pair, check.sh gate, test runner, acceptance.py, gen-vectors.py and generated vector modules |
-| 02 | bytes | in-progress | 01 | |
+| 02 | bytes | done | 01 | 2799d0f: readers u8..u32, take, nibbles, TBCD; 8 laws proven; no U32 lemma file needed |
 | 03 | vectors | todo | 01 | |
 | 04 | sha256-hmac | todo | 02, 03 | |
 | 05 | aes | todo | 02, 03 | |
