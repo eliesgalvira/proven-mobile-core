@@ -476,3 +476,245 @@ def L.nas.epco.encode_bounded(e, v):
   match e:
     case Q.Epco{+cs}:
       Epco.rt(cs, v)
+
+# QoS rules write back to their bytes
+# -----------------------------------
+
+def Payload.Sx(p: Q.Payload, r: B.Bytes(), bs: B.Bytes()) -> Type:
+  {Q.Payload.write(p, r) == bs : B.Bytes()} & {B.all_bytes(r) == True{} : Bool}
+
+def Payload.absurd(+p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), err: B.Err, e: {Fail{err} == Done{(p, r)} : B.Read(Q.Payload)}) -> Payload.Sx(p, r, bs):
+  Empty.absurd(Payload.Sx(p, r, bs), P.Refute.fail_done(B.Err, B.ReadValue(Q.Payload), err, (p, r), e))
+
+# The payload read is `p0` and the rest is `r0`.
+def Payload.eqs(-G: Type, +p: Q.Payload, +r: B.Bytes(), +p0: Q.Payload, +r0: B.Bytes(), +e: {Done{(p0, r0)} == Done{(p, r)} : B.Read(Q.Payload)}, k: {p0 == p : Q.Payload} -> {r0 == r : B.Bytes()} -> G) -> G:
+  k(Equal.cong(B.Read(Q.Payload), Q.Payload, x => P.Read.value(Q.Payload, x, p), Done{(p0, r0)}, Done{(p, r)}, e), Equal.cong(B.Read(Q.Payload), B.Bytes(), x => P.Read.rest(Q.Payload, x, r), Done{(p0, r0)}, Done{(p, r)}, e))
+
+def Bytes.all_prefix(xs: B.Bytes(), +ys: B.Bytes(), +e: {B.all_bytes(List.append(&2, U32, xs, ys)) == True{} : Bool}) -> {B.all_bytes(xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +xt:
+      P.Bool.and_intro(B.is_byte(x), B.all_bytes(xt), P.Bool.and_true_l(B.is_byte(x), B.all_bytes(List.append(&2, U32, xt, ys)), e), Bytes.all_prefix(xt, ys, P.Bool.and_true_r(B.is_byte(x), B.all_bytes(List.append(&2, U32, xt, ys)), e)))
+
+def Payload.sx_none(+bs: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ep: {Q.PNone{} == p : Q.Payload}, er: {bs == r : B.Bytes()}, ab: {B.all_bytes(bs) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  %ep : Payload.Sx(_, r, bs)
+  %er : Payload.Sx(Q.PNone{}, _, bs)
+  ({==}, ab)
+
+def Payload.sx_one(+v: U32, +r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ep: {Q.POne{v} == p : Q.Payload}, er: {r1 == r : B.Bytes()}, +ab: {B.all_bytes(v <> r1) == True{} : Bool}) -> Payload.Sx(p, r, v <> r1):
+  %ep : Payload.Sx(_, r, v <> r1)
+  %er : Payload.Sx(Q.POne{v}, _, v <> r1)
+  mv = Equal.sym(U32, U32.and(255, v), v, P.U32.lt256_mask8(v, P.Bool.and_true_l(B.is_byte(v), B.all_bytes(r1), ab)))
+  %mv : {_ <> r1 == v <> r1 : B.Bytes()} & {B.all_bytes(r1) == True{} : Bool}
+  ({==}, P.Bool.and_true_r(B.is_byte(v), B.all_bytes(r1), ab))
+
+def Payload.sx_two(+x: U32, +y: U32, +r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ep: {Q.PTwo{B.cat8(y, x)} == p : Q.Payload}, er: {r1 == r : B.Bytes()}, +ab: {B.all_bytes(x <> y <> r1) == True{} : Bool}) -> Payload.Sx(p, r, x <> y <> r1):
+  %ep : Payload.Sx(_, r, x <> y <> r1)
+  %er : Payload.Sx(Q.PTwo{B.cat8(y, x)}, _, x <> y <> r1)
+  +ab1 = P.Bool.and_true_r(B.is_byte(x), B.all_bytes(y <> r1), ab)
+  s16 = Equal.sym(B.Bytes(), B.write_u16(B.cat8(y, x), r1), x <> y <> r1, P.Bytes.u16_sx(x, y, P.U32.lt256_mask8(x, P.Bool.and_true_l(B.is_byte(x), B.all_bytes(y <> r1), ab)), P.U32.lt256_mask8(y, P.Bool.and_true_l(B.is_byte(y), B.all_bytes(r1), ab1)), r1))
+  %s16 : {_ == x <> y <> r1 : B.Bytes()} & {B.all_bytes(r1) == True{} : Bool}
+  ({==}, P.Bool.and_true_r(B.is_byte(y), B.all_bytes(r1), ab1))
+
+def Payload.sx_three(+x: U32, +y: U32, +z: U32, +r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ep: {Q.PThree{B.cat8(z, B.cat8(y, x))} == p : Q.Payload}, er: {r1 == r : B.Bytes()}, +ab: {B.all_bytes(x <> y <> z <> r1) == True{} : Bool}) -> Payload.Sx(p, r, x <> y <> z <> r1):
+  %ep : Payload.Sx(_, r, x <> y <> z <> r1)
+  %er : Payload.Sx(Q.PThree{B.cat8(z, B.cat8(y, x))}, _, x <> y <> z <> r1)
+  +ab1 = P.Bool.and_true_r(B.is_byte(x), B.all_bytes(y <> z <> r1), ab)
+  +ab2 = P.Bool.and_true_r(B.is_byte(y), B.all_bytes(z <> r1), ab1)
+  s24 = Equal.sym(B.Bytes(), B.write_u24(B.cat8(z, B.cat8(y, x)), r1), x <> y <> z <> r1, P.Bytes.u24_sx(x, y, z, P.U32.lt256_mask8(x, P.Bool.and_true_l(B.is_byte(x), B.all_bytes(y <> z <> r1), ab)), P.U32.lt256_mask8(y, P.Bool.and_true_l(B.is_byte(y), B.all_bytes(z <> r1), ab1)), P.U32.lt256_mask8(z, P.Bool.and_true_l(B.is_byte(z), B.all_bytes(r1), ab2)), r1))
+  %s24 : {_ == x <> y <> z <> r1 : B.Bytes()} & {B.all_bytes(r1) == True{} : Bool}
+  ({==}, P.Bool.and_true_r(B.is_byte(z), B.all_bytes(r1), ab2))
+
+def Bytes4.masks(-G: Type, +a3: U32, +a2: U32, +a1: U32, +a0: U32, +r1: B.Bytes(), +ab: {B.all_bytes(a3 <> a2 <> a1 <> a0 <> r1) == True{} : Bool}, k: {U32.and(255, a3) == a3 : U32} -> {U32.and(255, a2) == a2 : U32} -> {U32.and(255, a1) == a1 : U32} -> {U32.and(255, a0) == a0 : U32} -> {B.all_bytes(r1) == True{} : Bool} -> G) -> G:
+  +ab1 = P.Bool.and_true_r(B.is_byte(a3), B.all_bytes(a2 <> a1 <> a0 <> r1), ab)
+  +ab2 = P.Bool.and_true_r(B.is_byte(a2), B.all_bytes(a1 <> a0 <> r1), ab1)
+  +ab3 = P.Bool.and_true_r(B.is_byte(a1), B.all_bytes(a0 <> r1), ab2)
+  k(P.U32.lt256_mask8(a3, P.Bool.and_true_l(B.is_byte(a3), B.all_bytes(a2 <> a1 <> a0 <> r1), ab)), P.U32.lt256_mask8(a2, P.Bool.and_true_l(B.is_byte(a2), B.all_bytes(a1 <> a0 <> r1), ab1)), P.U32.lt256_mask8(a1, P.Bool.and_true_l(B.is_byte(a1), B.all_bytes(a0 <> r1), ab2)), P.U32.lt256_mask8(a0, P.Bool.and_true_l(B.is_byte(a0), B.all_bytes(r1), ab3)), P.Bool.and_true_r(B.is_byte(a0), B.all_bytes(r1), ab3))
+
+def Payload.sx_four(+a3: U32, +a2: U32, +a1: U32, +a0: U32, +r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ep: {Q.PFour{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3)))} == p : Q.Payload}, er: {r1 == r : B.Bytes()}, m3: {U32.and(255, a3) == a3 : U32}, m2: {U32.and(255, a2) == a2 : U32}, m1: {U32.and(255, a1) == a1 : U32}, m0: {U32.and(255, a0) == a0 : U32}, ab1: {B.all_bytes(r1) == True{} : Bool}) -> Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> r1):
+  %ep : Payload.Sx(_, r, a3 <> a2 <> a1 <> a0 <> r1)
+  %er : Payload.Sx(Q.PFour{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3)))}, _, a3 <> a2 <> a1 <> a0 <> r1)
+  s32 = Equal.sym(B.Bytes(), B.write_u32(B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), r1), a3 <> a2 <> a1 <> a0 <> r1, P.Bytes.u32_sx(a3, a2, a1, a0, m3, m2, m1, m0, r1))
+  %s32 : {_ == a3 <> a2 <> a1 <> a0 <> r1 : B.Bytes()} & {B.all_bytes(r1) == True{} : Bool}
+  ({==}, ab1)
+
+def Payload.sx_ipv4_fin(+a3: U32, +a2: U32, +a1: U32, +a0: U32, +m3: U32, +m2: U32, +m1: U32, +m0: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ep: {Q.PIpv4{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))} == p : Q.Payload}, er: {r2 == r : B.Bytes()}, ka3: {U32.and(255, a3) == a3 : U32}, ka2: {U32.and(255, a2) == a2 : U32}, ka1: {U32.and(255, a1) == a1 : U32}, ka0: {U32.and(255, a0) == a0 : U32}, km3: {U32.and(255, m3) == m3 : U32}, km2: {U32.and(255, m2) == m2 : U32}, km1: {U32.and(255, m1) == m1 : U32}, km0: {U32.and(255, m0) == m0 : U32}, ab2: {B.all_bytes(r2) == True{} : Bool}) -> Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2):
+  %ep : Payload.Sx(_, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2)
+  %er : Payload.Sx(Q.PIpv4{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))}, _, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2)
+  sm = Equal.sym(B.Bytes(), B.write_u32(B.cat8(m0, B.cat8(m1, B.cat8(m2, m3))), r2), m3 <> m2 <> m1 <> m0 <> r2, P.Bytes.u32_sx(m3, m2, m1, m0, km3, km2, km1, km0, r2))
+  %sm : {B.write_u32(B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), _) == a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2 : B.Bytes()} & {B.all_bytes(r2) == True{} : Bool}
+  sa = Equal.sym(B.Bytes(), B.write_u32(B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), m3 <> m2 <> m1 <> m0 <> r2), a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2, P.Bytes.u32_sx(a3, a2, a1, a0, ka3, ka2, ka1, ka0, m3 <> m2 <> m1 <> m0 <> r2))
+  %sa : {_ == a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2 : B.Bytes()} & {B.all_bytes(r2) == True{} : Bool}
+  ({==}, ab2)
+
+def Payload.sx_ipv4_ok(+a3: U32, +a2: U32, +a1: U32, +a0: U32, +m3: U32, +m2: U32, +m1: U32, +m0: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ok: Bool, +e: {Q.Ok(B.ReadValue(Q.Payload), (Q.PIpv4{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))}, r2), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3))), ok) == Done{(p, r)} : B.Read(Q.Payload)}, +ab: {B.all_bytes(a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2) == True{} : Bool}) -> Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2):
+  match ok:
+    case False{}:
+      Payload.absurd(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2, B.Invalid{B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))}, e)
+    case True{}:
+      Payload.eqs(Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2), p, r, Q.PIpv4{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))}, r2, e, ep => er => Bytes4.masks(Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2), a3, a2, a1, a0, m3 <> m2 <> m1 <> m0 <> r2, ab, ka3 => ka2 => ka1 => ka0 => abm => Bytes4.masks(Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2), m3, m2, m1, m0, r2, abm, km3 => km2 => km1 => km0 => ab2 => Payload.sx_ipv4_fin(a3, a2, a1, a0, m3, m2, m1, m0, r2, p, r, ep, er, ka3, ka2, ka1, ka0, km3, km2, km1, km0, ab2))))
+
+def Payload.sx_ipv4_mask(+a3: U32, +a2: U32, +a1: U32, +a0: U32, r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +e: {Q.Payload.ipv4(B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), B.u32(r1)) == Done{(p, r)} : B.Read(Q.Payload)}, +ab: {B.all_bytes(a3 <> a2 <> a1 <> a0 <> r1) == True{} : Bool}) -> Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> r1):
+  match r1:
+    case Nil{}:
+      Payload.absurd(p, r, a3 <> a2 <> a1 <> a0 <> [], B.Short{}, e)
+    case x <> Nil{}:
+      Payload.absurd(p, r, a3 <> a2 <> a1 <> a0 <> [x], B.Short{}, e)
+    case x <> y <> Nil{}:
+      Payload.absurd(p, r, a3 <> a2 <> a1 <> a0 <> [x, y], B.Short{}, e)
+    case x <> y <> z <> Nil{}:
+      Payload.absurd(p, r, a3 <> a2 <> a1 <> a0 <> [x, y, z], B.Short{}, e)
+    case +m3 <> +m2 <> +m1 <> +m0 <> +r2:
+      Payload.sx_ipv4_ok(a3, a2, a1, a0, m3, m2, m1, m0, r2, p, r, Q.Mask.contiguous(B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))), e, ab)
+
+def Payload.sx_ipv6_fin(+addr: B.Bytes(), +pre: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), ep: {Q.PIpv6{addr, pre} == p : Q.Payload}, er: {r2 == r : B.Bytes()}, ap: {List.append(&2, U32, addr, pre <> r2) == bs : B.Bytes()}, mp: {U32.and(255, pre) == pre : U32}, ab2: {B.all_bytes(r2) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  %ep : Payload.Sx(_, r, bs)
+  %er : Payload.Sx(Q.PIpv6{addr, pre}, _, bs)
+  smp = Equal.sym(U32, U32.and(255, pre), pre, mp)
+  %smp : {List.append(&2, U32, addr, _ <> r2) == bs : B.Bytes()} & {B.all_bytes(r2) == True{} : Bool}
+  (ap, ab2)
+
+def Payload.sx_ipv6_ok(+addr: B.Bytes(), +pre: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), ok: Bool, +e: {Q.Ok(B.ReadValue(Q.Payload), (Q.PIpv6{addr, pre}, r2), pre, ok) == Done{(p, r)} : B.Read(Q.Payload)}, ap: {List.append(&2, U32, addr, pre <> r2) == bs : B.Bytes()}, +al: {B.all_bytes(pre <> r2) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  match ok:
+    case False{}:
+      Payload.absurd(p, r, bs, B.Invalid{pre}, e)
+    case True{}:
+      Payload.eqs(Payload.Sx(p, r, bs), p, r, Q.PIpv6{addr, pre}, r2, e, ep => er => Payload.sx_ipv6_fin(addr, pre, r2, p, r, bs, ep, er, ap, P.U32.lt256_mask8(pre, P.Bool.and_true_l(B.is_byte(pre), B.all_bytes(r2), al)), P.Bool.and_true_r(B.is_byte(pre), B.all_bytes(r2), al)))
+
+def Payload.sx_ipv6_prefix(+addr: B.Bytes(), r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), +e: {Q.Payload.ipv6_prefix(addr, B.u8(r1)) == Done{(p, r)} : B.Read(Q.Payload)}, ap: {List.append(&2, U32, addr, r1) == bs : B.Bytes()}, +al: {B.all_bytes(r1) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  match r1:
+    case Nil{}:
+      Payload.absurd(p, r, bs, B.Short{}, e)
+    case +pre <> +r2:
+      Payload.sx_ipv6_ok(addr, pre, r2, p, r, bs, U32.is_le(pre, 128), e, ap, al)
+
+def Payload.sx_ipv6(+bs: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), rt: B.Read(B.Bytes()), ert: {B.take(16n, bs) == rt : B.Read(B.Bytes())}, +e: {Q.Payload.ipv6(rt) == Done{(p, r)} : B.Read(Q.Payload)}, ab: {B.all_bytes(bs) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  match rt:
+    case Fail{err}:
+      Payload.absurd(p, r, bs, err, e)
+    case Done{(+addr, +r1)}:
+      PM.Take.sx(Payload.Sx(p, r, bs), 16n, bs, addr, r1, ert, ab, ap => al => Payload.sx_ipv6_prefix(addr, r1, p, r, bs, e, ap, al))
+
+def Payload.sx_six_fin(+bytes: B.Bytes(), +r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), ep: {Q.PSix{bytes} == p : Q.Payload}, er: {r1 == r : B.Bytes()}, ap: {List.append(&2, U32, bytes, r1) == bs : B.Bytes()}, al: {B.all_bytes(r1) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  %ep : Payload.Sx(_, r, bs)
+  %er : Payload.Sx(Q.PSix{bytes}, _, bs)
+  (ap, al)
+
+def Payload.sx_six(+bs: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), rt: B.Read(B.Bytes()), ert: {B.take(6n, bs) == rt : B.Read(B.Bytes())}, +e: {Q.Payload.six(rt) == Done{(p, r)} : B.Read(Q.Payload)}, ab: {B.all_bytes(bs) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  match rt:
+    case Fail{err}:
+      Payload.absurd(p, r, bs, err, e)
+    case Done{(+bytes, +r1)}:
+      Payload.eqs(Payload.Sx(p, r, bs), p, r, Q.PSix{bytes}, r1, e, ep => er => PM.Take.sx(Payload.Sx(p, r, bs), 6n, bs, bytes, r1, ert, ab, ap => al => Payload.sx_six_fin(bytes, r1, p, r, bs, ep, er, ap, al)))
+
+def Payload.sx(shape: Q.Shape, +bs: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +e: {Q.Payload.read(shape, bs) == Done{(p, r)} : B.Read(Q.Payload)}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+  match shape:
+    case Q.SNone{}:
+      Payload.eqs(Payload.Sx(p, r, bs), p, r, Q.PNone{}, bs, e, ep => er => Payload.sx_none(bs, p, r, ep, er, ab))
+    case Q.SIpv4{}:
+      match bs:
+        case Nil{}:
+          Payload.absurd(p, r, [], B.Short{}, e)
+        case x <> Nil{}:
+          Payload.absurd(p, r, [x], B.Short{}, e)
+        case x <> y <> Nil{}:
+          Payload.absurd(p, r, [x, y], B.Short{}, e)
+        case x <> y <> z <> Nil{}:
+          Payload.absurd(p, r, [x, y, z], B.Short{}, e)
+        case +a3 <> +a2 <> +a1 <> +a0 <> +r1:
+          Payload.sx_ipv4_mask(a3, a2, a1, a0, r1, p, r, e, ab)
+    case Q.SIpv6{}:
+      Payload.sx_ipv6(bs, p, r, B.take(16n, bs), {==}, e, ab)
+    case Q.SOne{}:
+      match bs:
+        case Nil{}:
+          Payload.absurd(p, r, [], B.Short{}, e)
+        case +v <> +r1:
+          Payload.eqs(Payload.Sx(p, r, v <> r1), p, r, Q.POne{v}, r1, e, ep => er => Payload.sx_one(v, r1, p, r, ep, er, ab))
+    case Q.STwo{}:
+      match bs:
+        case Nil{}:
+          Payload.absurd(p, r, [], B.Short{}, e)
+        case x <> Nil{}:
+          Payload.absurd(p, r, [x], B.Short{}, e)
+        case +x <> +y <> +r1:
+          Payload.eqs(Payload.Sx(p, r, x <> y <> r1), p, r, Q.PTwo{B.cat8(y, x)}, r1, e, ep => er => Payload.sx_two(x, y, r1, p, r, ep, er, ab))
+    case Q.SThree{}:
+      match bs:
+        case Nil{}:
+          Payload.absurd(p, r, [], B.Short{}, e)
+        case x <> Nil{}:
+          Payload.absurd(p, r, [x], B.Short{}, e)
+        case x <> y <> Nil{}:
+          Payload.absurd(p, r, [x, y], B.Short{}, e)
+        case +x <> +y <> +z <> +r1:
+          Payload.eqs(Payload.Sx(p, r, x <> y <> z <> r1), p, r, Q.PThree{B.cat8(z, B.cat8(y, x))}, r1, e, ep => er => Payload.sx_three(x, y, z, r1, p, r, ep, er, ab))
+    case Q.SFour{}:
+      match bs:
+        case Nil{}:
+          Payload.absurd(p, r, [], B.Short{}, e)
+        case x <> Nil{}:
+          Payload.absurd(p, r, [x], B.Short{}, e)
+        case x <> y <> Nil{}:
+          Payload.absurd(p, r, [x, y], B.Short{}, e)
+        case x <> y <> z <> Nil{}:
+          Payload.absurd(p, r, [x, y, z], B.Short{}, e)
+        case +a3 <> +a2 <> +a1 <> +a0 <> +r1:
+          Payload.eqs(Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> r1), p, r, Q.PFour{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3)))}, r1, e, ep => er => Bytes4.masks(Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> r1), a3, a2, a1, a0, r1, ab, m3 => m2 => m1 => m0 => ab1 => Payload.sx_four(a3, a2, a1, a0, r1, p, r, ep, er, m3, m2, m1, m0, ab1)))
+    case Q.SSix{}:
+      Payload.sx_six(bs, p, r, B.take(6n, bs), {==}, e, ab)
+
+# Components
+def Comp.Sx(c: Q.Comp, r: B.Bytes(), bs: B.Bytes()) -> Type:
+  {Q.Comp.write(c, r) == bs : B.Bytes()} & {B.all_bytes(r) == True{} : Bool}
+
+def Comp.absurd(+c: Q.Comp, +r: B.Bytes(), +bs: B.Bytes(), err: B.Err, e: {Fail{err} == Done{(c, r)} : B.Read(Q.Comp)}) -> Comp.Sx(c, r, bs):
+  Empty.absurd(Comp.Sx(c, r, bs), P.Refute.fail_done(B.Err, B.ReadValue(Q.Comp), err, (c, r), e))
+
+def Comp.sx_fin(+k: U32, +rest: B.Bytes(), +c: Q.Comp, +r: B.Bytes(), +p: Q.Payload, +r2: B.Bytes(), ec: {Q.Comp{k, p} == c : Q.Comp}, er: {r2 == r : B.Bytes()}, s: Payload.Sx(p, r2, rest)) -> Comp.Sx(c, r, k <> rest):
+  (w, a) = s
+  %ec : Comp.Sx(_, r, k <> rest)
+  %er : Comp.Sx(Q.Comp{k, p}, _, k <> rest)
+  sw = Equal.sym(B.Bytes(), Q.Payload.write(p, r2), rest, w)
+  %sw : {k <> _ == k <> rest : B.Bytes()} & {B.all_bytes(r2) == True{} : Bool}
+  ({==}, a)
+
+def Comp.sx_of(+k: U32, +rest: B.Bytes(), +c: Q.Comp, +r: B.Bytes(), shape: Q.Shape, rp: B.Read(Q.Payload), erp: {Q.Payload.read(shape, rest) == rp : B.Read(Q.Payload)}, +e: {Q.Comp.of(k, rp) == Done{(c, r)} : B.Read(Q.Comp)}, ab: {B.all_bytes(rest) == True{} : Bool}) -> Comp.Sx(c, r, k <> rest):
+  match rp:
+    case Fail{err}:
+      Comp.absurd(c, r, k <> rest, err, e)
+    case Done{(+p, +r2)}:
+      Comp.sx_fin(k, rest, c, r, p, r2, Equal.cong(B.Read(Q.Comp), Q.Comp, x => P.Read.value(Q.Comp, x, c), Done{(Q.Comp{k, p}, r2)}, Done{(c, r)}, e), Equal.cong(B.Read(Q.Comp), B.Bytes(), x => P.Read.rest(Q.Comp, x, r), Done{(Q.Comp{k, p}, r2)}, Done{(c, r)}, e), Payload.sx(shape, rest, p, r2, erp, ab))
+
+def Comp.sx_kind(+k: U32, +rest: B.Bytes(), +c: Q.Comp, +r: B.Bytes(), ms: Maybe<&2, Q.Shape>, +e: {Q.Comp.kind(k, rest, ms) == Done{(c, r)} : B.Read(Q.Comp)}, ab: {B.all_bytes(rest) == True{} : Bool}) -> Comp.Sx(c, r, k <> rest):
+  match ms:
+    case None{}:
+      Comp.absurd(c, r, k <> rest, B.Unsupported{k}, e)
+    case Some{+shape}:
+      Comp.sx_of(k, rest, c, r, shape, Q.Payload.read(shape, rest), {==}, e, ab)
+
+def Comp.sx(bs: B.Bytes(), +c: Q.Comp, +r: B.Bytes(), +e: {Q.Comp.read(bs) == Done{(c, r)} : B.Read(Q.Comp)}, ab: {B.all_bytes(bs) == True{} : Bool}) -> Comp.Sx(c, r, bs):
+  match bs:
+    case Nil{}:
+      Comp.absurd(c, r, [], B.Short{}, e)
+    case +k <> +rest:
+      Comp.sx_kind(k, rest, c, r, Q.Comp.shape(k), e, P.Bool.and_true_r(B.is_byte(k), B.all_bytes(rest), ab))
+
+def Comps.Res() -> Data:
+  Result<&2, &2, B.Err, List<&2, Q.Comp>>
+
+def Comps.absurd(+cs: List<&2, Q.Comp>, +bs: B.Bytes(), err: B.Err, e: {Fail{err} == Done{cs} : Comps.Res()}) -> {Q.Comps.write(cs, []) == bs : B.Bytes()}:
+  Empty.absurd({Q.Comps.write(cs, []) == bs : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, Q.Comp>, err, cs, e))
+
+def Comps.sx_cons(+b: U32, +rest: B.Bytes(), +c: Q.Comp, +r1: B.Bytes(), +cs: List<&2, Q.Comp>, ro: Comps.Res(), ero: {Q.Comps.go(List.length(&2, U32, r1), r1) == ro : Comps.Res()}, +e: {Q.Comps.cons(c, ro) == Done{cs} : Comps.Res()}, s: Comp.Sx(c, r1, b <> rest), ih: @cs2: List<&2, Q.Comp> -> {Q.Comps.go(List.length(&2, U32, r1), r1) == Done{cs2} : Comps.Res()} -> {B.all_bytes(r1) == True{} : Bool} -> {Q.Comps.write(cs2, []) == r1 : B.Bytes()}) -> {Q.Comps.write(cs, []) == b <> rest : B.Bytes()}:
+  match ro:
+    case Fail{err}:
+      Comps.absurd(cs, b <> rest, err, e)
+    case Done{+cs2}:
+      (w, a) = s
+      ec = Equal.cong(Comps.Res(), List<&2, Q.Comp>, x => P.Res.value(B.Err, List<&2, Q.Comp>, x, cs), Done{c <> cs2}, Done{cs}, e)
+      %ec : {Q.Comps.write(_, []) == b <> rest : B.Bytes()}
+      sw = Equal.sym(B.Bytes(), Q.Comps.write(cs2, []), r1, ih(cs2, ero, a))
+      %sw : {Q.Comp.write(c, _) == b <> rest : B.Bytes()}
+      w
