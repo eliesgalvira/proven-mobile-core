@@ -12,7 +12,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 06 | milenage | done | 05 | b1b468e: f1, f1*, f2..f5*, OP->OPc; 54 checks pass; lengths law proven |
 | 07 | kdf | done | 04, 06 | 3641e6d: KDF, SNN, KAUSF..KgNB; capture keys reproduced; 2 laws proven |
 | 08 | x25519-suci | done | 04, 05, 07 | 0493397: X25519, PLMN codec, SUCI decode and Profile A; 7 laws proven; upstream draft 02 |
-| 09 | nas-security | todo | 05, 07 | |
+| 09 | nas-security | in-progress | 05, 07 | |
 | 10 | nas-5gmm | todo | 02, 03 | |
 | 11 | nas-5gsm | todo | 10 | |
 | 12 | aper | todo | 02 | |
