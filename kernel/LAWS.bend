@@ -1,5 +1,7 @@
 import Base
 import ./bytes.bend as B
+import ./crypto/sha256.bend as S
+import ./crypto/hmac.bend as H
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -68,3 +70,16 @@ law bytes.tbcd.length:
   & {B.Tbcd.all_digits(digits) == True{} : Bool}
   & (@ds: B.Digits() -> @out: B.Bytes() -> {List.length(&2, U32, B.write_tbcd(ds, out))
       == Nat.add(B.Tbcd.byte_count(List.length(&2, U32, ds)), List.length(&2, U32, out)) : Nat})
+
+# crypto: SHA-256 and HMAC (ticket 04)
+# ------------------------------------
+# Correctness against FIPS 180-4 and RFC 4231 is established by the test vectors.
+
+law sha256.length:
+  for msg: B.Bytes()
+  {List.length(&2, U32, S.sha256(msg)) == 32n : Nat}
+
+law hmac.length:
+  for key: B.Bytes()
+  for msg: B.Bytes()
+  {List.length(&2, U32, H.hmac(key, msg)) == 32n : Nat}
