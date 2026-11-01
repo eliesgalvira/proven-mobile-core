@@ -15,6 +15,7 @@ import ./nas/ie.bend as I
 import ./nas/mm.bend as Mm
 import ./nas/mobile_id.bend as Mi
 import ./nas/sm.bend as Sm
+import ./nas/sm_ies.bend as Q
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -363,3 +364,47 @@ law nas.sm.suffix:
   for +e: {Sm.Sm.read(bs) == Done{m} : Result<&2, &2, B.Err, Sm.Sm>}
   for +ab: {B.all_bytes(bs) == True{} : Bool}
   {Sm.Sm.write(m) == bs : B.Bytes()}
+
+# GHSA-6w6j-vjx3-pwqr: QoS rules and their packet filters are read only inside
+# their declared lengths, which their contents must fill exactly; the bytes a
+# decoded list came from are its encoding.
+law nas.qos_rules.suffix:
+  for +bs: B.Bytes()
+  for +rs: List<&2, Q.Rule>
+  for +e: {Q.Rules.read(bs) == Done{rs} : Result<&2, &2, B.Err, List<&2, Q.Rule>>}
+  for +ab: {B.all_bytes(bs) == True{} : Bool}
+  {Q.Rules.write(rs) == bs : B.Bytes()}
+
+# GHSA-g4xp-3ccr-264w: an IPv4 address component decodes only with a mask
+# that is a contiguous run of ones from the top bit.
+law nas.packet_filter.mask_contiguous:
+  for +bs: B.Bytes()
+  for +kind: U32
+  for +addr: U32
+  for +mask: U32
+  for +rest: B.Bytes()
+  for +e: {Q.Comp.read(bs) == Done{(Q.Comp{kind, Q.PIpv4{addr, mask}}, rest)} : B.Read(Q.Comp)}
+  {Q.Mask.contiguous(mask) == True{} : Bool}
+
+# GHSA-m795-gjf7-c8ch: Session-AMBR content is exactly six bytes and both
+# units are defined values.
+law nas.session_ambr.decode_valid:
+  for +bs: B.Bytes()
+  for +a: Q.Ambr
+  for +e: {Q.Ambr.read(bs) == Done{a} : Result<&2, &2, B.Err, Q.Ambr>}
+  {List.length(&2, U32, bs) == 6n : Nat} & {Q.Ambr.valid(a) == True{} : Bool}
+
+# GHSA-fvg8-6r68-v3x7: a decoded ePCO holds at most 255 containers, each with
+# the length its byte declares, and its size is what the bytes held.
+law nas.epco.decode_bounded:
+  for +bs: B.Bytes()
+  for +e: Q.Epco
+  for +d: {Q.Epco.read(bs) == Done{e} : Result<&2, &2, B.Err, Q.Epco>}
+  {Nat.is_le(List.length(&2, Q.Container, Q.Epco.containers(e)), 255n) == True{} : Bool} & ({Q.Epco.valid(e) == True{} : Bool} & {Q.Epco.size(e) == List.length(&2, U32, bs) : Nat})
+
+# GHSA-796x-8w26-2xfp: a valid ePCO encodes to at most 65535 bytes and reads
+# back as itself, so no container is ever cut.
+law nas.epco.encode_bounded:
+  for +e: Q.Epco
+  for +v: {Q.Epco.valid(e) == True{} : Bool}
+  {Nat.is_le(List.length(&2, U32, Q.Epco.write(e)), 65535n) == True{} : Bool} & {Q.Epco.read(Q.Epco.write(e)) == Done{e} : Result<&2, &2, B.Err, Q.Epco>}
