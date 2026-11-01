@@ -135,12 +135,19 @@ def MobileId.s_tmsi_tmsi(amf: U32, r: B.Read(U32)) -> MobileId.Res():
     case Done{(tmsi, rest)}:
       MobileId.end(STmsi{amf, tmsi}, rest)
 
+def MobileId.s_tmsi_ok(amf: U32, rest: B.Bytes(), ok: Bool) -> MobileId.Res():
+  match ok:
+    case True{}:
+      MobileId.s_tmsi_tmsi(amf, B.u32(rest))
+    case False{}:
+      Fail{B.Invalid{amf}}
+
 def MobileId.s_tmsi_amf(r: B.Read(U32)) -> MobileId.Res():
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(+amf, rest)}:
-      MobileId.s_tmsi_tmsi(amf, B.u32(rest))
+      MobileId.s_tmsi_ok(amf, rest, I.fits16(amf))
 
 def MobileId.r4(+h: U32, rest: B.Bytes(), hit: Bool) -> MobileId.Res():
   match hit:
@@ -156,19 +163,33 @@ def MobileId.guti_tmsi(plmn: P.Plmn, region: U32, amf: U32, r: B.Read(U32)) -> M
     case Done{(tmsi, rest)}:
       MobileId.end(Guti{plmn, region, amf, tmsi}, rest)
 
+def MobileId.guti_amf_ok(plmn: P.Plmn, region: U32, amf: U32, rest: B.Bytes(), ok: Bool) -> MobileId.Res():
+  match ok:
+    case True{}:
+      MobileId.guti_tmsi(plmn, region, amf, B.u32(rest))
+    case False{}:
+      Fail{B.Invalid{amf}}
+
 def MobileId.guti_amf(plmn: P.Plmn, region: U32, r: B.Read(U32)) -> MobileId.Res():
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{(amf, rest)}:
-      MobileId.guti_tmsi(plmn, region, amf, B.u32(rest))
+    case Done{(+amf, rest)}:
+      MobileId.guti_amf_ok(plmn, region, amf, rest, I.fits16(amf))
+
+def MobileId.guti_region_ok(plmn: P.Plmn, region: U32, rest: B.Bytes(), ok: Bool) -> MobileId.Res():
+  match ok:
+    case True{}:
+      MobileId.guti_amf(plmn, region, B.u16(rest))
+    case False{}:
+      Fail{B.Invalid{region}}
 
 def MobileId.guti_region(plmn: P.Plmn, r: B.Read(U32)) -> MobileId.Res():
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{(region, rest)}:
-      MobileId.guti_amf(plmn, region, B.u16(rest))
+    case Done{(+region, rest)}:
+      MobileId.guti_region_ok(plmn, region, rest, I.fits8(region))
 
 def MobileId.guti_plmn(r: B.Read(P.Plmn)) -> MobileId.Res():
   match r:

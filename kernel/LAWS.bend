@@ -13,6 +13,7 @@ import ./suci.bend as Su
 import ./nas/security.bend as N
 import ./nas/ie.bend as I
 import ./nas/mm.bend as Mm
+import ./nas/mobile_id.bend as Mi
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -288,3 +289,58 @@ law nas.mm.suffix:
   for +e: {Mm.Mm.read(bs) == Done{m} : Result<&2, &2, B.Err, Mm.Mm>}
   for +ab: {B.all_bytes(bs) == True{} : Bool}
   {Mm.Mm.write(m) == bs : B.Bytes()}
+
+# GHSA-f4mx-3x6p-cfwp: a 5GS mobile identity is read only inside its content,
+# a decoded identity is exactly the content's encoding, and it has the digits,
+# PLMN and field widths its type requires.
+law nas.mobile_identity.suffix:
+  for +bs: B.Bytes()
+  for +id: Mi.MobileId
+  for +e: {Mi.MobileId.read(bs) == Done{id} : Result<&2, &2, B.Err, Mi.MobileId>}
+  for +ab: {B.all_bytes(bs) == True{} : Bool}
+  {Mi.MobileId.write(id) == bs : B.Bytes()}
+
+law nas.mobile_identity.decode_valid:
+  for +bs: B.Bytes()
+  for +id: Mi.MobileId
+  for +e: {Mi.MobileId.read(bs) == Done{id} : Result<&2, &2, B.Err, Mi.MobileId>}
+  {Mi.MobileId.valid(id) == True{} : Bool}
+
+# A 5G-GUTI is eleven bytes of content.
+law nas.mobile_identity.guti_length:
+  for +bs: B.Bytes()
+  for +plmn: P.Plmn
+  for +region: U32
+  for +amf: U32
+  for +tmsi: U32
+  for +e: {Mi.MobileId.read(bs) == Done{Mi.Guti{plmn, region, amf, tmsi}} : Result<&2, &2, B.Err, Mi.MobileId>}
+  for +ab: {B.all_bytes(bs) == True{} : Bool}
+  {List.length(&2, U32, bs) == 11n : Nat}
+
+# GHSA-hcjf-j847-3gx8: an IMEISV has exactly sixteen decimal digits (the
+# decoder ties the odd/even flag to the count, so the count is fixed).
+law nas.imeisv.decode_valid:
+  for +bs: B.Bytes()
+  for +ds: B.Digits()
+  for +e: {Mi.MobileId.read(bs) == Done{Mi.Imeisv{ds}} : Result<&2, &2, B.Err, Mi.MobileId>}
+  {List.length(&2, U32, ds) == 16n : Nat} & {B.Tbcd.all_digits(ds) == True{} : Bool}
+
+# GHSA-9643-6pmq-j7g2: the payload container is the LV-E field of the
+# transport messages. Fewer bytes than its two-byte length declares is Short,
+# and a decoded container is exactly the declared slice.
+law nas.payload_container.short:
+  for +b1: U32
+  for +b0: U32
+  for +tail: B.Bytes()
+  for +e1: {U32.is_lt(b1, 256) == True{} : Bool}
+  for +e0: {U32.is_lt(b0, 256) == True{} : Bool}
+  for +short: {Nat.is_lt(List.length(&2, U32, tail), U32.to_nat(B.cat8(b0, b1))) == True{} : Bool}
+  {I.lve(b1 <> b0 <> tail) == Fail{B.Short{}} : B.Read(I.LenBody)}
+
+law nas.payload_container.suffix:
+  for +bs: B.Bytes()
+  for +len: U32
+  for +body: B.Bytes()
+  for +rest: B.Bytes()
+  for +e: {I.lve(bs) == Done{(I.LenBody{len, body}, rest)} : B.Read(I.LenBody)}
+  {List.length(&2, U32, body) == U32.to_nat(len) : Nat} & {List.drop(&2, U32, bs, 2n) == List.append(&2, U32, body, rest) : B.Bytes()}
