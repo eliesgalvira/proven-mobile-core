@@ -10,7 +10,7 @@ Depends on: 05, 07.
 - NEA0;
 - protect and unprotect per TS 24.501 §4.4.
 
-The NAS COUNT is (overflow: 16 bits, sequence: 8 bits), with the uplink overflow estimated per TS 24.501 §4.4.3.1. BEARER is the access type (TS 33.501 §6.4.3.1).
+The NAS COUNT is (overflow: 16 bits, sequence: 8 bits), with the uplink overflow estimated per TS 24.501 §4.4.3.1. BEARER is the NAS connection identifier (TS 33.501 §6.4.3.1). The captured MACs verify only with BEARER = 1, which is what Open5GS and UERANSIM both use; check that value against the spec before relying on it.
 
 ## Laws
 
