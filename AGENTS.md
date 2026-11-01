@@ -16,6 +16,23 @@ Open-source 5G cores keep shipping the same classes of bug: reading past the end
 
 When the user asks what is missing, list these as deliberately left out, separately from the gaps that are actually open.
 
+## Bend 2 problems go through upstream tickets
+
+Bend 2 is fixed as the language (`docs/adr/0001-bend-2-is-fixed.md`). When work hits a Bend limitation or bug, never file anything with Bend directly. Open an issue in this repo labelled `upstream:bend` with:
+
+- what was attempted and what happened;
+- the smallest `.bend` file that reproduces it;
+- the `bend --version`, `uname -sm` and the first line of `clang --version`;
+- the workaround used here, if any.
+
+The human reviews it and decides whether to file it upstream.
+
+Bend's preferences, read on 2026-11-01:
+
+- Use the bug or feature forms at https://github.com/bendlang/bend/issues. Blank issues are disabled, and questions go to Discord.
+- Read `WONTFIX.txt` in their repo first. If the problem is already listed there, note that on the ticket instead of proposing a report.
+- Pull requests are accepted (124 merged from about 20 outside contributors), but an issue is the expected first step.
+
 ## Agent skills
 
 ### Issue tracker
