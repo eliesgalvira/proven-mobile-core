@@ -2,6 +2,9 @@ import Base
 import ./bytes.bend as B
 import ./crypto/sha256.bend as S
 import ./crypto/hmac.bend as H
+import ./crypto/aes.bend as A
+import ./crypto/ctr.bend as Ctr
+import ./crypto/cmac.bend as M
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -83,3 +86,29 @@ law hmac.length:
   for key: B.Bytes()
   for msg: B.Bytes()
   {List.length(&2, U32, H.hmac(key, msg)) == 32n : Nat}
+
+# crypto: AES-128, CTR and CMAC (ticket 05)
+# -----------------------------------------
+# Correctness against FIPS 197, SP 800-38A and RFC 4493 is established by the test vectors.
+
+law aes.block_length:
+  for key: B.Bytes()
+  for block: B.Bytes()
+  {List.length(&2, U32, A.aes128(key, block)) == 16n : Nat}
+
+law ctr.length:
+  for +key: B.Bytes()
+  for +iv: B.Bytes()
+  for +m: B.Bytes()
+  {List.length(&2, U32, Ctr.ctr(key, iv, m)) == List.length(&2, U32, m) : Nat}
+
+law ctr.involution:
+  for +key: B.Bytes()
+  for +iv: B.Bytes()
+  for +m: B.Bytes()
+  {Ctr.ctr(key, iv, Ctr.ctr(key, iv, m)) == m : B.Bytes()}
+
+law cmac.length:
+  for +key: B.Bytes()
+  for msg: B.Bytes()
+  {List.length(&2, U32, M.cmac(key, msg)) == 16n : Nat}

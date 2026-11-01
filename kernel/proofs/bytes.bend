@@ -1,58 +1,9 @@
 import Base
 import ../LAWS.bend as L
 import ../bytes.bend as B
+import ./lib.bend as P
 
 # Proofs of the bytes laws (ticket 02).
-
-# Refutations
-# -----------
-
-def Lift(b: Bool) -> Type:
-  match b:
-    case False{}:
-      Empty
-    case True{}:
-      Unit
-
-def Refute.bool(e: {False{} == True{} : Bool}) -> Empty:
-  s = Equal.sym(Bool, False{}, True{}, e)
-  %s : Lift(_)
-  Unit{}
-
-def Res.disc(-E: Data, -A: Data, r: Result<&2, &2, E, A>) -> Type:
-  match r:
-    case Fail{e}:
-      Unit
-    case Done{v}:
-      Empty
-
-def Refute.fail_done(-E: Data, -A: Data, err: E, v: A, e: {Fail{err} == Done{v} : Result<&2, &2, E, A>}) -> Empty:
-  %e : Res.disc(E, A, _)
-  Unit{}
-
-# Projections, for injectivity of Done
-# ------------------------------------
-
-def Res.value(-E: Data, -A: Data, r: Result<&2, &2, E, A>, d: A) -> A:
-  match r:
-    case Fail{e}:
-      d
-    case Done{v}:
-      v
-
-def Read.value(-A: Data, r: B.Read(A), d: A) -> A:
-  match r:
-    case Fail{e}:
-      d
-    case Done{(v, rest)}:
-      v
-
-def Read.rest(-A: Data, r: B.Read(A), d: B.Bytes()) -> B.Bytes():
-  match r:
-    case Fail{e}:
-      d
-    case Done{(v, rest)}:
-      rest
 
 # Roundtrips: bit layouts computed on a fully destructured U32
 # ------------------------------------------------------------
@@ -102,9 +53,9 @@ def Short.u8(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 1n) == True{
     case Nil{}:
       {==}
     case b <> Nil{}:
-      Empty.absurd({B.u8([b]) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u8([b]) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
     case b <> c <> t:
-      Empty.absurd({B.u8(b <> c <> t) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u8(b <> c <> t) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
 
 def Short.u16(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 2n) == True{} : Bool}) -> {B.u16(bs) == Fail{B.Short{}} : B.Read(U32)}:
   match bs:
@@ -113,9 +64,9 @@ def Short.u16(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 2n) == True
     case b <> Nil{}:
       {==}
     case b <> c <> Nil{}:
-      Empty.absurd({B.u16([b, c]) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u16([b, c]) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
     case b <> c <> d <> t:
-      Empty.absurd({B.u16(b <> c <> d <> t) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u16(b <> c <> d <> t) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
 
 def Short.u24(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 3n) == True{} : Bool}) -> {B.u24(bs) == Fail{B.Short{}} : B.Read(U32)}:
   match bs:
@@ -126,9 +77,9 @@ def Short.u24(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 3n) == True
     case b <> c <> Nil{}:
       {==}
     case b <> c <> d <> Nil{}:
-      Empty.absurd({B.u24([b, c, d]) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u24([b, c, d]) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
     case b <> c <> d <> f <> t:
-      Empty.absurd({B.u24(b <> c <> d <> f <> t) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u24(b <> c <> d <> f <> t) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
 
 def Short.u32(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 4n) == True{} : Bool}) -> {B.u32(bs) == Fail{B.Short{}} : B.Read(U32)}:
   match bs:
@@ -141,25 +92,25 @@ def Short.u32(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 4n) == True
     case b <> c <> d <> Nil{}:
       {==}
     case b <> c <> d <> f <> Nil{}:
-      Empty.absurd({B.u32([b, c, d, f]) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u32([b, c, d, f]) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
     case b <> c <> d <> f <> g <> t:
-      Empty.absurd({B.u32(b <> c <> d <> f <> g <> t) == Fail{B.Short{}} : B.Read(U32)}, Refute.bool(e))
+      Empty.absurd({B.u32(b <> c <> d <> f <> g <> t) == Fail{B.Short{}} : B.Read(U32)}, P.Refute.bool(e))
 
 def Short.nibbles(bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), 1n) == True{} : Bool}) -> {B.nibbles(bs) == Fail{B.Short{}} : B.Read(B.Nibbles())}:
   match bs:
     case Nil{}:
       {==}
     case b <> Nil{}:
-      Empty.absurd({B.nibbles([b]) == Fail{B.Short{}} : B.Read(B.Nibbles())}, Refute.bool(e))
+      Empty.absurd({B.nibbles([b]) == Fail{B.Short{}} : B.Read(B.Nibbles())}, P.Refute.bool(e))
     case b <> c <> t:
-      Empty.absurd({B.nibbles(b <> c <> t) == Fail{B.Short{}} : B.Read(B.Nibbles())}, Refute.bool(e))
+      Empty.absurd({B.nibbles(b <> c <> t) == Fail{B.Short{}} : B.Read(B.Nibbles())}, P.Refute.bool(e))
 
 def Short.take(n: Nat, bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), n) == True{} : Bool}) -> {B.take(n, bs) == Fail{B.Short{}} : B.Read(B.Bytes())}:
   match n bs:
     case 0n Nil{}:
-      Empty.absurd({B.take(0n, []) == Fail{B.Short{}} : B.Read(B.Bytes())}, Refute.bool(e))
+      Empty.absurd({B.take(0n, []) == Fail{B.Short{}} : B.Read(B.Bytes())}, P.Refute.bool(e))
     case 0n b <> t:
-      Empty.absurd({B.take(0n, b <> t) == Fail{B.Short{}} : B.Read(B.Bytes())}, Refute.bool(e))
+      Empty.absurd({B.take(0n, b <> t) == Fail{B.Short{}} : B.Read(B.Bytes())}, P.Refute.bool(e))
     case 1n+p Nil{}:
       {==}
     case 1n+p b <> t:
@@ -190,10 +141,10 @@ def Take.step(+p: Nat, +b: U32, +t: B.Bytes(), +taken: B.Bytes(), +rest: B.Bytes
   +e: {B.Take.cons(b, r) == Done{(taken, rest)} : B.Read(B.Bytes())}) -> Take.Spec(taken, rest, 1n+p, b <> t):
   match r:
     case Fail{err}:
-      Empty.absurd(Take.Spec(taken, rest, 1n+p, b <> t), Refute.fail_done(B.Err, B.ReadValue(B.Bytes()), err, (taken, rest), e))
+      Empty.absurd(Take.Spec(taken, rest, 1n+p, b <> t), P.Refute.fail_done(B.Err, B.ReadValue(B.Bytes()), err, (taken, rest), e))
     case Done{(+tk, +rs)}:
-      et = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => Read.value(B.Bytes(), x, taken), Done{(b <> tk, rs)}, Done{(taken, rest)}, e)
-      er = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => Read.rest(B.Bytes(), x, rest), Done{(b <> tk, rs)}, Done{(taken, rest)}, e)
+      et = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => P.Read.value(B.Bytes(), x, taken), Done{(b <> tk, rs)}, Done{(taken, rest)}, e)
+      er = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => P.Read.rest(B.Bytes(), x, rest), Done{(b <> tk, rs)}, Done{(taken, rest)}, e)
       %et : Take.Spec(_, rest, 1n+p, b <> t)
       %er : Take.Spec(b <> tk, _, 1n+p, b <> t)
       Take.finish(p, b, t, tk, rs, ih(tk, rs, {==}))
@@ -201,13 +152,13 @@ def Take.step(+p: Nat, +b: U32, +t: B.Bytes(), +taken: B.Bytes(), +rest: B.Bytes
 def L.bytes.take.length(n, bs, taken, rest, e):
   match n bs:
     case 0n bs2:
-      et = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => Read.value(B.Bytes(), x, taken), Done{([], bs2)}, Done{(taken, rest)}, e)
-      er = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => Read.rest(B.Bytes(), x, rest), Done{([], bs2)}, Done{(taken, rest)}, e)
+      et = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => P.Read.value(B.Bytes(), x, taken), Done{([], bs2)}, Done{(taken, rest)}, e)
+      er = Equal.cong(B.Read(B.Bytes()), B.Bytes(), x => P.Read.rest(B.Bytes(), x, rest), Done{([], bs2)}, Done{(taken, rest)}, e)
       %et : Take.Spec(_, rest, 0n, bs2)
       %er : Take.Spec([], _, 0n, bs2)
       ({==}, {==})
     case 1n+p Nil{}:
-      Empty.absurd(Take.Spec(taken, rest, 1n+p, []), Refute.fail_done(B.Err, B.ReadValue(B.Bytes()), B.Short{}, (taken, rest), e))
+      Empty.absurd(Take.Spec(taken, rest, 1n+p, []), P.Refute.fail_done(B.Err, B.ReadValue(B.Bytes()), B.Short{}, (taken, rest), e))
     case 1n+p b <> t:
       Take.step(p, b, t, taken, rest, B.take(p, t), tk => rs => e2 => L.bytes.take.length(p, t, tk, rs, e2), e)
 
@@ -235,9 +186,9 @@ def Tbcd.cons2_spec(+lo: U32, +hi: U32, +rest: B.Bytes(), +ds: B.Digits(), m: Tb
   e: {B.Tbcd.cons2(lo, hi, m) == Done{ds} : Tbcd.Res()}) -> Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)):
   match m:
     case Fail{err}:
-      Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)), Refute.fail_done(B.Err, B.Digits(), err, ds, e))
+      Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)), P.Refute.fail_done(B.Err, B.Digits(), err, ds, e))
     case Done{+ds2}:
-      et = Equal.cong(Tbcd.Res(), B.Digits(), x => Res.value(B.Err, B.Digits(), x, ds), Done{lo <> hi <> ds2}, Done{ds}, e)
+      et = Equal.cong(Tbcd.Res(), B.Digits(), x => P.Res.value(B.Err, B.Digits(), x, ds), Done{lo <> hi <> ds2}, Done{ds}, e)
       %et : Tbcd.Spec(_, 1n+List.length(&2, U32, rest))
       Tbcd.cons2_finish(lo, hi, rest, ds2, el, eh, ih(ds2, {==}))
 
@@ -245,13 +196,13 @@ def Tbcd.filler_spec(+lo: U32, +ds: B.Digits(), rest: B.Bytes(), el: {B.Tbcd.is_
   e: {B.Tbcd.filler(lo, rest) == Done{ds} : Tbcd.Res()}) -> Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)):
   match rest:
     case Nil{}:
-      et = Equal.cong(Tbcd.Res(), B.Digits(), x => Res.value(B.Err, B.Digits(), x, ds), Done{[lo]}, Done{ds}, e)
+      et = Equal.cong(Tbcd.Res(), B.Digits(), x => P.Res.value(B.Err, B.Digits(), x, ds), Done{[lo]}, Done{ds}, e)
       %et : Tbcd.Spec(_, 1n)
       sl = Equal.sym(Bool, B.Tbcd.is_digit(lo), True{}, el)
       %sl : {Nat.is_le(1n, 2n) == True{} : Bool} & {Bool.and(_, True{}) == True{} : Bool}
       ({==}, {==})
     case x <> t:
-      Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, x <> t)), Refute.fail_done(B.Err, B.Digits(), B.Invalid{15}, ds, e))
+      Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, x <> t)), P.Refute.fail_done(B.Err, B.Digits(), B.Invalid{15}, ds, e))
 
 def Tbcd.high_spec(+lo: U32, +hi: U32, +rest: B.Bytes(), +ds: B.Digits(), more: Unit -> Tbcd.Res(),
   ih: @ds2: B.Digits() -> {more(Unit{}) == Done{ds2} : Tbcd.Res()} -> Tbcd.Spec(ds2, List.length(&2, U32, rest)),
@@ -265,7 +216,7 @@ def Tbcd.high_spec(+lo: U32, +hi: U32, +rest: B.Bytes(), +ds: B.Digits(), more: 
         case True{}:
           Tbcd.filler_spec(lo, ds, rest, el, e)
         case False{}:
-          Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)), Refute.fail_done(B.Err, B.Digits(), B.Invalid{hi}, ds, e))
+          Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)), P.Refute.fail_done(B.Err, B.Digits(), B.Invalid{hi}, ds, e))
 
 def Tbcd.low_spec(+lo: U32, +hi: U32, +rest: B.Bytes(), +ds: B.Digits(), more: Unit -> Tbcd.Res(),
   ih: @ds2: B.Digits() -> {more(Unit{}) == Done{ds2} : Tbcd.Res()} -> Tbcd.Spec(ds2, List.length(&2, U32, rest)),
@@ -275,12 +226,12 @@ def Tbcd.low_spec(+lo: U32, +hi: U32, +rest: B.Bytes(), +ds: B.Digits(), more: U
     case True{}:
       Tbcd.high_spec(lo, hi, rest, ds, more, ih, B.Tbcd.is_digit(hi), U32.is_eq(hi, 15), el, {==}, e)
     case False{}:
-      Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)), Refute.fail_done(B.Err, B.Digits(), B.Invalid{lo}, ds, e))
+      Empty.absurd(Tbcd.Spec(ds, 1n+List.length(&2, U32, rest)), P.Refute.fail_done(B.Err, B.Digits(), B.Invalid{lo}, ds, e))
 
 def Tbcd.decode_len(bs: B.Bytes(), +ds: B.Digits(), e: {B.Tbcd.decode(bs) == Done{ds} : Tbcd.Res()}) -> Tbcd.Spec(ds, List.length(&2, U32, bs)):
   match bs:
     case Nil{}:
-      et = Equal.cong(Tbcd.Res(), B.Digits(), x => Res.value(B.Err, B.Digits(), x, ds), Done{[]}, Done{ds}, e)
+      et = Equal.cong(Tbcd.Res(), B.Digits(), x => P.Res.value(B.Err, B.Digits(), x, ds), Done{[]}, Done{ds}, e)
       %et : Tbcd.Spec(_, 0n)
       ({==}, {==})
     case +b <> +rest:
@@ -292,9 +243,9 @@ def Tbcd.main2(+k: Nat, +digits: B.Digits(), +rest: B.Bytes(), +bytes: B.Bytes()
   e: {B.Tbcd.with_rest(d, rs) == Done{(digits, rest)} : B.Read(B.Digits())}) -> Tbcd.Spec(digits, k):
   match d:
     case Fail{err}:
-      Empty.absurd(Tbcd.Spec(digits, k), Refute.fail_done(B.Err, B.ReadValue(B.Digits()), err, (digits, rest), e))
+      Empty.absurd(Tbcd.Spec(digits, k), P.Refute.fail_done(B.Err, B.ReadValue(B.Digits()), err, (digits, rest), e))
     case Done{+ds}:
-      et = Equal.cong(B.Read(B.Digits()), B.Digits(), x => Read.value(B.Digits(), x, digits), Done{(ds, rs)}, Done{(digits, rest)}, e)
+      et = Equal.cong(B.Read(B.Digits()), B.Digits(), x => P.Read.value(B.Digits(), x, digits), Done{(ds, rs)}, Done{(digits, rest)}, e)
       %et : Tbcd.Spec(_, k)
       %lenk : Tbcd.Spec(ds, _)
       dl(ds, {==})
@@ -309,7 +260,7 @@ def Tbcd.main(+k: Nat, +digits: B.Digits(), +rest: B.Bytes(), +bs: B.Bytes(), r:
   e: {B.Tbcd.after_take(r) == Done{(digits, rest)} : B.Read(B.Digits())}) -> Tbcd.Spec(digits, k):
   match r:
     case Fail{err}:
-      Empty.absurd(Tbcd.Spec(digits, k), Refute.fail_done(B.Err, B.ReadValue(B.Digits()), err, (digits, rest), e))
+      Empty.absurd(Tbcd.Spec(digits, k), P.Refute.fail_done(B.Err, B.ReadValue(B.Digits()), err, (digits, rest), e))
     case Done{(+bytes, +rs)}:
       Tbcd.main1(k, digits, rest, bs, bytes, rs, tl(bytes, rs, {==}), e)
 
