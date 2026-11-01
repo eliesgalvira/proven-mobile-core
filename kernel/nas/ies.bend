@@ -364,10 +364,15 @@ def RegResult.write(r: RegResult) -> B.Bytes():
 # 5GS tracking area identity list (§9.11.3.9)
 # -------------------------------------------
 
-# Partial list type 00: one PLMN and up to sixteen TACs. Types 01 and 10 are
-# not decoded (Unsupported).
+type Tai is Data:
+  Tai{plmn: P.Plmn, tac: U32}
+
+# Partial lists: one PLMN with listed TACs (type 00), one PLMN with `count`
+# consecutive TACs from `first` (type 01), or explicit TAIs (type 10).
 type TaiPartial is Data:
   Tai00{plmn: P.Plmn, tacs: List<&2, U32>}
+  Tai01{plmn: P.Plmn, first: U32, count: Nat}
+  Tai10{tais: List<&2, Tai>}
 
 def Tacs.cons(tac: U32, r: B.Read(List<&2, U32>)) -> B.Read(List<&2, U32>):
   match r:
@@ -390,32 +395,85 @@ def Tacs.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, U32>):
     case 1n+p:
       Tacs.next(B.u24(bs), rest => Tacs.read(p, rest))
 
-def TaiList.push(plmn: P.Plmn, tacs: List<&2, U32>, r: Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def Tais.cons(tai: Tai, r: B.Read(List<&2, Tai>)) -> B.Read(List<&2, Tai>):
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{list}:
-      Done{Tai00{plmn, tacs} <> list}
+    case Done{(tais, rest)}:
+      Done{(tai <> tais, rest)}
 
-def TaiList.cons(plmn: P.Plmn, r: B.Read(List<&2, U32>), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def Tais.tac(plmn: P.Plmn, r: B.Read(U32), more: B.Bytes() -> B.Read(List<&2, Tai>)) -> B.Read(List<&2, Tai>):
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{(tacs, rest)}:
-      TaiList.push(plmn, tacs, more(rest))
+    case Done{(tac, rest)}:
+      Tais.cons(Tai{plmn, tac}, more(rest))
 
-def TaiList.plmn(n: Nat, r: B.Read(P.Plmn), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def Tais.plmn(r: B.Read(P.Plmn), more: B.Bytes() -> B.Read(List<&2, Tai>)) -> B.Read(List<&2, Tai>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(plmn, rest)}:
-      TaiList.cons(plmn, Tacs.read(n, rest), more)
+      Tais.tac(plmn, B.u24(rest), more)
 
-def TaiList.kind(+h: U32, rest: B.Bytes(), more: B.Bytes() -> Res(List<&2, TaiPartial>), type00: Bool) -> Res(List<&2, TaiPartial>):
-  match type00:
-    case True{}:
-      TaiList.plmn(1n+U32.to_nat(U32.and(31, h)), P.Plmn.read(rest), more)
-    case False{}:
+def Tais.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, Tai>):
+  match n:
+    case 0n:
+      Done{([], bs)}
+    case 1n+p:
+      Tais.plmn(P.Plmn.read(bs), rest => Tais.read(p, rest))
+
+def TaiList.push(item: TaiPartial, r: Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{list}:
+      Done{item <> list}
+
+def TaiList.tacs(plmn: P.Plmn, r: B.Read(List<&2, U32>), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(tacs, rest)}:
+      TaiList.push(Tai00{plmn, tacs}, more(rest))
+
+def TaiList.first(plmn: P.Plmn, n: Nat, r: B.Read(U32), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(tac, rest)}:
+      TaiList.push(Tai01{plmn, tac, n}, more(rest))
+
+def TaiList.tais(r: B.Read(List<&2, Tai>), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(tais, rest)}:
+      TaiList.push(Tai10{tais}, more(rest))
+
+def TaiList.plmn00(n: Nat, r: B.Read(P.Plmn), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(plmn, rest)}:
+      TaiList.tacs(plmn, Tacs.read(n, rest), more)
+
+def TaiList.plmn01(n: Nat, r: B.Read(P.Plmn), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(plmn, rest)}:
+      TaiList.first(plmn, n, B.u24(rest), more)
+
+def TaiList.kind(+h: U32, rest: B.Bytes(), more: B.Bytes() -> Res(List<&2, TaiPartial>), kind: Nat) -> Res(List<&2, TaiPartial>):
+  match kind:
+    case 0n:
+      TaiList.plmn00(1n+U32.to_nat(U32.and(31, h)), P.Plmn.read(rest), more)
+    case 1n:
+      TaiList.plmn01(1n+U32.to_nat(U32.and(31, h)), P.Plmn.read(rest), more)
+    case 2n:
+      TaiList.tais(Tais.read(1n+U32.to_nat(U32.and(31, h)), rest), more)
+    case 3n+p:
       Fail{B.Unsupported{h}}
 
 def TaiList.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, TaiPartial>):
@@ -425,7 +483,7 @@ def TaiList.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, TaiPartial>):
     case 0n b <> rest:
       Fail{B.Invalid{b}}
     case 1n+f +h <> rest:
-      TaiList.kind(h, rest, left => TaiList.go(f, left), U32.is_eq(U32.and(96, h), 0))
+      TaiList.kind(h, rest, left => TaiList.go(f, left), U32.to_nat(U32.and(3, U32.shrn(h, 5n))))
 
 def TaiList.read(+bs: B.Bytes()) -> Res(List<&2, TaiPartial>):
   TaiList.go(List.length(&2, U32, bs), bs)
@@ -437,12 +495,27 @@ def Tacs.write(tacs: List<&2, U32>, rest: B.Bytes()) -> B.Bytes():
     case tac <> more:
       B.write_u24(tac, Tacs.write(more, rest))
 
+def Tais.write(tais: List<&2, Tai>, rest: B.Bytes()) -> B.Bytes():
+  match tais:
+    case Nil{}:
+      rest
+    case Tai{plmn, tac} <> more:
+      P.Plmn.write(plmn, B.write_u24(tac, Tais.write(more, rest)))
+
+# The header byte: list type in bits 7-6, element count minus one below.
+def TaiList.header(kind: U32, count: Nat) -> U32:
+  U32.add(U32.shln(kind, 5n), U32.from_nat(Nat.sub(count, 1n)))
+
 def TaiList.write(list: List<&2, TaiPartial>) -> B.Bytes():
   match list:
     case Nil{}:
       []
     case Tai00{plmn, +tacs} <> more:
-      U32.from_nat(Nat.sub(List.length(&2, U32, tacs), 1n)) <> P.Plmn.write(plmn, Tacs.write(tacs, TaiList.write(more)))
+      TaiList.header(0, List.length(&2, U32, tacs)) <> P.Plmn.write(plmn, Tacs.write(tacs, TaiList.write(more)))
+    case Tai01{plmn, first, count} <> more:
+      TaiList.header(1, count) <> P.Plmn.write(plmn, B.write_u24(first, TaiList.write(more)))
+    case Tai10{+tais} <> more:
+      TaiList.header(2, List.length(&2, Tai, tais)) <> Tais.write(tais, TaiList.write(more))
 
 # 5GS network feature support (§9.11.3.5): one to three bytes of flags.
 def NetFeature.read(bs: B.Bytes()) -> Res(B.Bytes()):

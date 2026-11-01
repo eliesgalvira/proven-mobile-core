@@ -815,16 +815,6 @@ def L.nas.imeisv.decode_valid(bs, ds, e):
 # Payload container
 # -----------------
 
-def Len.len_of(lb: I.LenBody) -> U32:
-  match lb:
-    case I.LenBody{len, body}:
-      len
-
-def Len.body_of(lb: I.LenBody) -> B.Bytes():
-  match lb:
-    case I.LenBody{len, body}:
-      body
-
 def L.nas.payload_container.short(b1, b0, tail, e1, e0, short):
   sf = Equal.sym(U32, U32.and(65535, B.cat8(b0, b1)), B.cat8(b0, b1), P.U32.cat8_fits16(b0, b1, P.U32.lt256_mask8(b0, e0), P.U32.lt256_mask8(b1, e1)))
   %sf : {I.Len.take(B.cat8(b0, b1), tail, U32.is_eq(_, B.cat8(b0, b1))) == Fail{B.Short{}} : B.Read(I.LenBody)}
@@ -847,8 +837,8 @@ def Lve.sx_join(+c: U32, +tail: B.Bytes(), +len: U32, +body: B.Bytes(), +rest: B
       Empty.absurd(Lve.Sx(len, body, rest, tail), P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), x, (I.LenBody{len, body}, rest), e))
     case Done{(+body2, +rest2)}:
       +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len, body}), Done{(I.LenBody{c, body2}, rest2)}, Done{(I.LenBody{len, body}, rest)}, e)
-      el = Equal.cong(I.LenBody, U32, x => Len.len_of(x), I.LenBody{c, body2}, I.LenBody{len, body}, elb)
-      eb = Equal.cong(I.LenBody, B.Bytes(), x => Len.body_of(x), I.LenBody{c, body2}, I.LenBody{len, body}, elb)
+      el = Equal.cong(I.LenBody, U32, x => P.Lb.len(x), I.LenBody{c, body2}, I.LenBody{len, body}, elb)
+      eb = Equal.cong(I.LenBody, B.Bytes(), x => P.Lb.body(x), I.LenBody{c, body2}, I.LenBody{len, body}, elb)
       er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, rest), Done{(I.LenBody{c, body2}, rest2)}, Done{(I.LenBody{len, body}, rest)}, e)
       %el : Lve.Sx(_, body, rest, tail)
       %eb : Lve.Sx(c, _, rest, tail)

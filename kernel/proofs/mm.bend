@@ -696,16 +696,6 @@ def L.nas.mm.decode_valid(bs, m, e):
 # The bytes a decoded value came from are its encoding
 # ----------------------------------------------------
 
-def Lb.len(lb: I.LenBody) -> U32:
-  match lb:
-    case I.LenBody{len, body}:
-      len
-
-def Lb.body(lb: I.LenBody) -> B.Bytes():
-  match lb:
-    case I.LenBody{len, body}:
-      body
-
 def Bytes.all_app(+xs: B.Bytes(), +ys: B.Bytes(), +e: {B.all_bytes(List.append(&2, U32, xs, ys)) == True{} : Bool}) -> {B.all_bytes(ys) == True{} : Bool}:
   match xs:
     case Nil{}:
@@ -887,8 +877,8 @@ def Ie.sx_tv(+iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {
 
 def Ie.sx_tlv_fin(+iei: U32, +len0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, fl: {I.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1):
   +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len1, body}), Done{(I.LenBody{len0, body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
-  el = Equal.cong(I.LenBody, U32, x => Lb.len(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
-  eb = Equal.cong(I.LenBody, B.Bytes(), x => Lb.body(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
+  el = Equal.cong(I.LenBody, U32, x => P.Lb.len(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
+  eb = Equal.cong(I.LenBody, B.Bytes(), x => P.Lb.body(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
   er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r3), Done{(I.LenBody{len0, body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
   %el : Ie.Sx(I.Ie{iei, I.Tlv{}, _, body}, r3, iei <> len0 <> r1)
   %eb : Ie.Sx(I.Ie{iei, I.Tlv{}, len0, _}, r3, iei <> len0 <> r1)
@@ -914,8 +904,8 @@ def Ie.sx_tlv(+iei: U32, +len0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), 
 
 def Ie.sx_tlve_fin(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +e2: {Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}, m1: {U32.and(255, b1) == b1 : U32}, m0: {U32.and(255, b0) == b0 : U32}) -> Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, r3, iei <> b1 <> b0 <> r1):
   +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len1, body}), Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
-  el = Equal.cong(I.LenBody, U32, x => Lb.len(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
-  eb = Equal.cong(I.LenBody, B.Bytes(), x => Lb.body(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
+  el = Equal.cong(I.LenBody, U32, x => P.Lb.len(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
+  eb = Equal.cong(I.LenBody, B.Bytes(), x => P.Lb.body(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
   er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r3), Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
   %el : Ie.Sx(I.Ie{iei, I.TlvE{}, _, body}, r3, iei <> b1 <> b0 <> r1)
   %eb : Ie.Sx(I.Ie{iei, I.TlvE{}, B.cat8(b0, b1), _}, r3, iei <> b1 <> b0 <> r1)

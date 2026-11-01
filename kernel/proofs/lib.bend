@@ -1,5 +1,6 @@
 import Base
 import ../bytes.bend as B
+import ../nas/ie.bend as I
 
 # Proof helpers shared by kernel/proofs/*.bend.
 
@@ -737,3 +738,14 @@ def Bytes.u32_sx.go(d0: U32, d1: U32, d2: U32, d3: U32, +e0: U32, +e1: U32, +e2:
 
 def Bytes.u32_sx(+b0: U32, +b1: U32, +b2: U32, +b3: U32, m0: {U32.and(255, b0) == b0 : U32}, m1: {U32.and(255, b1) == b1 : U32}, m2: {U32.and(255, b2) == b2 : U32}, m3: {U32.and(255, b3) == b3 : U32}, +rest: B.Bytes()) -> {B.write_u32(B.cat8(b3, B.cat8(b2, B.cat8(b1, b0))), rest) == b0 <> b1 <> b2 <> b3 <> rest : B.Bytes()}:
   Bytes.u32_sx.go(b0, b1, b2, b3, b0, b1, b2, b3, {==}, {==}, {==}, {==}, m0, m1, m2, m3, rest)
+
+# LenBody projections, for injectivity of its constructor.
+def Lb.len(lb: I.LenBody) -> U32:
+  match lb:
+    case I.LenBody{len, body}:
+      len
+
+def Lb.body(lb: I.LenBody) -> B.Bytes():
+  match lb:
+    case I.LenBody{len, body}:
+      body
