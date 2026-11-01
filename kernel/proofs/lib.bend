@@ -286,3 +286,41 @@ def U32.cat4_hi(a: U32, b: U32, mb: {U32.and(15, b) == b : U32}) -> {U32.and(15,
   match a b:
     case U32{WCon{a0, WCon{a1, WCon{a2, WCon{a3, WCon{a4, WCon{a5, WCon{a6, WCon{a7, WCon{a8, WCon{a9, WCon{a10, WCon{a11, WCon{a12, WCon{a13, WCon{a14, WCon{a15, WCon{a16, WCon{a17, WCon{a18, WCon{a19, WCon{a20, WCon{a21, WCon{a22, WCon{a23, WCon{a24, WCon{a25, WCon{a26, WCon{a27, WCon{a28, WCon{a29, WCon{a30, WCon{a31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
       mb
+
+def List.cons_eq(h1: U32, h2: U32, t1: B.Bytes(), t2: B.Bytes(), eh: {h1 == h2 : U32}, et: {t1 == t2 : B.Bytes()}) -> {h1 <> t1 == h2 <> t2 : B.Bytes()}:
+  %eh : {h1 <> t1 == _ <> t2 : B.Bytes()}
+  %et : {h1 <> t1 == h1 <> _ : B.Bytes()}
+  {==}
+
+def List.take_len(xs: B.Bytes(), n: Nat) -> {List.length(&2, U32, List.take(&2, U32, xs, n)) == Nat.min(List.length(&2, U32, xs), n) : Nat}:
+  match xs n:
+    case Nil{} _:
+      {==}
+    case x <> xt 0n:
+      {==}
+    case x <> xt 1n+p:
+      Equal.cong(Nat, Nat, k => 1n+k, List.length(&2, U32, List.take(&2, U32, xt, p)), Nat.min(List.length(&2, U32, xt), p), List.take_len(xt, p))
+
+# bytes_eq reflects: bytes_eq(xs, ys) == True gives xs == ys.
+def Bytes.eq_of_bytes_eq(xs: B.Bytes(), ys: B.Bytes(), +e: {B.bytes_eq(xs, ys) == True{} : Bool}) -> {xs == ys : B.Bytes()}:
+  match xs ys:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} y <> yt:
+      Empty.absurd({Nil{} == y <> yt : B.Bytes()}, Refute.bool(e))
+    case x <> xt Nil{}:
+      Empty.absurd({x <> xt == Nil{} : B.Bytes()}, Refute.bool(e))
+    case +x <> +xt +y <> +yt:
+      List.cons_eq(x, y, xt, yt, U32.eq_of_is_eq(x, y, Bool.and_true_l(U32.is_eq(x, y), B.bytes_eq(xt, yt), e)), Bytes.eq_of_bytes_eq(xt, yt, Bool.and_true_r(U32.is_eq(x, y), B.bytes_eq(xt, yt), e)))
+
+def Cmp.ge_false_of_lt(c: Cmp, e: {Cmp.is_lt(c) == True{} : Bool}) -> {Cmp.is_ge(c) == False{} : Bool}:
+  match c:
+    case LT{}:
+      {==}
+    case EQ{}:
+      Empty.absurd({Cmp.is_ge(EQ{}) == False{} : Bool}, Refute.bool(e))
+    case GT{}:
+      Empty.absurd({Cmp.is_ge(GT{}) == False{} : Bool}, Refute.bool(e))
+
+def Nat.ge_false_of_lt(a: Nat, b: Nat, e: {Nat.is_lt(a, b) == True{} : Bool}) -> {Nat.is_ge(a, b) == False{} : Bool}:
+  Cmp.ge_false_of_lt(Nat.cmp(a, b), e)

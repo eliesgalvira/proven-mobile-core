@@ -8,6 +8,8 @@ import ./crypto/cmac.bend as M
 import ./crypto/milenage.bend as Mil
 import ./crypto/kdf.bend as K
 import ./plmn.bend as P
+import ./crypto/x25519.bend as X
+import ./suci.bend as Su
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -193,3 +195,34 @@ law plmn.suffix:
   for +rest: B.Bytes()
   for e: {P.Plmn.read(bs) == Done{(p, rest)} : B.Read(P.Plmn)}
   {List.drop(&2, U32, bs, 3n) == rest : B.Bytes()}
+
+# X25519 and SUCI (ticket 08)
+# ---------------------------
+
+law x25519.length:
+  for k: B.Bytes()
+  for +u: B.Bytes()
+  {List.length(&2, U32, X.x25519(k, u)) == 32n : Nat}
+
+# Advisory GHSA-vp5f-rg8g-8p7j: a Profile A scheme output is accepted only when
+# it holds the ephemeral key, at least one ciphertext byte and the 8-byte MAC;
+# the received MAC is compared with the expected one over all 8 bytes; and a
+# mismatch answers Fail, never a SUPI.
+law suci.deconceal.length_checked:
+  for +key: B.Bytes()
+  for +output: B.Bytes()
+  for msin: B.Digits()
+  (({Nat.is_lt(List.length(&2, U32, output), 41n) == True{} : Bool} -> {Su.Suci.deconceal_a(key, output) == Fail{B.Short{}} : Result<&2, &2, B.Err, B.Digits()>})
+  & (({Su.Suci.deconceal_a(key, output) == Done{msin} : Result<&2, &2, B.Err, B.Digits()>} ->
+      {Su.Suci.tag(key, output) == Su.Suci.mac(output) : B.Bytes()} & {List.length(&2, U32, Su.Suci.tag(key, output)) == 8n : Nat})
+  & ({B.bytes_eq(Su.Suci.tag(key, output), Su.Suci.mac(output)) == False{} : Bool} -> {Result.is_fail(&2, &2, B.Err, B.Digits(), Su.Suci.deconceal_a(key, output)) == True{} : Bool})))
+
+law suci.null_scheme.roundtrip:
+  for +plmn: P.Plmn
+  for +routing: B.Digits()
+  for +msin: B.Digits()
+  for +v: {P.Plmn.valid(plmn) == True{} : Bool}
+  for +r: {Su.Routing.valid(routing) == True{} : Bool}
+  for +m: {B.Tbcd.all_digits(msin) == True{} : Bool}
+  {Su.Suci.read(Su.Suci.write(Su.Suci.null(plmn, routing, msin))) == Done{Su.Suci.null(plmn, routing, msin)} : Result<&2, &2, B.Err, Su.Suci>}
+  & {Su.Suci.null_msin(B.write_tbcd(msin, [])) == Done{msin} : Result<&2, &2, B.Err, B.Digits()>}

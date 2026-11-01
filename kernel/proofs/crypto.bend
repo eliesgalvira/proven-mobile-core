@@ -177,11 +177,6 @@ def U32.xor_xor(a: U32, b: U32) -> {U32.xor(U32.xor(a, b), b) == a : U32}:
     case U32{x} U32{y}:
       Equal.cong(Word(32n), U32, w => U32{w}, Word.xor(32n, Word.xor(32n, x, y), y), x, Word.xor_xor(32n, x, y))
 
-def List.cons_eq(h1: U32, h2: U32, t1: B.Bytes(), t2: B.Bytes(), eh: {h1 == h2 : U32}, et: {t1 == t2 : B.Bytes()}) -> {h1 <> t1 == h2 <> t2 : B.Bytes()}:
-  %eh : {h1 <> t1 == _ <> t2 : B.Bytes()}
-  %et : {h1 <> t1 == h1 <> _ : B.Bytes()}
-  {==}
-
 def Ctr.xor_zip_inv(m: B.Bytes(), ks: B.Bytes(), e: {Nat.is_le(List.length(&2, U32, m), List.length(&2, U32, ks)) == True{} : Bool}) -> {CT.Ctr.xor_zip(CT.Ctr.xor_zip(m, ks), ks) == m : B.Bytes()}:
   match m ks:
     case Nil{} _:
@@ -189,7 +184,7 @@ def Ctr.xor_zip_inv(m: B.Bytes(), ks: B.Bytes(), e: {Nat.is_le(List.length(&2, U
     case b <> mt Nil{}:
       Empty.absurd({CT.Ctr.xor_zip(CT.Ctr.xor_zip(b <> mt, []), []) == b <> mt : B.Bytes()}, P.Refute.bool(e))
     case +b <> +mt +k <> +kt:
-      List.cons_eq(U32.xor(U32.xor(b, k), k), b, CT.Ctr.xor_zip(CT.Ctr.xor_zip(mt, kt), kt), mt, U32.xor_xor(b, k), Ctr.xor_zip_inv(mt, kt, e))
+      P.List.cons_eq(U32.xor(U32.xor(b, k), k), b, CT.Ctr.xor_zip(CT.Ctr.xor_zip(mt, kt), kt), mt, U32.xor_xor(b, k), Ctr.xor_zip_inv(mt, kt, e))
 
 def L.ctr.involution(key, iv, m):
   ll = L.ctr.length(key, iv, m)

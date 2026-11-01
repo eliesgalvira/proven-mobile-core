@@ -82,6 +82,16 @@ def Routing.nonempty(r: Result<&2, &2, B.Err, B.Digits()>) -> Result<&2, &2, B.E
 def Routing.read(+b0: U32, +b1: U32) -> Result<&2, &2, B.Err, B.Digits()>:
   Routing.nonempty(Routing.digits([U32.and(15, b0), U32.and(15, U32.shrn(b0, 4n)), U32.and(15, b1), U32.and(15, U32.shrn(b1, 4n))]))
 
+# One to four digits.
+def Routing.valid(ds: B.Digits()) -> Bool:
+  match ds:
+    case Nil{}:
+      False{}
+    case a <> b <> c <> d <> e <> more:
+      False{}
+    case some:
+      B.Tbcd.all_digits(some)
+
 def Routing.pad4(ds: B.Digits()) -> List<&2, U32>:
   match ds:
     case Nil{}:

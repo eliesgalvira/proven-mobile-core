@@ -95,16 +95,33 @@ def Fe.inv.step(z: List<&2, U32>, a: List<&2, U32>, skip: Bool) -> List<&2, U32>
     case False{}:
       Fe.mul(z, a)
 
-# a^(p - 2): square 255 times, multiplying by a except at bits 2 and 4.
-def Fe.inv.go(+i: Nat, +z: List<&2, U32>, +a: List<&2, U32>) -> List<&2, U32>:
+# a^(p - 2): one squaring per fuel element, multiplying by a except at bits
+# 2 and 4 of the exponent (True marks a skipped multiplication).
+def Fe.inv.go(fuel: List<&2, Bool>, +z: List<&2, U32>, +a: List<&2, U32>) -> List<&2, U32>:
+  match fuel:
+    case Nil{}:
+      z
+    case skip <> rest:
+      Fe.inv.go(rest, Fe.inv.step(Fe.sqr(z), a, skip), a)
+
+def Fe.inv.fuel.go(+i: Nat) -> List<&2, Bool>:
   match i:
     case 0n:
-      Fe.mul(Fe.sqr(z), a)
+      [False{}]
     case 1n+p:
-      Fe.inv.go(p, Fe.inv.step(Fe.sqr(z), a, Bool.or(Nat.is_eq(1n+p, 2n), Nat.is_eq(1n+p, 4n))), a)
+      Bool.or(Nat.is_eq(1n+p, 2n), Nat.is_eq(1n+p, 4n)) <> Fe.inv.fuel.go(p)
+
+# The 254 steps of the exponent, produced by a match on the base so that a
+# proof about a symbolic field element never unrolls them.
+def Fe.inv.fuel(a: List<&2, U32>) -> List<&2, Bool>:
+  match a:
+    case Nil{}:
+      Fe.inv.fuel.go(253n)
+    case x <> rest:
+      Fe.inv.fuel.go(253n)
 
 def Fe.inv(+a: List<&2, U32>) -> List<&2, U32>:
-  Fe.inv.go(253n, a, a)
+  Fe.inv.go(Fe.inv.fuel(a), a, a)
 
 # a - p when a >= p (a + 2^255 + 19 carries out of 16 limbs), else a.
 def Fe.pick(a: List<&2, U32>, t: List<&2, U32>, ge: Bool) -> List<&2, U32>:
@@ -150,9 +167,6 @@ def Fe.a24() -> List<&2, U32>:
 type X25519.State is Data:
   St{x2: List<&2, U32>, z2: List<&2, U32>, x3: List<&2, U32>, z3: List<&2, U32>, swap: U32}
 
-def X25519.bit(k: List<&2, U32>, +t: Nat) -> U32:
-  U32.and(1, U32.shrn(Maybe.default(&2, U32, List.get(&2, U32, k, Nat.div(t, 8n)), 0), Nat.mod(t, 8n)))
-
 # One ladder step for scalar bit kt (RFC 7748 §5).
 def X25519.step(st: X25519.State, +x1: List<&2, U32>, +kt: U32) -> X25519.State:
   match st:
@@ -173,12 +187,27 @@ def X25519.step(st: X25519.State, +x1: List<&2, U32>, +kt: U32) -> X25519.State:
       +cb = Fe.mul(c, b)
       St{Fe.mul(aa, bb), Fe.mul(e, Fe.add(aa, Fe.mul(Fe.a24(), e))), Fe.sqr(Fe.add(da, cb)), Fe.mul(x1, Fe.sqr(Fe.sub(da, cb))), kt}
 
-def X25519.ladder(+t: Nat, st: X25519.State, +x1: List<&2, U32>, +k: List<&2, U32>) -> X25519.State:
-  match t:
-    case 0n:
-      X25519.step(st, x1, X25519.bit(k, 0n))
-    case 1n+p:
-      X25519.ladder(p, X25519.step(st, x1, X25519.bit(k, 1n+p)), x1, k)
+# The bits of one byte, most significant first.
+def X25519.byte_bits(+b: U32) -> List<&2, U32>:
+  [U32.and(1, U32.shrn(b, 7n)), U32.and(1, U32.shrn(b, 6n)), U32.and(1, U32.shrn(b, 5n)), U32.and(1, U32.shrn(b, 4n)), U32.and(1, U32.shrn(b, 3n)), U32.and(1, U32.shrn(b, 2n)), U32.and(1, U32.shrn(b, 1n)), U32.and(1, b)]
+
+def X25519.bits.go(bytes_msb_first: List<&2, U32>) -> List<&2, U32>:
+  match bytes_msb_first:
+    case Nil{}:
+      Nil{}
+    case b <> rest:
+      List.append(&2, U32, X25519.byte_bits(b), X25519.bits.go(rest))
+
+# Scalar bits 254 down to 0 of a little-endian 32-byte scalar.
+def X25519.bits(k: List<&2, U32>) -> List<&2, U32>:
+  List.drop(&2, U32, X25519.bits.go(List.reverse(&2, U32, k)), 1n)
+
+def X25519.ladder(bits: List<&2, U32>, st: X25519.State, +x1: List<&2, U32>) -> X25519.State:
+  match bits:
+    case Nil{}:
+      st
+    case kt <> rest:
+      X25519.ladder(rest, X25519.step(st, x1, kt), x1)
 
 def X25519.finish(st: X25519.State) -> List<&2, U32>:
   match st:
@@ -194,9 +223,8 @@ def X25519.clamp(k: List<&2, U32>) -> List<&2, U32>:
     case _:
       Nil{}
 
-def x25519(scalar: List<&2, U32>, u: List<&2, U32>) -> List<&2, U32>:
-  +x1 = Fe.from_bytes(u)
-  X25519.finish(X25519.ladder(254n, St{Fe.one(), Fe.zero(), x1, Fe.one(), 0}, x1, X25519.clamp(scalar)))
+def x25519(scalar: List<&2, U32>, +u: List<&2, U32>) -> List<&2, U32>:
+  X25519.finish(X25519.ladder(X25519.bits(X25519.clamp(scalar)), St{Fe.one(), Fe.zero(), Fe.from_bytes(u), Fe.one(), 0}, Fe.from_bytes(u)))
 
 def x25519.base() -> List<&2, U32>:
   [9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
