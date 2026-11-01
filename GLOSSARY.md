@@ -9,15 +9,27 @@ The pure part of the system: codecs, 5G cryptography, procedure state machines a
 _Avoid_: core (that word means the whole 5G core network), engine
 
 **Thin layer**:
-The code outside the kernel that turns network traffic and timers into events for the kernel and carries out the actions it returns.
+The code outside the kernel that turns network traffic and timers into events for the kernel and carries out the actions it returns. In milestone 1 it is the edge.
 _Avoid_: shell, runtime, driver
+
+**Edge**:
+The Rust program that implements the thin layer for milestone 1.
+
+**Event**:
+One input to the kernel's step function, delivered by the thin layer.
+
+**Action**:
+One output of the kernel's step function, carried out by the thin layer.
+
+**Law**:
+A property of the kernel stated and proven in Bend; it counts only once `--verdict` accepts it.
 
 **Acceptance list**:
 The set of known security advisories whose bug classes the kernel must be proven to rule out.
 _Avoid_: CVE list, bug list
 
 **Upstream ticket**:
-An issue in this repo describing a Bend 2 limitation or bug, reviewed by a human before anything is filed with the Bend project.
+A Bend 2 limitation or bug, drafted in this repo and reviewed by a human before anything is filed with the Bend project.
 
 ## Network
 
