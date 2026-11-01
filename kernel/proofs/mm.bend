@@ -692,3 +692,564 @@ def Msg.dv(+bs: B.Bytes(), +m: Mm.Mm, e: {Mm.Mm.read(bs) == Done{m} : Msg.Res()}
 
 def L.nas.mm.decode_valid(bs, m, e):
   Msg.dv(bs, m, e)
+
+# The bytes a decoded value came from are its encoding
+# ----------------------------------------------------
+
+def Lb.len(lb: I.LenBody) -> U32:
+  match lb:
+    case I.LenBody{len, body}:
+      len
+
+def Lb.body(lb: I.LenBody) -> B.Bytes():
+  match lb:
+    case I.LenBody{len, body}:
+      body
+
+def Bytes.all_app(+xs: B.Bytes(), +ys: B.Bytes(), +e: {B.all_bytes(List.append(&2, U32, xs, ys)) == True{} : Bool}) -> {B.all_bytes(ys) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      e
+    case x <> xt:
+      Bytes.all_app(xt, ys, P.Bool.and_true_r(B.is_byte(x), B.all_bytes(List.append(&2, U32, xt, ys)), e))
+
+def Take.sx.fin(-G: Type, +body: B.Bytes(), +r3: B.Bytes(), +r: B.Bytes(), +a: {List.append(&2, U32, body, r3) == r : B.Bytes()}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  sa = Equal.sym(B.Bytes(), List.append(&2, U32, body, r3), r, a)
+  k(a, Bytes.all_app(body, r3, (%sa : {B.all_bytes(_) == True{} : Bool}; ab)))
+
+def Take.sx.go(-G: Type, +n: Nat, +body: B.Bytes(), +r3: B.Bytes(), +r: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, r3) == r : B.Bytes()}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  (l, a) = la
+  Take.sx.fin(G, body, r3, r, a, ab, k)
+
+# What take leaves is a suffix of all-byte input, and the taken part is a prefix.
+def Take.sx(-G: Type, +n: Nat, +r: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), +e: {B.take(n, r) == Done{(body, r3)} : B.Read(B.Bytes())}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  Take.sx.go(G, n, body, r3, r, L.bytes.take.length(n, r, body, r3, e), ab, k)
+
+def Len.sx_join(-G: Type, +len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(len0), r) == rt : B.Read(B.Bytes())}, +e: {I.Len.join(len0, rt) == Done{(lb, r2)} : B.Read(I.LenBody)}, +ab: {B.all_bytes(r) == True{} : Bool}, k: @body: B.Bytes() -> @r3: B.Bytes() -> {Done{(I.LenBody{len0, body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)} -> {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  match rt:
+    case Fail{err}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), err, (lb, r2), e))
+    case Done{(+body, +r3)}:
+      Take.sx(G, U32.to_nat(len0), r, body, r3, ert, ab, ap => al => k(body, r3, e, ap, al))
+
+def Len.sx(-G: Type, +len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), ok: Bool, fits: Bool, +ev: {fits == ok : Bool}, +e: {I.Len.take(len0, r, ok) == Done{(lb, r2)} : B.Read(I.LenBody)}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {fits == True{} : Bool} -> @body: B.Bytes() -> @r3: B.Bytes() -> {Done{(I.LenBody{len0, body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)} -> {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  match ok:
+    case False{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Invalid{len0}, (lb, r2), e))
+    case True{}:
+      Len.sx_join(G, len0, r, lb, r2, B.take(U32.to_nat(len0), r), {==}, e, ab, k(ev))
+
+def Field.Sx(+f: I.Field, +rest: B.Bytes(), +bs: B.Bytes()) -> Type:
+  {I.Field.write(f, rest) == bs : B.Bytes()} & {B.all_bytes(rest) == True{} : Bool}
+
+def Field.sx_byte(+b: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), ok: Bool, +ev: {I.fits8(b) == ok : Bool}, +e: {I.Field.byte_ok(b, r, ok) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(b <> r) == True{} : Bool}) -> Field.Sx(f, rest, b <> r):
+  match ok:
+    case False{}:
+      Empty.absurd(Field.Sx(f, rest, b <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Invalid{b}, (f, rest), e))
+    case True{}:
+      ef = Equal.cong(B.Read(I.Field), I.Field, x => P.Read.value(I.Field, x, f), Done{(I.FByte{b}, r)}, Done{(f, rest)}, e)
+      er = Equal.cong(B.Read(I.Field), B.Bytes(), x => P.Read.rest(I.Field, x, rest), Done{(I.FByte{b}, r)}, Done{(f, rest)}, e)
+      %ef : Field.Sx(_, rest, b <> r)
+      %er : Field.Sx(I.FByte{b}, _, b <> r)
+      mb = Equal.sym(U32, U32.and(255, b), b, P.U32.eq_of_is_eq(U32.and(255, b), b, ev))
+      %mb : {_ <> r == b <> r : B.Bytes()} & {B.all_bytes(r) == True{} : Bool}
+      ({==}, P.Bool.and_true_r(B.is_byte(b), B.all_bytes(r), ab))
+
+def Field.sx_lv_fin(+len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), f8: {I.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Field.Sx(I.FLv{lb}, r2, len0 <> r):
+  el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{len0, body}, r3)}, Done{(lb, r2)}, e2)
+  er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r2), Done{(I.LenBody{len0, body}, r3)}, Done{(lb, r2)}, e2)
+  %el : Field.Sx(I.FLv{_}, r2, len0 <> r)
+  %er : Field.Sx(I.FLv{I.LenBody{len0, body}}, _, len0 <> r)
+  ml = Equal.sym(U32, U32.and(255, len0), len0, P.U32.eq_of_is_eq(U32.and(255, len0), len0, f8))
+  %ml : {_ <> List.append(&2, U32, body, r3) == len0 <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  sap = Equal.sym(B.Bytes(), List.append(&2, U32, body, r3), r, ap)
+  %sap : {len0 <> _ == len0 <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  ({==}, al)
+
+def Field.sx_lv(+len0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +rl: B.Read(I.LenBody), erl: {I.Len.take(len0, r, I.fits8(len0)) == rl : B.Read(I.LenBody)}, +e: {I.Field.of_lv(rl) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(len0 <> r) == True{} : Bool}) -> Field.Sx(f, rest, len0 <> r):
+  match rl:
+    case Fail{err}:
+      Empty.absurd(Field.Sx(f, rest, len0 <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), err, (f, rest), e))
+    case Done{(+lb, +r2)}:
+      ef = Equal.cong(B.Read(I.Field), I.Field, x => P.Read.value(I.Field, x, f), Done{(I.FLv{lb}, r2)}, Done{(f, rest)}, e)
+      er = Equal.cong(B.Read(I.Field), B.Bytes(), x => P.Read.rest(I.Field, x, rest), Done{(I.FLv{lb}, r2)}, Done{(f, rest)}, e)
+      %ef : Field.Sx(_, rest, len0 <> r)
+      %er : Field.Sx(I.FLv{lb}, _, len0 <> r)
+      Len.sx(Field.Sx(I.FLv{lb}, r2, len0 <> r), len0, r, lb, r2, I.fits8(len0), I.fits8(len0), {==}, erl, P.Bool.and_true_r(B.is_byte(len0), B.all_bytes(r), ab), f8 => body => r3 => e2 => ap => al => Field.sx_lv_fin(len0, r, lb, r2, body, r3, f8, e2, ap, al))
+
+def Field.sx_lve_fin(+b1: U32, +b0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), +e2: {Done{(I.LenBody{B.cat8(b0, b1), body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}, m1: {U32.and(255, b1) == b1 : U32}, m0: {U32.and(255, b0) == b0 : U32}) -> Field.Sx(I.FLvE{lb}, r2, b1 <> b0 <> r):
+  el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{B.cat8(b0, b1), body}, r3)}, Done{(lb, r2)}, e2)
+  er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r2), Done{(I.LenBody{B.cat8(b0, b1), body}, r3)}, Done{(lb, r2)}, e2)
+  %el : Field.Sx(I.FLvE{_}, r2, b1 <> b0 <> r)
+  %er : Field.Sx(I.FLvE{I.LenBody{B.cat8(b0, b1), body}}, _, b1 <> b0 <> r)
+  hi = Equal.sym(U32, U32.and(255, U32.shrn(B.cat8(b0, b1), 8n)), b1, P.U32.cat8_hi(b0, b1, m1))
+  %hi : {_ <> U32.and(255, B.cat8(b0, b1)) <> List.append(&2, U32, body, r3) == b1 <> b0 <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  lo = Equal.sym(U32, U32.and(255, B.cat8(b0, b1)), b0, P.U32.cat8_lo(b0, b1, m0))
+  %lo : {b1 <> _ <> List.append(&2, U32, body, r3) == b1 <> b0 <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  sap = Equal.sym(B.Bytes(), List.append(&2, U32, body, r3), r, ap)
+  %sap : {b1 <> b0 <> _ == b1 <> b0 <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  ({==}, al)
+
+def Field.sx_lve(+b1: U32, +b0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(b0, b1), r, I.fits16(B.cat8(b0, b1))) == rl : B.Read(I.LenBody)}, +e: {I.Field.of_lve(rl) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(b1 <> b0 <> r) == True{} : Bool}) -> Field.Sx(f, rest, b1 <> b0 <> r):
+  match rl:
+    case Fail{err}:
+      Empty.absurd(Field.Sx(f, rest, b1 <> b0 <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), err, (f, rest), e))
+    case Done{(+lb, +r2)}:
+      ef = Equal.cong(B.Read(I.Field), I.Field, x => P.Read.value(I.Field, x, f), Done{(I.FLvE{lb}, r2)}, Done{(f, rest)}, e)
+      er = Equal.cong(B.Read(I.Field), B.Bytes(), x => P.Read.rest(I.Field, x, rest), Done{(I.FLvE{lb}, r2)}, Done{(f, rest)}, e)
+      %ef : Field.Sx(_, rest, b1 <> b0 <> r)
+      %er : Field.Sx(I.FLvE{lb}, _, b1 <> b0 <> r)
+      +ab0 = P.Bool.and_true_r(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r)), ab)
+      Len.sx(Field.Sx(I.FLvE{lb}, r2, b1 <> b0 <> r), B.cat8(b0, b1), r, lb, r2, I.fits16(B.cat8(b0, b1)), I.fits16(B.cat8(b0, b1)), {==}, erl, P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r), ab0), f16 => body => r3 => e2 => ap => al => Field.sx_lve_fin(b1, b0, r, lb, r2, body, r3, e2, ap, al, P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r)), ab)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(r), ab0))))
+
+def Field.sx(+lay: I.Lay, +bs: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +e: {I.Field.read(lay, bs) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> Field.Sx(f, rest, bs):
+  match lay:
+    case I.V1{}:
+      match bs:
+        case Nil{}:
+          Empty.absurd(Field.Sx(f, rest, []), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
+        case +b <> +r:
+          Field.sx_byte(b, r, f, rest, I.fits8(b), {==}, e, ab)
+    case I.Lv{}:
+      match bs:
+        case Nil{}:
+          Empty.absurd(Field.Sx(f, rest, []), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
+        case +len0 <> +r:
+          Field.sx_lv(len0, r, f, rest, I.Len.take(len0, r, I.fits8(len0)), {==}, e, ab)
+    case I.LvE{}:
+      match bs:
+        case Nil{}:
+          Empty.absurd(Field.Sx(f, rest, []), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
+        case b <> Nil{}:
+          Empty.absurd(Field.Sx(f, rest, [b]), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
+        case +b1 <> +b0 <> +r:
+          Field.sx_lve(b1, b0, r, f, rest, I.Len.take(B.cat8(b0, b1), r, I.fits16(B.cat8(b0, b1))), {==}, e, ab)
+
+def Fields.Sx(+fs: List<&2, I.Field>, +rest: B.Bytes(), +bs: B.Bytes()) -> Type:
+  {I.Fields.write(fs, rest) == bs : B.Bytes()} & {B.all_bytes(rest) == True{} : Bool}
+
+def Fields.sx_fin(+bs: B.Bytes(), +f: I.Field, +r: B.Bytes(), +fs2: List<&2, I.Field>, +r3: B.Bytes(), w1: {I.Field.write(f, r) == bs : B.Bytes()}, s2: Fields.Sx(fs2, r3, r)) -> Fields.Sx(f <> fs2, r3, bs):
+  (w2, a2) = s2
+  sw2 = Equal.sym(B.Bytes(), I.Fields.write(fs2, r3), r, w2)
+  %sw2 : {I.Field.write(f, _) == bs : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  (w1, a2)
+
+def Fields.sx_cons(+ls: List<&2, I.Lay>, +bs: B.Bytes(), +f: I.Field, +r: B.Bytes(), +r2: B.Read(List<&2, I.Field>), er2: {I.Fields.read(ls, r) == r2 : B.Read(List<&2, I.Field>)}, +fs: List<&2, I.Field>, +rest: B.Bytes(), +e: {I.Fields.cons(f, r2) == Done{(fs, rest)} : B.Read(List<&2, I.Field>)}, s1: Field.Sx(f, r, bs), h2: @fs2: List<&2, I.Field> -> @r3: B.Bytes() -> {I.Fields.read(ls, r) == Done{(fs2, r3)} : B.Read(List<&2, I.Field>)} -> {B.all_bytes(r) == True{} : Bool} -> Fields.Sx(fs2, r3, r)) -> Fields.Sx(fs, rest, bs):
+  match r2:
+    case Fail{err}:
+      Empty.absurd(Fields.Sx(fs, rest, bs), P.Refute.fail_done(B.Err, B.ReadValue(List<&2, I.Field>), err, (fs, rest), e))
+    case Done{(+fs2, +r3)}:
+      (w1, a1) = s1
+      et = Equal.cong(B.Read(List<&2, I.Field>), List<&2, I.Field>, x => P.Read.value(List<&2, I.Field>, x, fs), Done{(f <> fs2, r3)}, Done{(fs, rest)}, e)
+      er = Equal.cong(B.Read(List<&2, I.Field>), B.Bytes(), x => P.Read.rest(List<&2, I.Field>, x, rest), Done{(f <> fs2, r3)}, Done{(fs, rest)}, e)
+      %et : Fields.Sx(_, rest, bs)
+      %er : Fields.Sx(f <> fs2, _, bs)
+      Fields.sx_fin(bs, f, r, fs2, r3, w1, h2(fs2, r3, er2, a1))
+
+def Fields.sx_next(+ls: List<&2, I.Lay>, +bs: B.Bytes(), +r1: B.Read(I.Field), +fs: List<&2, I.Field>, +rest: B.Bytes(), +e: {I.Fields.next(r1, r => I.Fields.read(ls, r)) == Done{(fs, rest)} : B.Read(List<&2, I.Field>)}, h1: @f: I.Field -> @r: B.Bytes() -> {r1 == Done{(f, r)} : B.Read(I.Field)} -> Field.Sx(f, r, bs), h2: @bs2: B.Bytes() -> @fs2: List<&2, I.Field> -> @r: B.Bytes() -> {I.Fields.read(ls, bs2) == Done{(fs2, r)} : B.Read(List<&2, I.Field>)} -> {B.all_bytes(bs2) == True{} : Bool} -> Fields.Sx(fs2, r, bs2)) -> Fields.Sx(fs, rest, bs):
+  match r1:
+    case Fail{err}:
+      Empty.absurd(Fields.Sx(fs, rest, bs), P.Refute.fail_done(B.Err, B.ReadValue(List<&2, I.Field>), err, (fs, rest), e))
+    case Done{(+f, +r)}:
+      Fields.sx_cons(ls, bs, f, r, I.Fields.read(ls, r), {==}, fs, rest, e, h1(f, r, {==}), fs2 => r3 => e2 => ab2 => h2(r, fs2, r3, e2, ab2))
+
+def Fields.sx(+lays: List<&2, I.Lay>, +bs: B.Bytes(), +fs: List<&2, I.Field>, +rest: B.Bytes(), +e: {I.Fields.read(lays, bs) == Done{(fs, rest)} : B.Read(List<&2, I.Field>)}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> Fields.Sx(fs, rest, bs):
+  match lays:
+    case Nil{}:
+      et = Equal.cong(B.Read(List<&2, I.Field>), List<&2, I.Field>, x => P.Read.value(List<&2, I.Field>, x, fs), Done{([], bs)}, Done{(fs, rest)}, e)
+      er = Equal.cong(B.Read(List<&2, I.Field>), B.Bytes(), x => P.Read.rest(List<&2, I.Field>, x, rest), Done{([], bs)}, Done{(fs, rest)}, e)
+      %et : Fields.Sx(_, rest, bs)
+      %er : Fields.Sx([], _, bs)
+      ({==}, ab)
+    case +l <> +ls:
+      Fields.sx_next(ls, bs, I.Field.read(l, bs), fs, rest, e, f => r => e2 => Field.sx(l, bs, f, r, e2, ab), bs2 => fs2 => r => e2 => ab2 => Fields.sx(ls, bs2, fs2, r, e2, ab2))
+
+def Ie.Sx(+ie: I.Ie, +rest: B.Bytes(), +bs: B.Bytes()) -> Type:
+  {I.Ie.write(ie, rest) == bs : B.Bytes()} & {B.all_bytes(rest) == True{} : Bool}
+
+def Ie.sx_tv_fin(+iei: U32, +n: Nat, +r: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, r3, iei <> r):
+  mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
+  %mi : {_ <> List.append(&2, U32, body, r3) == iei <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  sap = Equal.sym(B.Bytes(), List.append(&2, U32, body, r3), r, ap)
+  %sap : {iei <> _ == iei <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
+  ({==}, al)
+
+def Ie.sx_tv(+iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +rt: B.Read(B.Bytes()), ert: {B.take(n, r) == rt : B.Read(B.Bytes())}, +e: {I.Ie.of_tv(iei, n, rt) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(r) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> r):
+  match rt:
+    case Fail{err}:
+      Empty.absurd(Ie.Sx(ie, r2, iei <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, r2), e))
+    case Done{(+body, +r3)}:
+      ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.Tv{n}, 0, body}, r3)}, Done{(ie, r2)}, e)
+      er = Equal.cong(B.Read(I.Ie), B.Bytes(), x => P.Read.rest(I.Ie, x, r2), Done{(I.Ie{iei, I.Tv{n}, 0, body}, r3)}, Done{(ie, r2)}, e)
+      %ei : Ie.Sx(_, r2, iei <> r)
+      %er : Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, _, iei <> r)
+      Take.sx(Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, r3, iei <> r), n, r, body, r3, ert, ab, ap => al => Ie.sx_tv_fin(iei, n, r, body, r3, f8, ap, al))
+
+def Ie.sx_tlv_fin(+iei: U32, +len0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, fl: {I.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1):
+  +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len1, body}), Done{(I.LenBody{len0, body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
+  el = Equal.cong(I.LenBody, U32, x => Lb.len(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
+  eb = Equal.cong(I.LenBody, B.Bytes(), x => Lb.body(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
+  er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r3), Done{(I.LenBody{len0, body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
+  %el : Ie.Sx(I.Ie{iei, I.Tlv{}, _, body}, r3, iei <> len0 <> r1)
+  %eb : Ie.Sx(I.Ie{iei, I.Tlv{}, len0, _}, r3, iei <> len0 <> r1)
+  %er : Ie.Sx(I.Ie{iei, I.Tlv{}, len0, body2}, _, iei <> len0 <> r1)
+  mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
+  %mi : {_ <> U32.and(255, len0) <> List.append(&2, U32, body2, r4) == iei <> len0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
+  ml = Equal.sym(U32, U32.and(255, len0), len0, P.U32.eq_of_is_eq(U32.and(255, len0), len0, fl))
+  %ml : {iei <> _ <> List.append(&2, U32, body2, r4) == iei <> len0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
+  sap = Equal.sym(B.Bytes(), List.append(&2, U32, body2, r4), r1, ap)
+  %sap : {iei <> len0 <> _ == iei <> len0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
+  ({==}, al)
+
+def Ie.sx_tlv(+iei: U32, +len0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +rl: B.Read(I.LenBody), erl: {I.Len.take(len0, r1, I.fits8(len0)) == rl : B.Read(I.LenBody)}, +e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(len0 <> r1) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> len0 <> r1):
+  match rl:
+    case Fail{err}:
+      Empty.absurd(Ie.Sx(ie, r2, iei <> len0 <> r1), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, r2), e))
+    case Done{(I.LenBody{+len1, +body}, +r3)}:
+      ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.Tlv{}, len1, body}, r3)}, Done{(ie, r2)}, e)
+      er = Equal.cong(B.Read(I.Ie), B.Bytes(), x => P.Read.rest(I.Ie, x, r2), Done{(I.Ie{iei, I.Tlv{}, len1, body}, r3)}, Done{(ie, r2)}, e)
+      %ei : Ie.Sx(_, r2, iei <> len0 <> r1)
+      %er : Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, _, iei <> len0 <> r1)
+      Len.sx(Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1), len0, r1, I.LenBody{len1, body}, r3, I.fits8(len0), I.fits8(len0), {==}, erl, P.Bool.and_true_r(B.is_byte(len0), B.all_bytes(r1), ab), fl => body2 => r4 => e2 => ap => al => Ie.sx_tlv_fin(iei, len0, r1, len1, body, r3, body2, r4, f8, fl, e2, ap, al))
+
+def Ie.sx_tlve_fin(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +e2: {Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}, m1: {U32.and(255, b1) == b1 : U32}, m0: {U32.and(255, b0) == b0 : U32}) -> Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, r3, iei <> b1 <> b0 <> r1):
+  +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len1, body}), Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
+  el = Equal.cong(I.LenBody, U32, x => Lb.len(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
+  eb = Equal.cong(I.LenBody, B.Bytes(), x => Lb.body(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
+  er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r3), Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
+  %el : Ie.Sx(I.Ie{iei, I.TlvE{}, _, body}, r3, iei <> b1 <> b0 <> r1)
+  %eb : Ie.Sx(I.Ie{iei, I.TlvE{}, B.cat8(b0, b1), _}, r3, iei <> b1 <> b0 <> r1)
+  %er : Ie.Sx(I.Ie{iei, I.TlvE{}, B.cat8(b0, b1), body2}, _, iei <> b1 <> b0 <> r1)
+  mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
+  %mi : {_ <> B.write_u16(B.cat8(b0, b1), List.append(&2, U32, body2, r4)) == iei <> b1 <> b0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
+  hi = Equal.sym(U32, U32.and(255, U32.shrn(B.cat8(b0, b1), 8n)), b1, P.U32.cat8_hi(b0, b1, m1))
+  %hi : {iei <> _ <> U32.and(255, B.cat8(b0, b1)) <> List.append(&2, U32, body2, r4) == iei <> b1 <> b0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
+  lo = Equal.sym(U32, U32.and(255, B.cat8(b0, b1)), b0, P.U32.cat8_lo(b0, b1, m0))
+  %lo : {iei <> b1 <> _ <> List.append(&2, U32, body2, r4) == iei <> b1 <> b0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
+  sap = Equal.sym(B.Bytes(), List.append(&2, U32, body2, r4), r1, ap)
+  %sap : {iei <> b1 <> b0 <> _ == iei <> b1 <> b0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
+  ({==}, al)
+
+def Ie.sx_tlve(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(b0, b1), r1, I.fits16(B.cat8(b0, b1))) == rl : B.Read(I.LenBody)}, +e: {I.Ie.of_len(iei, I.TlvE{}, rl) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(b1 <> b0 <> r1) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> b1 <> b0 <> r1):
+  match rl:
+    case Fail{err}:
+      Empty.absurd(Ie.Sx(ie, r2, iei <> b1 <> b0 <> r1), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, r2), e))
+    case Done{(I.LenBody{+len1, +body}, +r3)}:
+      ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.TlvE{}, len1, body}, r3)}, Done{(ie, r2)}, e)
+      er = Equal.cong(B.Read(I.Ie), B.Bytes(), x => P.Read.rest(I.Ie, x, r2), Done{(I.Ie{iei, I.TlvE{}, len1, body}, r3)}, Done{(ie, r2)}, e)
+      %ei : Ie.Sx(_, r2, iei <> b1 <> b0 <> r1)
+      %er : Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, _, iei <> b1 <> b0 <> r1)
+      +ab0 = P.Bool.and_true_r(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r1)), ab)
+      Len.sx(Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, r3, iei <> b1 <> b0 <> r1), B.cat8(b0, b1), r1, I.LenBody{len1, body}, r3, I.fits16(B.cat8(b0, b1)), I.fits16(B.cat8(b0, b1)), {==}, erl, P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r1), ab0), f16 => body2 => r4 => e2 => ap => al => Ie.sx_tlve_fin(iei, b1, b0, r1, len1, body, r3, body2, r4, f8, e2, ap, al, P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r1)), ab)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(r1), ab0))))
+
+def Ie.sx(+iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +e: {I.Ie.read_body(iei, x, r) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(r) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> r):
+  match x:
+    case I.T1{}:
+      ei = Equal.cong(B.Read(I.Ie), I.Ie, y => P.Read.value(I.Ie, y, ie), Done{(I.Ie{iei, I.T1{}, 0, []}, r)}, Done{(ie, r2)}, e)
+      er = Equal.cong(B.Read(I.Ie), B.Bytes(), y => P.Read.rest(I.Ie, y, r2), Done{(I.Ie{iei, I.T1{}, 0, []}, r)}, Done{(ie, r2)}, e)
+      %ei : Ie.Sx(_, r2, iei <> r)
+      %er : Ie.Sx(I.Ie{iei, I.T1{}, 0, []}, _, iei <> r)
+      mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
+      %mi : {_ <> r == iei <> r : B.Bytes()} & {B.all_bytes(r) == True{} : Bool}
+      ({==}, ab)
+    case I.Tv{+n}:
+      Ie.sx_tv(iei, n, r, ie, r2, f8, B.take(n, r), {==}, e, ab)
+    case I.Tlv{}:
+      match r:
+        case Nil{}:
+          Empty.absurd(Ie.Sx(ie, r2, [iei]), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), B.Short{}, (ie, r2), e))
+        case +len0 <> +r1:
+          Ie.sx_tlv(iei, len0, r1, ie, r2, f8, I.Len.take(len0, r1, I.fits8(len0)), {==}, e, ab)
+    case I.TlvE{}:
+      match r:
+        case Nil{}:
+          Empty.absurd(Ie.Sx(ie, r2, [iei]), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), B.Short{}, (ie, r2), e))
+        case b <> Nil{}:
+          Empty.absurd(Ie.Sx(ie, r2, [iei, b]), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), B.Short{}, (ie, r2), e))
+        case +b1 <> +b0 <> +r1:
+          Ie.sx_tlve(iei, b1, b0, r1, ie, r2, f8, I.Len.take(B.cat8(b0, b1), r1, I.fits16(B.cat8(b0, b1))), {==}, e, ab)
+
+def Opts.sx_cons(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), +ro: Opts.Res(), ero: {Mm.Opts.read(f, t, r2) == ro : Opts.Res()}, +opts: List<&2, I.Ie>, +e: {Mm.Opts.cons(ie, ro) == Done{opts} : Opts.Res()}, s: Ie.Sx(ie, r2, iei <> r), ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+  match ro:
+    case Fail{err}:
+      Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
+    case Done{+opts2}:
+      (w, a) = s
+      eo = Equal.cong(Opts.Res(), List<&2, I.Ie>, x => P.Res.value(B.Err, List<&2, I.Ie>, x, opts), Done{ie <> opts2}, Done{opts}, e)
+      %eo : {I.Ies.write(_, []) == iei <> r : B.Bytes()}
+      sw = Equal.sym(B.Bytes(), I.Ies.write(opts2, []), r2, ih(r2, opts2, ero, a))
+      %sw : {I.Ie.write(ie, _) == iei <> r : B.Bytes()}
+      w
+
+def Opts.sx_next(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +rb: B.Read(I.Ie), erb: {I.Ie.read_body(iei, Mm.Mm.format(t, iei), r) == rb : B.Read(I.Ie)}, +opts: List<&2, I.Ie>, +e: {Mm.Opts.next(rb, left => Mm.Opts.read(f, t, left)) == Done{opts} : Opts.Res()}, f8: {I.fits8(iei) == True{} : Bool}, +ab: {B.all_bytes(r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+  match rb:
+    case Fail{err}:
+      Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
+    case Done{(+ie, +r2)}:
+      Opts.sx_cons(t, f, iei, r, ie, r2, Mm.Opts.read(f, t, r2), {==}, opts, e, Ie.sx(iei, Mm.Mm.format(t, iei), r, ie, r2, f8, erb, ab), ih)
+
+def Opts.sx_iei(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, +ev: {I.fits8(iei) == ok : Bool}, +e: {Mm.Opts.iei(t, iei, r, left => Mm.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(iei <> r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+  match ok:
+    case False{}:
+      Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{iei}, opts, e))
+    case True{}:
+      Opts.sx_next(t, f, iei, r, I.Ie.read_body(iei, Mm.Mm.format(t, iei), r), {==}, opts, e, ev, P.Bool.and_true_r(B.is_byte(iei), B.all_bytes(r), ab), ih)
+
+def Opts.sx(+t: Mm.Mm.Type, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.Ie>, +e: {Mm.Opts.read(fuel, t, bs) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> {I.Ies.write(opts, []) == bs : B.Bytes()}:
+  match fuel bs:
+    case 0n Nil{}:
+      eo = Equal.cong(Opts.Res(), List<&2, I.Ie>, x => P.Res.value(B.Err, List<&2, I.Ie>, x, opts), Done{[]}, Done{opts}, e)
+      %eo : {I.Ies.write(_, []) == [] : B.Bytes()}
+      {==}
+    case 1n+f Nil{}:
+      eo = Equal.cong(Opts.Res(), List<&2, I.Ie>, x => P.Res.value(B.Err, List<&2, I.Ie>, x, opts), Done{[]}, Done{opts}, e)
+      %eo : {I.Ies.write(_, []) == [] : B.Bytes()}
+      {==}
+    case 0n b <> r:
+      Empty.absurd({I.Ies.write(opts, []) == b <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{b}, opts, e))
+    case 1n++f +iei <> +r:
+      Opts.sx_iei(t, f, iei, r, opts, I.fits8(iei), {==}, e, ab, left => opts2 => e2 => ab2 => Opts.sx(t, f, left, opts2, e2, ab2))
+
+# The type table inverts: a recognised code is the type's code.
+def Type.inv18(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 104) == hit : Bool}, +e: {Mm.Mm.Type.of18.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.DlNasTransport{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 104, P.U32.eq_of_is_eq(b, 104, ev))
+    case False{}:
+      Empty.absurd({Mm.Mm.Type.code(mt) == b : U32}, P.Refute.none_some(Mm.Mm.Type, mt, e))
+
+def Type.inv17(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 103) == hit : Bool}, +e: {Mm.Mm.Type.of17.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.UlNasTransport{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 103, P.U32.eq_of_is_eq(b, 103, ev))
+    case False{}:
+      Type.inv18(b, mt, U32.is_eq(b, 104), {==}, e)
+
+def Type.inv16(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 100) == hit : Bool}, +e: {Mm.Mm.Type.of16.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.Status{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 100, P.U32.eq_of_is_eq(b, 100, ev))
+    case False{}:
+      Type.inv17(b, mt, U32.is_eq(b, 103), {==}, e)
+
+def Type.inv15(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 95) == hit : Bool}, +e: {Mm.Mm.Type.of15.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.SecurityModeReject{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 95, P.U32.eq_of_is_eq(b, 95, ev))
+    case False{}:
+      Type.inv16(b, mt, U32.is_eq(b, 100), {==}, e)
+
+def Type.inv14(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 94) == hit : Bool}, +e: {Mm.Mm.Type.of14.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.SecurityModeComplete{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 94, P.U32.eq_of_is_eq(b, 94, ev))
+    case False{}:
+      Type.inv15(b, mt, U32.is_eq(b, 95), {==}, e)
+
+def Type.inv13(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 93) == hit : Bool}, +e: {Mm.Mm.Type.of13.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.SecurityModeCommand{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 93, P.U32.eq_of_is_eq(b, 93, ev))
+    case False{}:
+      Type.inv14(b, mt, U32.is_eq(b, 94), {==}, e)
+
+def Type.inv12(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 92) == hit : Bool}, +e: {Mm.Mm.Type.of12.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.IdentityResponse{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 92, P.U32.eq_of_is_eq(b, 92, ev))
+    case False{}:
+      Type.inv13(b, mt, U32.is_eq(b, 93), {==}, e)
+
+def Type.inv11(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 91) == hit : Bool}, +e: {Mm.Mm.Type.of11.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.IdentityRequest{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 91, P.U32.eq_of_is_eq(b, 91, ev))
+    case False{}:
+      Type.inv12(b, mt, U32.is_eq(b, 92), {==}, e)
+
+def Type.inv10(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 89) == hit : Bool}, +e: {Mm.Mm.Type.of10.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.AuthenticationFailure{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 89, P.U32.eq_of_is_eq(b, 89, ev))
+    case False{}:
+      Type.inv11(b, mt, U32.is_eq(b, 91), {==}, e)
+
+def Type.inv9(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 88) == hit : Bool}, +e: {Mm.Mm.Type.of9.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.AuthenticationReject{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 88, P.U32.eq_of_is_eq(b, 88, ev))
+    case False{}:
+      Type.inv10(b, mt, U32.is_eq(b, 89), {==}, e)
+
+def Type.inv8(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 87) == hit : Bool}, +e: {Mm.Mm.Type.of8.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.AuthenticationResponse{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 87, P.U32.eq_of_is_eq(b, 87, ev))
+    case False{}:
+      Type.inv9(b, mt, U32.is_eq(b, 88), {==}, e)
+
+def Type.inv7(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 86) == hit : Bool}, +e: {Mm.Mm.Type.of7.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.AuthenticationRequest{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 86, P.U32.eq_of_is_eq(b, 86, ev))
+    case False{}:
+      Type.inv8(b, mt, U32.is_eq(b, 87), {==}, e)
+
+def Type.inv6(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 84) == hit : Bool}, +e: {Mm.Mm.Type.of6.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.ConfigurationUpdateCommand{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 84, P.U32.eq_of_is_eq(b, 84, ev))
+    case False{}:
+      Type.inv7(b, mt, U32.is_eq(b, 86), {==}, e)
+
+def Type.inv5(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 70) == hit : Bool}, +e: {Mm.Mm.Type.of5.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.DeregistrationAcceptUe{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 70, P.U32.eq_of_is_eq(b, 70, ev))
+    case False{}:
+      Type.inv6(b, mt, U32.is_eq(b, 84), {==}, e)
+
+def Type.inv4(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 69) == hit : Bool}, +e: {Mm.Mm.Type.of4.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.DeregistrationRequestUe{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 69, P.U32.eq_of_is_eq(b, 69, ev))
+    case False{}:
+      Type.inv5(b, mt, U32.is_eq(b, 70), {==}, e)
+
+def Type.inv3(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 68) == hit : Bool}, +e: {Mm.Mm.Type.of3.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.RegistrationReject{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 68, P.U32.eq_of_is_eq(b, 68, ev))
+    case False{}:
+      Type.inv4(b, mt, U32.is_eq(b, 69), {==}, e)
+
+def Type.inv2(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 67) == hit : Bool}, +e: {Mm.Mm.Type.of2.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.RegistrationComplete{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 67, P.U32.eq_of_is_eq(b, 67, ev))
+    case False{}:
+      Type.inv3(b, mt, U32.is_eq(b, 68), {==}, e)
+
+def Type.inv1(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 66) == hit : Bool}, +e: {Mm.Mm.Type.of1.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.RegistrationAccept{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 66, P.U32.eq_of_is_eq(b, 66, ev))
+    case False{}:
+      Type.inv2(b, mt, U32.is_eq(b, 67), {==}, e)
+
+def Type.inv0(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 65) == hit : Bool}, +e: {Mm.Mm.Type.of0.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.RegistrationRequest{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 65, P.U32.eq_of_is_eq(b, 65, ev))
+    case False{}:
+      Type.inv1(b, mt, U32.is_eq(b, 66), {==}, e)
+
+def Type.of_inv(+b: U32, +mt: Mm.Mm.Type, +e: {Mm.Mm.Type.of(b) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  Type.inv0(b, mt, U32.is_eq(b, 65), {==}, e)
+
+def Msg.sx_fin(+epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +rest: B.Bytes(), +opts: List<&2, I.Ie>, +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, ec: {Mm.Mm.Type.code(mt) == code : U32}, em: {Mm.Mm{mt, fields, opts} == m : Mm.Mm}, wf: {I.Fields.write(fields, rest) == r : B.Bytes()}, wo: {I.Ies.write(opts, []) == rest : B.Bytes()}) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
+  %em : {Mm.Mm.write(_) == epd <> sht <> code <> r : B.Bytes()}
+  s126 = Equal.sym(U32, epd, 126, e126)
+  %s126 : {Mm.Mm.write(Mm.Mm{mt, fields, opts}) == _ <> sht <> code <> r : B.Bytes()}
+  s0 = Equal.sym(U32, sht, 0, e0)
+  %s0 : {Mm.Mm.write(Mm.Mm{mt, fields, opts}) == 126 <> _ <> code <> r : B.Bytes()}
+  c8 = Equal.sym(U32, U32.and(255, Mm.Mm.Type.code(mt)), Mm.Mm.Type.code(mt), Type.code8(mt))
+  %c8 : {126 <> 0 <> _ <> I.Fields.write(fields, I.Ies.write(opts, [])) == 126 <> 0 <> code <> r : B.Bytes()}
+  %ec : {126 <> 0 <> Mm.Mm.Type.code(mt) <> I.Fields.write(fields, I.Ies.write(opts, [])) == 126 <> 0 <> _ <> r : B.Bytes()}
+  swo = Equal.sym(B.Bytes(), I.Ies.write(opts, []), rest, wo)
+  %swo : {126 <> 0 <> Mm.Mm.Type.code(mt) <> I.Fields.write(fields, _) == 126 <> 0 <> Mm.Mm.Type.code(mt) <> r : B.Bytes()}
+  swf = Equal.sym(B.Bytes(), I.Fields.write(fields, rest), r, wf)
+  %swf : {126 <> 0 <> Mm.Mm.Type.code(mt) <> _ == 126 <> 0 <> Mm.Mm.Type.code(mt) <> r : B.Bytes()}
+  {==}
+
+def Msg.sx_opts(+ro: Opts.Res(), +epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +rest: B.Bytes(), +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, ec: {Mm.Mm.Type.code(mt) == code : U32}, ero: {Mm.Opts.read(List.length(&2, U32, rest), mt, rest) == ro : Opts.Res()}, +e: {Mm.Mm.r_opts(mt, fields, ro) == Done{m} : Msg.Res()}, s: Fields.Sx(fields, rest, r)) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
+  match ro:
+    case Fail{err}:
+      Empty.absurd({Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, err, m, e))
+    case Done{+opts}:
+      (wf, ar) = s
+      Msg.sx_fin(epd, sht, code, r, mt, fields, rest, opts, m, e126, e0, ec, Equal.cong(Msg.Res(), Mm.Mm, x => P.Res.value(B.Err, Mm.Mm, x, m), Done{Mm.Mm{mt, fields, opts}}, Done{m}, e), wf, Opts.sx(mt, List.length(&2, U32, rest), rest, opts, ero, ar))
+
+def Msg.sx_fields(+rf: B.Read(List<&2, I.Field>), +epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +mt: Mm.Mm.Type, +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, ec: {Mm.Mm.Type.code(mt) == code : U32}, erf: {I.Fields.read(Mm.Mm.layout(mt), r) == rf : B.Read(List<&2, I.Field>)}, +e: {Mm.Mm.r_fields(mt, rf) == Done{m} : Msg.Res()}, +ab: {B.all_bytes(r) == True{} : Bool}) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
+  match rf:
+    case Fail{err}:
+      Empty.absurd({Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, err, m, e))
+    case Done{(+fields, +rest)}:
+      Msg.sx_opts(Mm.Opts.read(List.length(&2, U32, rest), mt, rest), epd, sht, code, r, mt, fields, rest, m, e126, e0, ec, {==}, e, Fields.sx(Mm.Mm.layout(mt), r, fields, rest, erf, ab))
+
+def Msg.sx_type(+tm: Maybe<&2, Mm.Mm.Type>, +epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, etm: {Mm.Mm.Type.of(code) == tm : Maybe<&2, Mm.Mm.Type>}, +e: {Mm.Mm.r_type(code, r, tm) == Done{m} : Msg.Res()}, +ab: {B.all_bytes(code <> r) == True{} : Bool}) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
+  match tm:
+    case None{}:
+      Empty.absurd({Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, B.Unsupported{code}, m, e))
+    case Some{+mt}:
+      Msg.sx_fields(I.Fields.read(Mm.Mm.layout(mt), r), epd, sht, code, r, mt, m, e126, e0, Type.of_inv(code, mt, etm), {==}, e, P.Bool.and_true_r(B.is_byte(code), B.all_bytes(r), ab))
+
+def Msg.sx_sht(ok: Bool, +epd: U32, +sht: U32, +r: B.Bytes(), +m: Mm.Mm, e126: {epd == 126 : U32}, +ev: {U32.is_eq(sht, 0) == ok : Bool}, +e: {Mm.Mm.r_sht(r, sht, ok) == Done{m} : Msg.Res()}, +ab: {B.all_bytes(sht <> r) == True{} : Bool}) -> {Mm.Mm.write(m) == epd <> sht <> r : B.Bytes()}:
+  match ok:
+    case False{}:
+      Empty.absurd({Mm.Mm.write(m) == epd <> sht <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, B.Invalid{sht}, m, e))
+    case True{}:
+      match r:
+        case Nil{}:
+          Empty.absurd({Mm.Mm.write(m) == epd <> sht <> [] : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, B.Short{}, m, e))
+        case +code <> +r2:
+          Msg.sx_type(Mm.Mm.Type.of(code), epd, sht, code, r2, m, e126, P.U32.eq_of_is_eq(sht, 0, ev), {==}, e, P.Bool.and_true_r(B.is_byte(sht), B.all_bytes(code <> r2), ab))
+
+def Msg.sx_epd(ok: Bool, +epd: U32, +r: B.Bytes(), +m: Mm.Mm, +ev: {U32.is_eq(epd, 126) == ok : Bool}, +e: {Mm.Mm.r_epd(r, epd, ok) == Done{m} : Msg.Res()}, +ab: {B.all_bytes(epd <> r) == True{} : Bool}) -> {Mm.Mm.write(m) == epd <> r : B.Bytes()}:
+  match ok:
+    case False{}:
+      Empty.absurd({Mm.Mm.write(m) == epd <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, B.Invalid{epd}, m, e))
+    case True{}:
+      match r:
+        case Nil{}:
+          Empty.absurd({Mm.Mm.write(m) == [epd] : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, B.Short{}, m, e))
+        case +sht <> +r2:
+          Msg.sx_sht(U32.is_eq(sht, 0), epd, sht, r2, m, P.U32.eq_of_is_eq(epd, 126, ev), {==}, e, P.Bool.and_true_r(B.is_byte(epd), B.all_bytes(sht <> r2), ab))
+
+def Msg.sx(+bs: B.Bytes(), +m: Mm.Mm, +e: {Mm.Mm.read(bs) == Done{m} : Msg.Res()}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> {Mm.Mm.write(m) == bs : B.Bytes()}:
+  match bs:
+    case Nil{}:
+      Empty.absurd({Mm.Mm.write(m) == [] : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, B.Short{}, m, e))
+    case +epd <> +r:
+      Msg.sx_epd(U32.is_eq(epd, 126), epd, r, m, {==}, e, ab)
+
+def L.nas.mm.suffix(bs, m, e, ab):
+  Msg.sx(bs, m, e, ab)
