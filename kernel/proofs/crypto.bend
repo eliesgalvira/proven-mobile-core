@@ -7,6 +7,7 @@ import ../crypto/hmac.bend as H
 import ../crypto/aes.bend as A
 import ../crypto/ctr.bend as CT
 import ../crypto/cmac.bend as M
+import ../crypto/milenage.bend as Mil
 
 # Proofs of the crypto laws (tickets 04 to 08).
 
@@ -277,3 +278,30 @@ def Cmac.start_len(msg: B.Bytes(), +rks: List<&2, A.Aes.Block>, k1: A.Aes.Block,
 
 def L.cmac.length(key, msg):
   Cmac.start_len(msg, A.Aes.round_keys(key), M.Cmac.subkey(A.Aes.encrypt(A.Aes.round_keys(key), A.Aes.zero())), M.Cmac.subkey(M.Cmac.subkey(A.Aes.encrypt(A.Aes.round_keys(key), A.Aes.zero()))))
+
+# MILENAGE
+# --------
+
+def Milenage.low8_len(b: A.Aes.Block) -> {List.length(&2, U32, Mil.Milenage.low8(b)) == 8n : Nat}:
+  match b:
+    case A.Blk{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15}:
+      {==}
+
+def Milenage.high8_len(b: A.Aes.Block) -> {List.length(&2, U32, Mil.Milenage.high8(b)) == 8n : Nat}:
+  match b:
+    case A.Blk{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15}:
+      {==}
+
+def Milenage.low6_len(b: A.Aes.Block) -> {List.length(&2, U32, Mil.Milenage.low6(b)) == 6n : Nat}:
+  match b:
+    case A.Blk{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15}:
+      {==}
+
+def L.milenage.lengths(key, opc, rand, sqn, amf):
+  (Milenage.low8_len(Mil.Milenage.out1(key, opc, rand, sqn, amf)),
+   (Milenage.high8_len(Mil.Milenage.out1(key, opc, rand, sqn, amf)),
+   (Milenage.high8_len(Mil.Milenage.out(key, opc, rand, b => b, 1)),
+   (Aes.to_bytes_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot4(b), 2)),
+   (Aes.to_bytes_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot8(b), 4)),
+   (Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => b, 1)),
+   Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot12(b), 8))))))))

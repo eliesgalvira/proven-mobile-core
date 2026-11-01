@@ -5,6 +5,7 @@ import ./crypto/hmac.bend as H
 import ./crypto/aes.bend as A
 import ./crypto/ctr.bend as Ctr
 import ./crypto/cmac.bend as M
+import ./crypto/milenage.bend as Mil
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -112,3 +113,21 @@ law cmac.length:
   for +key: B.Bytes()
   for msg: B.Bytes()
   {List.length(&2, U32, M.cmac(key, msg)) == 16n : Nat}
+
+# crypto: MILENAGE (ticket 06)
+# ---------------------------
+# Correctness against TS 35.208 is established by the test vectors.
+
+law milenage.lengths:
+  for +key: B.Bytes()
+  for +opc: B.Bytes()
+  for +rand: B.Bytes()
+  for +sqn: B.Bytes()
+  for +amf: B.Bytes()
+  {List.length(&2, U32, Mil.milenage.f1(key, opc, rand, sqn, amf)) == 8n : Nat}
+  & ({List.length(&2, U32, Mil.milenage.f1_star(key, opc, rand, sqn, amf)) == 8n : Nat}
+  & ({List.length(&2, U32, Mil.milenage.f2(key, opc, rand)) == 8n : Nat}
+  & ({List.length(&2, U32, Mil.milenage.f3(key, opc, rand)) == 16n : Nat}
+  & ({List.length(&2, U32, Mil.milenage.f4(key, opc, rand)) == 16n : Nat}
+  & ({List.length(&2, U32, Mil.milenage.f5(key, opc, rand)) == 6n : Nat}
+  & {List.length(&2, U32, Mil.milenage.f5_star(key, opc, rand)) == 6n : Nat})))))
