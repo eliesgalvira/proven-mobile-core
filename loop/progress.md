@@ -7,7 +7,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 01 | bootstrap | done | — | 3327ac8: LAWS/PROOF pair, check.sh gate, test runner, acceptance.py, gen-vectors.py and generated vector modules |
 | 02 | bytes | done | 01 | 2799d0f: readers u8..u32, take, nibbles, TBCD; 8 laws proven; no U32 lemma file needed |
 | 03 | vectors | done | 01 | ad79428: all 9 spec sources present with source fields; generator emits Vec modules; vectors_load smoke test |
-| 04 | sha256-hmac | todo | 02, 03 | |
+| 04 | sha256-hmac | in-progress | 02, 03 | |
 | 05 | aes | todo | 02, 03 | |
 | 06 | milenage | todo | 05 | |
 | 07 | kdf | todo | 04, 06 | |
