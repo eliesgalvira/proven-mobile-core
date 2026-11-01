@@ -38,20 +38,13 @@ def L.aes.block_length(key, block):
 # CTR
 # ---
 
-def List.append_len(+xs: B.Bytes(), +ys: B.Bytes()) -> {List.length(&2, U32, List.append(&2, U32, xs, ys)) == Nat.add(List.length(&2, U32, xs), List.length(&2, U32, ys)) : Nat}:
-  match xs:
-    case Nil{}:
-      {==}
-    case x <> xt:
-      Equal.cong(Nat, Nat, n => 1n+n, List.length(&2, U32, List.append(&2, U32, xt, ys)), Nat.add(List.length(&2, U32, xt), List.length(&2, U32, ys)), List.append_len(xt, ys))
-
 # The keystream for n bytes has blocks16(n) bytes.
 def Ctr.keystream_len(+n: Nat, +rks: List<&2, A.Aes.Block>, +c: A.Aes.Block) -> {List.length(&2, U32, CT.Ctr.keystream(n, rks, c)) == CT.Ctr.blocks16(n) : Nat}:
   match n:
     case 0n:
       {==}
     case 16n+p:
-      al = Equal.sym(Nat, List.length(&2, U32, List.append(&2, U32, A.Aes.to_bytes(A.Aes.encrypt(rks, c)), CT.Ctr.keystream(p, rks, CT.Ctr.inc(c)))), Nat.add(List.length(&2, U32, A.Aes.to_bytes(A.Aes.encrypt(rks, c))), List.length(&2, U32, CT.Ctr.keystream(p, rks, CT.Ctr.inc(c)))), List.append_len(A.Aes.to_bytes(A.Aes.encrypt(rks, c)), CT.Ctr.keystream(p, rks, CT.Ctr.inc(c))))
+      al = Equal.sym(Nat, List.length(&2, U32, List.append(&2, U32, A.Aes.to_bytes(A.Aes.encrypt(rks, c)), CT.Ctr.keystream(p, rks, CT.Ctr.inc(c)))), Nat.add(List.length(&2, U32, A.Aes.to_bytes(A.Aes.encrypt(rks, c))), List.length(&2, U32, CT.Ctr.keystream(p, rks, CT.Ctr.inc(c)))), P.List.append_len(A.Aes.to_bytes(A.Aes.encrypt(rks, c)), CT.Ctr.keystream(p, rks, CT.Ctr.inc(c))))
       bl = Equal.sym(Nat, List.length(&2, U32, A.Aes.to_bytes(A.Aes.encrypt(rks, c))), 16n, Aes.to_bytes_len(A.Aes.encrypt(rks, c)))
       ih = Equal.sym(Nat, List.length(&2, U32, CT.Ctr.keystream(p, rks, CT.Ctr.inc(c))), CT.Ctr.blocks16(p), Ctr.keystream_len(p, rks, CT.Ctr.inc(c)))
       %al : {_ == 16n+CT.Ctr.blocks16(p) : Nat}

@@ -11,6 +11,8 @@ import ./plmn.bend as P
 import ./crypto/x25519.bend as X
 import ./suci.bend as Su
 import ./nas/security.bend as N
+import ./nas/ie.bend as I
+import ./nas/mm.bend as Mm
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -264,3 +266,25 @@ law nas_sec.count_monotonic:
   for +s: {N.Nas.Ctx.ul(ctx) == Some{last} : Maybe<&2, N.Nas.Count>}
   {N.Nas.Count.advanced(last, N.Nas.Unprotected.count(u)) == True{} : Bool}
   & {U32.is_eq(N.Nas.Count.sqn(last), N.Nas.Count.sqn(N.Nas.Unprotected.count(u))) == False{} : Bool}
+
+# NAS 5GMM codec (ticket 10)
+# --------------------------
+
+law nas.mm.roundtrip:
+  for +m: Mm.Mm
+  for +v: {Mm.Mm.valid(m) == True{} : Bool}
+  {Mm.Mm.read(Mm.Mm.write(m)) == Done{m} : Result<&2, &2, B.Err, Mm.Mm>}
+
+law nas.mm.decode_valid:
+  for +bs: B.Bytes()
+  for +m: Mm.Mm
+  for +e: {Mm.Mm.read(bs) == Done{m} : Result<&2, &2, B.Err, Mm.Mm>}
+  {Mm.Mm.valid(m) == True{} : Bool}
+
+# The bytes a decoded message came from are exactly its encoding.
+law nas.mm.suffix:
+  for +bs: B.Bytes()
+  for +m: Mm.Mm
+  for +e: {Mm.Mm.read(bs) == Done{m} : Result<&2, &2, B.Err, Mm.Mm>}
+  for +ab: {B.all_bytes(bs) == True{} : Bool}
+  {Mm.Mm.write(m) == bs : B.Bytes()}
