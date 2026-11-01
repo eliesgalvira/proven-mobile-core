@@ -211,94 +211,94 @@ def Fields.rt(lays: List<&2, I.Lay>, fs: List<&2, I.Field>, +rest: B.Bytes(), +v
 # Optional IEs
 # ------------
 
-def Opts.step_t1(+f: Nat, +t: Mm.Mm.Type, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.T1{} == Mm.Mm.format(t, iei) : I.Fmt}, l0: {len == 0 : U32}, b0: {body == [] : B.Bytes()}) -> {Mm.Opts.iei(t, iei, R, left => Mm.Opts.read(f, t, left), ok) == Mm.Opts.cons(I.Ie{iei, I.T1{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}:
+def Opts.step_t1(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.T1{} == I.Opts.format(t, iei) : I.Fmt}, l0: {len == 0 : U32}, b0: {body == [] : B.Bytes()}) -> {I.Opts.iei(t, iei, R, left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match ok:
     case False{}:
-      Empty.absurd({Mm.Opts.iei(t, iei, R, left => Mm.Opts.read(f, t, left), False{}) == Mm.Opts.cons(I.Ie{iei, I.T1{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
+      Empty.absurd({I.Opts.iei(t, iei, R, left => I.Opts.read(f, t, left), False{}) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
     case True{}:
-      %fe : {Mm.Opts.next(I.Ie.read_body(iei, _, R), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.T1{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
-      %l0 : {Mm.Opts.cons(I.Ie{iei, I.T1{}, _, []}, Mm.Opts.read(f, t, R)) == Mm.Opts.cons(I.Ie{iei, I.T1{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
-      %b0 : {Mm.Opts.cons(I.Ie{iei, I.T1{}, len, _}, Mm.Opts.read(f, t, R)) == Mm.Opts.cons(I.Ie{iei, I.T1{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %fe : {I.Opts.next(I.Ie.read_body(iei, _, R), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      %l0 : {I.Opts.cons(I.Ie{iei, I.T1{}, _, []}, I.Opts.read(f, t, R)) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      %b0 : {I.Opts.cons(I.Ie{iei, I.T1{}, len, _}, I.Opts.read(f, t, R)) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       {==}
 
-def Opts.step_tv(+f: Nat, +t: Mm.Mm.Type, +iei: U32, +n: Nat, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.Tv{n} == Mm.Mm.format(t, iei) : I.Fmt}, ln: {List.length(&2, U32, body) == n : Nat}, l0: {len == 0 : U32}) -> {Mm.Opts.iei(t, iei, List.append(&2, U32, body, R), left => Mm.Opts.read(f, t, left), ok) == Mm.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}:
+def Opts.step_tv(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +n: Nat, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.Tv{n} == I.Opts.format(t, iei) : I.Fmt}, ln: {List.length(&2, U32, body) == n : Nat}, l0: {len == 0 : U32}) -> {I.Opts.iei(t, iei, List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match ok:
     case False{}:
-      Empty.absurd({Mm.Opts.iei(t, iei, List.append(&2, U32, body, R), left => Mm.Opts.read(f, t, left), False{}) == Mm.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
+      Empty.absurd({I.Opts.iei(t, iei, List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), False{}) == I.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
     case True{}:
-      %fe : {Mm.Opts.next(I.Ie.read_body(iei, _, List.append(&2, U32, body, R)), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
-      %ln : {Mm.Opts.next(I.Ie.of_tv(iei, _, B.take(_, List.append(&2, U32, body, R))), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.Tv{_}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %fe : {I.Opts.next(I.Ie.read_body(iei, _, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      %ln : {I.Opts.next(I.Ie.of_tv(iei, _, B.take(_, List.append(&2, U32, body, R))), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.Tv{_}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       ta = Equal.sym(B.Read(B.Bytes()), B.take(List.length(&2, U32, body), List.append(&2, U32, body, R)), Done{(body, R)}, P.Take.append(body, R))
-      %ta : {Mm.Opts.next(I.Ie.of_tv(iei, List.length(&2, U32, body), _), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
-      %l0 : {Mm.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, _, body}, Mm.Opts.read(f, t, R)) == Mm.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %ta : {I.Opts.next(I.Ie.of_tv(iei, List.length(&2, U32, body), _), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      %l0 : {I.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, _, body}, I.Opts.read(f, t, R)) == I.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       {==}
 
-def Opts.step_tlv(+f: Nat, +t: Mm.Mm.Type, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.Tlv{} == Mm.Mm.format(t, iei) : I.Fmt}, lr: {I.Len.take(len, List.append(&2, U32, body, R), I.fits8(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {Mm.Opts.iei(t, iei, len <> List.append(&2, U32, body, R), left => Mm.Opts.read(f, t, left), ok) == Mm.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}:
+def Opts.step_tlv(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.Tlv{} == I.Opts.format(t, iei) : I.Fmt}, lr: {I.Len.take(len, List.append(&2, U32, body, R), I.fits8(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {I.Opts.iei(t, iei, len <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match ok:
     case False{}:
-      Empty.absurd({Mm.Opts.iei(t, iei, len <> List.append(&2, U32, body, R), left => Mm.Opts.read(f, t, left), False{}) == Mm.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
+      Empty.absurd({I.Opts.iei(t, iei, len <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), False{}) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
     case True{}:
-      %fe : {Mm.Opts.next(I.Ie.read_body(iei, _, len <> List.append(&2, U32, body, R)), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %fe : {I.Opts.next(I.Ie.read_body(iei, _, len <> List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       slr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, R), I.fits8(len)), Done{(I.LenBody{len, body}, R)}, lr)
-      %slr : {Mm.Opts.next(I.Ie.of_len(iei, I.Tlv{}, _), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %slr : {I.Opts.next(I.Ie.of_len(iei, I.Tlv{}, _), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       {==}
 
-def Opts.step_tlve(+f: Nat, +t: Mm.Mm.Type, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.TlvE{} == Mm.Mm.format(t, iei) : I.Fmt}, ru: {B.u16(B.write_u16(len, List.append(&2, U32, body, R))) == Done{(len, List.append(&2, U32, body, R))} : B.Read(U32)}, lr: {I.Len.take(len, List.append(&2, U32, body, R), I.fits16(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {Mm.Opts.iei(t, iei, B.write_u16(len, List.append(&2, U32, body, R)), left => Mm.Opts.read(f, t, left), ok) == Mm.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}:
+def Opts.step_tlve(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.TlvE{} == I.Opts.format(t, iei) : I.Fmt}, ru: {B.u16(B.write_u16(len, List.append(&2, U32, body, R))) == Done{(len, List.append(&2, U32, body, R))} : B.Read(U32)}, lr: {I.Len.take(len, List.append(&2, U32, body, R), I.fits16(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {I.Opts.iei(t, iei, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match ok:
     case False{}:
-      Empty.absurd({Mm.Opts.iei(t, iei, B.write_u16(len, List.append(&2, U32, body, R)), left => Mm.Opts.read(f, t, left), False{}) == Mm.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
+      Empty.absurd({I.Opts.iei(t, iei, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), False{}) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
     case True{}:
-      %fe : {Mm.Opts.next(I.Ie.read_body(iei, _, B.write_u16(len, List.append(&2, U32, body, R))), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %fe : {I.Opts.next(I.Ie.read_body(iei, _, B.write_u16(len, List.append(&2, U32, body, R))), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       sru = Equal.sym(B.Read(U32), B.u16(B.write_u16(len, List.append(&2, U32, body, R))), Done{(len, List.append(&2, U32, body, R))}, ru)
-      %sru : {Mm.Opts.next(I.Ie.of_len(iei, I.TlvE{}, I.Lve.body(_)), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %sru : {I.Opts.next(I.Ie.of_len(iei, I.TlvE{}, I.Lve.body(_)), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       slr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, R), I.fits16(len)), Done{(I.LenBody{len, body}, R)}, lr)
-      %slr : {Mm.Opts.next(I.Ie.of_len(iei, I.TlvE{}, _), left => Mm.Opts.read(f, t, left)) == Mm.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %slr : {I.Opts.next(I.Ie.of_len(iei, I.TlvE{}, _), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       {==}
 
 # One valid optional IE reads back from its encoding and leaves the rest.
-def Opts.step(+f: Nat, +t: Mm.Mm.Type, +iei: U32, fmt: I.Fmt, +len: U32, +body: B.Bytes(), +R: B.Bytes(), +v: {I.Ie.valid(Mm.Mm.format(t, iei), I.Ie{iei, fmt, len, body}) == True{} : Bool}) -> {Mm.Opts.read(1n+f, t, I.Ie.write(I.Ie{iei, fmt, len, body}, R)) == Mm.Opts.cons(I.Ie{iei, fmt, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}:
+def Opts.step(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, fmt: I.Fmt, +len: U32, +body: B.Bytes(), +R: B.Bytes(), +v: {I.Ie.valid(I.Opts.format(t, iei), I.Ie{iei, fmt, len, body}) == True{} : Bool}) -> {I.Opts.read(1n+f, t, I.Ie.write(I.Ie{iei, fmt, len, body}, R)) == I.Opts.cons(I.Ie{iei, fmt, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match fmt:
     case I.T1{}:
-      fe = Fmt.eq_of_is_eq(I.T1{}, Mm.Mm.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.T1{}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.T1{}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v)
+      fe = Fmt.eq_of_is_eq(I.T1{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.T1{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.T1{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v)
       +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body), r1)
       +rr = P.Bool.and_true_r(U32.is_ge(iei, 128), Bool.and(List.is_empty(&2, U32, body), U32.is_eq(len, 0)), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body), r1))
       b0 = List.nil_of_is_empty(body, P.Bool.and_true_l(List.is_empty(&2, U32, body), U32.is_eq(len, 0), rr))
       l0 = P.U32.eq_of_is_eq(len, 0, P.Bool.and_true_r(List.is_empty(&2, U32, body), U32.is_eq(len, 0), rr))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
-      %mi : {Mm.Opts.iei(t, _, R, left => Mm.Opts.read(f, t, left), I.fits8(_)) == Mm.Opts.cons(I.Ie{iei, I.T1{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %mi : {I.Opts.iei(t, _, R, left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       Opts.step_t1(f, t, iei, len, body, R, I.fits8(iei), f8, fe, l0, b0)
     case I.Tv{+n}:
-      fe = Fmt.eq_of_is_eq(I.Tv{n}, Mm.Mm.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tv{n}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tv{n}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v)
+      fe = Fmt.eq_of_is_eq(I.Tv{n}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tv{n}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tv{n}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v)
       +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body), r1)
       +rr = P.Bool.and_true_r(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), U32.is_eq(len, 0)), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body), r1))
       ln = P.Nat.eq_of_is_eq(List.length(&2, U32, body), n, P.Bool.and_true_l(Nat.is_eq(List.length(&2, U32, body), n), U32.is_eq(len, 0), rr))
       l0 = P.U32.eq_of_is_eq(len, 0, P.Bool.and_true_r(Nat.is_eq(List.length(&2, U32, body), n), U32.is_eq(len, 0), rr))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
-      %mi : {Mm.Opts.iei(t, _, List.append(&2, U32, body, R), left => Mm.Opts.read(f, t, left), I.fits8(_)) == Mm.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %mi : {I.Opts.iei(t, _, List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       Opts.step_tv(f, t, iei, n, len, body, R, I.fits8(iei), f8, fe, ln, l0)
     case I.Tlv{}:
-      fe = Fmt.eq_of_is_eq(I.Tlv{}, Mm.Mm.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tlv{}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tlv{}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v)
+      fe = Fmt.eq_of_is_eq(I.Tlv{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tlv{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tlv{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v)
       +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body), r1)
       +v8 = P.Bool.and_true_r(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body}), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body), r1))
       +fl = P.Bool.and_true_l(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8)
       tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
       ml = Equal.sym(U32, U32.and(255, len), len, P.U32.eq_of_is_eq(U32.and(255, len), len, fl))
-      %mi : {Mm.Opts.iei(t, _, U32.and(255, len) <> List.append(&2, U32, body, R), left => Mm.Opts.read(f, t, left), I.fits8(_)) == Mm.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
-      %ml : {Mm.Opts.iei(t, iei, _ <> List.append(&2, U32, body, R), left => Mm.Opts.read(f, t, left), I.fits8(iei)) == Mm.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %mi : {I.Opts.iei(t, _, U32.and(255, len) <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      %ml : {I.Opts.iei(t, iei, _ <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), I.fits8(iei)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       Opts.step_tlv(f, t, iei, len, body, R, I.fits8(iei), f8, fe, Len.rt(len, body, R, I.fits8(len), fl, tn))
     case I.TlvE{}:
-      fe = Fmt.eq_of_is_eq(I.TlvE{}, Mm.Mm.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.TlvE{}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.TlvE{}, Mm.Mm.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v)
+      fe = Fmt.eq_of_is_eq(I.TlvE{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.TlvE{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.TlvE{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v)
       +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body), r1)
       +v16 = P.Bool.and_true_r(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body}), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body), r1))
       +fl = P.Bool.and_true_l(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v16)
       tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v16))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
-      %mi : {Mm.Opts.iei(t, _, B.write_u16(len, List.append(&2, U32, body, R)), left => Mm.Opts.read(f, t, left), I.fits8(_)) == Mm.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, Mm.Opts.read(f, t, R)) : Opts.Res()}
+      %mi : {I.Opts.iei(t, _, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       Opts.step_tlve(f, t, iei, len, body, R, I.fits8(iei), f8, fe, L.bytes.u16.roundtrip(len, List.append(&2, U32, body, R), P.U32.eq_of_is_eq(U32.and(65535, len), len, fl)), Len.rt(len, body, R, I.fits16(len), fl, tn))
 
 # Every IE takes at least one byte.
@@ -328,20 +328,20 @@ def Ie.write_bound(ie: I.Ie, +W: B.Bytes(), +f: Nat, e: {Nat.is_le(List.length(&
         case I.TlvE{}:
           P.Nat.le_of_append(body, W, 2n, f, e)
 
-def Opts.rt(+t: Mm.Mm.Type, opts: List<&2, I.Ie>, fuel: Nat, +v: {Mm.Opts.valid(t, opts) == True{} : Bool}, +bound: {Nat.is_le(List.length(&2, U32, I.Ies.write(opts, [])), fuel) == True{} : Bool}) -> {Mm.Opts.read(fuel, t, I.Ies.write(opts, [])) == Done{opts} : Opts.Res()}:
+def Opts.rt(+t: List<&2, I.Rule>, opts: List<&2, I.Ie>, fuel: Nat, +v: {I.Opts.valid(t, opts) == True{} : Bool}, +bound: {Nat.is_le(List.length(&2, U32, I.Ies.write(opts, [])), fuel) == True{} : Bool}) -> {I.Opts.read(fuel, t, I.Ies.write(opts, [])) == Done{opts} : Opts.Res()}:
   match opts fuel:
     case Nil{} 0n:
       {==}
     case Nil{} 1n+f:
       {==}
     case I.Ie{+iei, +fmt, +len, +body} <> +more 0n:
-      Empty.absurd({Mm.Opts.read(0n, t, I.Ies.write(I.Ie{iei, fmt, len, body} <> more, [])) == Done{I.Ie{iei, fmt, len, body} <> more} : Opts.Res()}, Ie.write_pos(I.Ie{iei, fmt, len, body}, I.Ies.write(more, []), bound))
+      Empty.absurd({I.Opts.read(0n, t, I.Ies.write(I.Ie{iei, fmt, len, body} <> more, [])) == Done{I.Ie{iei, fmt, len, body} <> more} : Opts.Res()}, Ie.write_pos(I.Ie{iei, fmt, len, body}, I.Ies.write(more, []), bound))
     case I.Ie{+iei, +fmt, +len, +body} <> +more 1n++f:
       +W = I.Ies.write(more, [])
-      st = Equal.sym(Opts.Res(), Mm.Opts.read(1n+f, t, I.Ie.write(I.Ie{iei, fmt, len, body}, W)), Mm.Opts.cons(I.Ie{iei, fmt, len, body}, Mm.Opts.read(f, t, W)), Opts.step(f, t, iei, fmt, len, body, W, P.Bool.and_true_l(I.Ie.valid(Mm.Mm.format(t, iei), I.Ie{iei, fmt, len, body}), Mm.Opts.valid(t, more), v)))
+      st = Equal.sym(Opts.Res(), I.Opts.read(1n+f, t, I.Ie.write(I.Ie{iei, fmt, len, body}, W)), I.Opts.cons(I.Ie{iei, fmt, len, body}, I.Opts.read(f, t, W)), Opts.step(f, t, iei, fmt, len, body, W, P.Bool.and_true_l(I.Ie.valid(I.Opts.format(t, iei), I.Ie{iei, fmt, len, body}), I.Opts.valid(t, more), v)))
       %st : {_ == Done{I.Ie{iei, fmt, len, body} <> more} : Opts.Res()}
-      ih = Equal.sym(Opts.Res(), Mm.Opts.read(f, t, W), Done{more}, Opts.rt(t, more, f, P.Bool.and_true_r(I.Ie.valid(Mm.Mm.format(t, iei), I.Ie{iei, fmt, len, body}), Mm.Opts.valid(t, more), v), Ie.write_bound(I.Ie{iei, fmt, len, body}, W, f, bound)))
-      %ih : {Mm.Opts.cons(I.Ie{iei, fmt, len, body}, _) == Done{I.Ie{iei, fmt, len, body} <> more} : Opts.Res()}
+      ih = Equal.sym(Opts.Res(), I.Opts.read(f, t, W), Done{more}, Opts.rt(t, more, f, P.Bool.and_true_r(I.Ie.valid(I.Opts.format(t, iei), I.Ie{iei, fmt, len, body}), I.Opts.valid(t, more), v), Ie.write_bound(I.Ie{iei, fmt, len, body}, W, f, bound)))
+      %ih : {I.Opts.cons(I.Ie{iei, fmt, len, body}, _) == Done{I.Ie{iei, fmt, len, body} <> more} : Opts.Res()}
       {==}
 
 # Roundtrip
@@ -354,9 +354,9 @@ def Msg.rt(+mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +
   %sc : {Mm.Mm.r_type(_, F, Mm.Mm.Type.of(_)) == Done{Mm.Mm{mt, fields, opts}} : Msg.Res()}
   so = Equal.sym(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type.of(Mm.Mm.Type.code(mt)), Some{mt}, Type.of_code(mt))
   %so : {Mm.Mm.r_type(Mm.Mm.Type.code(mt), F, _) == Done{Mm.Mm{mt, fields, opts}} : Msg.Res()}
-  fr = Equal.sym(B.Read(List<&2, I.Field>), I.Fields.read(Mm.Mm.layout(mt), F), Done{(fields, W)}, Fields.rt(Mm.Mm.layout(mt), fields, W, P.Bool.and_true_l(I.Fields.valid(Mm.Mm.layout(mt), fields), Mm.Opts.valid(mt, opts), v)))
+  fr = Equal.sym(B.Read(List<&2, I.Field>), I.Fields.read(Mm.Mm.layout(mt), F), Done{(fields, W)}, Fields.rt(Mm.Mm.layout(mt), fields, W, P.Bool.and_true_l(I.Fields.valid(Mm.Mm.layout(mt), fields), I.Opts.valid(Mm.Mm.table(mt), opts), v)))
   %fr : {Mm.Mm.r_fields(mt, _) == Done{Mm.Mm{mt, fields, opts}} : Msg.Res()}
-  orr = Equal.sym(Opts.Res(), Mm.Opts.read(List.length(&2, U32, W), mt, W), Done{opts}, Opts.rt(mt, opts, List.length(&2, U32, W), P.Bool.and_true_r(I.Fields.valid(Mm.Mm.layout(mt), fields), Mm.Opts.valid(mt, opts), v), P.Nat.le_refl(List.length(&2, U32, W))))
+  orr = Equal.sym(Opts.Res(), I.Opts.read(List.length(&2, U32, W), Mm.Mm.table(mt), W), Done{opts}, Opts.rt(Mm.Mm.table(mt), opts, List.length(&2, U32, W), P.Bool.and_true_r(I.Fields.valid(Mm.Mm.layout(mt), fields), I.Opts.valid(Mm.Mm.table(mt), opts), v), P.Nat.le_refl(List.length(&2, U32, W))))
   %orr : {Mm.Mm.r_opts(mt, fields, _) == Done{Mm.Mm{mt, fields, opts}} : Msg.Res()}
   {==}
 
@@ -392,17 +392,17 @@ def Fmt.of_low_ne_t1(l: I.Low, e: {I.Fmt.of_low(l) == I.T1{} : I.Fmt}) -> Empty:
       Unit{}
 
 # A one-octet format means an IEI of 0x80 or more; any other format means less.
-def Format.go_t1(+t: Mm.Mm.Type, +n: Nat, oo: Bool, e: {Mm.Mm.format.go(t, n, oo) == I.T1{} : I.Fmt}) -> {oo == True{} : Bool}:
+def Fmt.pick_t1(l: I.Low, oo: Bool, e: {I.Fmt.pick(l, oo) == I.T1{} : I.Fmt}) -> {oo == True{} : Bool}:
   match oo:
     case True{}:
       {==}
     case False{}:
-      Empty.absurd({False{} == True{} : Bool}, Fmt.of_low_ne_t1(Mm.Mm.format.low(t, n), e))
+      Empty.absurd({False{} == True{} : Bool}, Fmt.of_low_ne_t1(l, e))
 
-def Format.t1(+t: Mm.Mm.Type, +iei: U32, e: {Mm.Mm.format(t, iei) == I.T1{} : I.Fmt}) -> {U32.is_ge(iei, 128) == True{} : Bool}:
-  Format.go_t1(t, U32.to_nat(iei), U32.is_ge(iei, 128), e)
+def Format.t1(t: List<&2, I.Rule>, +iei: U32, e: {I.Opts.format(t, iei) == I.T1{} : I.Fmt}) -> {U32.is_ge(iei, 128) == True{} : Bool}:
+  Fmt.pick_t1(I.Table.low(t, iei), U32.is_ge(iei, 128), e)
 
-def Format.go_low(+t: Mm.Mm.Type, +n: Nat, oo: Bool, +x: I.Fmt, e: {Mm.Mm.format.go(t, n, oo) == x : I.Fmt}, nt: Fmt.not_t1(x)) -> {oo == False{} : Bool}:
+def Fmt.pick_low(l: I.Low, oo: Bool, x: I.Fmt, e: {I.Fmt.pick(l, oo) == x : I.Fmt}, nt: Fmt.not_t1(x)) -> {oo == False{} : Bool}:
   match oo:
     case False{}:
       {==}
@@ -410,8 +410,8 @@ def Format.go_low(+t: Mm.Mm.Type, +n: Nat, oo: Bool, +x: I.Fmt, e: {Mm.Mm.format
       se = Equal.sym(I.Fmt, I.T1{}, x, e)
       Empty.absurd({True{} == False{} : Bool}, (%se : Fmt.not_t1(_); nt))
 
-def Format.low(+t: Mm.Mm.Type, +iei: U32, +x: I.Fmt, e: {Mm.Mm.format(t, iei) == x : I.Fmt}, nt: Fmt.not_t1(x)) -> {U32.is_lt(iei, 128) == True{} : Bool}:
-  P.U32.lt_of_not_ge(iei, 128, Format.go_low(t, U32.to_nat(iei), U32.is_ge(iei, 128), x, e, nt))
+def Format.low(t: List<&2, I.Rule>, +iei: U32, x: I.Fmt, e: {I.Opts.format(t, iei) == x : I.Fmt}, nt: Fmt.not_t1(x)) -> {U32.is_lt(iei, 128) == True{} : Bool}:
+  P.U32.lt_of_not_ge(iei, 128, Fmt.pick_low(I.Table.low(t, iei), U32.is_ge(iei, 128), x, e, nt))
 
 # What take read has the length it was asked for.
 def Take.len_eq.go(+n: Nat, +body: B.Bytes(), +r: B.Bytes(), +rest: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, rest) == r : B.Bytes()}) -> {Nat.is_eq(List.length(&2, U32, body), n) == True{} : Bool}:
@@ -546,50 +546,50 @@ def Fields.dv(+lays: List<&2, I.Lay>, +bs: B.Bytes(), +fs: List<&2, I.Field>, +r
       Fields.dv_next(l, ls, I.Field.read(l, bs), fs, rest, e, f => r => e2 => Field.dv(l, bs, f, r, e2), bs2 => fs2 => r => e2 => Fields.dv(ls, bs2, fs2, r, e2))
 
 # A decoded optional IE is valid for the format its message assigns to it.
-def Ie.Valid(+t: Mm.Mm.Type, +ie: I.Ie) -> Type:
-  {I.Ie.valid(Mm.Mm.format(t, I.Ie.iei(ie)), ie) == True{} : Bool}
+def Ie.Valid(+t: List<&2, I.Rule>, +ie: I.Ie) -> Type:
+  {I.Ie.valid(I.Opts.format(t, I.Ie.iei(ie)), ie) == True{} : Bool}
 
-def Ie.dv_t1(+t: Mm.Mm.Type, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {Mm.Mm.format(t, iei) == I.T1{} : I.Fmt}, e: {Done{(I.Ie{iei, I.T1{}, 0, []}, r)} == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_t1(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.T1{} : I.Fmt}, e: {Done{(I.Ie{iei, I.T1{}, 0, []}, r)} == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.T1{}, 0, []}, r)}, Done{(ie, rest)}, e)
   %ei : Ie.Valid(t, _)
-  shx = Equal.sym(I.Fmt, Mm.Mm.format(t, iei), I.T1{}, hx)
+  shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.T1{}, hx)
   %shx : {I.Ie.valid(_, I.Ie{iei, I.T1{}, 0, []}) == True{} : Bool}
   P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_ge(iei, 128), True{}), f8, P.Bool.and_intro(U32.is_ge(iei, 128), True{}, Format.t1(t, iei, hx), {==}))
 
-def Ie.dv_tv(+t: Mm.Mm.Type, +iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {Mm.Mm.format(t, iei) == I.Tv{n} : I.Fmt}, +rt: B.Read(B.Bytes()), ert: {B.take(n, r) == rt : B.Read(B.Bytes())}, e: {I.Ie.of_tv(iei, n, rt) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_tv(+t: List<&2, I.Rule>, +iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.Tv{n} : I.Fmt}, +rt: B.Read(B.Bytes()), ert: {B.take(n, r) == rt : B.Read(B.Bytes())}, e: {I.Ie.of_tv(iei, n, rt) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match rt:
     case Fail{err}:
       Empty.absurd(Ie.Valid(t, ie), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, rest), e))
     case Done{(+body, rest2)}:
       ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.Tv{n}, 0, body}, rest2)}, Done{(ie, rest)}, e)
       %ei : Ie.Valid(t, _)
-      shx = Equal.sym(I.Fmt, Mm.Mm.format(t, iei), I.Tv{n}, hx)
+      shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.Tv{n}, hx)
       %shx : {I.Ie.valid(_, I.Ie{iei, I.Tv{n}, 0, body}) == True{} : Bool}
       P.Bool.and_intro(Nat.is_eq(n, n), Bool.and(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}))), P.Nat.is_eq_refl(n), P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}), Format.low(t, iei, I.Tv{n}, hx, Unit{}), P.Bool.and_intro(Nat.is_eq(List.length(&2, U32, body), n), True{}, Take.len_eq(n, r, body, rest2, ert), {==}))))
 
-def Ie.dv_tlv(+t: Mm.Mm.Type, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {Mm.Mm.format(t, iei) == I.Tlv{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lv(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_tlv(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.Tlv{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lv(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match rl:
     case Fail{err}:
       Empty.absurd(Ie.Valid(t, ie), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, rest), e))
     case Done{(I.LenBody{+len, +body}, rest2)}:
       ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.Tlv{}, len, body}, rest2)}, Done{(ie, rest)}, e)
       %ei : Ie.Valid(t, _)
-      shx = Equal.sym(I.Fmt, Mm.Mm.format(t, iei), I.Tlv{}, hx)
+      shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.Tlv{}, hx)
       %shx : {I.Ie.valid(_, I.Ie{iei, I.Tlv{}, len, body}) == True{} : Bool}
       P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body}), Format.low(t, iei, I.Tlv{}, hx, Unit{}), Lv.dv(r, I.LenBody{len, body}, rest2, erl)))
 
-def Ie.dv_tlve(+t: Mm.Mm.Type, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {Mm.Mm.format(t, iei) == I.TlvE{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lve(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.TlvE{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_tlve(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.TlvE{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lve(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.TlvE{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match rl:
     case Fail{err}:
       Empty.absurd(Ie.Valid(t, ie), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, rest), e))
     case Done{(I.LenBody{+len, +body}, rest2)}:
       ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.TlvE{}, len, body}, rest2)}, Done{(ie, rest)}, e)
       %ei : Ie.Valid(t, _)
-      shx = Equal.sym(I.Fmt, Mm.Mm.format(t, iei), I.TlvE{}, hx)
+      shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.TlvE{}, hx)
       %shx : {I.Ie.valid(_, I.Ie{iei, I.TlvE{}, len, body}) == True{} : Bool}
       P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body}), Format.low(t, iei, I.TlvE{}, hx, Unit{}), Lve.dv(r, I.LenBody{len, body}, rest2, erl)))
 
-def Ie.dv(+t: Mm.Mm.Type, +iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, hx: {Mm.Mm.format(t, iei) == x : I.Fmt}, e: {I.Ie.read_body(iei, x, r) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv(+t: List<&2, I.Rule>, +iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, hx: {I.Opts.format(t, iei) == x : I.Fmt}, e: {I.Ie.read_body(iei, x, r) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match x:
     case I.T1{}:
       Ie.dv_t1(t, iei, r, ie, rest, f8, hx, e)
@@ -600,59 +600,59 @@ def Ie.dv(+t: Mm.Mm.Type, +iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +rest:
     case I.TlvE{}:
       Ie.dv_tlve(t, iei, r, ie, rest, f8, hx, I.lve(r), {==}, e)
 
-def Opts.dv_cons(+t: Mm.Mm.Type, +ie: I.Ie, +ro: Opts.Res(), +opts: List<&2, I.Ie>, e: {Mm.Opts.cons(ie, ro) == Done{opts} : Opts.Res()}, hv: Ie.Valid(t, ie), ho: @opts2: List<&2, I.Ie> -> {ro == Done{opts2} : Opts.Res()} -> {Mm.Opts.valid(t, opts2) == True{} : Bool}) -> {Mm.Opts.valid(t, opts) == True{} : Bool}:
+def Opts.dv_cons(+t: List<&2, I.Rule>, +ie: I.Ie, +ro: Opts.Res(), +opts: List<&2, I.Ie>, e: {I.Opts.cons(ie, ro) == Done{opts} : Opts.Res()}, hv: Ie.Valid(t, ie), ho: @opts2: List<&2, I.Ie> -> {ro == Done{opts2} : Opts.Res()} -> {I.Opts.valid(t, opts2) == True{} : Bool}) -> {I.Opts.valid(t, opts) == True{} : Bool}:
   match ro:
     case Fail{err}:
-      Empty.absurd({Mm.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
+      Empty.absurd({I.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
     case Done{+opts2}:
       eo = Equal.cong(Opts.Res(), List<&2, I.Ie>, x => P.Res.value(B.Err, List<&2, I.Ie>, x, opts), Done{ie <> opts2}, Done{opts}, e)
-      %eo : {Mm.Opts.valid(t, _) == True{} : Bool}
-      P.Bool.and_intro(I.Ie.valid(Mm.Mm.format(t, I.Ie.iei(ie)), ie), Mm.Opts.valid(t, opts2), hv, ho(opts2, {==}))
+      %eo : {I.Opts.valid(t, _) == True{} : Bool}
+      P.Bool.and_intro(I.Ie.valid(I.Opts.format(t, I.Ie.iei(ie)), ie), I.Opts.valid(t, opts2), hv, ho(opts2, {==}))
 
-def Opts.dv_next(+t: Mm.Mm.Type, +f: Nat, +rb: B.Read(I.Ie), +opts: List<&2, I.Ie>, e: {Mm.Opts.next(rb, left => Mm.Opts.read(f, t, left)) == Done{opts} : Opts.Res()}, hb: @ie: I.Ie -> @r: B.Bytes() -> {rb == Done{(ie, r)} : B.Read(I.Ie)} -> Ie.Valid(t, ie), ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {Mm.Opts.valid(t, opts2) == True{} : Bool}) -> {Mm.Opts.valid(t, opts) == True{} : Bool}:
+def Opts.dv_next(+t: List<&2, I.Rule>, +f: Nat, +rb: B.Read(I.Ie), +opts: List<&2, I.Ie>, e: {I.Opts.next(rb, left => I.Opts.read(f, t, left)) == Done{opts} : Opts.Res()}, hb: @ie: I.Ie -> @r: B.Bytes() -> {rb == Done{(ie, r)} : B.Read(I.Ie)} -> Ie.Valid(t, ie), ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {I.Opts.valid(t, opts2) == True{} : Bool}) -> {I.Opts.valid(t, opts) == True{} : Bool}:
   match rb:
     case Fail{err}:
-      Empty.absurd({Mm.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
+      Empty.absurd({I.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
     case Done{(+ie, +r)}:
-      Opts.dv_cons(t, ie, Mm.Opts.read(f, t, r), opts, e, hb(ie, r, {==}), opts2 => e2 => ih(r, opts2, e2))
+      Opts.dv_cons(t, ie, I.Opts.read(f, t, r), opts, e, hb(ie, r, {==}), opts2 => e2 => ih(r, opts2, e2))
 
-def Opts.dv_iei(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, ev: {I.fits8(iei) == ok : Bool}, e: {Mm.Opts.iei(t, iei, r, left => Mm.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {Mm.Opts.valid(t, opts2) == True{} : Bool}) -> {Mm.Opts.valid(t, opts) == True{} : Bool}:
+def Opts.dv_iei(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, ev: {I.fits8(iei) == ok : Bool}, e: {I.Opts.iei(t, iei, r, left => I.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {I.Opts.valid(t, opts2) == True{} : Bool}) -> {I.Opts.valid(t, opts) == True{} : Bool}:
   match ok:
     case False{}:
-      Empty.absurd({Mm.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{iei}, opts, e))
+      Empty.absurd({I.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{iei}, opts, e))
     case True{}:
-      Opts.dv_next(t, f, I.Ie.read_body(iei, Mm.Mm.format(t, iei), r), opts, e, ie => r2 => e2 => Ie.dv(t, iei, Mm.Mm.format(t, iei), r, ie, r2, ev, {==}, e2), ih)
+      Opts.dv_next(t, f, I.Ie.read_body(iei, I.Opts.format(t, iei), r), opts, e, ie => r2 => e2 => Ie.dv(t, iei, I.Opts.format(t, iei), r, ie, r2, ev, {==}, e2), ih)
 
-def Opts.dv(+t: Mm.Mm.Type, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.Ie>, e: {Mm.Opts.read(fuel, t, bs) == Done{opts} : Opts.Res()}) -> {Mm.Opts.valid(t, opts) == True{} : Bool}:
+def Opts.dv(+t: List<&2, I.Rule>, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.Ie>, e: {I.Opts.read(fuel, t, bs) == Done{opts} : Opts.Res()}) -> {I.Opts.valid(t, opts) == True{} : Bool}:
   match fuel bs:
     case 0n Nil{}:
       eo = Equal.cong(Opts.Res(), List<&2, I.Ie>, x => P.Res.value(B.Err, List<&2, I.Ie>, x, opts), Done{[]}, Done{opts}, e)
-      %eo : {Mm.Opts.valid(t, _) == True{} : Bool}
+      %eo : {I.Opts.valid(t, _) == True{} : Bool}
       {==}
     case 1n+f Nil{}:
       eo = Equal.cong(Opts.Res(), List<&2, I.Ie>, x => P.Res.value(B.Err, List<&2, I.Ie>, x, opts), Done{[]}, Done{opts}, e)
-      %eo : {Mm.Opts.valid(t, _) == True{} : Bool}
+      %eo : {I.Opts.valid(t, _) == True{} : Bool}
       {==}
     case 0n b <> r:
-      Empty.absurd({Mm.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{b}, opts, e))
+      Empty.absurd({I.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{b}, opts, e))
     case 1n++f +iei <> +r:
       Opts.dv_iei(t, f, iei, r, opts, I.fits8(iei), {==}, e, left => opts2 => e2 => Opts.dv(t, f, left, opts2, e2))
 
-def Msg.dv_opts(+mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +ro: Opts.Res(), +m: Mm.Mm, e: {Mm.Mm.r_opts(mt, fields, ro) == Done{m} : Msg.Res()}, hf: {I.Fields.valid(Mm.Mm.layout(mt), fields) == True{} : Bool}, ho: @opts: List<&2, I.Ie> -> {ro == Done{opts} : Opts.Res()} -> {Mm.Opts.valid(mt, opts) == True{} : Bool}) -> {Mm.Mm.valid(m) == True{} : Bool}:
+def Msg.dv_opts(+mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +ro: Opts.Res(), +m: Mm.Mm, e: {Mm.Mm.r_opts(mt, fields, ro) == Done{m} : Msg.Res()}, hf: {I.Fields.valid(Mm.Mm.layout(mt), fields) == True{} : Bool}, ho: @opts: List<&2, I.Ie> -> {ro == Done{opts} : Opts.Res()} -> {I.Opts.valid(Mm.Mm.table(mt), opts) == True{} : Bool}) -> {Mm.Mm.valid(m) == True{} : Bool}:
   match ro:
     case Fail{err}:
       Empty.absurd({Mm.Mm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Mm.Mm, err, m, e))
     case Done{+opts}:
       em = Equal.cong(Msg.Res(), Mm.Mm, x => P.Res.value(B.Err, Mm.Mm, x, m), Done{Mm.Mm{mt, fields, opts}}, Done{m}, e)
       %em : {Mm.Mm.valid(_) == True{} : Bool}
-      P.Bool.and_intro(I.Fields.valid(Mm.Mm.layout(mt), fields), Mm.Opts.valid(mt, opts), hf, ho(opts, {==}))
+      P.Bool.and_intro(I.Fields.valid(Mm.Mm.layout(mt), fields), I.Opts.valid(Mm.Mm.table(mt), opts), hf, ho(opts, {==}))
 
 def Msg.dv_fields(+mt: Mm.Mm.Type, +rf: B.Read(List<&2, I.Field>), +m: Mm.Mm, e: {Mm.Mm.r_fields(mt, rf) == Done{m} : Msg.Res()}, hf: @fs: List<&2, I.Field> -> @r: B.Bytes() -> {rf == Done{(fs, r)} : B.Read(List<&2, I.Field>)} -> {I.Fields.valid(Mm.Mm.layout(mt), fs) == True{} : Bool}) -> {Mm.Mm.valid(m) == True{} : Bool}:
   match rf:
     case Fail{err}:
       Empty.absurd({Mm.Mm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Mm.Mm, err, m, e))
     case Done{(+fields, +rest)}:
-      Msg.dv_opts(mt, fields, Mm.Opts.read(List.length(&2, U32, rest), mt, rest), m, e, hf(fields, rest, {==}), opts => e2 => Opts.dv(mt, List.length(&2, U32, rest), rest, opts, e2))
+      Msg.dv_opts(mt, fields, I.Opts.read(List.length(&2, U32, rest), Mm.Mm.table(mt), rest), m, e, hf(fields, rest, {==}), opts => e2 => Opts.dv(Mm.Mm.table(mt), List.length(&2, U32, rest), rest, opts, e2))
 
 def Msg.dv_type(+code: U32, +r: B.Bytes(), +m: Mm.Mm, +tm: Maybe<&2, Mm.Mm.Type>, e: {Mm.Mm.r_type(code, r, tm) == Done{m} : Msg.Res()}) -> {Mm.Mm.valid(m) == True{} : Bool}:
   match tm:
@@ -959,7 +959,7 @@ def Ie.sx(+iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I
         case +b1 <> +b0 <> +r1:
           Ie.sx_tlve(iei, b1, b0, r1, ie, r2, f8, I.Len.take(B.cat8(b0, b1), r1, I.fits16(B.cat8(b0, b1))), {==}, e, ab)
 
-def Opts.sx_cons(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), +ro: Opts.Res(), ero: {Mm.Opts.read(f, t, r2) == ro : Opts.Res()}, +opts: List<&2, I.Ie>, +e: {Mm.Opts.cons(ie, ro) == Done{opts} : Opts.Res()}, s: Ie.Sx(ie, r2, iei <> r), ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+def Opts.sx_cons(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), +ro: Opts.Res(), ero: {I.Opts.read(f, t, r2) == ro : Opts.Res()}, +opts: List<&2, I.Ie>, +e: {I.Opts.cons(ie, ro) == Done{opts} : Opts.Res()}, s: Ie.Sx(ie, r2, iei <> r), ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
   match ro:
     case Fail{err}:
       Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
@@ -971,21 +971,21 @@ def Opts.sx_cons(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +
       %sw : {I.Ie.write(ie, _) == iei <> r : B.Bytes()}
       w
 
-def Opts.sx_next(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +rb: B.Read(I.Ie), erb: {I.Ie.read_body(iei, Mm.Mm.format(t, iei), r) == rb : B.Read(I.Ie)}, +opts: List<&2, I.Ie>, +e: {Mm.Opts.next(rb, left => Mm.Opts.read(f, t, left)) == Done{opts} : Opts.Res()}, f8: {I.fits8(iei) == True{} : Bool}, +ab: {B.all_bytes(r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+def Opts.sx_next(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +rb: B.Read(I.Ie), erb: {I.Ie.read_body(iei, I.Opts.format(t, iei), r) == rb : B.Read(I.Ie)}, +opts: List<&2, I.Ie>, +e: {I.Opts.next(rb, left => I.Opts.read(f, t, left)) == Done{opts} : Opts.Res()}, f8: {I.fits8(iei) == True{} : Bool}, +ab: {B.all_bytes(r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
   match rb:
     case Fail{err}:
       Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
     case Done{(+ie, +r2)}:
-      Opts.sx_cons(t, f, iei, r, ie, r2, Mm.Opts.read(f, t, r2), {==}, opts, e, Ie.sx(iei, Mm.Mm.format(t, iei), r, ie, r2, f8, erb, ab), ih)
+      Opts.sx_cons(t, f, iei, r, ie, r2, I.Opts.read(f, t, r2), {==}, opts, e, Ie.sx(iei, I.Opts.format(t, iei), r, ie, r2, f8, erb, ab), ih)
 
-def Opts.sx_iei(+t: Mm.Mm.Type, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, +ev: {I.fits8(iei) == ok : Bool}, +e: {Mm.Opts.iei(t, iei, r, left => Mm.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(iei <> r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {Mm.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+def Opts.sx_iei(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, +ev: {I.fits8(iei) == ok : Bool}, +e: {I.Opts.iei(t, iei, r, left => I.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(iei <> r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
   match ok:
     case False{}:
       Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{iei}, opts, e))
     case True{}:
-      Opts.sx_next(t, f, iei, r, I.Ie.read_body(iei, Mm.Mm.format(t, iei), r), {==}, opts, e, ev, P.Bool.and_true_r(B.is_byte(iei), B.all_bytes(r), ab), ih)
+      Opts.sx_next(t, f, iei, r, I.Ie.read_body(iei, I.Opts.format(t, iei), r), {==}, opts, e, ev, P.Bool.and_true_r(B.is_byte(iei), B.all_bytes(r), ab), ih)
 
-def Opts.sx(+t: Mm.Mm.Type, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.Ie>, +e: {Mm.Opts.read(fuel, t, bs) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> {I.Ies.write(opts, []) == bs : B.Bytes()}:
+def Opts.sx(+t: List<&2, I.Rule>, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.Ie>, +e: {I.Opts.read(fuel, t, bs) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> {I.Ies.write(opts, []) == bs : B.Bytes()}:
   match fuel bs:
     case 0n Nil{}:
       eo = Equal.cong(Opts.Res(), List<&2, I.Ie>, x => P.Res.value(B.Err, List<&2, I.Ie>, x, opts), Done{[]}, Done{opts}, e)
@@ -1190,20 +1190,20 @@ def Msg.sx_fin(+epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +mt: Mm.Mm.Type,
   %swf : {126 <> 0 <> Mm.Mm.Type.code(mt) <> _ == 126 <> 0 <> Mm.Mm.Type.code(mt) <> r : B.Bytes()}
   {==}
 
-def Msg.sx_opts(+ro: Opts.Res(), +epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +rest: B.Bytes(), +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, ec: {Mm.Mm.Type.code(mt) == code : U32}, ero: {Mm.Opts.read(List.length(&2, U32, rest), mt, rest) == ro : Opts.Res()}, +e: {Mm.Mm.r_opts(mt, fields, ro) == Done{m} : Msg.Res()}, s: Fields.Sx(fields, rest, r)) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
+def Msg.sx_opts(+ro: Opts.Res(), +epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +rest: B.Bytes(), +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, ec: {Mm.Mm.Type.code(mt) == code : U32}, ero: {I.Opts.read(List.length(&2, U32, rest), Mm.Mm.table(mt), rest) == ro : Opts.Res()}, +e: {Mm.Mm.r_opts(mt, fields, ro) == Done{m} : Msg.Res()}, s: Fields.Sx(fields, rest, r)) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
   match ro:
     case Fail{err}:
       Empty.absurd({Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, err, m, e))
     case Done{+opts}:
       (wf, ar) = s
-      Msg.sx_fin(epd, sht, code, r, mt, fields, rest, opts, m, e126, e0, ec, Equal.cong(Msg.Res(), Mm.Mm, x => P.Res.value(B.Err, Mm.Mm, x, m), Done{Mm.Mm{mt, fields, opts}}, Done{m}, e), wf, Opts.sx(mt, List.length(&2, U32, rest), rest, opts, ero, ar))
+      Msg.sx_fin(epd, sht, code, r, mt, fields, rest, opts, m, e126, e0, ec, Equal.cong(Msg.Res(), Mm.Mm, x => P.Res.value(B.Err, Mm.Mm, x, m), Done{Mm.Mm{mt, fields, opts}}, Done{m}, e), wf, Opts.sx(Mm.Mm.table(mt), List.length(&2, U32, rest), rest, opts, ero, ar))
 
 def Msg.sx_fields(+rf: B.Read(List<&2, I.Field>), +epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +mt: Mm.Mm.Type, +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, ec: {Mm.Mm.Type.code(mt) == code : U32}, erf: {I.Fields.read(Mm.Mm.layout(mt), r) == rf : B.Read(List<&2, I.Field>)}, +e: {Mm.Mm.r_fields(mt, rf) == Done{m} : Msg.Res()}, +ab: {B.all_bytes(r) == True{} : Bool}) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
   match rf:
     case Fail{err}:
       Empty.absurd({Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Mm.Mm, err, m, e))
     case Done{(+fields, +rest)}:
-      Msg.sx_opts(Mm.Opts.read(List.length(&2, U32, rest), mt, rest), epd, sht, code, r, mt, fields, rest, m, e126, e0, ec, {==}, e, Fields.sx(Mm.Mm.layout(mt), r, fields, rest, erf, ab))
+      Msg.sx_opts(I.Opts.read(List.length(&2, U32, rest), Mm.Mm.table(mt), rest), epd, sht, code, r, mt, fields, rest, m, e126, e0, ec, {==}, e, Fields.sx(Mm.Mm.layout(mt), r, fields, rest, erf, ab))
 
 def Msg.sx_type(+tm: Maybe<&2, Mm.Mm.Type>, +epd: U32, +sht: U32, +code: U32, +r: B.Bytes(), +m: Mm.Mm, e126: {epd == 126 : U32}, e0: {sht == 0 : U32}, etm: {Mm.Mm.Type.of(code) == tm : Maybe<&2, Mm.Mm.Type>}, +e: {Mm.Mm.r_type(code, r, tm) == Done{m} : Msg.Res()}, +ab: {B.all_bytes(code <> r) == True{} : Bool}) -> {Mm.Mm.write(m) == epd <> sht <> code <> r : B.Bytes()}:
   match tm:

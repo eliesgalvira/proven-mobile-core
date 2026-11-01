@@ -310,3 +310,72 @@ def Ie.tlv(iei: U32, +body: B.Bytes()) -> Ie:
 
 def Ie.tlve(iei: U32, +body: B.Bytes()) -> Ie:
   Ie{iei, TlvE{}, U32.from_nat(List.length(&2, U32, body)), body}
+
+# Which format an IEI below 0x80 has in a given message, by exception from TLV.
+type Rule is Data:
+  Rule{iei: U32, low: Low}
+
+def Table.pick(l: Low, more: Unit -> Low, hit: Bool) -> Low:
+  match hit:
+    case True{}:
+      l
+    case False{}:
+      more(Unit{})
+
+def Table.low(rules: List<&2, Rule>, +iei: U32) -> Low:
+  match rules:
+    case Nil{}:
+      LowTlv{}
+    case Rule{k, l} <> more:
+      Table.pick(l, u => Table.low(more, iei), U32.is_eq(iei, k))
+
+def Fmt.pick(l: Low, one_octet: Bool) -> Fmt:
+  match one_octet:
+    case True{}:
+      T1{}
+    case False{}:
+      Fmt.of_low(l)
+
+# The format of an optional IE (TS 24.007 §11.2.4): IEIs from 0x80 are one
+# octet; the others are TLV unless the message's table says TV or TLV-E.
+def Opts.format(table: List<&2, Rule>, +iei: U32) -> Fmt:
+  Fmt.pick(Table.low(table, iei), U32.is_ge(iei, 128))
+
+def Opts.valid(+table: List<&2, Rule>, ies: List<&2, Ie>) -> Bool:
+  match ies:
+    case Nil{}:
+      True{}
+    case +ie <> more:
+      Bool.and(Ie.valid(Opts.format(table, Ie.iei(ie)), ie), Opts.valid(table, more))
+
+# Optional IEs to the end of the message. The fuel is the byte count: every
+# IE takes at least one byte.
+def Opts.cons(ie: Ie, r: Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{ies}:
+      Done{ie <> ies}
+
+def Opts.next(r: B.Read(Ie), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ie, rest)}:
+      Opts.cons(ie, more(rest))
+
+def Opts.iei(table: List<&2, Rule>, +iei: U32, rest: B.Bytes(), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Ie>>, ok: Bool) -> Result<&2, &2, B.Err, List<&2, Ie>>:
+  match ok:
+    case True{}:
+      Opts.next(Ie.read_body(iei, Opts.format(table, iei), rest), more)
+    case False{}:
+      Fail{B.Invalid{iei}}
+
+def Opts.read(fuel: Nat, +table: List<&2, Rule>, bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, Ie>>:
+  match fuel bs:
+    case _ Nil{}:
+      Done{[]}
+    case 0n b <> rest:
+      Fail{B.Invalid{b}}
+    case 1n+f +iei <> rest:
+      Opts.iei(table, iei, rest, left => Opts.read(f, table, left), fits8(iei))

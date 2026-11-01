@@ -304,174 +304,47 @@ def Mm.layout(t: Mm.Type) -> List<&2, I.Lay>:
     case DlNasTransport{}:
       [I.V1{}, I.LvE{}]
 
-def Mm.format.RegistrationRequest(n: Nat) -> I.Low:
-  match n:
-    case 82n:
-      I.LowTv{6n}
-    case 112n:
-      I.LowTlvE{}
-    case 113n:
-      I.LowTlvE{}
-    case 116n:
-      I.LowTlvE{}
-    case 119n:
-      I.LowTlvE{}
-    case 123n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.RegistrationAccept(n: Nat) -> I.Low:
-  match n:
-    case 118n:
-      I.LowTlvE{}
-    case 119n:
-      I.LowTlvE{}
-    case 121n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.RegistrationComplete(n: Nat) -> I.Low:
-  match n:
-    case 115n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.RegistrationReject(n: Nat) -> I.Low:
-  match n:
-    case 120n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.ConfigurationUpdateCommand(n: Nat) -> I.Low:
-  match n:
-    case 70n:
-      I.LowTv{1n}
-    case 71n:
-      I.LowTv{7n}
-    case 118n:
-      I.LowTlvE{}
-    case 119n:
-      I.LowTlvE{}
-    case 121n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.AuthenticationRequest(n: Nat) -> I.Low:
-  match n:
-    case 33n:
-      I.LowTv{16n}
-    case 120n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.AuthenticationResponse(n: Nat) -> I.Low:
-  match n:
-    case 120n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.AuthenticationReject(n: Nat) -> I.Low:
-  match n:
-    case 120n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.SecurityModeCommand(n: Nat) -> I.Low:
-  match n:
-    case 87n:
-      I.LowTv{1n}
-    case 120n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.SecurityModeComplete(n: Nat) -> I.Low:
-  match n:
-    case 113n:
-      I.LowTlvE{}
-    case 119n:
-      I.LowTlvE{}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.UlNasTransport(n: Nat) -> I.Low:
-  match n:
-    case 18n:
-      I.LowTv{1n}
-    case 89n:
-      I.LowTv{1n}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.DlNasTransport(n: Nat) -> I.Low:
-  match n:
-    case 18n:
-      I.LowTv{1n}
-    case 88n:
-      I.LowTv{1n}
-    case other:
-      I.LowTlv{}
-
-def Mm.format.low(t: Mm.Type, n: Nat) -> I.Low:
+# Optional IEs below 0x80 that are not TLV (TS 24.501 Tables 8.2.x.1.1).
+def Mm.table(t: Mm.Type) -> List<&2, I.Rule>:
   match t:
     case RegistrationRequest{}:
-      Mm.format.RegistrationRequest(n)
+      [I.Rule{82, I.LowTv{6n}}, I.Rule{112, I.LowTlvE{}}, I.Rule{113, I.LowTlvE{}}, I.Rule{116, I.LowTlvE{}}, I.Rule{119, I.LowTlvE{}}, I.Rule{123, I.LowTlvE{}}]
     case RegistrationAccept{}:
-      Mm.format.RegistrationAccept(n)
+      [I.Rule{118, I.LowTlvE{}}, I.Rule{119, I.LowTlvE{}}, I.Rule{121, I.LowTlvE{}}]
     case RegistrationComplete{}:
-      Mm.format.RegistrationComplete(n)
+      [I.Rule{115, I.LowTlvE{}}]
     case RegistrationReject{}:
-      Mm.format.RegistrationReject(n)
+      [I.Rule{120, I.LowTlvE{}}]
     case DeregistrationRequestUe{}:
-      I.LowTlv{}
+      []
     case DeregistrationAcceptUe{}:
-      I.LowTlv{}
+      []
     case ConfigurationUpdateCommand{}:
-      Mm.format.ConfigurationUpdateCommand(n)
+      [I.Rule{70, I.LowTv{1n}}, I.Rule{71, I.LowTv{7n}}, I.Rule{118, I.LowTlvE{}}, I.Rule{119, I.LowTlvE{}}, I.Rule{121, I.LowTlvE{}}]
     case AuthenticationRequest{}:
-      Mm.format.AuthenticationRequest(n)
+      [I.Rule{33, I.LowTv{16n}}, I.Rule{120, I.LowTlvE{}}]
     case AuthenticationResponse{}:
-      Mm.format.AuthenticationResponse(n)
+      [I.Rule{120, I.LowTlvE{}}]
     case AuthenticationReject{}:
-      Mm.format.AuthenticationReject(n)
+      [I.Rule{120, I.LowTlvE{}}]
     case AuthenticationFailure{}:
-      I.LowTlv{}
+      []
     case IdentityRequest{}:
-      I.LowTlv{}
+      []
     case IdentityResponse{}:
-      I.LowTlv{}
+      []
     case SecurityModeCommand{}:
-      Mm.format.SecurityModeCommand(n)
+      [I.Rule{87, I.LowTv{1n}}, I.Rule{120, I.LowTlvE{}}]
     case SecurityModeComplete{}:
-      Mm.format.SecurityModeComplete(n)
+      [I.Rule{113, I.LowTlvE{}}, I.Rule{119, I.LowTlvE{}}]
     case SecurityModeReject{}:
-      I.LowTlv{}
+      []
     case Status{}:
-      I.LowTlv{}
+      []
     case UlNasTransport{}:
-      Mm.format.UlNasTransport(n)
+      [I.Rule{18, I.LowTv{1n}}, I.Rule{89, I.LowTv{1n}}]
     case DlNasTransport{}:
-      Mm.format.DlNasTransport(n)
-
-def Mm.format.go(t: Mm.Type, n: Nat, one_octet: Bool) -> I.Fmt:
-  match one_octet:
-    case True{}:
-      I.T1{}
-    case False{}:
-      I.Fmt.of_low(Mm.format.low(t, n))
-
-# The format of an optional IE (TS 24.007 §11.2.4): IEIs from 0x80 are one
-# octet; the others are TLV unless the message's table says TV or TLV-E.
-def Mm.format(t: Mm.Type, +iei: U32) -> I.Fmt:
-  Mm.format.go(t, U32.to_nat(iei), U32.is_ge(iei, 128))
+      [I.Rule{18, I.LowTv{1n}}, I.Rule{88, I.LowTv{1n}}]
 
 type Mm is Data:
   Mm{mt: Mm.Type, fields: List<&2, I.Field>, opts: List<&2, I.Ie>}
@@ -491,54 +364,15 @@ def Mm.opts(m: Mm) -> List<&2, I.Ie>:
     case Mm{mt, fields, opts}:
       opts
 
-def Opts.valid(+t: Mm.Type, ies: List<&2, I.Ie>) -> Bool:
-  match ies:
-    case Nil{}:
-      True{}
-    case +ie <> more:
-      Bool.and(I.Ie.valid(Mm.format(t, I.Ie.iei(ie)), ie), Opts.valid(t, more))
-
 def Mm.valid(m: Mm) -> Bool:
   match m:
     case Mm{+mt, fields, opts}:
-      Bool.and(I.Fields.valid(Mm.layout(mt), fields), Opts.valid(mt, opts))
+      Bool.and(I.Fields.valid(Mm.layout(mt), fields), I.Opts.valid(Mm.table(mt), opts))
 
 def Mm.write(m: Mm) -> B.Bytes():
   match m:
     case Mm{mt, fields, opts}:
       126 <> 0 <> B.write_u8(Mm.Type.code(mt), I.Fields.write(fields, I.Ies.write(opts, [])))
-
-# Optional IEs to the end of the message. The fuel is the byte count: every
-# IE takes at least one byte.
-def Opts.cons(ie: I.Ie, r: Result<&2, &2, B.Err, List<&2, I.Ie>>) -> Result<&2, &2, B.Err, List<&2, I.Ie>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{ies}:
-      Done{ie <> ies}
-
-def Opts.next(r: B.Read(I.Ie), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, I.Ie>>) -> Result<&2, &2, B.Err, List<&2, I.Ie>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(ie, rest)}:
-      Opts.cons(ie, more(rest))
-
-def Opts.iei(t: Mm.Type, +iei: U32, rest: B.Bytes(), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, I.Ie>>, ok: Bool) -> Result<&2, &2, B.Err, List<&2, I.Ie>>:
-  match ok:
-    case True{}:
-      Opts.next(I.Ie.read_body(iei, Mm.format(t, iei), rest), more)
-    case False{}:
-      Fail{B.Invalid{iei}}
-
-def Opts.read(fuel: Nat, +t: Mm.Type, bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, I.Ie>>:
-  match fuel bs:
-    case _ Nil{}:
-      Done{[]}
-    case 0n b <> rest:
-      Fail{B.Invalid{b}}
-    case 1n+f +iei <> rest:
-      Opts.iei(t, iei, rest, left => Opts.read(f, t, left), I.fits8(iei))
 
 def Mm.r_opts(mt: Mm.Type, fields: List<&2, I.Field>, r: Result<&2, &2, B.Err, List<&2, I.Ie>>) -> Result<&2, &2, B.Err, Mm>:
   match r:
@@ -552,7 +386,7 @@ def Mm.r_fields(+mt: Mm.Type, r: B.Read(List<&2, I.Field>)) -> Result<&2, &2, B.
     case Fail{e}:
       Fail{e}
     case Done{(fields, +rest)}:
-      Mm.r_opts(mt, fields, Opts.read(List.length(&2, U32, rest), mt, rest))
+      Mm.r_opts(mt, fields, I.Opts.read(List.length(&2, U32, rest), Mm.table(mt), rest))
 
 def Mm.r_type(code: U32, rest: B.Bytes(), t: Maybe<&2, Mm.Type>) -> Result<&2, &2, B.Err, Mm>:
   match t:
