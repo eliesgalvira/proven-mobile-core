@@ -38,7 +38,10 @@ The human reviews each draft, turns the ones worth keeping into issues here labe
 The milestone spec is `docs/spec/milestone-1.md`; its tickets are `docs/spec/tickets/NN-*.md`. `loop/progress.md` tracks their status (`todo`, `in-progress`, `done`, `blocked`, `needs-human`). The loop runs unattended in a cloud session, and any new session resumes it from the files alone.
 
 1. **Branch.** Work on `loop/m1`. If it exists on origin, check it out and pull; otherwise create it from `origin/main`. Never push to `main`.
-2. **Stop signal.** Before each ticket, `git fetch origin`. If the branch `loop/stop` exists on origin, push, add a final note to `loop/progress.md`, push again, and stop.
+2. **Before each ticket.** `git fetch origin`.
+   - If the branch `loop/stop` exists on origin, push, add a final note to `loop/progress.md`, push again, and stop.
+   - Otherwise merge `origin/main` into `loop/m1`. Spec fixes and new test vectors land on `main` while the loop runs.
+   - Re-check every `blocked` ticket whose blocker the merge may have cleared.
 3. **Pick.** Take the first ticket that is `in-progress` (resume it) or `todo` with every dependency `done`. Mark it `in-progress`, commit, push.
 4. **Build.** Read the ticket and the spec overview. Work test-first with the `tdd` skill. The seams a ticket lists count as agreed with the user. Order: laws into `kernel/LAWS.bend`, then tests, then code and proofs.
 5. **Commit and push often.** Commit after each green step, and push at least every 30 minutes and at the end of each ticket. Elies can stop the session at any moment and must lose nothing.

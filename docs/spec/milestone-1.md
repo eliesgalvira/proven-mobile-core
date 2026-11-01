@@ -86,6 +86,8 @@ The edge reads a TOML file (`edge/config.example.toml`) and sends `Config` as it
 
 `scripts/gen-vectors.py` turns the JSON vectors into Bend data under `kernel/tests/vectors/`. Expected values in tests come only from these files, never from our own code.
 
+Both directories may still be arriving on `main` while the loop runs. A test whose vectors are missing prints `SKIP <reason>` instead of `PASS`. The ticket may be marked `done` with a note saying which tests were skipped. Ticket 23 fails while any test is skipped.
+
 ## Verification
 
 `scripts/check.sh` is the gate. It runs, in order:

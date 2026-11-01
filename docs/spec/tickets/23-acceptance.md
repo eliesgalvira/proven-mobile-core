@@ -4,7 +4,7 @@ Depends on: every earlier ticket.
 
 ## Goal
 
-1. `python3 -I scripts/acceptance.py --strict` passes: every law named in the advisory log exists in `kernel/LAWS.bend`, and `bend kernel/PROOF.bend --verdict` prints ALL PROOFS CHECK.
+1. `scripts/test-kernel.sh --strict` and `python3 -I scripts/acceptance.py --strict` pass: every law named in the advisory log exists in `kernel/LAWS.bend`, and `bend kernel/PROOF.bend --verdict` prints ALL PROOFS CHECK.
 2. Write `loop/acceptance-report.md`. For each in-scope advisory, give:
    - the law and its `file:line`;
    - one sentence on why that law rules the bug out;
@@ -13,4 +13,4 @@ Depends on: every earlier ticket.
 
 ## Verify
 
-`python3 -I scripts/acceptance.py --strict && scripts/check.sh`
+`scripts/test-kernel.sh --strict && python3 -I scripts/acceptance.py --strict && scripts/check.sh`

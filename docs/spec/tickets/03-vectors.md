@@ -4,7 +4,7 @@ Depends on: 01.
 
 ## Goal
 
-1. Fetch the official vectors and commit them as JSON under `test-vectors/spec/`, one file per source. Each file has `source` (document, version, section, URL) and a list of cases. Fetch from the primary source only (3gpp.org, ETSI, NIST, rfc-editor.org), never from another implementation. The sources:
+1. Make sure the official vectors are committed as JSON under `test-vectors/spec/`, one file per source. Some may already be on `main`; fetch only the missing ones. Each file has `source` (document, version, section, URL) and a list of cases. Fetch from the primary source only (3gpp.org, ETSI, NIST, rfc-editor.org), never from another implementation. The sources:
    - FIPS 180-4 / NIST CSRC examples (SHA-256: "abc", the 448-bit message);
    - RFC 4231 (HMAC-SHA-256, cases 1 to 7);
    - FIPS 197 Appendix C.1 (AES-128);
