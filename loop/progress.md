@@ -4,7 +4,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 
 | # | Ticket | Status | Depends on | Notes |
 |---|---|---|---|---|
-| 01 | bootstrap | todo | — | |
+| 01 | bootstrap | in-progress | — | |
 | 02 | bytes | todo | 01 | |
 | 03 | vectors | todo | 01 | |
 | 04 | sha256-hmac | todo | 02, 03 | |
