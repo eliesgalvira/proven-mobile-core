@@ -8,6 +8,7 @@ import ../crypto/aes.bend as A
 import ../crypto/ctr.bend as CT
 import ../crypto/cmac.bend as M
 import ../crypto/milenage.bend as Mil
+import ../crypto/kdf.bend as K
 
 # Proofs of the crypto laws (tickets 04 to 08).
 
@@ -305,3 +306,40 @@ def L.milenage.lengths(key, opc, rand, sqn, amf):
    (Aes.to_bytes_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot8(b), 4)),
    (Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => b, 1)),
    Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot12(b), 8))))))))
+
+# KDF
+# ---
+
+def List.drop_len(xs: B.Bytes(), n: Nat) -> {List.length(&2, U32, List.drop(&2, U32, xs, n)) == Nat.sub(List.length(&2, U32, xs), n) : Nat}:
+  match xs n:
+    case Nil{} _:
+      {==}
+    case x <> xt 0n:
+      {==}
+    case x <> xt 1n+p:
+      List.drop_len(xt, p)
+
+def Kdf.len(key: B.Bytes(), fc: U32, ps: List<&2, B.Bytes()>) -> {List.length(&2, U32, K.kdf(key, fc, ps)) == 32n : Nat}:
+  L.hmac.length(key, fc <> K.Kdf.params(ps))
+
+# The last 16 of 32 bytes are 16 bytes.
+def Kdf.last16_len(+bs: B.Bytes(), e: {List.length(&2, U32, bs) == 32n : Nat}) -> {List.length(&2, U32, K.Kdf.last16(bs)) == 16n : Nat}:
+  dl = Equal.sym(Nat, List.length(&2, U32, List.drop(&2, U32, bs, 16n)), Nat.sub(List.length(&2, U32, bs), 16n), List.drop_len(bs, 16n))
+  se = Equal.sym(Nat, List.length(&2, U32, bs), 32n, e)
+  %dl : {_ == 16n : Nat}
+  %se : {Nat.sub(_, 16n) == 16n : Nat}
+  {==}
+
+def L.kdf.length(key, fc, ps, ck, ik, snn, sqn_xor_ak, rand, res, res_star, k_ausf, k_seaf, supi, abba, k_amf, alg, count):
+  (Kdf.len(key, fc, ps),
+   (Kdf.len(List.append(&2, U32, ck, ik), 106, [snn, sqn_xor_ak]),
+   (Kdf.last16_len(K.kdf(List.append(&2, U32, ck, ik), 107, [snn, rand, res]), Kdf.len(List.append(&2, U32, ck, ik), 107, [snn, rand, res])),
+   (Kdf.last16_len(S.sha256(List.append(&2, U32, rand, res_star)), L.sha256.length(List.append(&2, U32, rand, res_star))),
+   (Kdf.len(k_ausf, 108, [snn]),
+   (Kdf.len(k_seaf, 109, [supi, abba]),
+   (Kdf.last16_len(K.kdf(k_amf, 105, [[1], [alg]]), Kdf.len(k_amf, 105, [[1], [alg]])),
+   (Kdf.last16_len(K.kdf(k_amf, 105, [[2], [alg]]), Kdf.len(k_amf, 105, [[2], [alg]])),
+   Kdf.len(k_amf, 110, [B.write_u32(count, []), [1]])))))))))
+
+def L.kdf.snn.nonempty(mcc, mnc):
+  {==}

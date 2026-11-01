@@ -6,6 +6,7 @@ import ./crypto/aes.bend as A
 import ./crypto/ctr.bend as Ctr
 import ./crypto/cmac.bend as M
 import ./crypto/milenage.bend as Mil
+import ./crypto/kdf.bend as K
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -131,3 +132,40 @@ law milenage.lengths:
   & ({List.length(&2, U32, Mil.milenage.f4(key, opc, rand)) == 16n : Nat}
   & ({List.length(&2, U32, Mil.milenage.f5(key, opc, rand)) == 6n : Nat}
   & {List.length(&2, U32, Mil.milenage.f5_star(key, opc, rand)) == 6n : Nat})))))
+
+# crypto: 5G key derivation (ticket 07)
+# -------------------------------------
+
+law kdf.length:
+  for +key: B.Bytes()
+  for +fc: U32
+  for +ps: List<&2, B.Bytes()>
+  for +ck: B.Bytes()
+  for +ik: B.Bytes()
+  for +snn: B.Bytes()
+  for +sqn_xor_ak: B.Bytes()
+  for +rand: B.Bytes()
+  for +res: B.Bytes()
+  for +res_star: B.Bytes()
+  for +k_ausf: B.Bytes()
+  for +k_seaf: B.Bytes()
+  for +supi: B.Bytes()
+  for +abba: B.Bytes()
+  for +k_amf: B.Bytes()
+  for +alg: U32
+  for +count: U32
+  {List.length(&2, U32, K.kdf(key, fc, ps)) == 32n : Nat}
+  & ({List.length(&2, U32, K.kdf.k_ausf(ck, ik, snn, sqn_xor_ak)) == 32n : Nat}
+  & ({List.length(&2, U32, K.kdf.res_star(ck, ik, snn, rand, res)) == 16n : Nat}
+  & ({List.length(&2, U32, K.kdf.hres_star(rand, res_star)) == 16n : Nat}
+  & ({List.length(&2, U32, K.kdf.k_seaf(k_ausf, snn)) == 32n : Nat}
+  & ({List.length(&2, U32, K.kdf.k_amf(k_seaf, supi, abba)) == 32n : Nat}
+  & ({List.length(&2, U32, K.kdf.k_nas_enc(k_amf, alg)) == 16n : Nat}
+  & ({List.length(&2, U32, K.kdf.k_nas_int(k_amf, alg)) == 16n : Nat}
+  & {List.length(&2, U32, K.kdf.k_gnb(k_amf, count)) == 32n : Nat})))))))
+
+# Advisory GHSA-f9c2-535p-3mwc: the serving network name is never empty.
+law kdf.snn.nonempty:
+  for mcc: B.Digits()
+  for mnc: B.Digits()
+  {List.is_empty(&2, U32, K.kdf.serving_network_name(mcc, mnc)) == False{} : Bool}
