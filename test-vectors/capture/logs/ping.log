@@ -1,0 +1,9 @@
+PING 10.33.0.40 (10.33.0.40) from 10.45.0.2 uesimtun0: 56(84) bytes of data.
+64 bytes from 10.33.0.40: icmp_seq=1 ttl=64 time=0.409 ms
+64 bytes from 10.33.0.40: icmp_seq=2 ttl=64 time=0.363 ms
+64 bytes from 10.33.0.40: icmp_seq=3 ttl=64 time=0.373 ms
+64 bytes from 10.33.0.40: icmp_seq=4 ttl=64 time=0.382 ms
+
+--- 10.33.0.40 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 1510ms
+rtt min/avg/max/mdev = 0.363/0.381/0.409/0.017 ms

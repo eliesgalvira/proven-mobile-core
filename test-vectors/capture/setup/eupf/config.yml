@@ -1,0 +1,12 @@
+interface_name: [eth0]
+xdp_attach_mode: generic
+api_address: :8080
+pfcp_address: :8805
+pfcp_node_id: 10.33.0.20
+n3_address: 10.33.0.20
+metrics_address: :9090
+logging_level: debug
+feature_ftup: false
+feature_ueip: false
+pfcp_remote_node: []
+gtp_peer: []

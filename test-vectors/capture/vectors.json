@@ -1,0 +1,2244 @@
+{
+ "description": "UERANSIM 3.3.0 UE registration + IPv4 PDU session against Open5GS 2.8.0 (AMF/SMF) and eUPF v0.7.2, captured on the Docker bridge. NAS ciphering NEA0, integrity NIA2, SUCI Profile A. See NOTES.md and INVENTORY.md.",
+ "pcapng": "registration-pdu.pcapng",
+ "pcapng_sha256": "d99d79b1d8f399dca6ba01f86e8214900a00ee44614c52a9c5647e39688a675c",
+ "network": {
+  "plmn": {
+   "mcc": "001",
+   "mnc": "01"
+  },
+  "tac": 1,
+  "amf": {
+   "region_id": 2,
+   "set_id": 1,
+   "pointer": 0,
+   "name": "speck-amf0",
+   "ngap_ip": "10.33.0.11"
+  },
+  "gnb": {
+   "ip": "10.33.0.30",
+   "gnb_id": "0x000001",
+   "gnb_id_bits": 32,
+   "nci": "0x000000010"
+  },
+  "smf_n4_ip": "10.33.0.12",
+  "upf_n4_ip": "10.33.0.20",
+  "upf_n3_ip": "10.33.0.20",
+  "data_network_ip": "10.33.0.40",
+  "dnn": "internet",
+  "s_nssai": {
+   "sst": 1
+  },
+  "ue_pool": "10.45.0.0/16"
+ },
+ "conventions": {
+  "direction": "sender->receiver at the interface (gNB, AMF, SMF, UPF); NAS direction is 'UL' (UE->network) or 'DL'.",
+  "hex": "lowercase, no separators; NGAP 'hex' is the whole NGAP-PDU (one SCTP DATA chunk, PPID 60); PFCP and GTP-U 'hex' is the UDP payload.",
+  "nas": "Every NAS message gets its own entry after the NGAP message that carries it ('carried_in'). Protected messages give 'outer_hex' (whole security-protected message) and 'plaintext_hex' (the inner plain 5GMM message). 5GSM messages and the Registration request inside the NAS message container are separate entries with 'carried_in' pointing at their 5GMM container.",
+  "ies": "NGAP: top-level ProtocolIE ids in wire order. NAS: top-level IE labels as Wireshark 4.6 names them, with the IEI for optional IEs. PFCP: every IE with its type, nested for grouped IEs."
+ },
+ "messages": [
+  {
+   "index": 0,
+   "frame": 1,
+   "time": 0.0,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Association Setup Request",
+   "version": 1,
+   "s": 0,
+   "message_type": 5,
+   "sequence": 1,
+   "hex": "2005001a00000100003c0005000a21000c00600004ee9203640059000100",
+   "ies": [
+    {
+     "type": 60,
+     "name": "Node ID",
+     "len": 5
+    },
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    },
+    {
+     "type": 89,
+     "name": "CP Function Features",
+     "len": 1
+    }
+   ]
+  },
+  {
+   "index": 1,
+   "frame": 2,
+   "time": 0.000318,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Association Setup Response",
+   "version": 1,
+   "s": 0,
+   "message_type": 6,
+   "sequence": 1,
+   "hex": "2006002200000100003c0005000a210014001300010100600004ee92035e002b000400010000",
+   "ies": [
+    {
+     "type": 60,
+     "name": "Node ID",
+     "len": 5
+    },
+    {
+     "type": 19,
+     "name": "Cause",
+     "len": 1
+    },
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    },
+    {
+     "type": 43,
+     "name": "UP Function Features",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 2,
+   "frame": 3,
+   "time": 0.000384,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Heartbeat Request",
+   "version": 1,
+   "s": 0,
+   "message_type": 1,
+   "sequence": 2,
+   "hex": "2001000c0000020000600004ee92035e",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 3,
+   "frame": 4,
+   "time": 0.000903,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Heartbeat Request",
+   "version": 1,
+   "s": 0,
+   "message_type": 1,
+   "sequence": 2,
+   "hex": "2001000c0000020000600004ee920364",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 4,
+   "frame": 5,
+   "time": 0.000997,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Heartbeat Response",
+   "version": 1,
+   "s": 0,
+   "message_type": 2,
+   "sequence": 2,
+   "hex": "2002000c0000020000600004ee92035e",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 5,
+   "frame": 6,
+   "time": 0.000999,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Heartbeat Response",
+   "version": 1,
+   "s": 0,
+   "message_type": 2,
+   "sequence": 2,
+   "hex": "2002000c0000020000600004ee920364",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 6,
+   "frame": 7,
+   "time": 5.001958,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Heartbeat Request",
+   "version": 1,
+   "s": 0,
+   "message_type": 1,
+   "sequence": 3,
+   "hex": "2001000c0000030000600004ee92035e",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 7,
+   "frame": 8,
+   "time": 5.002193,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Heartbeat Response",
+   "version": 1,
+   "s": 0,
+   "message_type": 2,
+   "sequence": 3,
+   "hex": "2002000c0000030000600004ee920364",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 8,
+   "frame": 13,
+   "time": 8.262464,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "NGSetupRequest",
+   "pdu": "initiatingMessage",
+   "procedure_code": 21,
+   "criticality": "reject",
+   "sctp_stream": 0,
+   "hex": "0015003e000004001b00090000f1105000000001005240140880554552414e53494d2d676e622d312d312d310066000d00000000010000f110000000080015400140",
+   "ies": [
+    {
+     "id": 27,
+     "name": "id-GlobalRANNodeID",
+     "criticality": "reject"
+    },
+    {
+     "id": 82,
+     "name": "id-RANNodeName",
+     "criticality": "ignore"
+    },
+    {
+     "id": 102,
+     "name": "id-SupportedTAList",
+     "criticality": "reject"
+    },
+    {
+     "id": 21,
+     "name": "id-DefaultPagingDRX",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 9,
+   "frame": 15,
+   "time": 8.26332,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NGAP",
+   "direction": "AMF->gNB",
+   "message": "NGSetupResponse",
+   "pdu": "successfulOutcome",
+   "procedure_code": 21,
+   "criticality": "reject",
+   "sctp_stream": 0,
+   "hex": "201500300000040001000c0480737065636b2d616d663000600008000000f11002004000564001ff005000080000f11000000008",
+   "ies": [
+    {
+     "id": 1,
+     "name": "id-AMFName",
+     "criticality": "reject"
+    },
+    {
+     "id": 96,
+     "name": "id-ServedGUAMIList",
+     "criticality": "reject"
+    },
+    {
+     "id": 86,
+     "name": "id-RelativeAMFCapacity",
+     "criticality": "ignore"
+    },
+    {
+     "id": 80,
+     "name": "id-PLMNSupportList",
+     "criticality": "reject"
+    }
+   ]
+  },
+  {
+   "index": 10,
+   "frame": 17,
+   "time": 10.003095,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Heartbeat Request",
+   "version": 1,
+   "s": 0,
+   "message_type": 1,
+   "sequence": 4,
+   "hex": "2001000c0000040000600004ee92035e",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 11,
+   "frame": 18,
+   "time": 10.003355,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Heartbeat Response",
+   "version": 1,
+   "s": 0,
+   "message_type": 2,
+   "sequence": 4,
+   "hex": "2002000c0000040000600004ee920364",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 12,
+   "frame": 19,
+   "time": 11.001927,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Heartbeat Request",
+   "version": 1,
+   "s": 0,
+   "message_type": 1,
+   "sequence": 3,
+   "hex": "2001000c0000030000600004ee920364",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 13,
+   "frame": 20,
+   "time": 11.002223,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Heartbeat Response",
+   "version": 1,
+   "s": 0,
+   "message_type": 2,
+   "sequence": 3,
+   "hex": "2002000c0000030000600004ee92035e",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 14,
+   "frame": 21,
+   "time": 11.509106,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "InitialUEMessage",
+   "pdu": "initiatingMessage",
+   "procedure_code": 15,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "000f407000000500550002000100260042417e00417900350100f1100000010190fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69635766f929c852ae5f9db835622e04f0f0f0f0007900135000f110000000010000f110000001ee920370005a4001180070400100",
+   "ies": [
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    },
+    {
+     "id": 121,
+     "name": "id-UserLocationInformation",
+     "criticality": "reject"
+    },
+    {
+     "id": 90,
+     "name": "id-RRCEstablishmentCause",
+     "criticality": "ignore"
+    },
+    {
+     "id": 112,
+     "name": "id-UEContextRequest",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 15,
+   "frame": 21,
+   "time": 11.509106,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NAS-5GMM",
+   "direction": "UL",
+   "carried_in": 14,
+   "security_header_type": 0,
+   "security_header": "plain",
+   "plaintext_hex": "7e00417900350100f1100000010190fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69635766f929c852ae5f9db835622e04f0f0f0f0",
+   "message_type": 65,
+   "message": "Registration request",
+   "ies": [
+    {
+     "name": "5GS registration type"
+    },
+    {
+     "name": "NAS key set identifier"
+    },
+    {
+     "name": "5GS mobile identity"
+    },
+    {
+     "name": "UE security capability",
+     "iei": "0x2e"
+    }
+   ]
+  },
+  {
+   "index": 16,
+   "frame": 22,
+   "time": 11.511625,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NGAP",
+   "direction": "AMF->gNB",
+   "message": "DownlinkNASTransport",
+   "pdu": "initiatingMessage",
+   "procedure_code": 4,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "0004403e000003000a000200010055000200010026002b2a7e005600020000212dcae41d34d2a894d297a018e55542992010b892358cbd5f8000918a5953eaef80b5",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    }
+   ]
+  },
+  {
+   "index": 17,
+   "frame": 22,
+   "time": 11.511625,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NAS-5GMM",
+   "direction": "DL",
+   "carried_in": 16,
+   "security_header_type": 0,
+   "security_header": "plain",
+   "plaintext_hex": "7e005600020000212dcae41d34d2a894d297a018e55542992010b892358cbd5f8000918a5953eaef80b5",
+   "message_type": 86,
+   "message": "Authentication request",
+   "ies": [
+    {
+     "name": "NAS key set identifier - ngKSI"
+    },
+    {
+     "name": "ABBA"
+    },
+    {
+     "name": "Authentication Parameter RAND - 5G authentication challenge",
+     "iei": "0x21"
+    },
+    {
+     "name": "Authentication Parameter AUTN (UMTS and EPS authentication challenge) - 5G authentication challenge",
+     "iei": "0x20"
+    }
+   ]
+  },
+  {
+   "index": 18,
+   "frame": 23,
+   "time": 11.511917,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "UplinkNASTransport",
+   "pdu": "initiatingMessage",
+   "procedure_code": 46,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "002e4040000004000a0002000100550002000100260016157e00572d106a1fe2792f2b9587f11a9496165cc976007940135000f110000000010000f110000001ee920370",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    },
+    {
+     "id": 121,
+     "name": "id-UserLocationInformation",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 19,
+   "frame": 23,
+   "time": 11.511917,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NAS-5GMM",
+   "direction": "UL",
+   "carried_in": 18,
+   "security_header_type": 0,
+   "security_header": "plain",
+   "plaintext_hex": "7e00572d106a1fe2792f2b9587f11a9496165cc976",
+   "message_type": 87,
+   "message": "Authentication response",
+   "ies": [
+    {
+     "name": "Authentication response parameter",
+     "iei": "0x2d"
+    }
+   ]
+  },
+  {
+   "index": 20,
+   "frame": 24,
+   "time": 11.51314,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NGAP",
+   "direction": "AMF->gNB",
+   "message": "DownlinkNASTransport",
+   "pdu": "initiatingMessage",
+   "procedure_code": 4,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "00044029000003000a0002000100550002000100260016157e0314dcad94007e005d020004f0f0f0f0e1360102",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    }
+   ]
+  },
+  {
+   "index": 21,
+   "frame": 24,
+   "time": 11.51314,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NAS-5GMM",
+   "direction": "DL",
+   "carried_in": 20,
+   "security_header_type": 3,
+   "security_header": "integrity protected with new 5G NAS security context",
+   "outer_hex": "7e0314dcad94007e005d020004f0f0f0f0e1360102",
+   "mac": "14dcad94",
+   "nas_sequence_number": 0,
+   "plaintext_hex": "7e005d020004f0f0f0f0e1360102",
+   "message_type": 93,
+   "message": "Security mode command",
+   "ies": [
+    {
+     "name": "NAS security algorithms"
+    },
+    {
+     "name": "NAS key set identifier - ngKSI"
+    },
+    {
+     "name": "UE security capability - Replayed UE security capabilities"
+    },
+    {
+     "name": "IMEISV request",
+     "iei": "0x0e"
+    },
+    {
+     "name": "Additional 5G security information",
+     "iei": "0x36"
+    }
+   ],
+   "nas_count": 0,
+   "mac_verified": true
+  },
+  {
+   "index": 22,
+   "frame": 25,
+   "time": 11.513392,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "UplinkNASTransport",
+   "pdu": "initiatingMessage",
+   "procedure_code": 46,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "002e40808f000004000a0002000100550002000100260065647e04a2a6349e007e005e7700094573806121856151f171004b7e00417900350100f1100000010190fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69635766f929c852ae5f9db835621001002e04f0f0f0f02f020101530100007940135000f110000000010000f110000001ee920370",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    },
+    {
+     "id": 121,
+     "name": "id-UserLocationInformation",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 23,
+   "frame": 25,
+   "time": 11.513392,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NAS-5GMM",
+   "direction": "UL",
+   "carried_in": 22,
+   "security_header_type": 4,
+   "security_header": "integrity protected and ciphered with new 5G NAS security context",
+   "outer_hex": "7e04a2a6349e007e005e7700094573806121856151f171004b7e00417900350100f1100000010190fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69635766f929c852ae5f9db835621001002e04f0f0f0f02f020101530100",
+   "mac": "a2a6349e",
+   "nas_sequence_number": 0,
+   "plaintext_hex": "7e005e7700094573806121856151f171004b7e00417900350100f1100000010190fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69635766f929c852ae5f9db835621001002e04f0f0f0f02f020101530100",
+   "message_type": 94,
+   "message": "Security mode complete",
+   "ies": [
+    {
+     "name": "5GS mobile identity",
+     "iei": "0x77"
+    },
+    {
+     "name": "NAS message container",
+     "iei": "0x71"
+    }
+   ],
+   "nas_count": 0,
+   "mac_verified": true
+  },
+  {
+   "index": 24,
+   "frame": 25,
+   "time": 11.513392,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NAS-5GMM",
+   "direction": "UL",
+   "carried_in": 23,
+   "security_header_type": 0,
+   "security_header": "plain (inside NAS message container)",
+   "plaintext_hex": "7e00417900350100f1100000010190fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69635766f929c852ae5f9db835621001002e04f0f0f0f02f020101530100",
+   "message_type": 65,
+   "message": "Registration request",
+   "ies": [
+    {
+     "name": "5GS registration type"
+    },
+    {
+     "name": "NAS key set identifier"
+    },
+    {
+     "name": "5GS mobile identity"
+    },
+    {
+     "name": "5GMM capability",
+     "iei": "0x10"
+    },
+    {
+     "name": "UE security capability",
+     "iei": "0x2e"
+    },
+    {
+     "name": "NSSAI - Requested NSSAI",
+     "iei": "0x2f"
+    },
+    {
+     "name": "5GS update type",
+     "iei": "0x53"
+    }
+   ]
+  },
+  {
+   "index": 25,
+   "frame": 26,
+   "time": 11.516965,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NGAP",
+   "direction": "AMF->gNB",
+   "message": "InitialContextSetupRequest",
+   "pdu": "initiatingMessage",
+   "procedure_code": 14,
+   "criticality": "reject",
+   "sctp_stream": 1,
+   "hex": "000e008090000008000a00020001005500020001001c00070000f110020040000000020001007700091c000e000700038000005e002014a3190bfd83cdc30846be6b64f525847ca140084971a733e935f92aeaf33f80002240084370816125ffff510026402f2e7e0297f02c66017e0042010177000bf200f110020040c00004cf54074000f11000000115020101210201005e0192",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 28,
+     "name": "id-GUAMI",
+     "criticality": "reject"
+    },
+    {
+     "id": 0,
+     "name": "id-AllowedNSSAI",
+     "criticality": "reject"
+    },
+    {
+     "id": 119,
+     "name": "id-UESecurityCapabilities",
+     "criticality": "reject"
+    },
+    {
+     "id": 94,
+     "name": "id-SecurityKey",
+     "criticality": "reject"
+    },
+    {
+     "id": 34,
+     "name": "id-MaskedIMEISV",
+     "criticality": "ignore"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 26,
+   "frame": 26,
+   "time": 11.516965,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NAS-5GMM",
+   "direction": "DL",
+   "carried_in": 25,
+   "security_header_type": 2,
+   "security_header": "integrity protected and ciphered",
+   "outer_hex": "7e0297f02c66017e0042010177000bf200f110020040c00004cf54074000f11000000115020101210201005e0192",
+   "mac": "97f02c66",
+   "nas_sequence_number": 1,
+   "plaintext_hex": "7e0042010177000bf200f110020040c00004cf54074000f11000000115020101210201005e0192",
+   "message_type": 66,
+   "message": "Registration accept",
+   "ies": [
+    {
+     "name": "5GS registration result"
+    },
+    {
+     "name": "5GS mobile identity - 5G-GUTI",
+     "iei": "0x77"
+    },
+    {
+     "name": "5GS tracking area identity list",
+     "iei": "0x54"
+    },
+    {
+     "name": "NSSAI - Allowed NSSAI",
+     "iei": "0x15"
+    },
+    {
+     "name": "5GS network feature support",
+     "iei": "0x21"
+    },
+    {
+     "name": "GPRS Timer 3 - T3512 value",
+     "iei": "0x5e"
+    }
+   ],
+   "nas_count": 1,
+   "mac_verified": true
+  },
+  {
+   "index": 27,
+   "frame": 27,
+   "time": 11.517082,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "InitialContextSetupResponse",
+   "pdu": "successfulOutcome",
+   "procedure_code": 14,
+   "criticality": "reject",
+   "sctp_stream": 1,
+   "hex": "200e000f000002000a40020001005540020001",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "ignore"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 28,
+   "frame": 29,
+   "time": 11.720758,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "UplinkNASTransport",
+   "pdu": "initiatingMessage",
+   "procedure_code": 46,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "002e4035000004000a000200010055000200010026000b0a7e0253174020017e0043007940135000f110000000010000f110000001ee920370",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    },
+    {
+     "id": 121,
+     "name": "id-UserLocationInformation",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 29,
+   "frame": 29,
+   "time": 11.720758,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NAS-5GMM",
+   "direction": "UL",
+   "carried_in": 28,
+   "security_header_type": 2,
+   "security_header": "integrity protected and ciphered",
+   "outer_hex": "7e0253174020017e0043",
+   "mac": "53174020",
+   "nas_sequence_number": 1,
+   "plaintext_hex": "7e0043",
+   "message_type": 67,
+   "message": "Registration complete",
+   "ies": [],
+   "nas_count": 1,
+   "mac_verified": true
+  },
+  {
+   "index": 30,
+   "frame": 29,
+   "time": 11.720758,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "UplinkNASTransport",
+   "pdu": "initiatingMessage",
+   "procedure_code": 46,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "002e405e000004000a0002000100550002000100260034337e02c44165b6027e00670100152e0101c1ffff91a12801007b000780000a00000d00120181220101250908696e7465726e6574007940135000f110000000010000f110000001ee920370",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    },
+    {
+     "id": 121,
+     "name": "id-UserLocationInformation",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 31,
+   "frame": 29,
+   "time": 11.720758,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NAS-5GMM",
+   "direction": "UL",
+   "carried_in": 30,
+   "security_header_type": 2,
+   "security_header": "integrity protected and ciphered",
+   "outer_hex": "7e02c44165b6027e00670100152e0101c1ffff91a12801007b000780000a00000d00120181220101250908696e7465726e6574",
+   "mac": "c44165b6",
+   "nas_sequence_number": 2,
+   "plaintext_hex": "7e00670100152e0101c1ffff91a12801007b000780000a00000d00120181220101250908696e7465726e6574",
+   "message_type": 103,
+   "message": "UL NAS transport",
+   "ies": [
+    {
+     "name": "Payload container type"
+    },
+    {
+     "name": "Payload container"
+    },
+    {
+     "name": "PDU session identity 2 - PDU session ID",
+     "iei": "0x12"
+    },
+    {
+     "name": "Request type",
+     "iei": "0x08"
+    },
+    {
+     "name": "S-NSSAI",
+     "iei": "0x22"
+    },
+    {
+     "name": "DNN",
+     "iei": "0x25"
+    }
+   ],
+   "payload_container_type": 1,
+   "nas_count": 2,
+   "mac_verified": true
+  },
+  {
+   "index": 32,
+   "frame": 29,
+   "time": 11.720758,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NAS-5GSM",
+   "direction": "UL",
+   "carried_in": 31,
+   "hex": "2e0101c1ffff91a12801007b000780000a00000d00",
+   "pdu_session_id": 1,
+   "pti": 1,
+   "message_type": 193,
+   "message": "PDU session establishment request",
+   "ies": [
+    {
+     "name": "Integrity protection maximum data rate"
+    },
+    {
+     "name": "PDU session type",
+     "iei": "0x09"
+    },
+    {
+     "name": "SSC mode",
+     "iei": "0x0a"
+    },
+    {
+     "name": "5GSM capability",
+     "iei": "0x28"
+    },
+    {
+     "name": "Extended protocol configuration options",
+     "iei": "0x7b"
+    }
+   ]
+  },
+  {
+   "index": 33,
+   "frame": 30,
+   "time": 11.720978,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NGAP",
+   "direction": "AMF->gNB",
+   "message": "DownlinkNASTransport",
+   "pdu": "initiatingMessage",
+   "procedure_code": 4,
+   "criticality": "ignore",
+   "sctp_stream": 1,
+   "hex": "0004404f000003000a000200010055000200010026003c3b7e020970181a027e00544315900053007000650063004b00650072006e0065006c450b900053007000650063004b46004762111081924000490100",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 38,
+     "name": "id-NAS-PDU",
+     "criticality": "reject"
+    }
+   ]
+  },
+  {
+   "index": 34,
+   "frame": 30,
+   "time": 11.720978,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NAS-5GMM",
+   "direction": "DL",
+   "carried_in": 33,
+   "security_header_type": 2,
+   "security_header": "integrity protected and ciphered",
+   "outer_hex": "7e020970181a027e00544315900053007000650063004b00650072006e0065006c450b900053007000650063004b46004762111081924000490100",
+   "mac": "0970181a",
+   "nas_sequence_number": 2,
+   "plaintext_hex": "7e00544315900053007000650063004b00650072006e0065006c450b900053007000650063004b46004762111081924000490100",
+   "message_type": 84,
+   "message": "Configuration update command",
+   "ies": [
+    {
+     "name": "Network Name - Full name for network",
+     "iei": "0x43"
+    },
+    {
+     "name": "Network Name - Short Name",
+     "iei": "0x45"
+    },
+    {
+     "name": "Time Zone - Local",
+     "iei": "0x46"
+    },
+    {
+     "name": "Time Zone and Time - Universal Time and Local Time Zone",
+     "iei": "0x47"
+    },
+    {
+     "name": "Daylight Saving Time",
+     "iei": "0x49"
+    }
+   ],
+   "nas_count": 2,
+   "mac_verified": true
+  },
+  {
+   "index": 35,
+   "frame": 31,
+   "time": 11.725734,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Session Establishment Request",
+   "version": 1,
+   "s": 1,
+   "message_type": 50,
+   "seid": "0000000000000000",
+   "sequence": 4,
+   "hex": "21320266000000000000000000000400003c0005000a21000c0039000d0200000000000001d20a21000c0001004a003800020001001d00040000ffff0002002000140001010016000908696e7465726e6574005d0005060a2d000200a0000111006c0004000000010051000400000001006d00040000000100010050003800020002001d00040000ffff00020029001400010000150009010000c7c40a2100140016000908696e7465726e6574007c00010100a000010b005f000106006c000400000002006d00040000000100010031003800020003001d0004000000ff0002001200140001030015000901000076650a210014005f000106006c00040000000100010075003800020004001d0004000000ff00020056001400010000150009010000c7c40a2100140016000908696e7465726e65740017002e0100002a7065726d6974206f75742035382066726f6d20666630323a3a322f31323820746f2061737369676e656400a000010b005f000106006c00040000000300030013006c000400000001002c00020c00005800010100030029006c000400000002002c0002020000040017002a0001010016000908696e7465726e657400a000011100030025006c000400000003002c0002020000040013002a0001030054000a0100000000010a21000c000600210051000400000001003e00010200250003020000001f000901000000000640000000070020006d0004000000010019000100001a000a00000f424000000f4240007c0001010055000500580001010071000101008d0013030800010100000000f1083407181652181615009f000908696e7465726e65740101000401ffffff",
+   "ies": [
+    {
+     "type": 60,
+     "name": "Node ID",
+     "len": 5
+    },
+    {
+     "type": 57,
+     "name": "F-SEID",
+     "len": 13
+    },
+    {
+     "type": 1,
+     "name": "Create PDR",
+     "len": 74,
+     "children": [
+      {
+       "type": 56,
+       "name": "PDR ID",
+       "len": 2
+      },
+      {
+       "type": 29,
+       "name": "Precedence",
+       "len": 4
+      },
+      {
+       "type": 2,
+       "name": "PDI",
+       "len": 32,
+       "children": [
+        {
+         "type": 20,
+         "name": "Source Interface",
+         "len": 1
+        },
+        {
+         "type": 22,
+         "name": "Network Instance",
+         "len": 9
+        },
+        {
+         "type": 93,
+         "name": "UE IP Address",
+         "len": 5
+        },
+        {
+         "type": 160,
+         "name": "3GPP Interface Type",
+         "len": 1
+        }
+       ]
+      },
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      },
+      {
+       "type": 81,
+       "name": "URR ID",
+       "len": 4
+      },
+      {
+       "type": 109,
+       "name": "QER ID",
+       "len": 4
+      }
+     ]
+    },
+    {
+     "type": 1,
+     "name": "Create PDR",
+     "len": 80,
+     "children": [
+      {
+       "type": 56,
+       "name": "PDR ID",
+       "len": 2
+      },
+      {
+       "type": 29,
+       "name": "Precedence",
+       "len": 4
+      },
+      {
+       "type": 2,
+       "name": "PDI",
+       "len": 41,
+       "children": [
+        {
+         "type": 20,
+         "name": "Source Interface",
+         "len": 1
+        },
+        {
+         "type": 21,
+         "name": "F-TEID",
+         "len": 9
+        },
+        {
+         "type": 22,
+         "name": "Network Instance",
+         "len": 9
+        },
+        {
+         "type": 124,
+         "name": "QFI",
+         "len": 1
+        },
+        {
+         "type": 160,
+         "name": "3GPP Interface Type",
+         "len": 1
+        }
+       ]
+      },
+      {
+       "type": 95,
+       "name": "Outer Header Removal",
+       "len": 1
+      },
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      },
+      {
+       "type": 109,
+       "name": "QER ID",
+       "len": 4
+      }
+     ]
+    },
+    {
+     "type": 1,
+     "name": "Create PDR",
+     "len": 49,
+     "children": [
+      {
+       "type": 56,
+       "name": "PDR ID",
+       "len": 2
+      },
+      {
+       "type": 29,
+       "name": "Precedence",
+       "len": 4
+      },
+      {
+       "type": 2,
+       "name": "PDI",
+       "len": 18,
+       "children": [
+        {
+         "type": 20,
+         "name": "Source Interface",
+         "len": 1
+        },
+        {
+         "type": 21,
+         "name": "F-TEID",
+         "len": 9
+        }
+       ]
+      },
+      {
+       "type": 95,
+       "name": "Outer Header Removal",
+       "len": 1
+      },
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      }
+     ]
+    },
+    {
+     "type": 1,
+     "name": "Create PDR",
+     "len": 117,
+     "children": [
+      {
+       "type": 56,
+       "name": "PDR ID",
+       "len": 2
+      },
+      {
+       "type": 29,
+       "name": "Precedence",
+       "len": 4
+      },
+      {
+       "type": 2,
+       "name": "PDI",
+       "len": 86,
+       "children": [
+        {
+         "type": 20,
+         "name": "Source Interface",
+         "len": 1
+        },
+        {
+         "type": 21,
+         "name": "F-TEID",
+         "len": 9
+        },
+        {
+         "type": 22,
+         "name": "Network Instance",
+         "len": 9
+        },
+        {
+         "type": 23,
+         "name": "SDF Filter",
+         "len": 46
+        },
+        {
+         "type": 160,
+         "name": "3GPP Interface Type",
+         "len": 1
+        }
+       ]
+      },
+      {
+       "type": 95,
+       "name": "Outer Header Removal",
+       "len": 1
+      },
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      }
+     ]
+    },
+    {
+     "type": 3,
+     "name": "Create FAR",
+     "len": 19,
+     "children": [
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      },
+      {
+       "type": 44,
+       "name": "Apply Action",
+       "len": 2
+      },
+      {
+       "type": 88,
+       "name": "BAR ID",
+       "len": 1
+      }
+     ]
+    },
+    {
+     "type": 3,
+     "name": "Create FAR",
+     "len": 41,
+     "children": [
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      },
+      {
+       "type": 44,
+       "name": "Apply Action",
+       "len": 2
+      },
+      {
+       "type": 4,
+       "name": "Forwarding Parameters",
+       "len": 23,
+       "children": [
+        {
+         "type": 42,
+         "name": "Destination Interface",
+         "len": 1
+        },
+        {
+         "type": 22,
+         "name": "Network Instance",
+         "len": 9
+        },
+        {
+         "type": 160,
+         "name": "3GPP Interface Type",
+         "len": 1
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": 3,
+     "name": "Create FAR",
+     "len": 37,
+     "children": [
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      },
+      {
+       "type": 44,
+       "name": "Apply Action",
+       "len": 2
+      },
+      {
+       "type": 4,
+       "name": "Forwarding Parameters",
+       "len": 19,
+       "children": [
+        {
+         "type": 42,
+         "name": "Destination Interface",
+         "len": 1
+        },
+        {
+         "type": 84,
+         "name": "Outer Header Creation",
+         "len": 10
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": 6,
+     "name": "Create URR",
+     "len": 33,
+     "children": [
+      {
+       "type": 81,
+       "name": "URR ID",
+       "len": 4
+      },
+      {
+       "type": 62,
+       "name": "Measurement Method",
+       "len": 1
+      },
+      {
+       "type": 37,
+       "name": "Reporting Triggers",
+       "len": 3
+      },
+      {
+       "type": 31,
+       "name": "Volume Threshold",
+       "len": 9
+      }
+     ]
+    },
+    {
+     "type": 7,
+     "name": "Create QER",
+     "len": 32,
+     "children": [
+      {
+       "type": 109,
+       "name": "QER ID",
+       "len": 4
+      },
+      {
+       "type": 25,
+       "name": "Gate Status",
+       "len": 1
+      },
+      {
+       "type": 26,
+       "name": "MBR",
+       "len": 10
+      },
+      {
+       "type": 124,
+       "name": "QFI",
+       "len": 1
+      }
+     ]
+    },
+    {
+     "type": 85,
+     "name": "Create BAR",
+     "len": 5,
+     "children": [
+      {
+       "type": 88,
+       "name": "BAR ID",
+       "len": 1
+      }
+     ]
+    },
+    {
+     "type": 113,
+     "name": "PDN Type",
+     "len": 1
+    },
+    {
+     "type": 141,
+     "name": "User ID",
+     "len": 19
+    },
+    {
+     "type": 159,
+     "name": "APN/DNN",
+     "len": 9
+    },
+    {
+     "type": 257,
+     "name": "S-NSSAI",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 36,
+   "frame": 32,
+   "time": 11.7264,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Session Establishment Response",
+   "version": 1,
+   "s": 1,
+   "message_type": 51,
+   "seid": "00000000000001d2",
+   "sequence": 4,
+   "hex": "2133002b00000000000001d200000400003c0005000a21001400130001010039000d02000000000000000200000000",
+   "ies": [
+    {
+     "type": 60,
+     "name": "Node ID",
+     "len": 5
+    },
+    {
+     "type": 19,
+     "name": "Cause",
+     "len": 1
+    },
+    {
+     "type": 57,
+     "name": "F-SEID",
+     "len": 13
+    }
+   ]
+  },
+  {
+   "index": 37,
+   "frame": 33,
+   "time": 11.727157,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NGAP",
+   "direction": "AMF->gNB",
+   "message": "PDUSessionResourceSetupRequest",
+   "pdu": "initiatingMessage",
+   "procedure_code": 29,
+   "criticality": "reject",
+   "sctp_stream": 1,
+   "hex": "001d0080a7000004000a00020001005500020001004a0080850040014f7e0278fcdfba037e00680100402e0101c211000901000631310101ff010603f42403f4242905010a2d00022201017900060120410101097b000880000d0408080808250908696e7465726e6574120100202f0000040082000a0c3b9aca00303b9aca00008b000a01f00a2100140000c7c400860001000088000700010000091c00006e400a0c3b9aca00303b9aca00",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "reject"
+    },
+    {
+     "id": 74,
+     "name": "id-PDUSessionResourceSetupListSUReq",
+     "criticality": "reject"
+    },
+    {
+     "id": 110,
+     "name": "id-UEAggregateMaximumBitRate",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 38,
+   "frame": 33,
+   "time": 11.727157,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NAS-5GMM",
+   "direction": "DL",
+   "carried_in": 37,
+   "security_header_type": 2,
+   "security_header": "integrity protected and ciphered",
+   "outer_hex": "7e0278fcdfba037e00680100402e0101c211000901000631310101ff010603f42403f4242905010a2d00022201017900060120410101097b000880000d0408080808250908696e7465726e65741201",
+   "mac": "78fcdfba",
+   "nas_sequence_number": 3,
+   "plaintext_hex": "7e00680100402e0101c211000901000631310101ff010603f42403f4242905010a2d00022201017900060120410101097b000880000d0408080808250908696e7465726e65741201",
+   "message_type": 104,
+   "message": "DL NAS transport",
+   "ies": [
+    {
+     "name": "Payload container type"
+    },
+    {
+     "name": "Payload container"
+    },
+    {
+     "name": "PDU session identity 2 - PDU session ID",
+     "iei": "0x12"
+    }
+   ],
+   "payload_container_type": 1,
+   "nas_count": 3,
+   "mac_verified": true
+  },
+  {
+   "index": 39,
+   "frame": 33,
+   "time": 11.727157,
+   "src": "10.33.0.11",
+   "dst": "10.33.0.30",
+   "protocol": "NAS-5GSM",
+   "direction": "DL",
+   "carried_in": 38,
+   "hex": "2e0101c211000901000631310101ff010603f42403f4242905010a2d00022201017900060120410101097b000880000d0408080808250908696e7465726e6574",
+   "pdu_session_id": 1,
+   "pti": 1,
+   "message_type": 194,
+   "message": "PDU session establishment accept",
+   "ies": [
+    {
+     "name": "PDU session type - Selected PDU session type"
+    },
+    {
+     "name": "QoS rules - Authorized QoS rules"
+    },
+    {
+     "name": "Session-AMBR"
+    },
+    {
+     "name": "PDU address",
+     "iei": "0x29"
+    },
+    {
+     "name": "S-NSSAI",
+     "iei": "0x22"
+    },
+    {
+     "name": "QoS flow descriptions - Authorized",
+     "iei": "0x79"
+    },
+    {
+     "name": "Extended protocol configuration options",
+     "iei": "0x7b"
+    },
+    {
+     "name": "DNN",
+     "iei": "0x25"
+    }
+   ]
+  },
+  {
+   "index": 40,
+   "frame": 35,
+   "time": 11.727825,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.11",
+   "protocol": "NGAP",
+   "direction": "gNB->AMF",
+   "message": "PDUSessionResourceSetupResponse",
+   "pdu": "successfulOutcome",
+   "procedure_code": 29,
+   "criticality": "reject",
+   "sctp_stream": 1,
+   "hex": "201d003b000004000a40020001005540020001004b40110000010d0003e00a21001e000000010001007940135000f110000000010000f110000001ee920370",
+   "ies": [
+    {
+     "id": 10,
+     "name": "id-AMF-UE-NGAP-ID",
+     "criticality": "ignore"
+    },
+    {
+     "id": 85,
+     "name": "id-RAN-UE-NGAP-ID",
+     "criticality": "ignore"
+    },
+    {
+     "id": 75,
+     "name": "id-PDUSessionResourceSetupListSURes",
+     "criticality": "ignore"
+    },
+    {
+     "id": 121,
+     "name": "id-UserLocationInformation",
+     "criticality": "ignore"
+    }
+   ]
+  },
+  {
+   "index": 41,
+   "frame": 36,
+   "time": 11.728076,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Session Modification Request",
+   "version": 1,
+   "s": 1,
+   "message_type": 52,
+   "seid": "0000000000000002",
+   "sequence": 5,
+   "hex": "21340047000000000000000200000500000a0037006c000400000001002c00020200000b0025002a0001000016000908696e7465726e65740054000a0100000000010a21001e00a000010b",
+   "ies": [
+    {
+     "type": 10,
+     "name": "Update FAR",
+     "len": 55,
+     "children": [
+      {
+       "type": 108,
+       "name": "FAR ID",
+       "len": 4
+      },
+      {
+       "type": 44,
+       "name": "Apply Action",
+       "len": 2
+      },
+      {
+       "type": 11,
+       "name": "Update Forwarding Parameters",
+       "len": 37,
+       "children": [
+        {
+         "type": 42,
+         "name": "Destination Interface",
+         "len": 1
+        },
+        {
+         "type": 22,
+         "name": "Network Instance",
+         "len": 9
+        },
+        {
+         "type": 84,
+         "name": "Outer Header Creation",
+         "len": 10
+        },
+        {
+         "type": 160,
+         "name": "3GPP Interface Type",
+         "len": 1
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "index": 42,
+   "frame": 37,
+   "time": 11.728221,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Session Modification Response",
+   "version": 1,
+   "s": 1,
+   "message_type": 53,
+   "seid": "00000000000001d2",
+   "sequence": 5,
+   "hex": "2135001100000000000001d2000005000013000101",
+   "ies": [
+    {
+     "type": 19,
+     "name": "Cause",
+     "len": 1
+    }
+   ]
+  },
+  {
+   "index": 43,
+   "frame": 39,
+   "time": 12.803478,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.20",
+   "protocol": "GTP-U",
+   "direction": "gNB->UPF",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "0000c7c4",
+   "length": 92,
+   "extension_headers_hex": "01100100",
+   "inner": {
+    "src": "10.45.0.2",
+    "dst": "10.33.0.40",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c0000c7c400000085011001004500005443aa40004001e2870a2d00020a210028080023cb851c0001f184e76a00000000ac540b0000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 44,
+   "frame": 40,
+   "time": 12.803521,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.30",
+   "protocol": "GTP-U",
+   "direction": "UPF->gNB",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "00000001",
+   "length": 92,
+   "extension_headers_hex": "01000100",
+   "inner": {
+    "src": "10.33.0.40",
+    "dst": "10.45.0.2",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c00000001000000850100010045000054a44f00004001c1e20a2100280a2d000200002bcb851c0001f184e76a00000000ac540b0000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 45,
+   "frame": 41,
+   "time": 13.305929,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.20",
+   "protocol": "GTP-U",
+   "direction": "gNB->UPF",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "0000c7c4",
+   "length": 92,
+   "extension_headers_hex": "01100100",
+   "inner": {
+    "src": "10.45.0.2",
+    "dst": "10.33.0.40",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c0000c7c4000000850110010045000054452940004001e1080a2d00020a21002808007461851c0002f284e76a0000000062bd030000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 46,
+   "frame": 42,
+   "time": 13.305965,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.30",
+   "protocol": "GTP-U",
+   "direction": "UPF->gNB",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "00000001",
+   "length": 92,
+   "extension_headers_hex": "01000100",
+   "inner": {
+    "src": "10.33.0.40",
+    "dst": "10.45.0.2",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c00000001000000850100010045000054a49600004001c19b0a2100280a2d000200007c61851c0002f284e76a0000000062bd030000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 47,
+   "frame": 43,
+   "time": 13.808956,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.20",
+   "protocol": "GTP-U",
+   "direction": "gNB->UPF",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "0000c7c4",
+   "length": 92,
+   "extension_headers_hex": "01100100",
+   "inner": {
+    "src": "10.45.0.2",
+    "dst": "10.33.0.40",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c0000c7c4000000850110010045000054463740004001dffa0a2d00020a210028080092b3851c0003f284e76a000000003c6a0b0000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 48,
+   "frame": 44,
+   "time": 13.808991,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.30",
+   "protocol": "GTP-U",
+   "direction": "UPF->gNB",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "00000001",
+   "length": 92,
+   "extension_headers_hex": "01000100",
+   "inner": {
+    "src": "10.33.0.40",
+    "dst": "10.45.0.2",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c00000001000000850100010045000054a68a00004001bfa70a2100280a2d000200009ab3851c0003f284e76a000000003c6a0b0000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 49,
+   "frame": 45,
+   "time": 14.31294,
+   "src": "10.33.0.30",
+   "dst": "10.33.0.20",
+   "protocol": "GTP-U",
+   "direction": "gNB->UPF",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "0000c7c4",
+   "length": 92,
+   "extension_headers_hex": "01100100",
+   "inner": {
+    "src": "10.45.0.2",
+    "dst": "10.33.0.40",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c0000c7c4000000850110010045000054482340004001de0e0a2d00020a21002808002f44851c0004f384e76a00000000a6d8030000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 50,
+   "frame": 46,
+   "time": 14.313005,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.30",
+   "protocol": "GTP-U",
+   "direction": "UPF->gNB",
+   "message": "G-PDU",
+   "flags": 52,
+   "teid": "00000001",
+   "length": 92,
+   "extension_headers_hex": "01000100",
+   "inner": {
+    "src": "10.33.0.40",
+    "dst": "10.45.0.2",
+    "ip_proto": 1
+   },
+   "hex": "34ff005c00000001000000850100010045000054a87600004001bdbb0a2100280a2d000200003744851c0004f384e76a00000000a6d8030000000000101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637"
+  },
+  {
+   "index": 51,
+   "frame": 47,
+   "time": 15.003742,
+   "src": "10.33.0.20",
+   "dst": "10.33.0.12",
+   "protocol": "PFCP",
+   "direction": "UPF->SMF",
+   "message": "Heartbeat Request",
+   "version": 1,
+   "s": 0,
+   "message_type": 1,
+   "sequence": 5,
+   "hex": "2001000c0000050000600004ee92035e",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  },
+  {
+   "index": 52,
+   "frame": 48,
+   "time": 15.004116,
+   "src": "10.33.0.12",
+   "dst": "10.33.0.20",
+   "protocol": "PFCP",
+   "direction": "SMF->UPF",
+   "message": "Heartbeat Response",
+   "version": 1,
+   "s": 0,
+   "message_type": 2,
+   "sequence": 5,
+   "hex": "2002000c0000050000600004ee920364",
+   "ies": [
+    {
+     "type": 96,
+     "name": "Recovery Time Stamp",
+     "len": 4
+    }
+   ]
+  }
+ ],
+ "secrets": {
+  "note": "Values marked 'captured' are on the wire in this capture. 'configured' values come from the setup files. 'derived' values were computed by setup/extract.py (an independent Python implementation of TS 35.206 Milenage and TS 33.501 Annex A) and confirmed against captured bytes as listed under 'checks'. None of them came from the kernel's own code.",
+  "supi": {
+   "value": "imsi-001010000000001",
+   "source": "configured; also the decrypted SUCI"
+  },
+  "k": {
+   "value": "465b5ce8b199b49faa5f0a2ee238a6bc",
+   "source": "configured"
+  },
+  "opc": {
+   "value": "e8ed289deba952e4283b54e88e6183ca",
+   "source": "configured"
+  },
+  "amf_field": {
+   "value": "8000",
+   "source": "configured; equals AUTN octets 7-8"
+  },
+  "sqn": {
+   "value": "000000000040",
+   "source": "derived: AUTN[0:6] xor AK; equals the Open5GS subscriber's provisioned SQN (64)",
+   "sqn_xor_ak": "b892358cbd5f"
+  },
+  "rand": {
+   "value": "2dcae41d34d2a894d297a018e5554299",
+   "source": "captured (Authentication request)"
+  },
+  "autn": {
+   "value": "b892358cbd5f8000918a5953eaef80b5",
+   "source": "captured (Authentication request)"
+  },
+  "abba": {
+   "value": "0000",
+   "source": "captured (Authentication request)"
+  },
+  "ngksi": {
+   "value": "00",
+   "source": "captured (Authentication request octet 4)"
+  },
+  "milenage": {
+   "source": "derived",
+   "mac_a": "918a5953eaef80b5",
+   "res": "f08cc7880b54a731",
+   "ck": "45cd35be0228503231021653c6d90dab",
+   "ik": "ad552cf9add3cfbb305526448b87ca80",
+   "ak": "b892358cbd1f",
+   "ak_star": "55b22a686076",
+   "mac_s": "dda7a5274013f112"
+  },
+  "res_star": {
+   "value": "6a1fe2792f2b9587f11a9496165cc976",
+   "source": "captured (Authentication response) and derived; equal"
+  },
+  "hres_star": {
+   "value": "dd784d1fe812eea17798ea747b0d8f92",
+   "source": "derived; HRES*/HXRES* travel only on SBI, not captured"
+  },
+  "serving_network_name": "5G:mnc001.mcc001.3gppnetwork.org",
+  "k_ausf": {
+   "value": "0c5a41b4c4536211602072261d5df1392094d2b3412b0559e16357c80049e374",
+   "source": "derived"
+  },
+  "k_seaf": {
+   "value": "494fcf246192866f632400d8cd4a6aa3baf55cf347ae75a3e6a4095ffdb3778c",
+   "source": "derived"
+  },
+  "k_amf": {
+   "value": "5dc2adfa186be9e0ec94bdd12cc5ea49848968c0c8fc6ae85788a8f694070475",
+   "source": "derived; confirmed by NAS MACs and K_gNB"
+  },
+  "k_nas_int": {
+   "value": "1eb58ea0bacc30b746c86075cc1ed73a",
+   "source": "derived; verifies every NAS MAC in the capture"
+  },
+  "k_nas_enc": {
+   "value": "a0956e069956c9c4657cc2072a4551af",
+   "source": "derived (unused on the wire: NEA0)"
+  },
+  "k_gnb": {
+   "value": "14a3190bfd83cdc30846be6b64f525847ca140084971a733e935f92aeaf33f80",
+   "source": "captured (InitialContextSetupRequest Security Key) and derived from K_AMF with UL NAS COUNT 0"
+  },
+  "nas_algorithms": {
+   "ciphering": "NEA0",
+   "integrity": "NIA2",
+   "source": "captured (Security mode command)"
+  },
+  "nas_bearer_for_mac": 1,
+  "nas_counts": [
+   {
+    "index": 21,
+    "direction": "DL",
+    "message": "Security mode command",
+    "count": 0
+   },
+   {
+    "index": 23,
+    "direction": "UL",
+    "message": "Security mode complete",
+    "count": 0
+   },
+   {
+    "index": 26,
+    "direction": "DL",
+    "message": "Registration accept",
+    "count": 1
+   },
+   {
+    "index": 29,
+    "direction": "UL",
+    "message": "Registration complete",
+    "count": 1
+   },
+   {
+    "index": 31,
+    "direction": "UL",
+    "message": "UL NAS transport",
+    "count": 2
+   },
+   {
+    "index": 34,
+    "direction": "DL",
+    "message": "Configuration update command",
+    "count": 2
+   },
+   {
+    "index": 38,
+    "direction": "DL",
+    "message": "DL NAS transport",
+    "count": 3
+   }
+  ],
+  "nas_count_overflow": 0,
+  "home_network_key": {
+   "scheme": "Profile A (X25519)",
+   "key_id": 1,
+   "private": "582f931fcf8f2b7f911debb6224f71e72b9d4a62eed38d129ffd778c3016d36a",
+   "public": "033c4dd9d5c5f1c0b0ed135f6e5a12c45cabd2e1bb54b3f17a7f3ca7e9647371",
+   "source": "configured (setup/hnet/curve25519-1.key; UE homeNetworkPublicKey)"
+  },
+  "suci": {
+   "mobile_identity_hex": "0100f1100000010190fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69635766f929c852ae5f9db83562",
+   "routing_indicator": "0000",
+   "protection_scheme": 1,
+   "home_network_public_key_id": 1,
+   "ue_ephemeral_public_key": "90fd7b3c46156cf222f56299913f5dafb8685151c5c273abc146f7bcff9adf69",
+   "ciphertext": "635766f929",
+   "mac_tag": "c852ae5f9db83562",
+   "decrypted_msin": "0000000001",
+   "ecies": {
+    "shared_secret": "6af9f3a697128602d1226fac5c0f9be53056c7ceb871e818898febad5dd5a61f",
+    "enc_key": "c5448c2fc683293520df5d66da837f55",
+    "icb": "e5c451e2960b24d179d88c0070ea91e9",
+    "mac_key": "1d467fcdebc74351631243287f13c870d481e14e81cb6e51c5d5e6876e832f8a"
+   },
+   "ue_ephemeral_private_key": "not recoverable (UERANSIM generates it per SUCI and does not log it)",
+   "source": "captured; ECIES values derived with the home-network private key"
+  },
+  "pdu_session": {
+   "pdu_session_id": 1,
+   "ue_ipv4": "10.45.0.2",
+   "dnn": "internet",
+   "sst": 1
+  },
+  "not_recoverable": [
+   "UE ephemeral X25519 private key for the SUCI",
+   "SBI (HTTP/2) messages between AMF, AUSF, UDM, SMF: not captured by design",
+   "RRC: UERANSIM's radio link is simulated over UDP 4997 and was not captured"
+  ]
+ },
+ "checks": {
+  "suci_profile_a_mac_and_decrypt": "ok",
+  "autn_mac_a": "ok",
+  "res_star": "ok",
+  "nas_mac_nia2": "ok (7 messages, BEARER=1)",
+  "kgnb_from_kamf": "ok (UL NAS COUNT 0)"
+ }
+}

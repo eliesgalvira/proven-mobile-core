@@ -1,0 +1,15 @@
+logger:
+  level: info
+
+udm:
+  sbi:
+    server:
+      - address: 10.33.0.14
+        port: 7777
+    client:
+      nrf:
+        - uri: http://10.33.0.10:7777
+  hnet:
+    - id: 1
+      scheme: 1
+      key: /opt/open5gs/etc/open5gs/hnet/curve25519-1.key

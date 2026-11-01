@@ -1,0 +1,487 @@
+[
+    {
+        "LocalSEID": 3,
+        "RemoteSEID": 466,
+        "PDRs": {
+            "1": {
+                "PdrID": 1,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 0,
+                    "FarId": 3,
+                    "QerId": 1,
+                    "Urr1Id": 1,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 0,
+                "Ipv4": "10.45.0.2",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "2": {
+                "PdrID": 2,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 6,
+                    "FarId": 4,
+                    "QerId": 1,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 51140,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "3": {
+                "PdrID": 3,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 6,
+                    "FarId": 3,
+                    "QerId": 0,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 30309,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "4": {
+                "PdrID": 4,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 6,
+                    "FarId": 5,
+                    "QerId": 0,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": {
+                        "Protocol": 4,
+                        "SrcAddress": {
+                            "Type": 2,
+                            "Ip": "ff02::2",
+                            "Mask": "/////////////////////w=="
+                        },
+                        "SrcPortRange": {
+                            "LowerBound": 0,
+                            "UpperBound": 65535
+                        },
+                        "DstAddress": {
+                            "Type": 0,
+                            "Ip": "",
+                            "Mask": null
+                        },
+                        "DstPortRange": {
+                            "LowerBound": 0,
+                            "UpperBound": 65535
+                        }
+                    }
+                },
+                "Teid": 51140,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            }
+        },
+        "FARs": {
+            "1": {
+                "FarInfo": {
+                    "action": 12,
+                    "outer_header_creation": 0,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 0,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 3
+            },
+            "2": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 0,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 0,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 4
+            },
+            "3": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 1,
+                    "remote_ip": "10.33.0.12",
+                    "teid": 1,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 5
+            }
+        },
+        "QERs": {
+            "1": {
+                "QerInfo": {
+                    "GateStatusUL": 0,
+                    "GateStatusDL": 0,
+                    "Qfi": 1,
+                    "MaxBitrateUL": 1000000000,
+                    "MaxBitrateDL": 1000000000,
+                    "StartUL": 0,
+                    "StartDL": 0
+                },
+                "GlobalId": 1
+            }
+        },
+        "URRs": {
+            "1": {
+                "UrrInfo": {
+                    "UplinkVolume": 0,
+                    "DownlinkVolume": 0
+                },
+                "GlobalId": 1,
+                "ReportSeqNumber": 0
+            }
+        }
+    },
+    {
+        "LocalSEID": 4,
+        "RemoteSEID": 6840123409045651457,
+        "PDRs": {
+            "1": {
+                "PdrID": 1,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 0,
+                    "FarId": 6,
+                    "QerId": 2,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 43981,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "2": {
+                "PdrID": 2,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 0,
+                    "FarId": 7,
+                    "QerId": 2,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 0,
+                "Ipv4": "10.45.0.99",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "3": {
+                "PdrID": 3,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 0,
+                    "FarId": 8,
+                    "QerId": 2,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": {
+                        "Protocol": 1,
+                        "SrcAddress": {
+                            "Type": 0,
+                            "Ip": "",
+                            "Mask": null
+                        },
+                        "SrcPortRange": {
+                            "LowerBound": 0,
+                            "UpperBound": 65535
+                        },
+                        "DstAddress": {
+                            "Type": 0,
+                            "Ip": "",
+                            "Mask": null
+                        },
+                        "DstPortRange": {
+                            "LowerBound": 0,
+                            "UpperBound": 65535
+                        }
+                    }
+                },
+                "Teid": 0,
+                "Ipv4": "10.45.0.99",
+                "Ipv6": "",
+                "Allocated": false
+            }
+        },
+        "FARs": {
+            "1": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 0,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 0,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 6
+            },
+            "2": {
+                "FarInfo": {
+                    "action": 4,
+                    "outer_header_creation": 0,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 0,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 7
+            },
+            "3": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 1,
+                    "remote_ip": "10.33.0.30",
+                    "teid": 1911,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 8
+            }
+        },
+        "QERs": {
+            "1": {
+                "QerInfo": {
+                    "GateStatusUL": 0,
+                    "GateStatusDL": 0,
+                    "Qfi": 9,
+                    "MaxBitrateUL": 1000000,
+                    "MaxBitrateDL": 1000000,
+                    "StartUL": 0,
+                    "StartDL": 0
+                },
+                "GlobalId": 2
+            }
+        },
+        "URRs": {}
+    },
+    {
+        "LocalSEID": 5,
+        "RemoteSEID": 6840123409045651458,
+        "PDRs": {
+            "1": {
+                "PdrID": 1,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 0,
+                    "FarId": 9,
+                    "QerId": 3,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 43982,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "2": {
+                "PdrID": 2,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 0,
+                    "FarId": 10,
+                    "QerId": 3,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 0,
+                "Ipv4": "10.45.0.98",
+                "Ipv6": "",
+                "Allocated": false
+            }
+        },
+        "FARs": {
+            "1": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 0,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 0,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 9
+            },
+            "2": {
+                "FarInfo": {
+                    "action": 4,
+                    "outer_header_creation": 0,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 0,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 10
+            },
+            "9": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 1,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 1912,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 11
+            }
+        },
+        "QERs": {
+            "1": {
+                "QerInfo": {
+                    "GateStatusUL": 0,
+                    "GateStatusDL": 0,
+                    "Qfi": 9,
+                    "MaxBitrateUL": 1000000,
+                    "MaxBitrateDL": 1000000,
+                    "StartUL": 0,
+                    "StartDL": 0
+                },
+                "GlobalId": 3
+            }
+        },
+        "URRs": {}
+    },
+    {
+        "LocalSEID": 2,
+        "RemoteSEID": 466,
+        "PDRs": {
+            "1": {
+                "PdrID": 1,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 0,
+                    "FarId": 0,
+                    "QerId": 0,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 0,
+                "Ipv4": "10.45.0.2",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "2": {
+                "PdrID": 2,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 6,
+                    "FarId": 1,
+                    "QerId": 0,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 51140,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "3": {
+                "PdrID": 3,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 6,
+                    "FarId": 0,
+                    "QerId": 0,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": null
+                },
+                "Teid": 30309,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            },
+            "4": {
+                "PdrID": 4,
+                "PdrInfo": {
+                    "OuterHeaderRemoval": 6,
+                    "FarId": 2,
+                    "QerId": 0,
+                    "Urr1Id": 0,
+                    "Urr2Id": 0,
+                    "SdfFilter": {
+                        "Protocol": 4,
+                        "SrcAddress": {
+                            "Type": 2,
+                            "Ip": "ff02::2",
+                            "Mask": "/////////////////////w=="
+                        },
+                        "SrcPortRange": {
+                            "LowerBound": 0,
+                            "UpperBound": 65535
+                        },
+                        "DstAddress": {
+                            "Type": 0,
+                            "Ip": "",
+                            "Mask": null
+                        },
+                        "DstPortRange": {
+                            "LowerBound": 0,
+                            "UpperBound": 65535
+                        }
+                    }
+                },
+                "Teid": 51140,
+                "Ipv4": "",
+                "Ipv6": "",
+                "Allocated": false
+            }
+        },
+        "FARs": {
+            "1": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 1,
+                    "remote_ip": "10.33.0.30",
+                    "teid": 1,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 0
+            },
+            "2": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 0,
+                    "remote_ip": "0.0.0.0",
+                    "teid": 0,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 1
+            },
+            "3": {
+                "FarInfo": {
+                    "action": 2,
+                    "outer_header_creation": 1,
+                    "remote_ip": "10.33.0.12",
+                    "teid": 1,
+                    "transport_level_marking": 0
+                },
+                "GlobalId": 2
+            }
+        },
+        "QERs": {
+            "1": {
+                "QerInfo": {
+                    "GateStatusUL": 0,
+                    "GateStatusDL": 0,
+                    "Qfi": 1,
+                    "MaxBitrateUL": 1000000000,
+                    "MaxBitrateDL": 1000000000,
+                    "StartUL": 0,
+                    "StartDL": 0
+                },
+                "GlobalId": 0
+            }
+        },
+        "URRs": {
+            "1": {
+                "UrrInfo": {
+                    "UplinkVolume": 0,
+                    "DownlinkVolume": 0
+                },
+                "GlobalId": 0,
+                "ReportSeqNumber": 0
+            }
+        }
+    }
+]

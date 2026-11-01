@@ -1,0 +1,31 @@
+logger:
+  level: debug
+smf:
+  sbi:
+    server:
+      - address: 10.33.0.12
+        port: 7777
+    client:
+      nrf:
+        - uri: http://10.33.0.10:7777
+  pfcp:
+    server:
+      - address: 10.33.0.12
+    client:
+      upf:
+        - address: 10.33.0.20
+          dnn: internet
+  gtpu:
+    server:
+      - address: 10.33.0.12
+  session:
+    - subnet: 10.45.0.0/16
+      gateway: 10.45.0.1
+      dnn: internet
+  dns:
+    - 8.8.8.8
+  mtu: 1400
+  info:
+    - s_nssai:
+        - sst: 1
+          dnn: [internet]

@@ -1,0 +1,79 @@
+name: speck5g
+
+# Open5GS and UERANSIM run from images built by ./flake.nix (dockerTools, pinned
+# nixpkgs d357a2b). eUPF, MongoDB and the netshoot helpers stay on pinned upstream
+# images (eUPF by digest, as allowed).
+x-o5gs: &o5gs
+  image: speck5g-open5gs:2.8.0
+  volumes:
+    - ./open5gs:/cfg:ro
+    - ./hnet:/opt/open5gs/etc/open5gs/hnet:ro
+  restart: "no"
+
+x-ueransim: &ueransim
+  image: speck5g-ueransim:3.3.0
+  volumes: [./ueransim:/cfg:ro]
+
+networks:
+  core:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-5gcap
+    ipam:
+      config:
+        - subnet: 10.33.0.0/24
+
+services:
+  mongo:
+    image: mongo:6.0@sha256:8b6d8f5bbedb25cb73517b65cf99f13aeb75ad5b157a56c479287a840bbad3ac
+    networks: {core: {ipv4_address: 10.33.0.2}}
+    volumes:
+      - ./subscriber.js:/subscriber.js:ro
+
+  # Packet capture helper on the host network namespace. run.sh execs tcpdump in
+  # it and streams the pcap to stdout, so the file on the host belongs to the
+  # invoking user rather than root.
+  capture:
+    image: nicolaka/netshoot:v0.14@sha256:7f08c4aff13ff61a35d30e30c5c1ea8396eac6ab4ce19fd02d5a4b3b5d0d09a2
+    network_mode: host
+    cap_add: [NET_ADMIN, NET_RAW]
+    command: ["sleep", "infinity"]
+
+  dn:
+    image: nicolaka/netshoot:v0.14@sha256:7f08c4aff13ff61a35d30e30c5c1ea8396eac6ab4ce19fd02d5a4b3b5d0d09a2
+    networks: {core: {ipv4_address: 10.33.0.40}}
+    cap_add: [NET_ADMIN]
+    command: ["sh", "-c", "ip route add 10.45.0.0/16 via 10.33.0.20 && sleep infinity"]
+
+  eupf:
+    image: ghcr.io/edgecomllc/eupf:0.7.2@sha256:01ad44889ce546ae0720cdc9e648889e9a653d40a20a1867d6751ae6cbb6cb08
+    privileged: true
+    networks: {core: {ipv4_address: 10.33.0.20}}
+    volumes:
+      - ./eupf/config.yml:/config.yml:ro
+    command: ["--config", "/config.yml"]
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.rp_filter: "0"
+
+  nrf:  {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.10}}, command: ["open5gs-nrfd",  "-c", "/cfg/nrf.yaml"]}
+  amf:  {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.11}}, command: ["open5gs-amfd",  "-c", "/cfg/amf.yaml"]}
+  smf:  {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.12}}, command: ["open5gs-smfd",  "-c", "/cfg/smf.yaml"]}
+  ausf: {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.13}}, command: ["open5gs-ausfd", "-c", "/cfg/ausf.yaml"]}
+  udm:  {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.14}}, command: ["open5gs-udmd",  "-c", "/cfg/udm.yaml"]}
+  udr:  {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.15}}, command: ["open5gs-udrd",  "-c", "/cfg/udr.yaml"]}
+  pcf:  {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.16}}, command: ["open5gs-pcfd",  "-c", "/cfg/pcf.yaml"]}
+  nssf: {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.17}}, command: ["open5gs-nssfd", "-c", "/cfg/nssf.yaml"]}
+  bsf:  {<<: *o5gs, networks: {core: {ipv4_address: 10.33.0.18}}, command: ["open5gs-bsfd",  "-c", "/cfg/bsf.yaml"]}
+
+  gnb:
+    <<: *ueransim
+    networks: {core: {ipv4_address: 10.33.0.30}}
+    entrypoint: ["nr-gnb", "-c", "/cfg/gnb.yaml"]
+
+  ue:
+    <<: *ueransim
+    networks: {core: {ipv4_address: 10.33.0.31}}
+    cap_add: [NET_ADMIN]
+    devices: [/dev/net/tun]
+    entrypoint: ["nr-ue", "-c", "/cfg/ue.yaml"]

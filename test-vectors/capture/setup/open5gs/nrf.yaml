@@ -1,0 +1,9 @@
+logger:
+  level: info
+nrf:
+  serving:
+    - plmn_id: {mcc: '001', mnc: '01'}
+  sbi:
+    server:
+      - address: 10.33.0.10
+        port: 7777
