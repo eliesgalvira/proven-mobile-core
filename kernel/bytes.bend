@@ -28,6 +28,13 @@ def Read(-A: Data) -> Data:
 def is_byte(x: U32) -> Bool:
   U32.is_lt(x, 256)
 
+def all_bytes(bs: Bytes()) -> Bool:
+  match bs:
+    case Nil{}:
+      True{}
+    case b <> rest:
+      Bool.and(is_byte(b), all_bytes(rest))
+
 def bytes_eq(xs: Bytes(), ys: Bytes()) -> Bool:
   match xs ys:
     case Nil{} Nil{}:
