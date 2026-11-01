@@ -28,6 +28,17 @@ def Read(-A: Data) -> Data:
 def is_byte(x: U32) -> Bool:
   U32.is_lt(x, 256)
 
+def bytes_eq(xs: Bytes(), ys: Bytes()) -> Bool:
+  match xs ys:
+    case Nil{} Nil{}:
+      True{}
+    case Nil{} y <> yt:
+      False{}
+    case x <> xt Nil{}:
+      False{}
+    case x <> xt y <> yt:
+      Bool.and(U32.is_eq(x, y), bytes_eq(xt, yt))
+
 # lo's low 4 bits, then hi's low 28 bits: (hi << 4) | (lo & 15).
 def cat4(lo: U32, hi: U32) -> U32:
   match lo hi:

@@ -7,6 +7,7 @@ import ./crypto/ctr.bend as Ctr
 import ./crypto/cmac.bend as M
 import ./crypto/milenage.bend as Mil
 import ./crypto/kdf.bend as K
+import ./plmn.bend as P
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -169,3 +170,26 @@ law kdf.snn.nonempty:
   for mcc: B.Digits()
   for mnc: B.Digits()
   {List.is_empty(&2, U32, K.kdf.serving_network_name(mcc, mnc)) == False{} : Bool}
+
+# PLMN identity (ticket 08)
+# -------------------------
+
+law plmn.roundtrip:
+  for +p: P.Plmn
+  for rest: B.Bytes()
+  for +v: {P.Plmn.valid(p) == True{} : Bool}
+  {P.Plmn.read(P.Plmn.write(p, rest)) == Done{(p, rest)} : B.Read(P.Plmn)}
+
+law plmn.decode_valid:
+  for +bs: B.Bytes()
+  for +p: P.Plmn
+  for +rest: B.Bytes()
+  for e: {P.Plmn.read(bs) == Done{(p, rest)} : B.Read(P.Plmn)}
+  {P.Plmn.valid(p) == True{} : Bool}
+
+law plmn.suffix:
+  for +bs: B.Bytes()
+  for +p: P.Plmn
+  for +rest: B.Bytes()
+  for e: {P.Plmn.read(bs) == Done{(p, rest)} : B.Read(P.Plmn)}
+  {List.drop(&2, U32, bs, 3n) == rest : B.Bytes()}
