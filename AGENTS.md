@@ -24,14 +24,34 @@ The project is 0BSD. Read other cores (Open5GS, free5GC, Ella Core) for ideas, b
 
 ## Bend 2 problems go through upstream tickets
 
-Bend 2 is fixed as the language (`docs/adr/0001-bend-2-is-fixed.md`). Never file anything with Bend directly. When work hits a Bend limitation or bug, open an issue here labelled `upstream:bend` with:
+Bend 2 is fixed as the language (`docs/adr/0001-bend-2-is-fixed.md`). Never file anything with Bend directly. When work hits a Bend limitation or bug, check Bend's `WONTFIX.txt`, then write a draft in `loop/upstream-bend/NN-slug.md` with:
 
 - what was attempted and what happened;
 - the smallest `.bend` file that reproduces it;
-- `bend --version`, `uname -sm` and the first line of `clang --version`;
+- `bend version`, `uname -sm` and the first line of `clang --version`;
 - the workaround used here, if any.
 
-Check Bend's `WONTFIX.txt` first. The human decides whether to file the issue upstream, using Bend's bug or feature form.
+The human reviews each draft, turns the ones worth keeping into issues here labelled `upstream:bend`, and decides whether to file them upstream through Bend's bug or feature form.
+
+## The implementation loop
+
+The milestone spec is `docs/spec/milestone-1.md`; its tickets are `docs/spec/tickets/NN-*.md`. `loop/progress.md` tracks their status (`todo`, `in-progress`, `done`, `blocked`, `needs-human`). The loop runs unattended in a cloud session, and any new session resumes it from the files alone.
+
+1. **Branch.** Work on `loop/m1`. If it exists on origin, check it out and pull; otherwise create it from `origin/main`. Never push to `main`.
+2. **Stop signal.** Before each ticket, `git fetch origin`. If the branch `loop/stop` exists on origin, push, add a final note to `loop/progress.md`, push again, and stop.
+3. **Pick.** Take the first ticket that is `in-progress` (resume it) or `todo` with every dependency `done`. Mark it `in-progress`, commit, push.
+4. **Build.** Read the ticket and the spec overview. Work test-first with the `tdd` skill. The seams a ticket lists count as agreed with the user. Order: laws into `kernel/LAWS.bend`, then tests, then code and proofs.
+5. **Commit and push often.** Commit after each green step, and push at least every 30 minutes and at the end of each ticket. Elies can stop the session at any moment and must lose nothing.
+6. **Done.** When the ticket's Verify command and `scripts/check.sh` both pass, mark it `done` in `loop/progress.md` with the commit hash and one line on what was built. Commit and push.
+7. **Blocked.** Never wait for a human. When something blocks a ticket (a law you can't prove after real effort, a missing tool, a Bend bug, a contradiction in the spec):
+   - add an entry to `loop/blockers.md`: the ticket, what you tried, the smallest reproduction, and what would unblock it;
+   - mark the ticket `blocked`, or `needs-human` if only a human can act;
+   - push, and take the next eligible ticket.
+8. **Bend problems.** Write a draft as § Bend 2 problems says. Don't file anything anywhere and don't open GitHub issues.
+9. **Silent spec.** Where the spec doesn't decide something, choose what the best expert would, add one line with the reason to `loop/decisions.md`, and continue.
+10. **Never weaken the target.** Don't weaken or delete a law, delete a test vector, or edit `docs/spec/`, `docs/security/` or `test-vectors/` to make something pass. Never use `@unsafe` or foreign imports outside `kernel/main.bend`.
+11. **Long commands.** Give every command a timeout. Run anything longer than 5 minutes in the background and poll it. Split heavy checks per file.
+12. **Finish.** When no eligible ticket remains, run `scripts/check.sh`, write a summary at the top of `loop/progress.md` (what's done, blocked and needs-human, and what to do next), push, and stop.
 
 ## Erasure
 
@@ -56,7 +76,7 @@ For every decision, ask what the best expert in that field would do and why they
 
 ### Issue tracker
 
-GitHub Issues on this repo, through the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Planning (the wayfinder map) lives in GitHub Issues, through the `gh` CLI; see `docs/agents/issue-tracker.md`. Implementation tickets live in `docs/spec/tickets/`, because cloud sessions cannot use `gh issue`.
 
 ### Triage labels
 
