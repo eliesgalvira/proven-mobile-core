@@ -1,0 +1,103 @@
+{
+  "source": {
+    "document": "3GPP TS 33.501: Security architecture and procedures for 5G system",
+    "version": "20.3.0 (2026-09), Release 20",
+    "section": "Annex C.4 Implementers’ test data",
+    "url": "https://www.3gpp.org/ftp/Specs/archive/33_series/33.501/33501-k30.zip",
+    "retrieved": "2026-11-01"
+  },
+  "cases": [
+    {
+      "section": "C.4.2.1",
+      "scheme": "null",
+      "supi_type": "imsi",
+      "mcc_mnc": "274012",
+      "msin": "001002086",
+      "scheme_input": "00012080f6",
+      "scheme_output": "00012080f6"
+    },
+    {
+      "section": "C.4.2.2",
+      "scheme": "null",
+      "supi_type": "nai",
+      "supi": "verylongusername1@3gpp.com",
+      "scheme_input": "766572796c6f6e67757365726e616d6531",
+      "scheme_output_text": "useridverylongusername1"
+    },
+    {
+      "section": "C.4.3.1",
+      "scheme": "profile_a",
+      "supi_type": "imsi",
+      "mcc_mnc": "274012",
+      "msin": "001002086",
+      "home_network_private_key": "c53c22208b61860b06c62e5406a7b330c2b577aa5558981510d128247d38bd1d",
+      "home_network_public_key": "5a8d38864820197c3394b92613b20b91633cbd897119273bf8e4a6f4eec0a650",
+      "eph_public_key": "b2e92f836055a255837debf850b528997ce0201cb82adfe4be1f587d07d8457d",
+      "eph_private_key": "c80949f13ebe61af4ebdbd293ea4f942696b9e815d7e8f0096bbf6ed7de62256",
+      "eph_shared_key": "028ddf890ec83cdf163947ce45f6ec1a0e3070ea5fe57e2b1f05139f3e82422a",
+      "eph_enc_key": "2ba342cabd2b3b1e5e4e890da11b65f6",
+      "icb": "e2622cb0cdd08204e721c8ea9b95a7c6",
+      "plaintext": "00012080f6",
+      "ciphertext": "cb02352410",
+      "eph_mac_key": "d9846966fb7cf5fcf11266c5957dea60b83fff2b7c940690a4bfe57b1eb52bd2",
+      "mac_tag": "cddd9e730ef3fa87",
+      "scheme_output": "b2e92f836055a255837debf850b528997ce0201cb82adfe4be1f587d07d8457dcb02352410cddd9e730ef3fa87"
+    },
+    {
+      "section": "C.4.3.2",
+      "scheme": "profile_a",
+      "supi_type": "nai",
+      "supi": "verylongusername1@3gpp.com",
+      "home_network_private_key": "c53c22208b61860b06c62e5406a7b330c2b577aa5558981510d128247d38bd1d",
+      "home_network_public_key": "5a8d38864820197c3394b92613b20b91633cbd897119273bf8e4a6f4eec0a650",
+      "eph_public_key": "977d8b2fdaa7b64aa700d04227d5b440630ea4ec50f9082273a26bb678c92222",
+      "eph_private_key": "be9eff3e9f22a4b42a3d236e7a6c500b3f2e7e0c7449988ba800d664bf4fcd97",
+      "eph_shared_key": "511c1df473bb88317f923501f8ba944fd3b667d25699dcb552dbcef60bbdc56d",
+      "eph_enc_key": "fe77b87d87f40428edd71bca69d79059",
+      "plaintext": "766572796c6f6e67757365726e616d6531",
+      "ciphertext": "8e358a1582adb15322c10e515141d2039a",
+      "eph_mac_key": "d87b69f4fe8cd6b211264ea5e69f682f151a82252684cdb15a047e6ef0595028",
+      "mac_tag": "12e1d7783a97f1ac",
+      "scheme_output_text": "ecckey977D8B2FDAA7B64AA700D04227D5B440630EA4EC50F9082273A26BB678C92222.cip8E358A1582ADB15322C10E515141D2039A.mac12E1D7783A97F1AC"
+    },
+    {
+      "section": "C.4.4.1",
+      "scheme": "profile_b",
+      "supi_type": "imsi",
+      "mcc_mnc": "274012",
+      "msin": "001002086",
+      "home_network_private_key": "f1ab1074477ebcc7f554ea1c5fc368b1616730155e0041ac447d6301975fecda",
+      "home_network_public_key_uncompressed": "0472da71976234ce833a6907425867b82e074d44ef907dfb4b3e21c1c2256ebcd15a7ded52fcbb097a4ed250e036c7b9c8c7004c4eedc4f068cd7bf8d3f900e3b4",
+      "home_network_public_key_compressed": "0272da71976234ce833a6907425867b82e074d44ef907dfb4b3e21c1c2256ebcd1",
+      "eph_public_key_uncompressed": "049aab8376597021e855679a9778ea0b67396e68c66df32c0f41e9acca2da9b9d1d1f44ea1c87aa7478b954537bde79951e748a43294a4f4cf86eaff1789c9c81f",
+      "eph_public_key": "039aab8376597021e855679a9778ea0b67396e68c66df32c0f41e9acca2da9b9d1",
+      "eph_private_key": "99798858a1dc6a2c68637149a4b1dbfd1fdff5addd62a2142f06699ed7602529",
+      "eph_shared_key": "6c7e6518980025b982fbb2ff746e3c2e85a196d252099a7ad23ea7b4c0959cae",
+      "eph_enc_key": "8a65c3aed80295c12bd55087e965702a",
+      "icb": "ef285b4061c3baee858ab6ec68487dae",
+      "plaintext": "00012080f6",
+      "ciphertext": "46a33fc271",
+      "eph_mac_key": "a5ebac0bc48d9cf7ae5ce39cd840ac6c761aec04078fab954d634f923e901c64",
+      "mac_tag": "6ac7dae96aa30a4d",
+      "scheme_output": "039aab8376597021e855679a9778ea0b67396e68c66df32c0f41e9acca2da9b9d146a33fc2716ac7dae96aa30a4d"
+    },
+    {
+      "section": "C.4.4.2",
+      "scheme": "profile_b",
+      "supi_type": "nai",
+      "supi": "verylongusername1@3gpp.com",
+      "home_network_private_key": "f1ab1074477ebcc7f554ea1c5fc368b1616730155e0041ac447d6301975fecda",
+      "home_network_public_key_uncompressed": "0472da71976234ce833a6907425867b82e074d44ef907dfb4b3e21c1c2256ebcd15a7ded52fcbb097a4ed250e036c7b9c8c7004c4eedc4f068cd7bf8d3f900e3b4",
+      "home_network_public_key_compressed": "0272da71976234ce833a6907425867b82e074d44ef907dfb4b3e21c1c2256ebcd1",
+      "eph_public_key": "03759bb22c563d9f4a6b3c1419e543fc2f39d6823f02a9d71162b39399218b244b",
+      "eph_private_key": "90a5898bd29ffa3f261e00e980067c70a2b1b992a21f5b4fef6d4df69fe804ad",
+      "eph_shared_key": "bc3529ed79541cf8c007ce9806330f4a5ff15064d7cf4b16943ef8f007597872",
+      "eph_enc_key": "84f9a78995d39e6968047547ecc12c4f",
+      "plaintext": "766572796c6f6e67757365726e616d6531",
+      "ciphertext": "be22d8b9f856a52ed381cd7eaf4cf2d525",
+      "eph_mac_key": "39d5517e965f8e1252b61345ed45226c5f1a8c69f03d6c91437591f0b8e48fa0",
+      "mac_tag": "3cddc61a0a7882eb",
+      "scheme_output_text": "ecckey03759BB22C563D9F4A6B3C1419E543FC2F39D6823F02A9D71162B39399218B244B.cipBE22D8B9F856A52ED381CD7EAF4CF2D525.mac3CDDC61A0A7882EB"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "source": {
+    "document": "FIPS 197: Advanced Encryption Standard (AES)",
+    "version": "original publication of November 26, 2001 (FIPS 197-upd1 of 2023 keeps Appendix B and moves Appendix C to the CSRC examples)",
+    "section": "Appendix B; Appendix C.1",
+    "url": "https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197.pdf",
+    "retrieved": "2026-11-01"
+  },
+  "cases": [
+    {
+      "section": "Appendix B",
+      "key": "2b7e151628aed2a6abf7158809cf4f3c",
+      "plaintext": "3243f6a8885a308d313198a2e0370734",
+      "ciphertext": "3925841d02dc09fbdc118597196a0b32"
+    },
+    {
+      "section": "Appendix C.1",
+      "key": "000102030405060708090a0b0c0d0e0f",
+      "plaintext": "00112233445566778899aabbccddeeff",
+      "ciphertext": "69c4e0d86a7b0430d8cdb78070b4c55a"
+    }
+  ]
+}
