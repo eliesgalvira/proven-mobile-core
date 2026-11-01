@@ -257,3 +257,222 @@ def L.nas.session_ambr.decode_valid(bs, a, e):
       Ambr.six(du, d1, d0, uu, u1, u0, a, Bool.and(Q.Ambr.unit_ok(du), Q.Ambr.unit_ok(uu)), {==}, e)
     case x0 <> x1 <> x2 <> x3 <> x4 <> x5 <> x6 <> t:
       Ambr.absurd(x0 <> x1 <> x2 <> x3 <> x4 <> x5 <> x6 <> t, a, B.Invalid{0}, e)
+
+# Extended protocol configuration options
+# ---------------------------------------
+
+def Cont.Res() -> Data:
+  Result<&2, &2, B.Err, List<&2, Q.Container>>
+
+def Epco.Res() -> Data:
+  Result<&2, &2, B.Err, Q.Epco>
+
+# An LV field spans one byte more than its content and what follows.
+def Lv.len_fin(+l: U32, +tail: B.Bytes(), +body2: B.Bytes(), +r2: B.Bytes(), la: {List.length(&2, U32, body2) == U32.to_nat(l) : Nat} & {List.append(&2, U32, body2, r2) == tail : B.Bytes()}) -> {List.length(&2, U32, l <> tail) == 1n+Nat.add(List.length(&2, U32, body2), List.length(&2, U32, r2)) : Nat}:
+  (ln, ap) = la
+  %ap : {List.length(&2, U32, l <> _) == 1n+Nat.add(List.length(&2, U32, body2), List.length(&2, U32, r2)) : Nat}
+  al = P.List.append_len(body2, r2)
+  %al : {List.length(&2, U32, l <> List.append(&2, U32, body2, r2)) == 1n+_ : Nat}
+  {==}
+
+def Lv.len_join(+l: U32, +tail: B.Bytes(), +len: U32, +body: B.Bytes(), +r3: B.Bytes(), rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(l), tail) == rt : B.Read(B.Bytes())}, +e: {I.Len.join(l, rt) == Done{(I.LenBody{len, body}, r3)} : B.Read(I.LenBody)}) -> {List.length(&2, U32, l <> tail) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}:
+  match rt:
+    case Fail{err}:
+      Empty.absurd({List.length(&2, U32, l <> tail) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), err, (I.LenBody{len, body}, r3), e))
+    case Done{(+body2, +r2)}:
+      +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len, body}), Done{(I.LenBody{l, body2}, r2)}, Done{(I.LenBody{len, body}, r3)}, e)
+      eb = Equal.cong(I.LenBody, B.Bytes(), x => P.Lb.body(x), I.LenBody{l, body2}, I.LenBody{len, body}, elb)
+      er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r3), Done{(I.LenBody{l, body2}, r2)}, Done{(I.LenBody{len, body}, r3)}, e)
+      %eb : {List.length(&2, U32, l <> tail) == 1n+Nat.add(List.length(&2, U32, _), List.length(&2, U32, r3)) : Nat}
+      %er : {List.length(&2, U32, l <> tail) == 1n+Nat.add(List.length(&2, U32, body2), List.length(&2, U32, _)) : Nat}
+      Lv.len_fin(l, tail, body2, r2, L.bytes.take.length(U32.to_nat(l), tail, body2, r2, ert))
+
+def Lv.len_ok(+l: U32, +tail: B.Bytes(), +len: U32, +body: B.Bytes(), +r3: B.Bytes(), ok: Bool, +e: {I.Len.take(l, tail, ok) == Done{(I.LenBody{len, body}, r3)} : B.Read(I.LenBody)}) -> {List.length(&2, U32, l <> tail) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}:
+  match ok:
+    case False{}:
+      Empty.absurd({List.length(&2, U32, l <> tail) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Invalid{l}, (I.LenBody{len, body}, r3), e))
+    case True{}:
+      Lv.len_join(l, tail, len, body, r3, B.take(U32.to_nat(l), tail), {==}, e)
+
+def Lv.len(r2: B.Bytes(), +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +e: {I.lv(r2) == Done{(I.LenBody{len, body}, r3)} : B.Read(I.LenBody)}) -> {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}:
+  match r2:
+    case Nil{}:
+      Empty.absurd({List.length(&2, U32, []) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Short{}, (I.LenBody{len, body}, r3), e))
+    case +l <> +tail:
+      Lv.len_ok(l, tail, len, body, r3, I.fits8(l), e)
+
+# What the container loop establishes: a count within the budget, valid
+# containers, and a size equal to the bytes read.
+def Cont.Inv(budget: Nat, bs: B.Bytes(), cs: List<&2, Q.Container>) -> Type:
+  {Nat.is_le(List.length(&2, Q.Container, cs), budget) == True{} : Bool} & ({Q.Containers.valid(cs) == True{} : Bool} & {Q.Containers.size(cs) == List.length(&2, U32, bs) : Nat})
+
+def Cont.absurd(+budget: Nat, +bs: B.Bytes(), +cs: List<&2, Q.Container>, err: B.Err, e: {Fail{err} == Done{cs} : Cont.Res()}) -> Cont.Inv(budget, bs, cs):
+  Empty.absurd(Cont.Inv(budget, bs, cs), P.Refute.fail_done(B.Err, List<&2, Q.Container>, err, cs, e))
+
+def Cont.dv_step(+k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs2: List<&2, Q.Container>, f16: {I.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, Q.Container{id, I.LenBody{len, body}} <> cs2):
+  (le, rest) = ih
+  (va, sz) = rest
+  ssz = Equal.sym(Nat, Q.Containers.size(cs2), List.length(&2, U32, r3), sz)
+  %ssz : {Nat.is_le(1n+List.length(&2, Q.Container, cs2), 1n+k) == True{} : Bool} & ({Bool.and(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2)) == True{} : Bool} & {Nat.add(3n, Nat.add(List.length(&2, U32, body), _)) == List.length(&2, U32, b <> b0 <> r2) : Nat})
+  sll = Equal.sym(Nat, List.length(&2, U32, r2), 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)), ll)
+  %sll : {Nat.is_le(1n+List.length(&2, Q.Container, cs2), 1n+k) == True{} : Bool} & ({Bool.and(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2)) == True{} : Bool} & {Nat.add(3n, Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3))) == 1n+1n+_ : Nat})
+  (le, (P.Bool.and_intro(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2), P.Bool.and_intro(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), f16, v8), va), {==}))
+
+def Cont.dv_more(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs: List<&2, Q.Container>, ro: Cont.Res(), ero: {Q.Containers.go(f, k, r3) == ro : Cont.Res()}, +e: {Q.Containers.cons(Q.Container{id, I.LenBody{len, body}}, ro) == Done{cs} : Cont.Res()}, f16: {I.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: @cs2: List<&2, Q.Container> -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
+  match ro:
+    case Fail{err}:
+      Cont.absurd(1n+k, b <> b0 <> r2, cs, err, e)
+    case Done{+cs2}:
+      ec = Equal.cong(Cont.Res(), List<&2, Q.Container>, x => P.Res.value(B.Err, List<&2, Q.Container>, x, cs), Done{Q.Container{id, I.LenBody{len, body}} <> cs2}, Done{cs}, e)
+      %ec : Cont.Inv(1n+k, b <> b0 <> r2, _)
+      Cont.dv_step(k, b, b0, r2, id, len, body, r3, cs2, f16, v8, ll, ih(cs2, ero))
+
+def Cont.dv_body(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +cs: List<&2, Q.Container>, rl: B.Read(I.LenBody), +erl: {I.lv(r2) == rl : B.Read(I.LenBody)}, +e: {Q.Container.body(id, rl, left => Q.Containers.go(f, k, left)) == Done{cs} : Cont.Res()}, f16: {I.fits16(id) == True{} : Bool}, ih: @cs2: List<&2, Q.Container> -> @r3: B.Bytes() -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
+  match rl:
+    case Fail{err}:
+      Cont.absurd(1n+k, b <> b0 <> r2, cs, err, e)
+    case Done{(I.LenBody{+len, +body}, +r3)}:
+      Cont.dv_more(f, k, b, b0, r2, id, len, body, r3, cs, Q.Containers.go(f, k, r3), {==}, e, f16, PM.Lv.dv(r2, I.LenBody{len, body}, r3, erl), Lv.len(r2, len, body, r3, erl), cs2 => e2 => ih(cs2, r3, e2))
+
+def Cont.dv_ok(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +cs: List<&2, Q.Container>, ok: Bool, ev: {I.fits16(B.cat8(b0, b)) == ok : Bool}, +e: {Q.Container.id_ok(B.cat8(b0, b), r2, left => Q.Containers.go(f, k, left), ok) == Done{cs} : Cont.Res()}, ih: @cs2: List<&2, Q.Container> -> @r3: B.Bytes() -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
+  match ok:
+    case False{}:
+      Cont.absurd(1n+k, b <> b0 <> r2, cs, B.Invalid{B.cat8(b0, b)}, e)
+    case True{}:
+      Cont.dv_body(f, k, b, b0, r2, B.cat8(b0, b), cs, I.lv(r2), {==}, e, ev, ih)
+
+def Cont.dv(fuel: Nat, budget: Nat, bs: B.Bytes(), +cs: List<&2, Q.Container>, +e: {Q.Containers.go(fuel, budget, bs) == Done{cs} : Cont.Res()}) -> Cont.Inv(budget, bs, cs):
+  match fuel budget bs:
+    case 0n 0n Nil{}:
+      ec = Equal.cong(Cont.Res(), List<&2, Q.Container>, x => P.Res.value(B.Err, List<&2, Q.Container>, x, cs), Done{[]}, Done{cs}, e)
+      %ec : Cont.Inv(0n, [], _)
+      ({==}, ({==}, {==}))
+    case 0n 1n+k Nil{}:
+      ec = Equal.cong(Cont.Res(), List<&2, Q.Container>, x => P.Res.value(B.Err, List<&2, Q.Container>, x, cs), Done{[]}, Done{cs}, e)
+      %ec : Cont.Inv(1n+k, [], _)
+      ({==}, ({==}, {==}))
+    case 1n+f 0n Nil{}:
+      ec = Equal.cong(Cont.Res(), List<&2, Q.Container>, x => P.Res.value(B.Err, List<&2, Q.Container>, x, cs), Done{[]}, Done{cs}, e)
+      %ec : Cont.Inv(0n, [], _)
+      ({==}, ({==}, {==}))
+    case 1n+f 1n+k Nil{}:
+      ec = Equal.cong(Cont.Res(), List<&2, Q.Container>, x => P.Res.value(B.Err, List<&2, Q.Container>, x, cs), Done{[]}, Done{cs}, e)
+      %ec : Cont.Inv(1n+k, [], _)
+      ({==}, ({==}, {==}))
+    case 0n 0n +b <> +rest:
+      Cont.absurd(0n, b <> rest, cs, B.Invalid{b}, e)
+    case 0n 1n+k +b <> +rest:
+      Cont.absurd(1n+k, b <> rest, cs, B.Invalid{b}, e)
+    case 1n+f 0n +b <> +rest:
+      Cont.absurd(0n, b <> rest, cs, B.Invalid{b}, e)
+    case 1n++f 1n++k +b <> Nil{}:
+      Cont.absurd(1n+k, [b], cs, B.Short{}, e)
+    case 1n++f 1n++k +b <> +b0 <> +r2:
+      Cont.dv_ok(f, k, b, b0, r2, cs, I.fits16(B.cat8(b0, b)), {==}, e, cs2 => r3 => e2 => Cont.dv(f, k, r3, cs2, e2))
+
+def Epco.Goal(bs: B.Bytes(), e: Q.Epco) -> Type:
+  {Nat.is_le(List.length(&2, Q.Container, Q.Epco.containers(e)), 255n) == True{} : Bool} & ({Q.Epco.valid(e) == True{} : Bool} & {Q.Epco.size(e) == List.length(&2, U32, bs) : Nat})
+
+def Epco.absurd(+bs: B.Bytes(), +e: Q.Epco, err: B.Err, d: {Fail{err} == Done{e} : Epco.Res()}) -> Epco.Goal(bs, e):
+  Empty.absurd(Epco.Goal(bs, e), P.Refute.fail_done(B.Err, Q.Epco, err, e, d))
+
+def Epco.dv_fin2(+h: U32, +rest: B.Bytes(), +cs: List<&2, Q.Container>, +le: {Nat.is_le(List.length(&2, Q.Container, cs), 255n) == True{} : Bool}, va: {Q.Containers.valid(cs) == True{} : Bool}, sz: {Q.Containers.size(cs) == List.length(&2, U32, rest) : Nat}, small: {Nat.is_le(List.length(&2, U32, rest), 65534n) == True{} : Bool}) -> Epco.Goal(h <> rest, Q.Epco{cs}):
+  ssz = Equal.sym(Nat, Q.Containers.size(cs), List.length(&2, U32, rest), sz)
+  %ssz : {Nat.is_le(List.length(&2, Q.Container, cs), 255n) == True{} : Bool} & ({Bool.and(Nat.is_le(List.length(&2, Q.Container, cs), 255n), Bool.and(Q.Containers.valid(cs), Nat.is_le(_, 65534n))) == True{} : Bool} & {1n+_ == 1n+List.length(&2, U32, rest) : Nat})
+  (le, (P.Bool.and_intro(Nat.is_le(List.length(&2, Q.Container, cs), 255n), Bool.and(Q.Containers.valid(cs), Nat.is_le(List.length(&2, U32, rest), 65534n)), le, P.Bool.and_intro(Q.Containers.valid(cs), Nat.is_le(List.length(&2, U32, rest), 65534n), va, small)), {==}))
+
+def Epco.dv_fin(+h: U32, +rest: B.Bytes(), +cs: List<&2, Q.Container>, inv: Cont.Inv(255n, rest, cs), small: {Nat.is_le(List.length(&2, U32, rest), 65534n) == True{} : Bool}) -> Epco.Goal(h <> rest, Q.Epco{cs}):
+  (le, more) = inv
+  (va, sz) = more
+  Epco.dv_fin2(h, rest, cs, le, va, sz, small)
+
+def Epco.dv_of(+h: U32, +rest: B.Bytes(), +e: Q.Epco, rc: Cont.Res(), erc: {Q.Containers.go(List.length(&2, U32, rest), 255n, rest) == rc : Cont.Res()}, +d: {Q.Epco.of(rc) == Done{e} : Epco.Res()}, small: {Nat.is_le(List.length(&2, U32, rest), 65534n) == True{} : Bool}) -> Epco.Goal(h <> rest, e):
+  match rc:
+    case Fail{err}:
+      Epco.absurd(h <> rest, e, err, d)
+    case Done{+cs}:
+      ee = Equal.cong(Epco.Res(), Q.Epco, x => P.Res.value(B.Err, Q.Epco, x, e), Done{Q.Epco{cs}}, Done{e}, d)
+      %ee : Epco.Goal(h <> rest, _)
+      Epco.dv_fin(h, rest, cs, Cont.dv(List.length(&2, U32, rest), 255n, rest, cs, erc), small)
+
+def Epco.dv_hdr(+h: U32, +rest: B.Bytes(), +e: Q.Epco, ok: Bool, +ev: {Bool.and(U32.is_eq(h, Q.Epco.header()), Nat.is_le(List.length(&2, U32, rest), 65534n)) == ok : Bool}, +d: {Q.Epco.hdr(h, rest, ok) == Done{e} : Epco.Res()}) -> Epco.Goal(h <> rest, e):
+  match ok:
+    case False{}:
+      Epco.absurd(h <> rest, e, B.Invalid{h}, d)
+    case True{}:
+      Epco.dv_of(h, rest, e, Q.Containers.go(List.length(&2, U32, rest), 255n, rest), {==}, d, P.Bool.and_true_r(U32.is_eq(h, Q.Epco.header()), Nat.is_le(List.length(&2, U32, rest), 65534n), ev))
+
+def L.nas.epco.decode_bounded(bs, e, d):
+  match bs:
+    case Nil{}:
+      Epco.absurd([], e, B.Short{}, d)
+    case +h <> +rest:
+      Epco.dv_hdr(h, rest, e, Bool.and(U32.is_eq(h, Q.Epco.header()), Nat.is_le(List.length(&2, U32, rest), 65534n)), {==}, d)
+
+# A valid ePCO encodes within its length field and reads back.
+def Cont.write_len(cs: List<&2, Q.Container>) -> {List.length(&2, U32, Q.Containers.write(cs)) == Q.Containers.size(cs) : Nat}:
+  match cs:
+    case Nil{}:
+      {==}
+    case Q.Container{id, I.LenBody{len, +body}} <> +more:
+      al = Equal.sym(Nat, List.length(&2, U32, List.append(&2, U32, body, Q.Containers.write(more))), Nat.add(List.length(&2, U32, body), List.length(&2, U32, Q.Containers.write(more))), P.List.append_len(body, Q.Containers.write(more)))
+      %al : {1n+1n+1n+_ == Nat.add(3n, Nat.add(List.length(&2, U32, body), Q.Containers.size(more))) : Nat}
+      ih = Equal.sym(Nat, List.length(&2, U32, Q.Containers.write(more)), Q.Containers.size(more), Cont.write_len(more))
+      %ih : {1n+1n+1n+Nat.add(List.length(&2, U32, body), _) == Nat.add(3n, Nat.add(List.length(&2, U32, body), Q.Containers.size(more))) : Nat}
+      {==}
+
+def Lv.rt(+len: U32, +body: B.Bytes(), +W: B.Bytes(), +v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}) -> {I.lv(I.write_lv(I.LenBody{len, body}, W)) == Done{(I.LenBody{len, body}, W)} : B.Read(I.LenBody)}:
+  +fl = P.Bool.and_true_l(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8)
+  tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8))
+  ml = Equal.sym(U32, U32.and(255, len), len, P.U32.eq_of_is_eq(U32.and(255, len), len, fl))
+  %ml : {I.Len.take(_, List.append(&2, U32, body, W), I.fits8(_)) == Done{(I.LenBody{len, body}, W)} : B.Read(I.LenBody)}
+  PM.Len.rt(len, body, W, I.fits8(len), fl, tn)
+
+def Cont.rt(cs: List<&2, Q.Container>, fuel: Nat, budget: Nat, +v: {Q.Containers.valid(cs) == True{} : Bool}, +bound: {Nat.is_le(List.length(&2, U32, Q.Containers.write(cs)), fuel) == True{} : Bool}, +cnt: {Nat.is_le(List.length(&2, Q.Container, cs), budget) == True{} : Bool}) -> {Q.Containers.go(fuel, budget, Q.Containers.write(cs)) == Done{cs} : Cont.Res()}:
+  match cs fuel budget:
+    case Nil{} 0n 0n:
+      {==}
+    case Nil{} 0n 1n+k:
+      {==}
+    case Nil{} 1n+f 0n:
+      {==}
+    case Nil{} 1n+f 1n+k:
+      {==}
+    case Q.Container{id, I.LenBody{len, body}} <> more 0n 0n:
+      Empty.absurd({Q.Containers.go(0n, 0n, Q.Containers.write(Q.Container{id, I.LenBody{len, body}} <> more)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}, P.Refute.bool(bound))
+    case Q.Container{id, I.LenBody{len, body}} <> more 0n 1n+k:
+      Empty.absurd({Q.Containers.go(0n, 1n+k, Q.Containers.write(Q.Container{id, I.LenBody{len, body}} <> more)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}, P.Refute.bool(bound))
+    case Q.Container{id, I.LenBody{len, body}} <> more 1n+f 0n:
+      Empty.absurd({Q.Containers.go(1n+f, 0n, Q.Containers.write(Q.Container{id, I.LenBody{len, body}} <> more)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}, P.Refute.bool(cnt))
+    case Q.Container{+id, I.LenBody{+len, +body}} <> +more 1n++f 1n++k:
+      +W = Q.Containers.write(more)
+      +cv = P.Bool.and_true_l(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(more), v)
+      +f16 = P.Bool.and_true_l(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), cv)
+      ru = Equal.sym(B.Read(U32), B.u16(B.write_u16(id, I.write_lv(I.LenBody{len, body}, W))), Done{(id, I.write_lv(I.LenBody{len, body}, W))}, L.bytes.u16.roundtrip(id, I.write_lv(I.LenBody{len, body}, W), P.U32.eq_of_is_eq(U32.and(65535, id), id, f16)))
+      %ru : {Q.Container.id(_, left => Q.Containers.go(f, k, left)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
+      sf = Equal.sym(Bool, I.fits16(id), True{}, f16)
+      %sf : {Q.Container.id_ok(id, I.write_lv(I.LenBody{len, body}, W), left => Q.Containers.go(f, k, left), _) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
+      lr = Equal.sym(B.Read(I.LenBody), I.lv(I.write_lv(I.LenBody{len, body}, W)), Done{(I.LenBody{len, body}, W)}, Lv.rt(len, body, W, P.Bool.and_true_r(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), cv)))
+      %lr : {Q.Container.body(id, _, left => Q.Containers.go(f, k, left)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
+      ih = Equal.sym(Cont.Res(), Q.Containers.go(f, k, W), Done{more}, Cont.rt(more, f, k, P.Bool.and_true_r(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(more), v), P.Nat.le_of_append(body, W, 2n, f, bound), cnt))
+      %ih : {Q.Containers.cons(Q.Container{id, I.LenBody{len, body}}, _) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
+      {==}
+
+def Epco.rt(+cs: List<&2, Q.Container>, +v: {Q.Epco.valid(Q.Epco{cs}) == True{} : Bool}) -> {Nat.is_le(List.length(&2, U32, Q.Epco.write(Q.Epco{cs})), 65535n) == True{} : Bool} & {Q.Epco.read(Q.Epco.write(Q.Epco{cs})) == Done{Q.Epco{cs}} : Epco.Res()}:
+  +W = Q.Containers.write(cs)
+  +v1 = P.Bool.and_true_l(Nat.is_le(List.length(&2, Q.Container, cs), 255n), Bool.and(Q.Containers.valid(cs), Nat.is_le(Q.Containers.size(cs), 65534n)), v)
+  +r1 = P.Bool.and_true_r(Nat.is_le(List.length(&2, Q.Container, cs), 255n), Bool.and(Q.Containers.valid(cs), Nat.is_le(Q.Containers.size(cs), 65534n)), v)
+  +v2 = P.Bool.and_true_l(Q.Containers.valid(cs), Nat.is_le(Q.Containers.size(cs), 65534n), r1)
+  +v3 = P.Bool.and_true_r(Q.Containers.valid(cs), Nat.is_le(Q.Containers.size(cs), 65534n), r1)
+  swl = Equal.sym(Nat, List.length(&2, U32, W), Q.Containers.size(cs), Cont.write_len(cs))
+  %swl : {Nat.is_le(1n+_, 65535n) == True{} : Bool} & {Q.Epco.hdr(128, W, Bool.and(U32.is_eq(128, 128), Nat.is_le(_, 65534n))) == Done{Q.Epco{cs}} : Epco.Res()}
+  sv3 = Equal.sym(Bool, Nat.is_le(Q.Containers.size(cs), 65534n), True{}, v3)
+  %sv3 : {Nat.is_le(1n+Q.Containers.size(cs), 65535n) == True{} : Bool} & {Q.Epco.hdr(128, W, _) == Done{Q.Epco{cs}} : Epco.Res()}
+  rt = Equal.sym(Cont.Res(), Q.Containers.go(List.length(&2, U32, W), 255n, W), Done{cs}, Cont.rt(cs, List.length(&2, U32, W), 255n, v2, P.Nat.le_refl(List.length(&2, U32, W)), v1))
+  %rt : {Nat.is_le(1n+Q.Containers.size(cs), 65535n) == True{} : Bool} & {Q.Epco.of(_) == Done{Q.Epco{cs}} : Epco.Res()}
+  (v3, {==})
+
+def L.nas.epco.encode_bounded(e, v):
+  match e:
+    case Q.Epco{+cs}:
+      Epco.rt(cs, v)
