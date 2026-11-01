@@ -72,10 +72,6 @@ def write_lve(lb: LenBody, rest: B.Bytes()) -> B.Bytes():
     case LenBody{len, body}:
       B.write_u16(len, List.append(&2, U32, body, rest))
 
-# A length prefix for content built by the kernel.
-def LenBody.of(+body: B.Bytes()) -> LenBody:
-  LenBody{U32.from_nat(List.length(&2, U32, body)), body}
-
 # Mandatory fields
 # ----------------
 
@@ -297,19 +293,6 @@ def Ie.read_body(iei: U32, fmt: Fmt, bs: B.Bytes()) -> B.Read(Ie):
       Ie.of_len(iei, Tlv{}, lv(bs))
     case TlvE{}:
       Ie.of_len(iei, TlvE{}, lve(bs))
-
-# Typed constructors for IEs the kernel builds.
-def Ie.t1(byte: U32) -> Ie:
-  Ie{byte, T1{}, 0, []}
-
-def Ie.tv(iei: U32, +body: B.Bytes()) -> Ie:
-  Ie{iei, Tv{List.length(&2, U32, body)}, 0, body}
-
-def Ie.tlv(iei: U32, +body: B.Bytes()) -> Ie:
-  Ie{iei, Tlv{}, U32.from_nat(List.length(&2, U32, body)), body}
-
-def Ie.tlve(iei: U32, +body: B.Bytes()) -> Ie:
-  Ie{iei, TlvE{}, U32.from_nat(List.length(&2, U32, body)), body}
 
 # Which format an IEI below 0x80 has in a given message, by exception from TLV.
 type Rule is Data:

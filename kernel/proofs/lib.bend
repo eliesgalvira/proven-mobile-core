@@ -365,32 +365,6 @@ def Bytes.eq_refl(xs: B.Bytes()) -> {B.bytes_eq(xs, xs) == True{} : Bool}:
       %e : {Bool.and(_, B.bytes_eq(t, t)) == True{} : Bool}
       Bytes.eq_refl(t)
 
-def Cmp.fin_tf_ne(r: Cmp) -> {Cmp.is_eq(Word.cmp.fin(True{}, False{}, r)) == False{} : Bool}:
-  match r:
-    case LT{}:
-      {==}
-    case EQ{}:
-      {==}
-    case GT{}:
-      {==}
-
-# A word never equals its increment (for at least one bit).
-def Word.inc_ne(+n: Nat, w: Word(1n+n)) -> {Cmp.is_eq(Word.cmp(1n+n, w, Word.inc(1n+n, w))) == False{} : Bool}:
-  match w:
-    case WCon{b, +t}:
-      match b:
-        case False{}:
-          r = Equal.sym(Cmp, Word.cmp(n, t, t), EQ{}, Word.cmp_refl(n, t))
-          %r : {Cmp.is_eq(Word.cmp.fin(False{}, True{}, _)) == False{} : Bool}
-          {==}
-        case True{}:
-          Cmp.fin_tf_ne(Word.cmp(n, t, Word.inc(n, t)))
-
-def U32.inc_ne(x: U32) -> {U32.is_eq(x, U32.inc(x)) == False{} : Bool}:
-  match x:
-    case U32{w}:
-      Word.inc_ne(31n, w)
-
 def Cmp.eq_false_of_lt(c: Cmp, e: {Cmp.is_lt(c) == True{} : Bool}) -> {Cmp.is_eq(c) == False{} : Bool}:
   match c:
     case LT{}:
@@ -476,7 +450,6 @@ def List.append_len(+xs: B.Bytes(), +ys: B.Bytes()) -> {List.length(&2, U32, Lis
       {==}
     case x <> xt:
       Equal.cong(Nat, Nat, n => 1n+n, List.length(&2, U32, List.append(&2, U32, xt, ys)), Nat.add(List.length(&2, U32, xt), List.length(&2, U32, ys)), List.append_len(xt, ys))
-
 
 def Nat.le_app(body: B.Bytes(), W: B.Bytes(), f: Nat, h: {Nat.is_le(List.length(&2, U32, List.append(&2, U32, body, W)), f) == True{} : Bool}) -> {Nat.is_le(Nat.add(List.length(&2, U32, body), List.length(&2, U32, W)), f) == True{} : Bool}:
   al = List.append_len(body, W)
@@ -706,10 +679,6 @@ def List.nonnil(xs: B.Bytes()) -> Type:
     case x <> t:
       Unit
 
-def Refute.cons_nil(x: U32, t: B.Bytes(), e: {x <> t == [] : B.Bytes()}) -> Empty:
-  %e : List.nonnil(_)
-  Unit{}
-
 # Multi-byte values written back from the bytes they were read from.
 def Bytes.u16_sx.go(d0: U32, d1: U32, +e0: U32, +e1: U32, s0: {d0 == e0 : U32}, s1: {d1 == e1 : U32}, m0: {U32.and(255, e0) == e0 : U32}, m1: {U32.and(255, e1) == e1 : U32}, +rest: B.Bytes()) -> {B.write_u16(B.cat8(e1, e0), rest) == e0 <> e1 <> rest : B.Bytes()}:
   match d0 d1:
@@ -763,10 +732,3 @@ def Bytes.u24_sx.go(d0: U32, d1: U32, d2: U32, +e0: U32, +e1: U32, +e2: U32, s0:
 
 def Bytes.u24_sx(+b0: U32, +b1: U32, +b2: U32, m0: {U32.and(255, b0) == b0 : U32}, m1: {U32.and(255, b1) == b1 : U32}, m2: {U32.and(255, b2) == b2 : U32}, +rest: B.Bytes()) -> {B.write_u24(B.cat8(b2, B.cat8(b1, b0)), rest) == b0 <> b1 <> b2 <> rest : B.Bytes()}:
   Bytes.u24_sx.go(b0, b1, b2, b0, b1, b2, {==}, {==}, {==}, m0, m1, m2, rest)
-
-def Nat.le_zero(n: Nat) -> {Nat.is_le(0n, n) == True{} : Bool}:
-  match n:
-    case 0n:
-      {==}
-    case 1n+p:
-      {==}

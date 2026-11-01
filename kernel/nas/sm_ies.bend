@@ -45,15 +45,6 @@ type Shape is Data:
 type Comp is Data:
   Comp{kind: U32, payload: Payload}
 
-def Comp.match_all() -> U32:
-  1
-
-def Comp.ipv4_remote() -> U32:
-  16
-
-def Comp.ipv4_local() -> U32:
-  17
-
 def Shape.of(kind: Nat) -> Maybe<&2, Shape>:
   match kind:
     case 1n:
@@ -459,13 +450,6 @@ def Rule.dqr(op: U32) -> Bool:
 def Rule.count(op: U32) -> Nat:
   U32.to_nat(U32.and(15, op))
 
-def Rule.qfi(t: RuleTail) -> Maybe<&2, U32>:
-  match t:
-    case Tail{precedence, qfi}:
-      Some{U32.and(63, qfi)}
-    case NoTail{}:
-      None{}
-
 def RuleFilters.write(fs: RuleFilters, rest: B.Bytes()) -> B.Bytes():
   match fs:
     case Whole{filters}:
@@ -799,15 +783,6 @@ type PduAddr is Data:
   Ipv6{iid: B.Bytes()}
   Ipv4v6{addr: U32, iid: B.Bytes()}
 
-def PduAddr.type(a: PduAddr) -> U32:
-  match a:
-    case Ipv4{addr}:
-      1
-    case Ipv6{iid}:
-      2
-    case Ipv4v6{addr, iid}:
-      3
-
 def PduAddr.write(a: PduAddr) -> B.Bytes():
   match a:
     case Ipv4{addr}:
@@ -981,14 +956,6 @@ def SmCap.read(bs: B.Bytes()) -> Res(B.Bytes()):
 def Nibble3.read(+nibble: U32) -> Res(U32):
   Ok(U32, U32.and(7, nibble), nibble, U32.is_eq(U32.and(8, nibble), 0))
 
-# 5GSM cause (§9.11.4.2): one byte.
-def Cause.read(bs: B.Bytes()) -> Res(U32):
-  match bs:
-    case +c <> Nil{}:
-      Done{c}
-    case _:
-      Fail{B.Invalid{0}}
-
 # Integrity protection maximum data rate (§9.11.4.7): uplink then downlink.
 type MaxRate is Data:
   MaxRate{ul: U32, dl: U32}
@@ -999,8 +966,3 @@ def MaxRate.of(bs: B.Bytes()) -> Res(MaxRate):
       Done{MaxRate{ul, dl}}
     case _:
       Fail{B.Invalid{0}}
-
-def MaxRate.write(r: MaxRate) -> B.Bytes():
-  match r:
-    case MaxRate{ul, dl}:
-      [ul, dl]
