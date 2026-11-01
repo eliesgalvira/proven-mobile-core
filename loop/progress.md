@@ -14,7 +14,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 08 | x25519-suci | done | 04, 05, 07 | 0493397: X25519, PLMN codec, SUCI decode and Profile A; 7 laws proven; upstream draft 02 |
 | 09 | nas-security | done | 05, 07 | d62b26a: NIA2, NEA2, NEA0, protect/unprotect, COUNT estimate; 28 checks; 3 laws proven |
 | 10 | nas-5gmm | done | 02, 03 | a6e0c85: generic 5GMM codec (19 types), typed IE views incl. 5GS mobile identity; 110 checks on the capture; 10 laws proven (mm roundtrip/decode_valid/suffix, mobile identity ×3, IMEISV, payload container ×2) |
-| 11 | nas-5gsm | in-progress | 10 | |
+| 11 | nas-5gsm | done | 10 | e46170b: 5GSM codec (9 types) sharing the 5GMM optional-IE machinery; typed QoS rules, packet filters, flow descriptions, Session-AMBR, PDU address, ePCO; 43 checks; 8 laws proven (sm ×3, qos_rules.suffix, mask_contiguous, session_ambr, epco ×2) |
 | 12 | aper | todo | 02 | |
 | 13 | ngap | todo | 03, 12 | |
 | 14 | pfcp | todo | 02, 03 | |
