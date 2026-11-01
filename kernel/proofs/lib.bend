@@ -324,3 +324,101 @@ def Cmp.ge_false_of_lt(c: Cmp, e: {Cmp.is_lt(c) == True{} : Bool}) -> {Cmp.is_ge
 
 def Nat.ge_false_of_lt(a: Nat, b: Nat, e: {Nat.is_lt(a, b) == True{} : Bool}) -> {Nat.is_ge(a, b) == False{} : Bool}:
   Cmp.ge_false_of_lt(Nat.cmp(a, b), e)
+
+# Reflexivity and inequality of U32 comparisons
+# ----------------------------------------------
+
+def Bool.cmp_refl(b: Bool) -> {Bool.cmp(b, b) == EQ{} : Cmp}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+def Word.cmp_refl(+n: Nat, w: Word(n)) -> {Word.cmp(n, w, w) == EQ{} : Cmp}:
+  match n:
+    case 0n:
+      match w:
+        case WNil{}:
+          {==}
+    case 1n+p:
+      match w:
+        case WCon{+b, +t}:
+          ih = Equal.sym(Cmp, Word.cmp(p, t, t), EQ{}, Word.cmp_refl(p, t))
+          %ih : {Word.cmp.fin(b, b, _) == EQ{} : Cmp}
+          Bool.cmp_refl(b)
+
+def U32.is_eq_refl(x: U32) -> {U32.is_eq(x, x) == True{} : Bool}:
+  match x:
+    case U32{+w}:
+      r = Equal.sym(Cmp, Word.cmp(32n, w, w), EQ{}, Word.cmp_refl(32n, w))
+      %r : {Cmp.is_eq(_) == True{} : Bool}
+      {==}
+
+def Bytes.eq_refl(xs: B.Bytes()) -> {B.bytes_eq(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +t:
+      e = Equal.sym(Bool, U32.is_eq(x, x), True{}, U32.is_eq_refl(x))
+      %e : {Bool.and(_, B.bytes_eq(t, t)) == True{} : Bool}
+      Bytes.eq_refl(t)
+
+def Cmp.fin_tf_ne(r: Cmp) -> {Cmp.is_eq(Word.cmp.fin(True{}, False{}, r)) == False{} : Bool}:
+  match r:
+    case LT{}:
+      {==}
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+# A word never equals its increment (for at least one bit).
+def Word.inc_ne(+n: Nat, w: Word(1n+n)) -> {Cmp.is_eq(Word.cmp(1n+n, w, Word.inc(1n+n, w))) == False{} : Bool}:
+  match w:
+    case WCon{b, +t}:
+      match b:
+        case False{}:
+          r = Equal.sym(Cmp, Word.cmp(n, t, t), EQ{}, Word.cmp_refl(n, t))
+          %r : {Cmp.is_eq(Word.cmp.fin(False{}, True{}, _)) == False{} : Bool}
+          {==}
+        case True{}:
+          Cmp.fin_tf_ne(Word.cmp(n, t, Word.inc(n, t)))
+
+def U32.inc_ne(x: U32) -> {U32.is_eq(x, U32.inc(x)) == False{} : Bool}:
+  match x:
+    case U32{w}:
+      Word.inc_ne(31n, w)
+
+def Cmp.eq_false_of_lt(c: Cmp, e: {Cmp.is_lt(c) == True{} : Bool}) -> {Cmp.is_eq(c) == False{} : Bool}:
+  match c:
+    case LT{}:
+      {==}
+    case EQ{}:
+      Empty.absurd({Cmp.is_eq(EQ{}) == False{} : Bool}, Refute.bool(e))
+    case GT{}:
+      Empty.absurd({Cmp.is_eq(GT{}) == False{} : Bool}, Refute.bool(e))
+
+def U32.eq_false_of_lt(a: U32, b: U32, e: {U32.is_lt(a, b) == True{} : Bool}) -> {U32.is_eq(a, b) == False{} : Bool}:
+  Cmp.eq_false_of_lt(U32.cmp(a, b), e)
+
+# Maybe
+# -----
+
+def Maybe.disc(-A: Data, m: Maybe<&2, A>) -> Type:
+  match m:
+    case None{}:
+      Unit
+    case Some{v}:
+      Empty
+
+def Refute.none_some(-A: Data, v: A, e: {None{} == Some{v} : Maybe<&2, A>}) -> Empty:
+  %e : Maybe.disc(A, _)
+  Unit{}
+
+def Maybe.value(-A: Data, m: Maybe<&2, A>, d: A) -> A:
+  match m:
+    case None{}:
+      d
+    case Some{v}:
+      v

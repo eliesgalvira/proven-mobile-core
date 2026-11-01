@@ -110,6 +110,21 @@ def Nas.epd() -> U32:
 type Nas.Keys is Data:
   Keys{k_int: B.Bytes(), k_enc: B.Bytes(), ea: Nas.Ea, ia: Nas.Ia, bearer: U32}
 
+def Nas.Keys.k_int(k: Nas.Keys) -> B.Bytes():
+  match k:
+    case Keys{k_int, k_enc, ea, ia, bearer}:
+      k_int
+
+def Nas.Keys.ia(k: Nas.Keys) -> Nas.Ia:
+  match k:
+    case Keys{k_int, k_enc, ea, ia, bearer}:
+      ia
+
+def Nas.Keys.bearer(k: Nas.Keys) -> U32:
+  match k:
+    case Keys{k_int, k_enc, ea, ia, bearer}:
+      bearer
+
 def Nas.downlink() -> U32:
   1
 

@@ -10,6 +10,7 @@ import ./crypto/kdf.bend as K
 import ./plmn.bend as P
 import ./crypto/x25519.bend as X
 import ./suci.bend as Su
+import ./nas/security.bend as N
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -226,3 +227,40 @@ law suci.null_scheme.roundtrip:
   for +m: {B.Tbcd.all_digits(msin) == True{} : Bool}
   {Su.Suci.read(Su.Suci.write(Su.Suci.null(plmn, routing, msin))) == Done{Su.Suci.null(plmn, routing, msin)} : Result<&2, &2, B.Err, Su.Suci>}
   & {Su.Suci.null_msin(B.write_tbcd(msin, [])) == Done{msin} : Result<&2, &2, B.Err, B.Digits()>}
+
+# NAS security (ticket 09)
+# ------------------------
+
+# Integrity verification compares all 4 MAC bytes, and a message shorter than
+# its header plus MAC answers Fail.
+law nas_sec.mac_full_length:
+  for +keys: N.Nas.Keys
+  for +dir: U32
+  for +count: N.Nas.Count
+  for +msg: B.Bytes()
+  for +o: N.Nas.Opened
+  ({Nat.is_lt(List.length(&2, U32, msg), 7n) == True{} : Bool} -> {N.Nas.open(keys, dir, count, msg) == Fail{B.Short{}} : Result<&2, &2, B.Err, N.Nas.Opened>})
+  & ({N.Nas.open(keys, dir, count, msg) == Done{o} : Result<&2, &2, B.Err, N.Nas.Opened>} ->
+     {N.Nas.received_mac(msg) == N.Nas.mac(N.Nas.Keys.ia(keys), N.Nas.Keys.k_int(keys), N.Nas.Count.value(count), N.Nas.Keys.bearer(keys), dir, List.drop(&2, U32, msg, 6n)) : B.Bytes()}
+     & {List.length(&2, U32, N.Nas.received_mac(msg)) == 4n : Nat})
+
+# unprotect(protect(m)) = m, for NEA0 and NEA2 with NIA2 and every header type.
+law nas_sec.roundtrip:
+  for +keys: N.Nas.Keys
+  for +prot: N.Nas.Protection
+  for +dir: U32
+  for +count: N.Nas.Count
+  for +plain: B.Bytes()
+  {N.Nas.open(keys, dir, count, N.Nas.seal(keys, prot, dir, count, plain)) == Done{N.Opened{prot, plain}} : Result<&2, &2, B.Err, N.Nas.Opened>}
+
+# Accepting an uplink message moves the stored uplink COUNT forward, and a
+# message repeating the last accepted sequence number is never accepted.
+law nas_sec.count_monotonic:
+  for +ctx: N.Nas.Ctx
+  for +msg: B.Bytes()
+  for +u: N.Nas.Unprotected
+  for +last: N.Nas.Count
+  for +e: {N.Nas.unprotect(ctx, msg) == Done{u} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
+  for +s: {N.Nas.Ctx.ul(ctx) == Some{last} : Maybe<&2, N.Nas.Count>}
+  {N.Nas.Count.advanced(last, N.Nas.Unprotected.count(u)) == True{} : Bool}
+  & {U32.is_eq(N.Nas.Count.sqn(last), N.Nas.Count.sqn(N.Nas.Unprotected.count(u))) == False{} : Bool}
