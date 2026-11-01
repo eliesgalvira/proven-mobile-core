@@ -1,5 +1,3 @@
 import Base
 import ./LAWS.bend as L
-
-def L.bytes.placeholder():
-  {==}
+import ./proofs/bytes.bend as PB

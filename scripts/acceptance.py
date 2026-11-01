@@ -3,7 +3,7 @@
 
 Every law named in the Law column of docs/security/open5gs-advisories-2026.md
 must be stated as `law <name>:` in LAWS.bend and proven as `def L.<name>(` in
-PROOF.bend. Without --strict, only laws whose ticket is `done` in
+PROOF.bend or kernel/proofs/*.bend. Without --strict, only laws whose ticket is `done` in
 loop/progress.md are required. A law is tied to the ticket in docs/spec/tickets/
 that names it.
 """
@@ -47,7 +47,10 @@ def done_tickets():
 def main():
     strict = "--strict" in sys.argv[1:]
     stated = set(re.findall(r"^law\s+(\S+):", (ROOT / "kernel/LAWS.bend").read_text(), re.M))
-    proven = set(re.findall(r"^def\s+L\.(\S+)\(", (ROOT / "kernel/PROOF.bend").read_text(), re.M))
+    proof_files = [ROOT / "kernel/PROOF.bend", *glob.glob(str(ROOT / "kernel/proofs/*.bend"))]
+    proven = set()
+    for path in proof_files:
+        proven.update(re.findall(r"^def\s+L\.(\S+)\(", Path(path).read_text(), re.M))
     tickets = law_tickets()
     done = done_tickets()
     failures = []

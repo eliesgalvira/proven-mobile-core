@@ -38,16 +38,16 @@ law bytes.nibbles.roundtrip:
   {B.nibbles(B.write_nibbles(hi, lo, rest)) == Done{((hi, lo), rest)} : B.Read(B.Nibbles())}
 
 law bytes.take.length:
-  for n: Nat
-  for bs: B.Bytes()
+  for +n: Nat
+  for +bs: B.Bytes()
   for taken: B.Bytes()
   for rest: B.Bytes()
-  for e: {B.take(n, bs) == Done{(taken, rest)} : B.Read(B.Bytes())}
+  for +e: {B.take(n, bs) == Done{(taken, rest)} : B.Read(B.Bytes())}
   {List.length(&2, U32, taken) == n : Nat} & {List.append(&2, U32, taken, rest) == bs : B.Bytes()}
 
 # Every reader on an input shorter than its width answers Fail{B.Short{}}.
 law bytes.short_input_fails:
-  for bs: B.Bytes()
+  for +bs: B.Bytes()
   ({Nat.is_lt(List.length(&2, U32, bs), 1n) == True{} : Bool} -> {B.u8(bs) == Fail{B.Short{}} : B.Read(U32)})
   & ({Nat.is_lt(List.length(&2, U32, bs), 2n) == True{} : Bool} -> {B.u16(bs) == Fail{B.Short{}} : B.Read(U32)})
   & ({Nat.is_lt(List.length(&2, U32, bs), 3n) == True{} : Bool} -> {B.u24(bs) == Fail{B.Short{}} : B.Read(U32)})
@@ -59,9 +59,9 @@ law bytes.short_input_fails:
 # Advisory GHSA-vp44-3q85-5cm4: decoding k bytes yields at most 2k digits, each 0..9;
 # encoding d digits yields ceil(d/2) bytes.
 law bytes.tbcd.length:
-  for bs: B.Bytes()
-  for k: Nat
-  for digits: B.Digits()
+  for +bs: B.Bytes()
+  for +k: Nat
+  for +digits: B.Digits()
   for rest: B.Bytes()
   for e: {B.tbcd_digits(bs, k) == Done{(digits, rest)} : B.Read(B.Digits())}
   {Nat.is_le(List.length(&2, U32, digits), Nat.double(k)) == True{} : Bool}

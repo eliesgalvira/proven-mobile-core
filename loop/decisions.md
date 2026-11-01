@@ -14,3 +14,10 @@ The loop adds one line per decision it takes: the decision, the ticket, and why.
 - Default, not confirmed by Elies: laws follow the conventions in `docs/spec/milestone-1.md` § Law conventions (wayfinder ticket #7).
 - Default, not confirmed by Elies: `.claude/settings.json` allows every Bash, Edit, Write, WebFetch and WebSearch call, so the cloud session never stops at a permission prompt. This applies to local sessions in this repo too. Narrow it when the run ends.
 - Default, not confirmed by Elies: the cloud environment keeps the default "Trusted" network level. The session-start hook installs Bend and Lean from GitHub release assets and apt, which that level allows. Official vectors come from `test-vectors/spec/` on main; if a needed source is missing there and unreachable, its tests are blocked.
+
+## Taken by the loop
+
+- Ticket 02: a law's "v in range" condition is the mask equation `U32.and(mask, v) == v` (so `U32.and(255, v) == v` for a byte), not `U32.is_lt`. Both say the same thing; the mask form lets the proof rewrite once and compute, while `is_lt` would need a 32-case lemma relating `Word.cmp` to the bits. `is_byte` stays the runtime check.
+- Ticket 02: multi-byte values are assembled by bit layout (`cat4`: four bits of one word, then twenty-eight of another) instead of `shl`/`or`. Base's `Bool.or` matches its first argument, so `or` of a symbolic bit with a constant never computes and every roundtrip would need dozens of hand-written rewrites; the layout form reduces to `{==}` after destructuring the U32. No `kernel/u32_lemmas.bend` was needed.
+- Ticket 02: `tbcd_digits(bs, count)` first takes `count` bytes and then decodes them, so a short input always answers `Short` (an invalid digit before the end would otherwise answer `Invalid`, and the short-input law would be false).
+- Ticket 02: proofs live in `kernel/proofs/<area>.bend`, imported by `kernel/PROOF.bend`; `scripts/acceptance.py` looks in both. One file per ticket area keeps PROOF.bend from growing without bound.
