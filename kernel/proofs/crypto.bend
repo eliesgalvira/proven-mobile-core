@@ -198,82 +198,82 @@ def L.ctr.involution(key, iv, m):
 def Cmac.finish_len(rks: List<&2, A.Aes.Block>, x: A.Aes.Block, last: A.Aes.Block, k: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.finish(rks, x, last, k)) == 16n : Nat}:
   Aes.to_bytes_len(A.Aes.encrypt(rks, A.Aes.xor(A.Aes.xor(x, last), k)))
 
-def Cmac.go_len(rest: B.Bytes(), +rks: List<&2, A.Aes.Block>, x: A.Aes.Block, cur: A.Aes.Block, k1: A.Aes.Block, k2: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.go(rest, rks, x, cur, k1, k2)) == 16n : Nat}:
+def Cmac.go_len(~pad: List<&2, U32> -> List<&2, U32>, rest: B.Bytes(), +rks: List<&2, A.Aes.Block>, x: A.Aes.Block, cur: A.Aes.Block, k_last: A.Aes.Block, k_part: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.go(~pad, rest, rks, x, cur, k_last, k_part)) == 16n : Nat}:
   match rest:
     case Nil{}:
-      Cmac.finish_len(rks, x, cur, k1)
+      Cmac.finish_len(rks, x, cur, k_last)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> b14 <> b15 <> more:
-      Cmac.go_len(more, rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Blk{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}, k1, k2)
+      Cmac.go_len(~pad, more, rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Blk{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}, k_last, k_part)
     case b0 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0])), k_part)
     case b0 <> b1 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1])), k_part)
     case b0 <> b1 <> b2 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2])), k_part)
     case b0 <> b1 <> b2 <> b3 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> b14 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14])), k2)
+      Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14])), k_part)
 
-def Cmac.start_len(msg: B.Bytes(), +rks: List<&2, A.Aes.Block>, k1: A.Aes.Block, k2: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.start(msg, rks, k1, k2)) == 16n : Nat}:
+def Cmac.start_len(~pad: List<&2, U32> -> List<&2, U32>, msg: B.Bytes(), +rks: List<&2, A.Aes.Block>, k_last: A.Aes.Block, k_part: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.start(~pad, msg, rks, k_last, k_part)) == 16n : Nat}:
   match msg:
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> b14 <> b15 <> rest:
-      Cmac.go_len(rest, rks, A.Aes.zero(), A.Blk{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}, k1, k2)
+      Cmac.go_len(~pad, rest, rks, A.Aes.zero(), A.Blk{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}, k_last, k_part)
     case Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([])), k_part)
     case b0 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0])), k_part)
     case b0 <> b1 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1])), k_part)
     case b0 <> b1 <> b2 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2])), k_part)
     case b0 <> b1 <> b2 <> b3 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13])), k_part)
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> b14 <> Nil{}:
-      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(M.Cmac.pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14])), k2)
+      Cmac.finish_len(rks, A.Aes.zero(), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14])), k_part)
 
 def L.cmac.length(key, msg):
-  Cmac.start_len(msg, A.Aes.round_keys(key), M.Cmac.subkey(A.Aes.encrypt(A.Aes.round_keys(key), A.Aes.zero())), M.Cmac.subkey(M.Cmac.subkey(A.Aes.encrypt(A.Aes.round_keys(key), A.Aes.zero()))))
+  Cmac.start_len(~(bs => M.Cmac.pad(bs)), msg, A.Aes.round_keys(key), M.Cmac.subkey(A.Aes.encrypt(A.Aes.round_keys(key), A.Aes.zero())), M.Cmac.subkey(M.Cmac.subkey(A.Aes.encrypt(A.Aes.round_keys(key), A.Aes.zero()))))
 
 # MILENAGE
 # --------

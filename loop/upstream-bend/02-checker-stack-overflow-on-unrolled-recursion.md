@@ -18,39 +18,22 @@ The same file checked fine when the proof module was loaded on its own (the
 definition order or parallel scheduling changes which error is reported first),
 so the failure looked intermittent. `ulimit -s unlimited` did not reliably help.
 
-## Smallest reproduction
+## Reproduction
 
-```python
-import Base
+A small file with a 100000-step counter loop over a symbolic list does not
+reproduce it, so the trigger is the shape of the unrolled term, not its
+depth alone. The project reproduces it exactly:
 
-def step(z: List<&2, U32>) -> List<&2, U32>:
-  match z:
-    case Nil{}:
-      Nil{}
-    case x <> rest:
-      U32.add(x, 1) <> step(rest)
+1. check out commit `c2583e1` of this repository;
+2. in `kernel/crypto/x25519.bend`, `Fe.inv` is `Fe.inv.go(253n, a, a)`, a
+   recursion on a concrete `Nat`, and each step calls `Fe.mul`, which
+   normalises a 32-column product through four carry passes;
+3. add the proof `def L.x25519.length(k, u)` from `kernel/proofs/suci.bend`
+   at commit `8aa8220`, but with the original `Fe.inv`;
+4. `bend kernel/PROOF.bend` overflows; with the fuel-list `Fe.inv` of commit
+   `8aa8220` the same file prints ALL PROOFS CHECK.
 
-def loop(n: Nat, z: List<&2, U32>) -> List<&2, U32>:
-  match n:
-    case 0n:
-      z
-    case 1n+p:
-      loop(p, step(z))
-
-def many(z: List<&2, U32>) -> List<&2, U32>:
-  loop(100000n, z)
-
-law many.same:
-  for z: List<&2, U32>
-  {List.length(&2, U32, many(z)) == List.length(&2, U32, many(z)) : Nat}
-
-def many.same(z):
-  {==}
-```
-
-`bend repro.bend` overflows the machine stack while normalising `many(z)` for
-the symbolic `z`; with `1000n` it checks in a moment. (The project's case hit
-the limit at 254 iterations because each step wraps several function calls.)
+A smaller reproduction still has to be isolated.
 
 ## Versions
 
