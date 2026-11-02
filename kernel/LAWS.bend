@@ -724,3 +724,105 @@ law aper.enum.decode_valid:
   for +c2: Ap.Cur
   for +d: {Ap.Enum.read(n, diff, ext, c) == Done{(e, c2)} : Ap.Rd(Ap.Enum)}
   {Ap.Enum.valid(n, diff, ext, e) == True{} : Bool}
+
+# Extensible values: the extension bit picks the root or the unconstrained
+# form, and a value that fits the root is only accepted in the root form.
+
+law aper.xint.roundtrip:
+  for +n: Nat
+  for +diff: U32
+  for +x: Ap.XInt
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Ap.XInt.valid(n, diff, x) == True{} : Bool}
+  {Ap.XInt.read(n, diff, Ap.Cur{rem, Ap.XInt.write(n, x, rem, rest)}) == Done{(x, Ap.Cur{Ap.XInt.after(n, x, rem), rest})} : Ap.Rd(Ap.XInt)}
+
+law aper.xint.decode_valid:
+  for +n: Nat
+  for +diff: U32
+  for +c: Ap.Cur
+  for +x: Ap.XInt
+  for +c2: Ap.Cur
+  for +e: {Ap.XInt.read(n, diff, c) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}
+  {Ap.XInt.valid(n, diff, x) == True{} : Bool}
+
+law aper.xbig.roundtrip:
+  for +n: Nat
+  for +diff: Nat
+  for +x: Ap.XBig
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Ap.XBig.valid(diff, x) == True{} : Bool}
+  for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
+  {Ap.XBig.read(n, diff, Ap.Cur{rem, Ap.XBig.write(n, x, rem, rest)}) == Done{(x, Ap.Cur{Ap.XBig.after(x, rem), rest})} : Ap.Rd(Ap.XBig)}
+
+law aper.xbig.decode_valid:
+  for +n: Nat
+  for +diff: Nat
+  for +c: Ap.Cur
+  for +x: Ap.XBig
+  for +c2: Ap.Cur
+  for +e: {Ap.XBig.read(n, diff, c) == Done{(x, c2)} : Ap.Rd(Ap.XBig)}
+  {Ap.XBig.valid(diff, x) == True{} : Bool}
+
+law aper.xbits.roundtrip:
+  for +n: Nat
+  for +bs: Ap.Bits()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Ap.XBits.valid(n, bs) == True{} : Bool}
+  {Ap.XBits.read(n, Ap.Cur{rem, Ap.XBits.write(n, bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.XBits.after(n, bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+
+law aper.xbits.decode_valid:
+  for +n: Nat
+  for +c: Ap.Cur
+  for +bs: Ap.Bits()
+  for +c2: Ap.Cur
+  for +e: {Ap.XBits.read(n, c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}
+  {Ap.XBits.valid(n, bs) == True{} : Bool}
+
+law aper.xbitstr.roundtrip:
+  for +al: Bool
+  for +n: Nat
+  for +lo: Nat
+  for +diff: Nat
+  for +bs: Ap.Bits()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Ap.XBitStr.valid(lo, diff, bs) == True{} : Bool}
+  for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
+  {Ap.XBitStr.read(al, n, lo, diff, Ap.Cur{rem, Ap.XBitStr.write(al, n, lo, diff, bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.XBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+
+law aper.xbitstr.decode_valid:
+  for +al: Bool
+  for +n: Nat
+  for +lo: Nat
+  for +diff: Nat
+  for +c: Ap.Cur
+  for +bs: Ap.Bits()
+  for +c2: Ap.Cur
+  for +e: {Ap.XBitStr.read(al, n, lo, diff, c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}
+  {Ap.XBitStr.valid(lo, diff, bs) == True{} : Bool}
+
+law aper.xstr.roundtrip:
+  for +al: Bool
+  for +n: Nat
+  for +lo: Nat
+  for +diff: Nat
+  for +s: B.Bytes()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Ap.XStr.valid(lo, diff, s) == True{} : Bool}
+  for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
+  {Ap.XStr.read(al, n, lo, diff, Ap.Cur{rem, Ap.XStr.write(al, n, lo, diff, s, rem, rest)}) == Done{(s, Ap.Cur{Ap.XStr.after(rem), rest})} : Ap.Rd(B.Bytes())}
+
+law aper.xstr.decode_valid:
+  for +al: Bool
+  for +n: Nat
+  for +lo: Nat
+  for +diff: Nat
+  for +c: Ap.Cur
+  for +s: B.Bytes()
+  for +c2: Ap.Cur
+  for +e: {Ap.XStr.read(al, n, lo, diff, c) == Done{(s, c2)} : Ap.Rd(B.Bytes())}
+  {Ap.XStr.valid(lo, diff, s) == True{} : Bool}

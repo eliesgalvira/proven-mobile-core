@@ -734,3 +734,244 @@ def Enum.after(n: Nat, ext: Bool, e: Enum, rem: Nat) -> Nat:
       Rem.add(n, Rem.next(rem))
     case True{} Ext{i}:
       Rem.add(7n, Rem.next(rem))
+
+# Extensible values (§13.1, §16.6, §17.5, §30.4): an extension bit, then the
+# root encoding, or outside the root the unconstrained one. A value that
+# fits the root must use it, so the extended form of such a value is Invalid.
+
+type XInt is Data:
+  IRoot{v: U32}
+  IExt{octets: B.Bytes()}
+
+def XInt.valid(n: Nat, diff: U32, x: XInt) -> Bool:
+  match x:
+    case IRoot{v}:
+      Int.valid(n, diff, v)
+    case IExt{bs}:
+      Open.valid(bs)
+
+def XInt.root(r: Rd(U32)) -> Rd(XInt):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(IRoot{v}, c)}
+
+def XInt.ext(r: Rd(B.Bytes())) -> Rd(XInt):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bs, c)}:
+      Done{(IExt{bs}, c)}
+
+def XInt.bit(n: Nat, diff: U32, r: Rd(Bool)) -> Rd(XInt):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(b, c)}:
+      match b:
+        case False{}:
+          XInt.root(Int.read(n, diff, c))
+        case True{}:
+          XInt.ext(Open.read(c))
+
+def XInt.read(n: Nat, diff: U32, c: Cur) -> Rd(XInt):
+  XInt.bit(n, diff, Bit.read(c))
+
+def XInt.write(n: Nat, x: XInt, +rem: Nat, rest: Bits()) -> Bits():
+  match x:
+    case IRoot{v}:
+      False{} <> Int.write(n, v, Rem.next(rem), rest)
+    case IExt{bs}:
+      True{} <> Open.write(bs, Rem.next(rem), rest)
+
+def XInt.after(n: Nat, x: XInt, rem: Nat) -> Nat:
+  match x:
+    case IRoot{v}:
+      Rem.add(n, Rem.next(rem))
+    case IExt{bs}:
+      0n
+
+type XBig is Data:
+  BRoot{octets: B.Bytes()}
+  BExt{octets: B.Bytes()}
+
+def XBig.valid(diff: Nat, x: XBig) -> Bool:
+  match x:
+    case BRoot{bs}:
+      Big.valid(diff, bs)
+    case BExt{bs}:
+      Open.valid(bs)
+
+def XBig.root(r: Rd(B.Bytes())) -> Rd(XBig):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bs, c)}:
+      Done{(BRoot{bs}, c)}
+
+def XBig.ext(r: Rd(B.Bytes())) -> Rd(XBig):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bs, c)}:
+      Done{(BExt{bs}, c)}
+
+def XBig.bit(n: Nat, diff: Nat, r: Rd(Bool)) -> Rd(XBig):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(b, c)}:
+      match b:
+        case False{}:
+          XBig.root(Big.read(n, diff, c))
+        case True{}:
+          XBig.ext(Open.read(c))
+
+def XBig.read(n: Nat, diff: Nat, c: Cur) -> Rd(XBig):
+  XBig.bit(n, diff, Bit.read(c))
+
+def XBig.write(n: Nat, x: XBig, +rem: Nat, rest: Bits()) -> Bits():
+  match x:
+    case BRoot{bs}:
+      False{} <> Big.write(n, bs, Rem.next(rem), rest)
+    case BExt{bs}:
+      True{} <> Open.write(bs, Rem.next(rem), rest)
+
+def XBig.after(x: XBig, rem: Nat) -> Nat:
+  0n
+
+# A fixed-size bit string of at most 16 bits with an extension marker (§16.9).
+def XBits.valid(n: Nat, +bs: Bits()) -> Bool:
+  Bool.or(Nat.is_eq(List.length(&2, Bool, bs), n), UBitStr.valid(bs))
+
+def XBits.of(bs: Bits(), c: Cur, ok: Bool) -> Rd(Bits()):
+  match ok:
+    case True{}:
+      Done{(bs, c)}
+    case False{}:
+      Fail{B.Invalid{2}}
+
+def XBits.outside(n: Nat, r: Rd(Bits())) -> Rd(Bits()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(+bs, c)}:
+      XBits.of(bs, c, Bool.not(Nat.is_eq(List.length(&2, Bool, bs), n)))
+
+def XBits.bit(n: Nat, r: Rd(Bool)) -> Rd(Bits()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(b, c)}:
+      match b:
+        case False{}:
+          Bits.read(n, c)
+        case True{}:
+          XBits.outside(n, UBitStr.read(c))
+
+def XBits.read(n: Nat, c: Cur) -> Rd(Bits()):
+  XBits.bit(n, Bit.read(c))
+
+def XBits.body(bs: Bits(), rem: Nat, rest: Bits(), root: Bool) -> Bits():
+  match root:
+    case True{}:
+      False{} <> List.append(&2, Bool, bs, rest)
+    case False{}:
+      True{} <> UBitStr.write(bs, Rem.next(rem), rest)
+
+def XBits.write(n: Nat, +bs: Bits(), rem: Nat, rest: Bits()) -> Bits():
+  XBits.body(bs, rem, rest, Nat.is_eq(List.length(&2, Bool, bs), n))
+
+def XBits.rem(bs: Bits(), rem: Nat, root: Bool) -> Nat:
+  match root:
+    case True{}:
+      Rem.add(List.length(&2, Bool, bs), Rem.next(rem))
+    case False{}:
+      Rem.add(List.length(&2, Bool, bs), 0n)
+
+def XBits.after(n: Nat, +bs: Bits(), rem: Nat) -> Nat:
+  XBits.rem(bs, rem, Nat.is_eq(List.length(&2, Bool, bs), n))
+
+# A variable-size bit string with an extension marker (§16.6).
+def XBitStr.valid(lo: Nat, diff: Nat, +bs: Bits()) -> Bool:
+  Bool.or(Size.valid(lo, diff, List.length(&2, Bool, bs)), UBitStr.valid(bs))
+
+def XBitStr.outside(lo: Nat, diff: Nat, r: Rd(Bits())) -> Rd(Bits()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(+bs, c)}:
+      XBits.of(bs, c, Bool.not(Size.valid(lo, diff, List.length(&2, Bool, bs))))
+
+def XBitStr.bit(al: Bool, n: Nat, lo: Nat, diff: Nat, r: Rd(Bool)) -> Rd(Bits()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(b, c)}:
+      match b:
+        case False{}:
+          BitStr.read(al, n, lo, diff, c)
+        case True{}:
+          XBitStr.outside(lo, diff, UBitStr.read(c))
+
+def XBitStr.read(al: Bool, n: Nat, lo: Nat, diff: Nat, c: Cur) -> Rd(Bits()):
+  XBitStr.bit(al, n, lo, diff, Bit.read(c))
+
+def XBitStr.body(al: Bool, n: Nat, lo: Nat, bs: Bits(), rem: Nat, rest: Bits(), root: Bool) -> Bits():
+  match root:
+    case True{}:
+      False{} <> BitStr.write(al, n, lo, bs, Rem.next(rem), rest)
+    case False{}:
+      True{} <> UBitStr.write(bs, Rem.next(rem), rest)
+
+def XBitStr.write(al: Bool, n: Nat, +lo: Nat, +diff: Nat, +bs: Bits(), rem: Nat, rest: Bits()) -> Bits():
+  XBitStr.body(al, n, lo, bs, rem, rest, Size.valid(lo, diff, List.length(&2, Bool, bs)))
+
+def XBitStr.after(bs: Bits(), rem: Nat) -> Nat:
+  Rem.add(List.length(&2, Bool, bs), 0n)
+
+# A PrintableString with an extension marker on its size (§30.4).
+def XStr.valid(lo: Nat, diff: Nat, +s: B.Bytes()) -> Bool:
+  Bool.and(Bool.or(Size.valid(lo, diff, List.length(&2, U32, s)), Len.valid(List.length(&2, U32, s))), Str.all(s))
+
+def XStr.of(s: B.Bytes(), c: Cur, ok: Bool) -> Rd(B.Bytes()):
+  match ok:
+    case True{}:
+      Done{(s, c)}
+    case False{}:
+      Fail{B.Invalid{2}}
+
+def XStr.outside(lo: Nat, diff: Nat, r: Rd(B.Bytes())) -> Rd(B.Bytes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(+s, c)}:
+      XStr.of(s, c, Bool.not(Size.valid(lo, diff, List.length(&2, U32, s))))
+
+def XStr.bit(al: Bool, n: Nat, lo: Nat, diff: Nat, r: Rd(Bool)) -> Rd(B.Bytes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(b, c)}:
+      match b:
+        case False{}:
+          Str.read(al, n, lo, diff, c)
+        case True{}:
+          XStr.outside(lo, diff, UStr.read(c))
+
+def XStr.read(al: Bool, n: Nat, lo: Nat, diff: Nat, c: Cur) -> Rd(B.Bytes()):
+  XStr.bit(al, n, lo, diff, Bit.read(c))
+
+def XStr.body(al: Bool, n: Nat, lo: Nat, s: B.Bytes(), rem: Nat, rest: Bits(), root: Bool) -> Bits():
+  match root:
+    case True{}:
+      False{} <> Str.write(al, n, lo, s, Rem.next(rem), rest)
+    case False{}:
+      True{} <> UStr.write(s, Rem.next(rem), rest)
+
+def XStr.write(al: Bool, n: Nat, +lo: Nat, +diff: Nat, +s: B.Bytes(), rem: Nat, rest: Bits()) -> Bits():
+  XStr.body(al, n, lo, s, rem, rest, Size.valid(lo, diff, List.length(&2, U32, s)))
+
+def XStr.after(rem: Nat) -> Nat:
+  0n
