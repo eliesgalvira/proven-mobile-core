@@ -8,7 +8,7 @@ Audited at commit 657e746 on `loop/m1`, 2026-11-02. Figures and commands:
 | `python3 -I scripts/acceptance.py --strict` | 26 laws required (the 23 in-scope advisories), 0 failures |
 | `bend kernel/PROOF.bend` and `--verdict` | ALL PROOFS CHECK; 133 laws in `kernel/LAWS.bend` plus 471 generated NGAP laws in `kernel/ngap/gen/laws.bend` |
 | `scripts/check.sh` | passes (see `loop/progress.md`) |
-| `e2e/run.sh` | not run here: the VM has no SCTP (`loop/blockers.md`); ticket 22 is `needs-human` |
+| `nix build .#checks.x86_64-linux.e2e` | `E2E PASS` on 2026-11-02 (ticket 22): registration, PDU session and 4/4 pings through eUPF |
 
 Lines refer to `kernel/LAWS.bend` at the commit above.
 
