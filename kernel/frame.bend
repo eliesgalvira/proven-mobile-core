@@ -770,5 +770,23 @@ def Actions.write(as: Actions, rest: B.Bytes()) -> B.Bytes():
     case Actions{count, items}:
       B.write_u8(128, B.write_u16(count, Items.write(items, rest)))
 
+def Action.send_make(assoc: U32, stream: U32, +bytes: B.Bytes()) -> Action:
+  NgapSend{assoc, stream, U32.from_nat(List.length(&2, U32, bytes)), bytes}
+
+def Action.pfcp_make(+bytes: B.Bytes()) -> Action:
+  PfcpSend{U32.from_nat(List.length(&2, U32, bytes)), bytes}
+
+# UTF-8 of a string of ASCII characters.
+def Text.bytes(s: String) -> B.Bytes():
+  match s:
+    case SNil{}:
+      []
+    case SCon{Chr{code}, rest}:
+      code <> Text.bytes(rest)
+
+def Action.log_make(level: Level, text: String) -> Action:
+  +bytes = Text.bytes(text)
+  Log{level, U32.from_nat(List.length(&2, U32, bytes)), bytes}
+
 def Actions.make(+items: List<&2, Action>) -> Actions:
   Actions{U32.from_nat(List.length(&2, Action, items)), items}
