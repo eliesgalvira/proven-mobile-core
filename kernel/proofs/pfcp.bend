@@ -614,3 +614,227 @@ def L.pfcp.roundtrip(m, rest, v):
   match m:
     case Pf.Msg{+kind, +len, +seid, +seq, +ies}:
       Msg.rt(kind, len, seid, seq, ies, rest, v)
+
+# Reading: what a message reader answered. One chain yields decode_valid,
+# suffix and length_consistent.
+
+# The octets after the SEID: sequence number, spare, IEs.
+def Tail.Spec(body: B.Bytes(), seq: U32, ies: List<&2, Pf.Ie>) -> Type:
+  {Pf.fits24(seq) == True{} : Bool} & ({Pf.Ies.valid(ies) == True{} : Bool} & ({Nat.add(4n, Pf.Ies.size(ies)) == List.length(&2, U32, body) : Nat} & ({B.all_bytes(body) == True{} : Bool} -> @tail: B.Bytes() -> {B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail))) == List.append(&2, U32, body, tail) : B.Bytes()})))
+
+# The octets after the length field.
+def Body.Spec(body: B.Bytes(), seid: Maybe<&2, B.Bytes()>, seq: U32, ies: List<&2, Pf.Ie>) -> Type:
+  {Pf.Seid.valid(seid) == True{} : Bool} & ({Pf.fits24(seq) == True{} : Bool} & ({Pf.Ies.valid(ies) == True{} : Bool} & ({Pf.Msg.body_size(seid, ies) == List.length(&2, U32, body) : Nat} & ({B.all_bytes(body) == True{} : Bool} -> @tail: B.Bytes() -> {Pf.Seid.write(seid, B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail)))) == List.append(&2, U32, body, tail) : B.Bytes()}))))
+
+def Msg.Spec(bs: B.Bytes(), m: Pf.Msg, rest: B.Bytes()) -> Type:
+  {Pf.Msg.valid(m) == True{} : Bool} & (({B.all_bytes(bs) == True{} : Bool} -> {Pf.Msg.write(m, rest) == bs : B.Bytes()}) & {List.length(&2, U32, bs) == Nat.add(4n, Nat.add(U32.to_nat(Pf.Msg.len(m)), List.length(&2, U32, rest))) : Nat})
+
+def Tail.write(+b2: U32, +b1: U32, +b0: U32, +sp: U32, +iesb: B.Bytes(), +ies: List<&2, Pf.Ie>, +eri: {Pf.Ies.read(List.length(&2, U32, iesb), iesb) == Done{ies} : Ies.Res()}, e0: {sp == 0 : U32}, +ab: {B.all_bytes(b2 <> b1 <> b0 <> sp <> iesb) == True{} : Bool}, +tail: B.Bytes()) -> {B.write_u24(B.cat8(b0, B.cat8(b1, b2)), B.write_u8(0, Pf.Ies.write(ies, tail))) == List.append(&2, U32, b2 <> b1 <> b0 <> sp <> iesb, tail) : B.Bytes()}:
+  +ab2 = P.Bool.and_true_r(B.is_byte(b2), B.all_bytes(b1 <> b0 <> sp <> iesb), ab)
+  +ab3 = P.Bool.and_true_r(B.is_byte(b1), B.all_bytes(b0 <> sp <> iesb), ab2)
+  +ab4 = P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(sp <> iesb), ab3)
+  +X = B.write_u8(0, Pf.Ies.write(ies, tail))
+  w = Equal.sym(B.Bytes(), B.write_u24(B.cat8(b0, B.cat8(b1, b2)), X), b2 <> b1 <> b0 <> X, P.Bytes.u24_sx(b2, b1, b0, P.U32.lt256_mask8(b2, P.Bool.and_true_l(B.is_byte(b2), B.all_bytes(b1 <> b0 <> sp <> iesb), ab)), P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), B.all_bytes(b0 <> sp <> iesb), ab2)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(sp <> iesb), ab3)), X))
+  %w : {_ == List.append(&2, U32, b2 <> b1 <> b0 <> sp <> iesb, tail) : B.Bytes()}
+  se0 = Equal.sym(U32, sp, 0, e0)
+  %se0 : {b2 <> b1 <> b0 <> X == List.append(&2, U32, b2 <> b1 <> b0 <> _ <> iesb, tail) : B.Bytes()}
+  Equal.cong(B.Bytes(), B.Bytes(), l => b2 <> b1 <> b0 <> B.write_u8(0, l), Pf.Ies.write(ies, tail), List.append(&2, U32, iesb, tail), Ies.sx(List.length(&2, U32, iesb), iesb, ies, eri, P.Bool.and_true_r(B.is_byte(sp), B.all_bytes(iesb), ab4), tail))
+
+def Tail.fin(+b2: U32, +b1: U32, +b0: U32, +sp: U32, +iesb: B.Bytes(), +ies: List<&2, Pf.Ie>, +eri: {Pf.Ies.read(List.length(&2, U32, iesb), iesb) == Done{ies} : Ies.Res()}, f24: {Pf.fits24(B.cat8(b0, B.cat8(b1, b2))) == True{} : Bool}, e0: {sp == 0 : U32}) -> Tail.Spec(b2 <> b1 <> b0 <> sp <> iesb, B.cat8(b0, B.cat8(b1, b2)), ies):
+  (f24, (Ies.dv(List.length(&2, U32, iesb), iesb, ies, eri), (Equal.cong(Nat, Nat, n => 1n+1n+1n+1n+n, Pf.Ies.size(ies), List.length(&2, U32, iesb), Ies.len(List.length(&2, U32, iesb), iesb, ies, eri)), ab => tail => Tail.write(b2, b1, b0, sp, iesb, ies, eri, e0, ab, tail))))
+
+def Body.none(+body: B.Bytes(), +seq: U32, +ies: List<&2, Pf.Ie>, tsp: Tail.Spec(body, seq, ies)) -> Body.Spec(body, None{}, seq, ies):
+  (f24, t1) = tsp
+  (iv, t2) = t1
+  (tsz, tw) = t2
+  ({==}, (f24, (iv, (tsz, tw))))
+
+def Body.some.write(+sb: B.Bytes(), +r5: B.Bytes(), +body: B.Bytes(), +seq: U32, +ies: List<&2, Pf.Ie>, +ap: {List.append(&2, U32, sb, r5) == body : B.Bytes()}, tw: {B.all_bytes(r5) == True{} : Bool} -> @tail: B.Bytes() -> {B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail))) == List.append(&2, U32, r5, tail) : B.Bytes()}, ab: {B.all_bytes(body) == True{} : Bool}, +tail: B.Bytes()) -> {Pf.Seid.write(Some{sb}, B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail)))) == List.append(&2, U32, body, tail) : B.Bytes()}:
+  sap = Equal.sym(B.Bytes(), List.append(&2, U32, sb, r5), body, ap)
+  %ap : {Pf.Seid.write(Some{sb}, B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail)))) == List.append(&2, U32, _, tail) : B.Bytes()}
+  as = Equal.sym(B.Bytes(), List.append(&2, U32, List.append(&2, U32, sb, r5), tail), List.append(&2, U32, sb, List.append(&2, U32, r5, tail)), Bytes.app_assoc(sb, r5, tail))
+  %as : {List.append(&2, U32, sb, B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail)))) == _ : B.Bytes()}
+  Equal.cong(B.Bytes(), B.Bytes(), l => List.append(&2, U32, sb, l), B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail))), List.append(&2, U32, r5, tail), tw(PB.Bytes.all_app(sb, r5, (%sap : {B.all_bytes(_) == True{} : Bool}; ab)), tail))
+
+def Body.some(+sb: B.Bytes(), +r5: B.Bytes(), +body: B.Bytes(), +seq: U32, +ies: List<&2, Pf.Ie>, la: {List.length(&2, U32, sb) == 8n : Nat} & {List.append(&2, U32, sb, r5) == body : B.Bytes()}, tsp: Tail.Spec(r5, seq, ies)) -> Body.Spec(body, Some{sb}, seq, ies):
+  (l8, +ap) = la
+  (f24, t1) = tsp
+  (iv, t2) = t1
+  (tsz, tw) = t2
+  sl8 = Equal.sym(Nat, List.length(&2, U32, sb), 8n, l8)
+  stsz = Equal.sym(Nat, Nat.add(4n, Pf.Ies.size(ies)), List.length(&2, U32, r5), tsz)
+  ((%sl8 : {Nat.is_eq(_, 8n) == True{} : Bool}; P.Nat.is_eq_refl(8n)), (f24, (iv, ((%ap : {Pf.Msg.body_size(Some{sb}, ies) == List.length(&2, U32, _) : Nat}; (%stsz : {Nat.add(List.length(&2, U32, sb), _) == List.length(&2, U32, List.append(&2, U32, sb, r5)) : Nat}; Equal.sym(Nat, List.length(&2, U32, List.append(&2, U32, sb, r5)), Nat.add(List.length(&2, U32, sb), List.length(&2, U32, r5)), P.List.append_len(sb, r5)))), ab => tail => Body.some.write(sb, r5, body, seq, ies, ap, tw, ab, tail)))))
+
+def Body.spec.ies(+kind: U32, +len: U32, +seid: Maybe<&2, B.Bytes()>, +b2: U32, +b1: U32, +b0: U32, +sp: U32, +iesb: B.Bytes(), ri: Ies.Res(), +eri: {Pf.Ies.read(List.length(&2, U32, iesb), iesb) == ri : Ies.Res()}, +m: Pf.Msg, e: {Pf.Msg.of_ies(kind, len, seid, B.cat8(b0, B.cat8(b1, b2)), ri) == Done{m} : Msg.Res()}, -G: Type, k: @seq: U32 -> @ies: List<&2, Pf.Ie> -> {Pf.Msg{kind, len, seid, seq, ies} == m : Pf.Msg} -> Tail.Spec(b2 <> b1 <> b0 <> sp <> iesb, seq, ies) -> G, f24: {Pf.fits24(B.cat8(b0, B.cat8(b1, b2))) == True{} : Bool}, e0: {sp == 0 : U32}) -> G:
+  match ri:
+    case Fail{err}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, err, m, e))
+    case Done{+ies}:
+      k(B.cat8(b0, B.cat8(b1, b2)), ies, Equal.cong(Msg.Res(), Pf.Msg, x => P.Res.value(B.Err, Pf.Msg, x, m), Done{Pf.Msg{kind, len, seid, B.cat8(b0, B.cat8(b1, b2)), ies}}, Done{m}, e), Tail.fin(b2, b1, b0, sp, iesb, ies, eri, f24, e0))
+
+def Body.spec.spare(+kind: U32, +len: U32, +seid: Maybe<&2, B.Bytes()>, +b2: U32, +b1: U32, +b0: U32, +sp: U32, +iesb: B.Bytes(), ok: Bool, eok: {U32.is_eq(sp, 0) == ok : Bool}, +m: Pf.Msg, e: {Pf.Msg.spare_ok(kind, len, seid, B.cat8(b0, B.cat8(b1, b2)), sp, iesb, ok) == Done{m} : Msg.Res()}, -G: Type, k: @seq: U32 -> @ies: List<&2, Pf.Ie> -> {Pf.Msg{kind, len, seid, seq, ies} == m : Pf.Msg} -> Tail.Spec(b2 <> b1 <> b0 <> sp <> iesb, seq, ies) -> G, f24: {Pf.fits24(B.cat8(b0, B.cat8(b1, b2))) == True{} : Bool}) -> G:
+  match ok:
+    case False{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, B.Invalid{sp}, m, e))
+    case True{}:
+      Body.spec.ies(kind, len, seid, b2, b1, b0, sp, iesb, Pf.Ies.read(List.length(&2, U32, iesb), iesb), {==}, m, e, G, k, f24, P.U32.eq_of_is_eq(sp, 0, eok))
+
+def Body.spec.seq(+kind: U32, +len: U32, +seid: Maybe<&2, B.Bytes()>, +b2: U32, +b1: U32, +b0: U32, ok: Bool, eok: {Pf.fits24(B.cat8(b0, B.cat8(b1, b2))) == ok : Bool}, r6: B.Bytes(), +m: Pf.Msg, e: {Pf.Msg.seq_ok(kind, len, seid, B.cat8(b0, B.cat8(b1, b2)), r6, ok) == Done{m} : Msg.Res()}, -G: Type, k: @seq: U32 -> @ies: List<&2, Pf.Ie> -> {Pf.Msg{kind, len, seid, seq, ies} == m : Pf.Msg} -> Tail.Spec(b2 <> b1 <> b0 <> r6, seq, ies) -> G) -> G:
+  match ok:
+    case False{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, B.Invalid{B.cat8(b0, B.cat8(b1, b2))}, m, e))
+    case True{}:
+      match r6:
+        case Nil{}:
+          Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, B.Short{}, m, e))
+        case +sp <> +iesb:
+          Body.spec.spare(kind, len, seid, b2, b1, b0, sp, iesb, U32.is_eq(sp, 0), {==}, m, e, G, k, eok)
+
+def Body.spec.u24(+kind: U32, +len: U32, +seid: Maybe<&2, B.Bytes()>, body: B.Bytes(), +m: Pf.Msg, e: {Pf.Msg.of_seq(kind, len, seid, B.u24(body)) == Done{m} : Msg.Res()}, -G: Type, k: @seq: U32 -> @ies: List<&2, Pf.Ie> -> {Pf.Msg{kind, len, seid, seq, ies} == m : Pf.Msg} -> Tail.Spec(body, seq, ies) -> G) -> G:
+  match body:
+    case Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, B.Short{}, m, e))
+    case a <> Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, B.Short{}, m, e))
+    case a <> b <> Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, B.Short{}, m, e))
+    case +b2 <> +b1 <> +b0 <> +r6:
+      Body.spec.seq(kind, len, seid, b2, b1, b0, Pf.fits24(B.cat8(b0, B.cat8(b1, b2))), {==}, r6, m, e, G, k)
+
+def Body.spec.seid(+kind: U32, +len: U32, +body: B.Bytes(), rt: B.Read(B.Bytes()), +ert: {B.take(8n, body) == rt : B.Read(B.Bytes())}, +m: Pf.Msg, e: {Pf.Msg.of_seid(kind, len, rt) == Done{m} : Msg.Res()}, -G: Type, k: @seid: Maybe<&2, B.Bytes()> -> @seq: U32 -> @ies: List<&2, Pf.Ie> -> {Pf.Msg{kind, len, seid, seq, ies} == m : Pf.Msg} -> {Pf.Seid.flags(seid) == Flags.of(True{}) : U32} -> Body.Spec(body, seid, seq, ies) -> G) -> G:
+  match rt:
+    case Fail{err}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, Pf.Msg, err, m, e))
+    case Done{(+sb, +r5)}:
+      Body.spec.u24(kind, len, Some{sb}, r5, m, e, G, +seq => +ies => em => tsp => k(Some{sb}, seq, ies, em, {==}, Body.some(sb, r5, body, seq, ies, L.bytes.take.length(8n, body, sb, r5, ert), tsp)))
+
+def Body.spec(s: Bool, +kind: U32, +len: U32, +body: B.Bytes(), +m: Pf.Msg, e: {Pf.Msg.parse(s, kind, len, body) == Done{m} : Msg.Res()}, -G: Type, k: @seid: Maybe<&2, B.Bytes()> -> @seq: U32 -> @ies: List<&2, Pf.Ie> -> {Pf.Msg{kind, len, seid, seq, ies} == m : Pf.Msg} -> {Pf.Seid.flags(seid) == Flags.of(s) : U32} -> Body.Spec(body, seid, seq, ies) -> G) -> G:
+  match s:
+    case False{}:
+      Body.spec.u24(kind, len, None{}, body, m, e, G, +seq => +ies => em => tsp => k(None{}, seq, ies, em, {==}, Body.none(body, seq, ies, tsp)))
+    case True{}:
+      Body.spec.seid(kind, len, body, B.take(8n, body), {==}, m, e, G, k)
+
+def Msg.spec.valid(+kind: U32, +b0: U32, +b1: U32, +seid: Maybe<&2, B.Bytes()>, +seq: U32, +ies: List<&2, Pf.Ie>, +body: B.Bytes(), fk: {B.fits8(kind) == True{} : Bool}, fl: {B.fits16(B.cat8(b0, b1)) == True{} : Bool}, sv: {Pf.Seid.valid(seid) == True{} : Bool}, f24: {Pf.fits24(seq) == True{} : Bool}, iv: {Pf.Ies.valid(ies) == True{} : Bool}, bsz: {Pf.Msg.body_size(seid, ies) == List.length(&2, U32, body) : Nat}, ln: {List.length(&2, U32, body) == U32.to_nat(B.cat8(b0, b1)) : Nat}) -> {Pf.Msg.valid(Pf.Msg{kind, B.cat8(b0, b1), seid, seq, ies}) == True{} : Bool}:
+  sbsz = Equal.sym(Nat, Pf.Msg.body_size(seid, ies), List.length(&2, U32, body), bsz)
+  tn : {Nat.is_eq(U32.to_nat(B.cat8(b0, b1)), Pf.Msg.body_size(seid, ies)) == True{} : Bool} = (%ln : {Nat.is_eq(_, Pf.Msg.body_size(seid, ies)) == True{} : Bool}; (%sbsz : {Nat.is_eq(List.length(&2, U32, body), _) == True{} : Bool}; P.Nat.is_eq_refl(List.length(&2, U32, body))))
+  P.Bool.and_intro(B.fits8(kind), Bool.and(B.fits16(B.cat8(b0, b1)), Bool.and(Pf.Seid.valid(seid), Bool.and(Pf.fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(B.cat8(b0, b1)), Pf.Msg.body_size(seid, ies)), Pf.Ies.valid(ies))))), fk, P.Bool.and_intro(B.fits16(B.cat8(b0, b1)), Bool.and(Pf.Seid.valid(seid), Bool.and(Pf.fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(B.cat8(b0, b1)), Pf.Msg.body_size(seid, ies)), Pf.Ies.valid(ies)))), fl, P.Bool.and_intro(Pf.Seid.valid(seid), Bool.and(Pf.fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(B.cat8(b0, b1)), Pf.Msg.body_size(seid, ies)), Pf.Ies.valid(ies))), sv, P.Bool.and_intro(Pf.fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(B.cat8(b0, b1)), Pf.Msg.body_size(seid, ies)), Pf.Ies.valid(ies)), f24, P.Bool.and_intro(Nat.is_eq(U32.to_nat(B.cat8(b0, b1)), Pf.Msg.body_size(seid, ies)), Pf.Ies.valid(ies), tn, iv)))))
+
+def Msg.spec.write(+s: Bool, +flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B.Bytes(), +body: B.Bytes(), +r4: B.Bytes(), +seid: Maybe<&2, B.Bytes()>, +seq: U32, +ies: List<&2, Pf.Ie>, sf: {Pf.Seid.flags(seid) == Flags.of(s) : U32}, ef: {flags == Flags.of(s) : U32}, fk: {B.fits8(kind) == True{} : Bool}, +ap: {List.append(&2, U32, body, r4) == r3 : B.Bytes()}, wb: {B.all_bytes(body) == True{} : Bool} -> @tail: B.Bytes() -> {Pf.Seid.write(seid, B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, tail)))) == List.append(&2, U32, body, tail) : B.Bytes()}, +ab: {B.all_bytes(flags <> kind <> b1 <> b0 <> r3) == True{} : Bool}) -> {Pf.Msg.write(Pf.Msg{kind, B.cat8(b0, b1), seid, seq, ies}, r4) == flags <> kind <> b1 <> b0 <> r3 : B.Bytes()}:
+  +Z = Pf.Seid.write(seid, B.write_u24(seq, B.write_u8(0, Pf.Ies.write(ies, r4))))
+  ssf = Equal.sym(U32, Pf.Seid.flags(seid), Flags.of(s), sf)
+  %ssf : {B.write_u8(_, B.write_u8(kind, B.write_u16(B.cat8(b0, b1), Z))) == flags <> kind <> b1 <> b0 <> r3 : B.Bytes()}
+  sef = Equal.sym(U32, flags, Flags.of(s), ef)
+  %sef : {B.write_u8(Flags.of(s), B.write_u8(kind, B.write_u16(B.cat8(b0, b1), Z))) == _ <> kind <> b1 <> b0 <> r3 : B.Bytes()}
+  sm = Equal.sym(U32, U32.and(255, Flags.of(s)), Flags.of(s), Flags.mask(s))
+  %sm : {_ <> B.write_u8(kind, B.write_u16(B.cat8(b0, b1), Z)) == Flags.of(s) <> kind <> b1 <> b0 <> r3 : B.Bytes()}
+  sk = Equal.sym(U32, U32.and(255, kind), kind, P.U32.eq_of_is_eq(U32.and(255, kind), kind, fk))
+  %sk : {Flags.of(s) <> _ <> B.write_u16(B.cat8(b0, b1), Z) == Flags.of(s) <> kind <> b1 <> b0 <> r3 : B.Bytes()}
+  +ab2 = P.Bool.and_true_r(B.is_byte(flags), B.all_bytes(kind <> b1 <> b0 <> r3), ab)
+  +ab3 = P.Bool.and_true_r(B.is_byte(kind), B.all_bytes(b1 <> b0 <> r3), ab2)
+  +ab4 = P.Bool.and_true_r(B.is_byte(b1), B.all_bytes(b0 <> r3), ab3)
+  w16 = Equal.sym(B.Bytes(), B.write_u16(B.cat8(b0, b1), Z), b1 <> b0 <> Z, P.Bytes.u16_sx(b1, b0, P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), B.all_bytes(b0 <> r3), ab3)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(r3), ab4)), Z))
+  %w16 : {Flags.of(s) <> kind <> _ == Flags.of(s) <> kind <> b1 <> b0 <> r3 : B.Bytes()}
+  %ap : {Flags.of(s) <> kind <> b1 <> b0 <> Z == Flags.of(s) <> kind <> b1 <> b0 <> _ : B.Bytes()}
+  sap = Equal.sym(B.Bytes(), List.append(&2, U32, body, r4), r3, ap)
+  Equal.cong(B.Bytes(), B.Bytes(), l => Flags.of(s) <> kind <> b1 <> b0 <> l, Z, List.append(&2, U32, body, r4), wb(Bytes.all_app_l(body, r4, (%sap : {B.all_bytes(_) == True{} : Bool}; P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r3), ab4))), r4))
+
+def Msg.spec.len(+flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B.Bytes(), +body: B.Bytes(), +r4: B.Bytes(), ln: {List.length(&2, U32, body) == U32.to_nat(B.cat8(b0, b1)) : Nat}, ap: {List.append(&2, U32, body, r4) == r3 : B.Bytes()}) -> {List.length(&2, U32, flags <> kind <> b1 <> b0 <> r3) == Nat.add(4n, Nat.add(U32.to_nat(B.cat8(b0, b1)), List.length(&2, U32, r4))) : Nat}:
+  %ap : {List.length(&2, U32, flags <> kind <> b1 <> b0 <> _) == Nat.add(4n, Nat.add(U32.to_nat(B.cat8(b0, b1)), List.length(&2, U32, r4))) : Nat}
+  %ln : {List.length(&2, U32, flags <> kind <> b1 <> b0 <> List.append(&2, U32, body, r4)) == Nat.add(4n, Nat.add(_, List.length(&2, U32, r4))) : Nat}
+  Equal.cong(Nat, Nat, n => 1n+1n+1n+1n+n, List.length(&2, U32, List.append(&2, U32, body, r4)), Nat.add(List.length(&2, U32, body), List.length(&2, U32, r4)), P.List.append_len(body, r4))
+
+def Msg.spec.fin(+s: Bool, +flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B.Bytes(), +body: B.Bytes(), +r4: B.Bytes(), +seid: Maybe<&2, B.Bytes()>, +seq: U32, +ies: List<&2, Pf.Ie>, +m: Pf.Msg, em: {Pf.Msg{kind, B.cat8(b0, b1), seid, seq, ies} == m : Pf.Msg}, sf: {Pf.Seid.flags(seid) == Flags.of(s) : U32}, bsp: Body.Spec(body, seid, seq, ies), ef: {flags == Flags.of(s) : U32}, +fk: {B.fits8(kind) == True{} : Bool}, fl: {B.fits16(B.cat8(b0, b1)) == True{} : Bool}, la: {List.length(&2, U32, body) == U32.to_nat(B.cat8(b0, b1)) : Nat} & {List.append(&2, U32, body, r4) == r3 : B.Bytes()}) -> Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m, r4):
+  (sv, s1) = bsp
+  (f24, s2) = s1
+  (iv, s3) = s2
+  (bsz, wb) = s3
+  (+ln, +ap) = la
+  %em : Msg.Spec(flags <> kind <> b1 <> b0 <> r3, _, r4)
+  (Msg.spec.valid(kind, b0, b1, seid, seq, ies, body, fk, fl, sv, f24, iv, bsz, ln), (ab => Msg.spec.write(s, flags, kind, b1, b0, r3, body, r4, seid, seq, ies, sf, ef, fk, ap, wb, ab), Msg.spec.len(flags, kind, b1, b0, r3, body, r4, ln, ap)))
+
+def Msg.spec.with(+s: Bool, +flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B.Bytes(), +body: B.Bytes(), +r4: B.Bytes(), rp: Msg.Res(), +erp: {Pf.Msg.parse(s, kind, B.cat8(b0, b1), body) == rp : Msg.Res()}, +m: Pf.Msg, +rest: B.Bytes(), +e: {Pf.Msg.with_rest(rp, r4) == Done{(m, rest)} : B.Read(Pf.Msg)}, ef: {flags == Flags.of(s) : U32}, fk: {B.fits8(kind) == True{} : Bool}, fl: {B.fits16(B.cat8(b0, b1)) == True{} : Bool}, la: {List.length(&2, U32, body) == U32.to_nat(B.cat8(b0, b1)) : Nat} & {List.append(&2, U32, body, r4) == r3 : B.Bytes()}) -> Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m, rest):
+  match rp:
+    case Fail{err}:
+      Empty.absurd(Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), err, (m, rest), e))
+    case Done{+m2}:
+      ev = Equal.cong(B.Read(Pf.Msg), Pf.Msg, x => P.Read.value(Pf.Msg, x, m), Done{(m2, r4)}, Done{(m, rest)}, e)
+      er = Equal.cong(B.Read(Pf.Msg), B.Bytes(), x => P.Read.rest(Pf.Msg, x, rest), Done{(m2, r4)}, Done{(m, rest)}, e)
+      %ev : Msg.Spec(flags <> kind <> b1 <> b0 <> r3, _, rest)
+      %er : Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m2, _)
+      Body.spec(s, kind, B.cat8(b0, b1), body, m2, erp, Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m2, r4), seid => seq => ies => em => sf => bsp => Msg.spec.fin(s, flags, kind, b1, b0, r3, body, r4, seid, seq, ies, m2, em, sf, bsp, ef, fk, fl, la))
+
+def Msg.spec.body(+s: Bool, +flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B.Bytes(), rt: B.Read(B.Bytes()), +ert: {B.take(U32.to_nat(B.cat8(b0, b1)), r3) == rt : B.Read(B.Bytes())}, +m: Pf.Msg, +rest: B.Bytes(), e: {Pf.Msg.of_body(s, kind, B.cat8(b0, b1), rt) == Done{(m, rest)} : B.Read(Pf.Msg)}, ef: {flags == Flags.of(s) : U32}, fk: {B.fits8(kind) == True{} : Bool}, fl: {B.fits16(B.cat8(b0, b1)) == True{} : Bool}) -> Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m, rest):
+  match rt:
+    case Fail{err}:
+      Empty.absurd(Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), err, (m, rest), e))
+    case Done{(+body, +r4)}:
+      Msg.spec.with(s, flags, kind, b1, b0, r3, body, r4, Pf.Msg.parse(s, kind, B.cat8(b0, b1), body), {==}, m, rest, e, ef, fk, fl, L.bytes.take.length(U32.to_nat(B.cat8(b0, b1)), r3, body, r4, ert))
+
+def Msg.spec.len_ok(+s: Bool, +flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B.Bytes(), ok: Bool, eok: {B.fits16(B.cat8(b0, b1)) == ok : Bool}, +m: Pf.Msg, +rest: B.Bytes(), e: {Pf.Msg.len_ok(s, kind, B.cat8(b0, b1), r3, ok) == Done{(m, rest)} : B.Read(Pf.Msg)}, ef: {flags == Flags.of(s) : U32}, fk: {B.fits8(kind) == True{} : Bool}) -> Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m, rest):
+  match ok:
+    case False{}:
+      Empty.absurd(Msg.Spec(flags <> kind <> b1 <> b0 <> r3, m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), B.Invalid{B.cat8(b0, b1)}, (m, rest), e))
+    case True{}:
+      Msg.spec.body(s, flags, kind, b1, b0, r3, B.take(U32.to_nat(B.cat8(b0, b1)), r3), {==}, m, rest, e, ef, fk, eok)
+
+def Msg.spec.kind(+s: Bool, +flags: U32, +kind: U32, ok: Bool, eok: {B.fits8(kind) == ok : Bool}, r2: B.Bytes(), +m: Pf.Msg, +rest: B.Bytes(), e: {Pf.Msg.type_ok(s, kind, r2, ok) == Done{(m, rest)} : B.Read(Pf.Msg)}, ef: {flags == Flags.of(s) : U32}) -> Msg.Spec(flags <> kind <> r2, m, rest):
+  match ok:
+    case False{}:
+      Empty.absurd(Msg.Spec(flags <> kind <> r2, m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), B.Invalid{kind}, (m, rest), e))
+    case True{}:
+      match r2:
+        case Nil{}:
+          Empty.absurd(Msg.Spec(flags <> kind <> [], m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), B.Short{}, (m, rest), e))
+        case x <> Nil{}:
+          Empty.absurd(Msg.Spec(flags <> kind <> [x], m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), B.Short{}, (m, rest), e))
+        case +b1 <> +b0 <> +r3:
+          Msg.spec.len_ok(s, flags, kind, b1, b0, r3, B.fits16(B.cat8(b0, b1)), {==}, m, rest, e, ef, eok)
+
+def Msg.spec.type(+s: Bool, +flags: U32, r: B.Bytes(), +m: Pf.Msg, +rest: B.Bytes(), e: {Pf.Msg.of_type(s, B.u8(r)) == Done{(m, rest)} : B.Read(Pf.Msg)}, ef: {flags == Flags.of(s) : U32}) -> Msg.Spec(flags <> r, m, rest):
+  match r:
+    case Nil{}:
+      Empty.absurd(Msg.Spec(flags <> [], m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), B.Short{}, (m, rest), e))
+    case +kind <> +r2:
+      Msg.spec.kind(s, flags, kind, B.fits8(kind), {==}, r2, m, rest, e, ef)
+
+def Msg.spec.flags(+flags: U32, +r: B.Bytes(), plain: Bool, with_seid: Bool, ep: {U32.is_eq(flags, 32) == plain : Bool}, es: {U32.is_eq(flags, 33) == with_seid : Bool}, +m: Pf.Msg, +rest: B.Bytes(), e: {Pf.Msg.flags_ok(flags, r, plain, with_seid) == Done{(m, rest)} : B.Read(Pf.Msg)}) -> Msg.Spec(flags <> r, m, rest):
+  match plain:
+    case True{}:
+      Msg.spec.type(False{}, flags, r, m, rest, e, P.U32.eq_of_is_eq(flags, 32, ep))
+    case False{}:
+      match with_seid:
+        case True{}:
+          Msg.spec.type(True{}, flags, r, m, rest, e, P.U32.eq_of_is_eq(flags, 33, es))
+        case False{}:
+          Empty.absurd(Msg.Spec(flags <> r, m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), B.Unsupported{flags}, (m, rest), e))
+
+def Msg.spec(bs: B.Bytes(), +m: Pf.Msg, +rest: B.Bytes(), e: {Pf.Msg.read(bs) == Done{(m, rest)} : B.Read(Pf.Msg)}) -> Msg.Spec(bs, m, rest):
+  match bs:
+    case Nil{}:
+      Empty.absurd(Msg.Spec([], m, rest), P.Refute.fail_done(B.Err, B.ReadValue(Pf.Msg), B.Short{}, (m, rest), e))
+    case +flags <> +r:
+      Msg.spec.flags(flags, r, U32.is_eq(flags, 32), U32.is_eq(flags, 33), {==}, {==}, m, rest, e)
+
+def Msg.Spec.valid(+bs: B.Bytes(), +m: Pf.Msg, +rest: B.Bytes(), s: Msg.Spec(bs, m, rest)) -> {Pf.Msg.valid(m) == True{} : Bool}:
+  (v, s2) = s
+  v
+
+def Msg.Spec.write(+bs: B.Bytes(), +m: Pf.Msg, +rest: B.Bytes(), s: Msg.Spec(bs, m, rest), ab: {B.all_bytes(bs) == True{} : Bool}) -> {Pf.Msg.write(m, rest) == bs : B.Bytes()}:
+  (v, s2) = s
+  (w, l) = s2
+  w(ab)
+
+def Msg.Spec.len(+bs: B.Bytes(), +m: Pf.Msg, +rest: B.Bytes(), s: Msg.Spec(bs, m, rest)) -> {List.length(&2, U32, bs) == Nat.add(4n, Nat.add(U32.to_nat(Pf.Msg.len(m)), List.length(&2, U32, rest))) : Nat}:
+  (v, s2) = s
+  (w, l) = s2
+  l
+
+def L.pfcp.decode_valid(bs, m, rest, e):
+  Msg.Spec.valid(bs, m, rest, Msg.spec(bs, m, rest, e))
+
+def L.pfcp.suffix(bs, m, rest, e, ab):
+  Msg.Spec.write(bs, m, rest, Msg.spec(bs, m, rest, e), ab)
+
+def L.pfcp.header.length_consistent(bs, m, rest, e):
+  Msg.Spec.len(bs, m, rest, Msg.spec(bs, m, rest, e))
