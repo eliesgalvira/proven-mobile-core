@@ -9,3 +9,4 @@ import ./proofs/mm.bend as PM
 import ./proofs/mobile_id.bend as PI
 import ./proofs/sm.bend as PSM
 import ./proofs/sm_ies.bend as PQ
+import ./proofs/aper.bend as PA

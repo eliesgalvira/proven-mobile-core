@@ -309,34 +309,36 @@ def Len.short(r: Rd(Bits())) -> Rd(Nat):
     case Done{(bs, c)}:
       Done{(Nat.of_bits(bs), c)}
 
-def Len.second(r: Rd(Bool)) -> Rd(Nat):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(b, c)}:
+def Len.second(bits: Bits()) -> Rd(Nat):
+  match bits:
+    case Nil{}:
+      Fail{B.Short{}}
+    case b <> rest:
       match b:
         case False{}:
-          Len.long(Bits.read(14n, c))
+          Len.long(Bits.go(14n, 0n, rest))
         case True{}:
           Fail{B.Unsupported{192}}
 
-def Len.first(r: Rd(Bool)) -> Rd(Nat):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(b, c)}:
+def Len.first(bits: Bits()) -> Rd(Nat):
+  match bits:
+    case Nil{}:
+      Fail{B.Short{}}
+    case b <> rest:
       match b:
         case False{}:
-          Len.short(Bits.read(7n, c))
+          Len.short(Bits.go(7n, 0n, rest))
         case True{}:
-          Len.second(Bit.read(c))
+          Len.second(rest)
 
 def Len.aligned(r: Rd(Unit)) -> Rd(Nat):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(u, c)}:
-      Len.first(Bit.read(c))
+      match c:
+        case Cur{rem, bits}:
+          Len.first(bits)
 
 def Len.read(c: Cur) -> Rd(Nat):
   Len.aligned(Align.read(c))
@@ -614,9 +616,13 @@ def UBitStr.write(+bs: Bits(), rem: Nat, rest: Bits()) -> Bits():
 def UBitStr.after(bs: Bits(), rem: Nat) -> Nat:
   Rem.add(List.length(&2, Bool, bs), 0n)
 
-# PrintableString (§30, 8 bits per character in the aligned variant).
-def Str.printable(+c: U32) -> Bool:
+# PrintableString (§30, 8 bits per character in the aligned variant): a byte
+# in the alphabet of space, ' ( ) + , - . / 0-9 : = ? A-Z a-z.
+def Str.alphabet(+c: U32) -> Bool:
   Bool.or(U32.is_eq(c, 32), Bool.or(Bool.and(U32.is_le(39, c), U32.is_le(c, 41)), Bool.or(Bool.and(U32.is_le(43, c), U32.is_le(c, 58)), Bool.or(U32.is_eq(c, 61), Bool.or(U32.is_eq(c, 63), Bool.or(Bool.and(U32.is_le(65, c), U32.is_le(c, 90)), Bool.and(U32.is_le(97, c), U32.is_le(c, 122))))))))
+
+def Str.printable(+c: U32) -> Bool:
+  Bool.and(B.is_byte(c), Str.alphabet(c))
 
 def Str.all(s: B.Bytes()) -> Bool:
   match s:
