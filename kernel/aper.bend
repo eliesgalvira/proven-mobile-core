@@ -733,6 +733,13 @@ type Enum is Data:
   Root{index: U32}
   Ext{index: U32}
 
+def Enum.index(e: Enum) -> U32:
+  match e:
+    case Root{i}:
+      i
+    case Ext{i}:
+      i
+
 def Enum.valid(n: Nat, diff: U32, ext: Bool, e: Enum) -> Bool:
   match e:
     case Root{i}:

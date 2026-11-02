@@ -18,6 +18,7 @@ import ./nas/sm.bend as Sm
 import ./nas/sm_ies.bend as Q
 import ./aper.bend as Ap
 import ./ngap/frame.bend as Fr
+import ./ngap/gen/views.bend as GV
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -897,3 +898,21 @@ law ngap.pdu.decode_valid:
   for +p: Fr.Pdu
   for +e: {Fr.Pdu.read(bs) == Done{p} : Result<&2, &2, B.Err, Fr.Pdu>}
   {Fr.Pdu.valid(p) == True{} : Bool}
+
+# Message views (TS 38.413 §10.3). Every generated view passes Fr.View.prelude
+# first, so an IE id that appears twice fails the view (§10.3.6).
+law ngap.view.duplicate_rejected:
+  for +known: List<&2, U32>
+  for +ies: List<&2, Fr.Ie>
+  for +ies2: List<&2, Fr.Ie>
+  for +e: {Fr.View.prelude(known, ies) == Done{ies2} : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}
+  {Fr.Ies.no_dups(ies) == True{} : Bool}
+
+# GHSA-cfp8-93x2-6h9x: the InitialUEMessage view succeeds only when
+# RAN-UE-NGAP-ID (85), NAS-PDU (38), UserLocationInformation (121) and
+# RRCEstablishmentCause (90) are each present exactly once.
+law ngap.initial_ue_message.mandatory:
+  for +ies: List<&2, Fr.Ie>
+  for +v: GV.InitialUEMessage.View
+  for +e: {GV.InitialUEMessage.view(ies) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}
+  {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}))

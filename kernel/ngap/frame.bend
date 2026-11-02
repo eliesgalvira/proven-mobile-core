@@ -262,3 +262,92 @@ def Pdu.bits(p: Pdu, rest: Ap.Bits()) -> Ap.Bits():
 
 def Pdu.write(p: Pdu) -> B.Bytes():
   Ap.pack(Pdu.bits(p, []))
+
+# Message views (TS 38.413 §10.3): a view of a container succeeds only when
+# no IE id repeats (§10.3.6), every IE with criticality reject is one the
+# view comprehends (§10.3.4), and each mandatory IE is present. The ids a
+# view comprehends are its `known` list.
+def Ies.has(+id: U32, ies: List<&2, Ie>) -> Bool:
+  match ies:
+    case Nil{}:
+      False{}
+    case ie <> more:
+      Bool.or(U32.is_eq(Ie.id(ie), id), Ies.has(id, more))
+
+def Ies.no_dups(ies: List<&2, Ie>) -> Bool:
+  match ies:
+    case Nil{}:
+      True{}
+    case +ie <> +more:
+      Bool.and(Bool.not(Ies.has(Ie.id(ie), more)), Ies.no_dups(more))
+
+def Ids.has(+id: U32, ids: List<&2, U32>) -> Bool:
+  match ids:
+    case Nil{}:
+      False{}
+    case k <> more:
+      Bool.or(U32.is_eq(k, id), Ids.has(id, more))
+
+def Ies.comprehended(+known: List<&2, U32>, ies: List<&2, Ie>) -> Bool:
+  match ies:
+    case Nil{}:
+      True{}
+    case +ie <> more:
+      Bool.and(Bool.or(Bool.not(U32.is_eq(Ie.crit(ie), Criticality.reject())), Ids.has(Ie.id(ie), known)), Ies.comprehended(known, more))
+
+def Ies.bump(c: Nat, hit: Bool) -> Nat:
+  match hit:
+    case True{}:
+      1n+c
+    case False{}:
+      c
+
+def Ies.occurrences(+id: U32, ies: List<&2, Ie>) -> Nat:
+  match ies:
+    case Nil{}:
+      0n
+    case ie <> more:
+      Ies.bump(Ies.occurrences(id, more), U32.is_eq(Ie.id(ie), id))
+
+def Ies.pick(ie: Ie, rest: Maybe<&2, B.Bytes()>, hit: Bool) -> Maybe<&2, B.Bytes()>:
+  match hit:
+    case True{}:
+      Some{Ie.value(ie)}
+    case False{}:
+      rest
+
+# The value of the first IE with this id.
+def Ies.lookup(+id: U32, ies: List<&2, Ie>) -> Maybe<&2, B.Bytes()>:
+  match ies:
+    case Nil{}:
+      None{}
+    case +ie <> more:
+      Ies.pick(ie, Ies.lookup(id, more), U32.is_eq(Ie.id(ie), id))
+
+def View.gate(ies: List<&2, Ie>, ok: Bool) -> Result<&2, &2, B.Err, List<&2, Ie>>:
+  match ok:
+    case True{}:
+      Done{ies}
+    case False{}:
+      Fail{B.Invalid{0}}
+
+def View.prelude(+known: List<&2, U32>, +ies: List<&2, Ie>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
+  View.gate(ies, Bool.and(Ies.no_dups(ies), Ies.comprehended(known, ies)))
+
+def View.whole(-A: Data, v: A, ok: Bool) -> Result<&2, &2, B.Err, A>:
+  match ok:
+    case True{}:
+      Done{v}
+    case False{}:
+      Fail{B.Invalid{4}}
+
+# An IE value is a complete encoding: the type's decoder consumes all but padding.
+def View.exact(-A: Data, r: Ap.Rd(A)) -> Result<&2, &2, B.Err, A>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          View.whole(A, v, Ap.Tail.zero(bits))
+
