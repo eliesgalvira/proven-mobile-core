@@ -1,12 +1,9 @@
 # Loop progress
 
-## Summary (2026-11-02, commit on `loop/m1`)
+## Summary (2026-11-03)
 
-- **Done: tickets 01 to 21.** The kernel decodes and encodes NAS, NGAP (generated from TS 38.413), PFCP and the edge frames with proven round-trip, validity and suffix laws; it runs NG Setup, registration with 5G-AKA and NAS security, Initial Context Setup, release and takeover, and PDU session establishment against eUPF, reproducing the captured messages byte for byte. `kernel/main.bend` is the process, `edge/` the Rust thin layer. 133 hand-written laws and 471 generated ones pass `bend --verdict`; every in-scope advisory law is proven (`scripts/acceptance.py --strict`: 26 laws, 0 failures); 694 kernel checks and 14 cargo tests pass; `scripts/check.sh` is green.
-- **Done: ticket 22 (e2e).** `nix build .#checks.x86_64-linux.e2e` boots the core, eUPF, a data network and UERANSIM in four NixOS VMs: the UE registers, opens a PDU session and pings the data network through eUPF (`E2E PASS`). The first live SCTP run found the edge's SCTP_SNDINFO and SCTP_RCVINFO values swapped, so every N2 send failed; fixed in 9ac4f63.
-- **Done: ticket 23 (acceptance).** `loop/acceptance-report.md` holds the audit; two clauses remain arguments rather than laws (listed there).
-- **Next:** Elies reviews `loop/m1` before it reaches `main`: the `kernel/LAWS.bend` diff, `loop/upstream-bend/` drafts and `loop/decisions.md`. Deliberately out of scope and untouched: 4G, voice, roaming, policy and billing, handover.
-
+- **Milestone 1: tickets 01–23 done**, with the end-to-end test passing (`nix build .#checks.x86_64-linux.e2e`). The owner's review on 2026-11-03 (`loop/decisions.md` § Owner review) found laws that don't yet rule out four in-scope advisories, so `loop/m1` reaches `main` only after tickets 32–34.
+- **Next, in order:** hardening tickets 32–37, then milestone 2, handover (`docs/spec/milestone-2.md`, tickets 24–31). Neither has started. Deliberately out of scope: 4G, voice, roaming, policy and billing, and the handover cases excluded in `docs/spec/milestone-2.md`.
 
 Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets are in `docs/spec/tickets/`.
 
@@ -32,6 +29,20 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 18 | registration-complete | done | 17 | b869175: NAS security mode (SMC byte for byte, algorithm choice, SM Complete with RINMR), Initial Context Setup with the captured KgNB, Registration Accept with 5G-GUTI from entropy, Complete, deregistration, UE context release, identity takeover; UE procedures as transactions, UE table as one sieve; 32 checks; 5 laws proven |
 | 19 | pdu-session | done | 11, 14, 18 | 3df1030: N4 association (T1/N1, pause, heartbeats), PDU Session Establishment over UL NAS Transport with validation and allocation, PFCP Session Establishment/Modification/Deletion to eUPF, PDU Session Resource Setup with the captured transfer byte for byte, Accept with default rule and DNS, failure paths, modification rejected, sessions as identity plus variable part with one sieve; NGAP generator extended with the SMF's IEs; 22 checks; 7 laws proven |
 | 20 | kernel-main | done | 15, 19 | 7481566: kernel/main.bend listens on 127.0.0.1, takes one edge and answers every event frame with one Actions frame, echoing Log actions to stderr; protocol errors exit 1; scripts/frame-client.py drives it with Config, NgapAssocUp and the captured NG Setup Request and checks the captured NG Setup Response |
-| 21 | edge | done | 15 | bfde196: Rust crate edge/ (library + binary): spawns the kernel and sends Config from TOML, SCTP N2 through libc in one unsafe module with stream ids and PPID 60, UDP N4 to the UPF only, timer heap, 32 bytes of OS entropy per event, one event in flight, exits non-zero on a dead or invalid kernel; 14 cargo tests incl. a fake kernel; test-vectors/frames.json shared with kernel/tests/frame.bend; SCTP loopback skips here (loop/blockers.md) |
-| 22 | e2e | done | 20, 21 | NixOS test `e2e/test.nix` as flake check `e2e`, replacing the Docker bench and `run.sh`; `E2E PASS` with 4/4 pings through eUPF; found and fixed swapped SCTP cmsg types in the edge (9ac4f63) |
+| 21 | edge | done | 15 | bfde196: Rust crate edge/ (library + binary): spawns the kernel and sends Config from TOML, SCTP N2 through libc in one unsafe module with stream ids and PPID 60, UDP N4 to the UPF only, timer heap, 32 bytes of OS entropy per event, one event in flight, exits non-zero on a dead or invalid kernel; 14 cargo tests incl. a fake kernel; test-vectors/frames.json shared with kernel/tests/frame.bend |
+| 22 | e2e | done | 20, 21 | 057ab6a, 9ac4f63: NixOS test `e2e/test.nix` as flake check `e2e`, replacing the Docker bench and `run.sh`; `E2E PASS` with 4/4 pings through eUPF; found and fixed swapped SCTP cmsg types in the edge (9ac4f63) |
 | 23 | acceptance | done | 01–22 | 1d2ad79: `scripts/test-kernel.sh --strict` (694 checks, none skipped), `acceptance.py --strict` (26 laws, 0 failures) and `scripts/check.sh` pass; `loop/acceptance-report.md` written; the audit strengthened `smf.establish.failure_releases` to all four failure paths, added `ngap.no_big_nat` (ticket 13) and renamed `aper.padding.zero`; re-checked 2026-11-02 on the e2e commits: `kernel/`, `tools/` and `scripts/` are unchanged since 1d2ad79, `acceptance.py --strict` gives 26 laws and 0 failures, and the edge's cargo tests ran in its Nix build |
+| 32 | takeover-after-auth | todo | 18 | |
+| 33 | liveness-laws | todo | 18 | |
+| 34 | laws-on-real-paths | todo | 19 | |
+| 35 | procedure-robustness | todo | 32, 33 | |
+| 36 | edge-robustness | todo | 21 | |
+| 37 | simplify | todo | 32–36 | |
+| 24 | handover-capture | todo | — | |
+| 25 | ngap-handover | todo | 13, 24 | |
+| 26 | nh-ncc | todo | 07, 24 | |
+| 27 | path-switch | todo | 19, 25, 26 | |
+| 28 | n2-handover | todo | 19, 25, 26 | |
+| 29 | handover-acceptance | todo | 27, 28 | |
+| 30 | e2e-handover | todo | 24, 27, 28 | |
+| 31 | edge-sctp-coverage | todo | 21, 30 | |

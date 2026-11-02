@@ -2,7 +2,7 @@
 # Runs every kernel/tests/*.bend. Each must exit 0, print no FAIL line and
 # print a line starting PASS or SKIP. With --strict, SKIP fails too.
 # Tests are compiled to a binary first: `bend file.bend` overflows the machine
-# stack on million-element lists where the binary does not (loop/upstream-bend/01).
+# stack on million-element lists where the binary does not (Bend WONTFIX, #798).
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
