@@ -22,6 +22,9 @@ import ./ngap/gen/views.bend as GV
 import ./pfcp.bend as Pf
 import ./tlv.bend as T
 import ./frame.bend as F
+import ./state.bend as St
+import ./step.bend as Ke
+import ./amf/ngap.bend as Ng
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -1027,3 +1030,39 @@ law frame.config.repeat_replaces:
   for +len: U32
   for +v: B.Bytes()
   {F.Config.get(tag, List.append(&2, T.Tlv, tl, [T.Tlv{tag, len, v}])) == Some{v} : Maybe<&2, B.Bytes()>}
+
+# kernel (ticket 16)
+# ------------------
+# The step function over the AMF's first procedures.
+
+# NG Setup Response goes out only for a request whose supported TA list names
+# the configured PLMN and TAC.
+law amf.ng_setup.requires_supported_plmn:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +e: {Ng.Ngap.any_ng_setup_response(Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool}
+  {Ng.NgSetup.supported_request(St.State.config(st), bytes) == True{} : Bool}
+
+# After an association goes down, no UE context is owned by it.
+law amf.assoc_down.releases_all:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  {St.Ues.none_assoc(assoc, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapAssocDown{assoc}, entropy)))) == True{} : Bool}
+
+# An undecodable NGAP PDU changes no state and yields Error Indication and a
+# log line, nothing else.
+law kernel.bad_pdu.only_error_indication:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +err: B.Err
+  for +e: {Fr.Pdu.read(bytes) == Fail{err} : Result<&2, &2, B.Err, Fr.Pdu>}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.bad_pdu(assoc)) : St.Out()}

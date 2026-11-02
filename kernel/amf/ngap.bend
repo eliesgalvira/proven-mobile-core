@@ -102,15 +102,89 @@ def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetu
     case Done{v}:
       (st, [Ngap.send(assoc, 0, NgSetup.reply(S.State.config(st), v))])
 
+def Ngap.is_procedure(kind: Nat, code: Nat, k: Nat, c: Nat) -> Bool:
+  Bool.and(Nat.is_eq(kind, k), Nat.is_eq(code, c))
+
+# What the laws ask of a reply: whether an action carries an NG Setup Response,
+# and whether a request's supported TA list names the configured PLMN and TAC.
+def Ngap.pdu_is(kind: Nat, code: Nat, r: Result<&2, &2, B.Err, Fr.Pdu>) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{Fr.Pdu{k, c, crit, value}}:
+      Bool.and(Nat.is_eq(U32.to_nat(k), kind), Nat.is_eq(U32.to_nat(c), code))
+
+def Ngap.is_ng_setup_response(a: F.Action) -> Bool:
+  match a:
+    case F.NgapSend{assoc, stream, len, bytes}:
+      Ngap.pdu_is(1n, 21n, Fr.Pdu.read(bytes))
+    case _:
+      False{}
+
+def Ngap.any_ng_setup_response(actions: List<&2, F.Action>) -> Bool:
+  match actions:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Ngap.is_ng_setup_response(a), Ngap.any_ng_setup_response(more))
+
+def NgSetup.supported_view(config: Maybe<&2, S.Cfg>, v: V.NGSetupRequest.View) -> Bool:
+  match config:
+    case None{}:
+      False{}
+    case Some{+cfg}:
+      match v:
+        case V.NGSetupRequest.View{globalrannodeid, supportedtalist, defaultpagingdrx}:
+          Ta.supported(S.Cfg.plmn(cfg), S.Cfg.tac(cfg), supportedtalist)
+
+def NgSetup.supported_of_view(config: Maybe<&2, S.Cfg>, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{v}:
+      NgSetup.supported_view(config, v)
+
+def NgSetup.supported_d1(config: Maybe<&2, S.Cfg>, ies: List<&2, Fr.Ie>, ok: Bool) -> Bool:
+  match ok:
+    case True{}:
+      NgSetup.supported_of_view(config, V.NGSetupRequest.view(ies))
+    case False{}:
+      False{}
+
+def NgSetup.supported_dispatch(config: Maybe<&2, S.Cfg>, kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> Bool:
+  NgSetup.supported_d1(config, ies, Ngap.is_procedure(kind, code, 0n, 21n))
+
+def NgSetup.supported_ies(config: Maybe<&2, S.Cfg>, kind: Nat, code: Nat, r: Ap.Rd(List<&2, Fr.Ie>)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(ies, c)}:
+      NgSetup.supported_dispatch(config, kind, code, ies)
+
+def NgSetup.supported_pdu(config: Maybe<&2, S.Cfg>, r: Result<&2, &2, B.Err, Fr.Pdu>) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{Fr.Pdu{kind, code, crit, value}}:
+      NgSetup.supported_ies(config, U32.to_nat(kind), U32.to_nat(code), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}))
+
+def NgSetup.supported_request(config: Maybe<&2, S.Cfg>, bytes: B.Bytes()) -> Bool:
+  NgSetup.supported_pdu(config, Fr.Pdu.read(bytes))
+
 # Incoming PDUs
 # -------------
 
-def Ngap.dispatch(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> S.Out():
-  match kind code:
-    case 0n 21n:
+# Procedures are told apart by comparing the PDU kind and procedure code in
+# turn, so that a proof can follow each branch.
+def Ngap.d1(st: S.State, +assoc: U32, stream: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> S.Out():
+  match ok:
+    case True{}:
       NgSetup.of_view(st, assoc, V.NGSetupRequest.view(ies))
-    case _ _:
+    case False{}:
       (st, Ngap.unhandled(assoc))
+
+def Ngap.dispatch(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> S.Out():
+  Ngap.d1(st, assoc, stream, ies, Ngap.is_procedure(kind, code, 0n, 21n))
 
 def Ngap.of_ies(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, r: Ap.Rd(List<&2, Fr.Ie>)) -> S.Out():
   match r:

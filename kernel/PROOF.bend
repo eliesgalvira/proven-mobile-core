@@ -16,3 +16,4 @@ import ./ngap/gen/proofs.bend as PG
 import ./proofs/tlv.bend as PT
 import ./proofs/pfcp.bend as PPf
 import ./proofs/frame.bend as PFr
+import ./proofs/kernel.bend as PK
