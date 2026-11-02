@@ -320,3 +320,63 @@ def Take.sx.go(-G: Type, +n: Nat, +body: B.Bytes(), +r3: B.Bytes(), +r: B.Bytes(
 # What take leaves is a suffix of all-byte input, and the taken part is a prefix.
 def Take.sx(-G: Type, +n: Nat, +r: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), +e: {B.take(n, r) == Done{(body, r3)} : B.Read(B.Bytes())}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
   Take.sx.go(G, n, body, r3, r, L.bytes.take.length(n, r, body, r3, e), ab, k)
+
+def Bytes.all_app_l(xs: B.Bytes(), +ys: B.Bytes(), +e: {B.all_bytes(List.append(&2, U32, xs, ys)) == True{} : Bool}) -> {B.all_bytes(xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +t:
+      P.Bool.and_intro(B.is_byte(x), B.all_bytes(t), P.Bool.and_true_l(B.is_byte(x), B.all_bytes(List.append(&2, U32, t, ys)), e), Bytes.all_app_l(t, ys, P.Bool.and_true_r(B.is_byte(x), B.all_bytes(List.append(&2, U32, t, ys)), e)))
+
+# What follows the length field, before any tail.
+
+def Bytes.all_tail(+x: U32, +t: B.Bytes(), ab: {B.all_bytes(x <> t) == True{} : Bool}) -> {B.all_bytes(t) == True{} : Bool}:
+  P.Bool.and_true_r(B.is_byte(x), B.all_bytes(t), ab)
+
+def Bytes.all_tail2(+a: U32, +b: U32, +t: B.Bytes(), ab: {B.all_bytes(a <> b <> t) == True{} : Bool}) -> {B.all_bytes(t) == True{} : Bool}:
+  Bytes.all_tail(b, t, Bytes.all_tail(a, b <> t, ab))
+
+def Bytes.all_tail4(+a: U32, +b: U32, +c: U32, +d: U32, +t: B.Bytes(), ab: {B.all_bytes(a <> b <> c <> d <> t) == True{} : Bool}) -> {B.all_bytes(t) == True{} : Bool}:
+  Bytes.all_tail2(c, d, t, Bytes.all_tail2(a, b, c <> d <> t, ab))
+
+def Bytes.mask(+x: U32, +t: B.Bytes(), ab: {B.all_bytes(x <> t) == True{} : Bool}) -> {U32.and(255, x) == x : U32}:
+  P.U32.lt256_mask8(x, P.Bool.and_true_l(B.is_byte(x), B.all_bytes(t), ab))
+
+# A 16- or 32-bit word read from all-byte input writes back to those bytes before any tail.
+def U16.sx(+a: U32, +b: U32, +t: B.Bytes(), +ab: {B.all_bytes(a <> b <> t) == True{} : Bool}, +X: B.Bytes()) -> {B.write_u16(B.cat8(b, a), X) == a <> b <> X : B.Bytes()}:
+  P.Bytes.u16_sx(a, b, Bytes.mask(a, b <> t, ab), Bytes.mask(b, t, Bytes.all_tail(a, b <> t, ab)), X)
+
+def U32.sx(+a: U32, +b: U32, +c: U32, +d: U32, +t: B.Bytes(), +ab: {B.all_bytes(a <> b <> c <> d <> t) == True{} : Bool}, +X: B.Bytes()) -> {B.write_u32(B.cat8(d, B.cat8(c, B.cat8(b, a))), X) == a <> b <> c <> d <> X : B.Bytes()}:
+  +ab2 = Bytes.all_tail(a, b <> c <> d <> t, ab)
+  +ab3 = Bytes.all_tail(b, c <> d <> t, ab2)
+  P.Bytes.u32_sx(a, b, c, d, Bytes.mask(a, b <> c <> d <> t, ab), Bytes.mask(b, c <> d <> t, ab2), Bytes.mask(c, d <> t, ab3), Bytes.mask(d, t, Bytes.all_tail(c, d <> t, ab3)), X)
+
+# What a word reader answered: the bytes it consumed and the value they make.
+def U8.rd(-G: Type, bs: B.Bytes(), +v: U32, +rest: B.Bytes(), +e: {B.u8(bs) == Done{(v, rest)} : B.Read(U32)}, k: @a: U32 -> {bs == a <> rest : B.Bytes()} -> {a == v : U32} -> G) -> G:
+  match bs:
+    case Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
+    case +a <> t:
+      k(a, Equal.cong(B.Read(U32), B.Bytes(), x => a <> P.Read.rest(U32, x, rest), Done{(a, t)}, Done{(v, rest)}, e), Equal.cong(B.Read(U32), U32, x => P.Read.value(U32, x, v), Done{(a, t)}, Done{(v, rest)}, e))
+
+def U16.rd(-G: Type, bs: B.Bytes(), +v: U32, +rest: B.Bytes(), +e: {B.u16(bs) == Done{(v, rest)} : B.Read(U32)}, k: @a: U32 -> @b: U32 -> {bs == a <> b <> rest : B.Bytes()} -> {B.cat8(b, a) == v : U32} -> G) -> G:
+  match bs:
+    case Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
+    case a <> Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
+    case +a <> +b <> t:
+      k(a, b, Equal.cong(B.Read(U32), B.Bytes(), x => a <> b <> P.Read.rest(U32, x, rest), Done{(B.cat8(b, a), t)}, Done{(v, rest)}, e), Equal.cong(B.Read(U32), U32, x => P.Read.value(U32, x, v), Done{(B.cat8(b, a), t)}, Done{(v, rest)}, e))
+
+def U32.rd(-G: Type, bs: B.Bytes(), +v: U32, +rest: B.Bytes(), +e: {B.u32(bs) == Done{(v, rest)} : B.Read(U32)}, k: @a: U32 -> @b: U32 -> @c: U32 -> @d: U32 -> {bs == a <> b <> c <> d <> rest : B.Bytes()} -> {B.cat8(d, B.cat8(c, B.cat8(b, a))) == v : U32} -> G) -> G:
+  match bs:
+    case Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
+    case a <> Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
+    case a <> b <> Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
+    case a <> b <> c <> Nil{}:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
+    case +a <> +b <> +c <> +d <> t:
+      k(a, b, c, d, Equal.cong(B.Read(U32), B.Bytes(), x => a <> b <> c <> d <> P.Read.rest(U32, x, rest), Done{(B.cat8(d, B.cat8(c, B.cat8(b, a))), t)}, Done{(v, rest)}, e), Equal.cong(B.Read(U32), U32, x => P.Read.value(U32, x, v), Done{(B.cat8(d, B.cat8(c, B.cat8(b, a))), t)}, Done{(v, rest)}, e))

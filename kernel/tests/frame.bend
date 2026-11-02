@@ -125,7 +125,7 @@ def main() -> IO(Unit):
     C.Check.report("Config: a subscriber with a non-digit SUPI is rejected", fails(B.ReadValue(F.Input), F.Input.read(F.Input.write(F.Input{entropy(), F.Evt.config_make([T.Tlv.make(32, cat([1, 65], cat(sixteen(), cat(sixteen(), [128, 0, 0, 0, 0, 0, 0, 33]))))])}, []))))
     C.Check.report("Config: a TLV short of its value is Short", fails(B.ReadValue(T.Tlv), T.Tlv.read([0, 1, 0, 3, 2, 241])))
     C.Check.report("Config: a TLV list with a trailing byte is Invalid", fails(List<&2, T.Tlv>, T.Tlvs.decode([0, 2, 0, 1, 5, 9])))
-    C.Check.report("Actions: every kind reads back", actions_back(F.Actions.make([F.NgapSend{3, 1, 4, [0, 21, 0, 61]}, F.NgapClose{3}, F.PfcpSend{2, [32, 1]}, F.TimerStart{5, 3000}, F.TimerCancel{5}, F.Log{1, 2, [104, 105]}])))
+    C.Check.report("Actions: every kind reads back", actions_back(F.Actions.make([F.NgapSend{3, 1, 4, [0, 21, 0, 61]}, F.NgapClose{3}, F.PfcpSend{2, [32, 1]}, F.TimerStart{5, 3000}, F.TimerCancel{5}, F.Log{F.Info{}, 2, [104, 105]}])))
     C.Check.report("Actions: an empty list is 0x80 0000", B.bytes_eq(F.Actions.write(F.Actions.make([]), []), [128, 0, 0]))
     C.Check.report("Actions: a wrong body kind is Unsupported", fails(B.ReadValue(F.Actions), F.Actions.read([1, 0, 0])))
     C.Check.report("Actions: a log level above 3 is Invalid", fails(B.ReadValue(F.Actions), F.Actions.read([128, 0, 1, 134, 4, 0, 0, 0, 0])))

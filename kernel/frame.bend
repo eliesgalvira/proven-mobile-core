@@ -327,12 +327,19 @@ def Evt.data_of_len(assoc: U32, stream: U32, r: B.Read(U32)) -> Evt.Res():
     case Done{(+len, rest)}:
       Evt.data_of_bytes(assoc, stream, len, B.take(U32.to_nat(len), rest))
 
+def Evt.data_stream_ok(assoc: U32, +stream: U32, rest: B.Bytes(), ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
+      Evt.data_of_len(assoc, stream, B.u32(rest))
+    case False{}:
+      Fail{B.Invalid{stream}}
+
 def Evt.data_of_stream(assoc: U32, r: B.Read(U32)) -> Evt.Res():
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{(stream, rest)}:
-      Evt.data_of_len(assoc, stream, B.u32(rest))
+    case Done{(+stream, rest)}:
+      Evt.data_stream_ok(assoc, stream, rest, B.fits16(stream))
 
 def Evt.data(r: B.Read(U32)) -> Evt.Res():
   match r:
@@ -362,22 +369,51 @@ def Evt.timer(r: B.Read(U32)) -> Evt.Res():
     case Done{(timer, rest)}:
       Done{(TimerFired{timer}, rest)}
 
-def Evt.payload(kind: Nat, +raw: U32, bs: B.Bytes()) -> Evt.Res():
-  match kind:
-    case 1n:
-      Evt.config(B.u32(bs))
-    case 2n:
-      Evt.assoc_up(B.u32(bs))
-    case 3n:
-      Evt.assoc_down(B.u32(bs))
-    case 4n:
-      Evt.data(B.u32(bs))
-    case 5n:
-      Evt.pfcp(B.u32(bs))
-    case 6n:
+# The kind byte, compared in turn: each comparison is a fact a proof can use.
+def Evt.k6(+kind: U32, bs: B.Bytes(), ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
       Evt.timer(B.u32(bs))
-    case _:
-      Fail{B.Unsupported{raw}}
+    case False{}:
+      Fail{B.Unsupported{kind}}
+
+def Evt.k5(+kind: U32, bs: B.Bytes(), ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
+      Evt.pfcp(B.u32(bs))
+    case False{}:
+      Evt.k6(kind, bs, U32.is_eq(kind, 6))
+
+def Evt.k4(+kind: U32, bs: B.Bytes(), ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
+      Evt.data(B.u32(bs))
+    case False{}:
+      Evt.k5(kind, bs, U32.is_eq(kind, 5))
+
+def Evt.k3(+kind: U32, bs: B.Bytes(), ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
+      Evt.assoc_down(B.u32(bs))
+    case False{}:
+      Evt.k4(kind, bs, U32.is_eq(kind, 4))
+
+def Evt.k2(+kind: U32, bs: B.Bytes(), ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
+      Evt.assoc_up(B.u32(bs))
+    case False{}:
+      Evt.k3(kind, bs, U32.is_eq(kind, 3))
+
+def Evt.k1(+kind: U32, bs: B.Bytes(), ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
+      Evt.config(B.u32(bs))
+    case False{}:
+      Evt.k2(kind, bs, U32.is_eq(kind, 2))
+
+def Evt.payload(+kind: U32, bs: B.Bytes()) -> Evt.Res():
+  Evt.k1(kind, bs, U32.is_eq(kind, 1))
 
 def Evt.write(e: Evt, rest: B.Bytes()) -> B.Bytes():
   match e:
@@ -406,7 +442,7 @@ def Input.of_entropy(+kind: U32, r: B.Read(B.Bytes())) -> B.Read(Input):
     case Fail{e}:
       Fail{e}
     case Done{(entropy, rest)}:
-      Input.of_event(entropy, Evt.payload(U32.to_nat(kind), kind, rest))
+      Input.of_event(entropy, Evt.payload(kind, rest))
 
 def Input.of_kind(r: B.Read(U32)) -> B.Read(Input):
   match r:
@@ -435,13 +471,43 @@ def Evt.pfcp_make(+bytes: B.Bytes()) -> Evt:
 # Actions
 # -------
 
+type Level is Data:
+  Debug{}
+  Info{}
+  Warn{}
+  Error{}
+
+def Level.byte(l: Level) -> U32:
+  match l:
+    case Debug{}:
+      0
+    case Info{}:
+      1
+    case Warn{}:
+      2
+    case Error{}:
+      3
+
+def Level.of(n: Nat) -> Maybe<&2, Level>:
+  match n:
+    case 0n:
+      Some{Debug{}}
+    case 1n:
+      Some{Info{}}
+    case 2n:
+      Some{Warn{}}
+    case 3n:
+      Some{Error{}}
+    case _:
+      None{}
+
 type Action is Data:
   NgapSend{assoc: U32, stream: U32, len: U32, bytes: B.Bytes()}
   NgapClose{assoc: U32}
   PfcpSend{len: U32, bytes: B.Bytes()}
   TimerStart{timer: U32, ms: U32}
   TimerCancel{timer: U32}
-  Log{level: U32, len: U32, text: B.Bytes()}
+  Log{level: Level, len: U32, text: B.Bytes()}
 
 # The actions answering one event, with their count word.
 type Actions is Data:
@@ -474,8 +540,8 @@ def Action.valid(a: Action) -> Bool:
       True{}
     case TimerCancel{timer}:
       True{}
-    case Log{+level, +len, +text}:
-      Bool.and(U32.is_lt(level, 4), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, text)))
+    case Log{level, +len, +text}:
+      Nat.is_eq(U32.to_nat(len), List.length(&2, U32, text))
 
 def Items.valid(items: List<&2, Action>) -> Bool:
   match items:
@@ -506,12 +572,19 @@ def Action.send_of_len(assoc: U32, stream: U32, r: B.Read(U32)) -> Action.Res():
     case Done{(+len, rest)}:
       Action.send_of_bytes(assoc, stream, len, B.take(U32.to_nat(len), rest))
 
+def Action.send_stream_ok(assoc: U32, +stream: U32, rest: B.Bytes(), ok: Bool) -> Action.Res():
+  match ok:
+    case True{}:
+      Action.send_of_len(assoc, stream, B.u32(rest))
+    case False{}:
+      Fail{B.Invalid{stream}}
+
 def Action.send_of_stream(assoc: U32, r: B.Read(U32)) -> Action.Res():
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{(stream, rest)}:
-      Action.send_of_len(assoc, stream, B.u32(rest))
+    case Done{(+stream, rest)}:
+      Action.send_stream_ok(assoc, stream, rest, B.fits16(stream))
 
 def Action.send(r: B.Read(U32)) -> Action.Res():
   match r:
@@ -562,33 +635,33 @@ def Action.cancel(r: B.Read(U32)) -> Action.Res():
     case Done{(timer, rest)}:
       Done{(TimerCancel{timer}, rest)}
 
-def Action.log_of_text(level: U32, +len: U32, r: B.Read(B.Bytes())) -> Action.Res():
+def Action.log_of_text(level: Level, +len: U32, r: B.Read(B.Bytes())) -> Action.Res():
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(text, rest)}:
       Done{(Log{level, len, text}, rest)}
 
-def Action.log_of_len(level: U32, r: B.Read(U32)) -> Action.Res():
+def Action.log_of_len(level: Level, r: B.Read(U32)) -> Action.Res():
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(+len, rest)}:
       Action.log_of_text(level, len, B.take(U32.to_nat(len), rest))
 
-def Action.log_level(+level: U32, rest: B.Bytes(), ok: Bool) -> Action.Res():
-  match ok:
-    case True{}:
+def Action.log_level(l: Maybe<&2, Level>, +raw: U32, rest: B.Bytes()) -> Action.Res():
+  match l:
+    case Some{level}:
       Action.log_of_len(level, B.u32(rest))
-    case False{}:
-      Fail{B.Invalid{level}}
+    case None{}:
+      Fail{B.Invalid{raw}}
 
 def Action.log(r: B.Read(U32)) -> Action.Res():
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{(+level, rest)}:
-      Action.log_level(level, rest, U32.is_lt(level, 4))
+    case Done{(+raw, rest)}:
+      Action.log_level(Level.of(U32.to_nat(raw)), raw, rest)
 
 def Action.payload(kind: Nat, +raw: U32, bs: B.Bytes()) -> Action.Res():
   match kind:
@@ -630,7 +703,7 @@ def Action.write(a: Action, rest: B.Bytes()) -> B.Bytes():
     case TimerCancel{timer}:
       B.write_u8(133, B.write_u32(timer, rest))
     case Log{level, len, text}:
-      B.write_u8(134, B.write_u8(level, B.write_u32(len, List.append(&2, U32, text, rest))))
+      B.write_u8(134, B.write_u8(Level.byte(level), B.write_u32(len, List.append(&2, U32, text, rest))))
 
 def Items.cons(a: Action, r: B.Read(List<&2, Action>)) -> B.Read(List<&2, Action>):
   match r:

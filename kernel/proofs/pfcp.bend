@@ -152,14 +152,6 @@ def Flags.mask(s: Bool) -> {U32.and(255, Flags.of(s)) == Flags.of(s) : U32}:
     case True{}:
       {==}
 
-def Bytes.all_app_l(xs: B.Bytes(), +ys: B.Bytes(), +e: {B.all_bytes(List.append(&2, U32, xs, ys)) == True{} : Bool}) -> {B.all_bytes(xs) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      {==}
-    case +x <> +t:
-      P.Bool.and_intro(B.is_byte(x), B.all_bytes(t), P.Bool.and_true_l(B.is_byte(x), B.all_bytes(List.append(&2, U32, t, ys)), e), Bytes.all_app_l(t, ys, P.Bool.and_true_r(B.is_byte(x), B.all_bytes(List.append(&2, U32, t, ys)), e)))
-
-# What follows the length field, before any tail.
 def Msg.body(seid: Maybe<&2, B.Bytes()>, seq: U32, ies: List<&2, T.Tlv>) -> B.Bytes():
   Pf.Seid.write(seid, B.write_u24(seq, B.write_u8(0, T.Tlvs.write(ies, []))))
 
@@ -376,7 +368,7 @@ def Msg.spec.write(+s: Bool, +flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B
   %w16 : {Flags.of(s) <> kind <> _ == Flags.of(s) <> kind <> b1 <> b0 <> r3 : B.Bytes()}
   %ap : {Flags.of(s) <> kind <> b1 <> b0 <> Z == Flags.of(s) <> kind <> b1 <> b0 <> _ : B.Bytes()}
   sap = Equal.sym(B.Bytes(), List.append(&2, U32, body, r4), r3, ap)
-  Equal.cong(B.Bytes(), B.Bytes(), l => Flags.of(s) <> kind <> b1 <> b0 <> l, Z, List.append(&2, U32, body, r4), wb(Bytes.all_app_l(body, r4, (%sap : {B.all_bytes(_) == True{} : Bool}; P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r3), ab4))), r4))
+  Equal.cong(B.Bytes(), B.Bytes(), l => Flags.of(s) <> kind <> b1 <> b0 <> l, Z, List.append(&2, U32, body, r4), wb(PB.Bytes.all_app_l(body, r4, (%sap : {B.all_bytes(_) == True{} : Bool}; P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r3), ab4))), r4))
 
 def Msg.spec.len(+flags: U32, +kind: U32, +b1: U32, +b0: U32, +r3: B.Bytes(), +body: B.Bytes(), +r4: B.Bytes(), ln: {List.length(&2, U32, body) == U32.to_nat(B.cat8(b0, b1)) : Nat}, ap: {List.append(&2, U32, body, r4) == r3 : B.Bytes()}) -> {List.length(&2, U32, flags <> kind <> b1 <> b0 <> r3) == Nat.add(4n, Nat.add(U32.to_nat(B.cat8(b0, b1)), List.length(&2, U32, r4))) : Nat}:
   %ap : {List.length(&2, U32, flags <> kind <> b1 <> b0 <> _) == Nat.add(4n, Nat.add(U32.to_nat(B.cat8(b0, b1)), List.length(&2, U32, r4))) : Nat}
