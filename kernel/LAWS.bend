@@ -16,7 +16,6 @@ import ./nas/mm.bend as Mm
 import ./nas/mobile_id.bend as Mi
 import ./nas/sm.bend as Sm
 import ./nas/sm_ies.bend as Q
-import ./nas/sm.bend as Sm
 import ./aper.bend as Ap
 import ./ngap/frame.bend as Fr
 import ./ngap/gen/types.bend as G
@@ -30,7 +29,6 @@ import ./step.bend as Ke
 import ./amf/ngap.bend as Ng
 import ./amf/gmm.bend as Gm
 import ./smf/gsm.bend as Gs
-import ./pfcp.bend as Pf
 import ./ausf.bend as Au
 import ./smf/n4.bend as Up
 
@@ -1358,7 +1356,7 @@ law smf.packet_filters.capacity_reject:
 law smf.epco.response_bounded:
   for +cfg: St.Cfg
   for +wanted: Bool
-  {Gs.Gsm.epco_unique(Gs.Gsm.dns_opts(cfg, wanted)) == True{} : Bool}
+  {Gs.Gsm.ids_unique(Gs.Gsm.epco_containers(cfg, wanted)) == True{} : Bool}
 
 # No two live sessions share a UE IPv4 address or an uplink TEID (nor a key or
 # a PDU session identity of one UE), in the initial state and after every step.

@@ -14,6 +14,8 @@ import ../step.bend as K
 import ../amf/ngap.bend as N
 import ../amf/gmm.bend as Gmm
 import ../amf/route.bend as R
+import ../smf/n4.bend as Up
+import ../smf/gsm.bend as Gsm
 import ../LAWS.bend as L
 import ./lib.bend as P
 import ../crypto/kdf.bend as Kd
@@ -121,36 +123,29 @@ def Del.get(+key: U32, ues: Tb.Table(S.Ue)) -> {Tb.Table.get(S.Ue, key, S.Ues.de
     case (+k, +v) <> +more:
       Del.keep(key, k, v, S.Ues.sift(S.Except{key}, more), S.Sieve.keeps(S.Except{key}, k, v), {==}, Del.get(key, more))
 
-def Sessions.drop_keep(+ue: U32, k: U32, +s: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(U32.is_eq(S.Session.ue(s), ue)) == b : Bool}, ih: {S.Sessions.of_ue(ue, rest) == [] : List<&2, S.Session>}) -> {S.Sessions.of_ue(ue, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : List<&2, S.Session>}:
+def Sessions.drop_keep(+ue: U32, +k: U32, +s: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(U32.is_eq(S.Session.ue(s), ue)) == b : Bool}, ih: {S.Sessions.sift(S.SOf{ue}, rest) == [] : Tb.Table(S.Session)}) -> {S.Sessions.sift(S.SOf{ue}, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : Tb.Table(S.Session)}:
   match b:
     case True{}:
       ne = Equal.sym(Bool, U32.is_eq(S.Session.ue(s), ue), False{}, Bool.not_true(U32.is_eq(S.Session.ue(s), ue), eb))
-      %ne : {S.Sessions.pick_ue(s, S.Sessions.of_ue(ue, rest), _) == [] : List<&2, S.Session>}
+      %ne : {Tb.Table.keep(S.Session, k, s, S.Sessions.sift(S.SOf{ue}, rest), _) == [] : Tb.Table(S.Session)}
       ih
     case False{}:
       ih
 
-def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.of_ue(ue, S.Sessions.drop_ue(ue, sessions)) == [] : List<&2, S.Session>}:
+# No session of a UE is left once its sessions are dropped.
+def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.of_ue(ue, S.Sessions.drop_ue(ue, sessions)) == [] : Tb.Table(S.Session)}:
   match sessions:
     case Nil{}:
       {==}
-    case (k, +s) <> +more:
-      Sessions.drop_keep(ue, k, s, S.Sessions.drop_ue(ue, more), Bool.not(U32.is_eq(S.Session.ue(s), ue)), {==}, Sessions.drop_none(ue, more))
+    case (+k, +s) <> +more:
+      Sessions.drop_keep(ue, k, s, S.Sessions.sift(S.SOthers{ue}, more), S.SSieve.keeps(S.SOthers{ue}, k, s), {==}, Sessions.drop_none(ue, more))
 
 # An association going down
 # -------------------------
 
-def Kernel.released_ues(config: Maybe<&2, S.Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, +ues: Tb.Table(S.Ue), nu: U32, nt: U32, rec: B.Bytes(), split: Sigma<&2, &2, Tb.Table(S.Session), _ => List<&2, S.Session>>, seq: U32) -> {S.State.ues(K.Kernel.state(K.Kernel.released(config, subs, assocs, ues, nu, nt, rec, split, seq))) == ues : Tb.Table(S.Ue)}:
-  match split:
-    case (kept, gone):
-      {==}
-
 def L.amf.assoc_down.releases_all(st, entropy, assoc):
   match st:
-    case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      +left = S.Ues.drop_assoc(assoc, ues)
-      ru = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(K.Kernel.released(config, subs, S.Assocs.drop(assoc, assocs), left, next_ue, next_timer, recovery, S.Sessions.partition(left, sessions), pfcp_seq))), left, Kernel.released_ues(config, subs, S.Assocs.drop(assoc, assocs), left, next_ue, next_timer, recovery, S.Sessions.partition(left, sessions), pfcp_seq))
-      %ru : {S.Ues.none_assoc(assoc, _) == True{} : Bool}
+    case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       Ues.drop_none(assoc, ues)
 
 # NG Setup answers only a supported request
@@ -186,6 +181,8 @@ def Act.no_response(a: N.Act) -> {N.Ngap.is_ng_setup_response(N.Act.render(a)) =
     case N.DlNas{assoc, stream, key, ran_id, nas}:
       {==}
     case N.Ics{assoc, stream, key, ran_id, cfg, caps, k_gnb, nas}:
+      {==}
+    case N.PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
       {==}
     case N.Release{assoc, stream, key, ran_id, cause}:
       {==}
@@ -308,12 +305,12 @@ def Owner.request(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, 
   %sea : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_request_ue(st, assoc, N.Ngap.of_big(amf), cause, Gmm.Gmm.owner_if(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran)))))) == st : S.State}
   {==}
 
-def Owner.complete(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, len: U32, +bytes: B.Bytes(), crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), uli: Maybe<&2, G.UserLocationInformation>, rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>, +ue: S.Ue, eu: {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, ea: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}, ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, ev: {V.UEContextReleaseComplete.view(ies) == Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel}} : Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
+def Owner.complete(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, len: U32, +bytes: B.Bytes(), crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), uli: Maybe<&2, G.UserLocationInformation>, rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>, diag: Maybe<&2, G.CriticalityDiagnostics>, +ue: S.Ue, eu: {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, ea: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}, ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, ev: {V.UEContextReleaseComplete.view(ies) == Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{1, 41, crit, value}}, ep)
   %sep : {K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, _)) == st : S.State}
   sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
   %sei : {K.Kernel.state(R.Route.of_ies(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), entropy, _)) == st : S.State}
-  sev = Equal.sym(Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>, V.UEContextReleaseComplete.view(ies), Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel}}, ev)
+  sev = Equal.sym(Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>, V.UEContextReleaseComplete.view(ies), Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}}, ev)
   %sev : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_of_view(st, assoc, _))) == st : S.State}
   seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)), Some{ue}, eu)
   %seu : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), Gmm.Gmm.owner_of(_, assoc, ran)))) == st : S.State}
@@ -321,38 +318,102 @@ def Owner.complete(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32,
   %sea : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), Gmm.Gmm.owner_if(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran)))))) == st : S.State}
   {==}
 
-def L.amf.ue_context_release.owner_only(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, pdus, cause, uli, rel, ue, eu, ea, ei):
-  (ep => ev => Owner.request(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, pdus, cause, ue, eu, ea, ei, ep, ev), ep => ev => Owner.complete(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, rel, ue, eu, ea, ei, ep, ev))
+def L.amf.ue_context_release.owner_only(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, pdus, cause, uli, rel, diag, ue, eu, ea, ei):
+  (ep => ev => Owner.request(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, pdus, cause, ue, eu, ea, ei, ep, ev), ep => ev => Owner.complete(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, rel, diag, ue, eu, ea, ei, ep, ev))
 
 # Release forgets
 # ---------------
 
 def Tx.forget_ue(+key: U32, n: U32, st: S.State) -> {Tb.Table.get(S.Ue, key, S.State.ues(S.Tx.apply(S.Both{S.Del{key}, S.BumpSeq{n}}, st))) == None{} : Maybe<&2, S.Ue>}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       Del.get(key, ues)
 
-def Tx.forget_sessions(+key: U32, n: U32, st: S.State) -> {S.Sessions.of_ue(key, S.State.sessions(S.Tx.apply(S.Both{S.Del{key}, S.BumpSeq{n}}, st))) == [] : List<&2, S.Session>}:
+def Tx.forget_sessions(+key: U32, n: U32, st: S.State) -> {S.Sessions.of_ue(key, S.State.sessions(S.Tx.apply(S.Both{S.Del{key}, S.BumpSeq{n}}, st))) == [] : Tb.Table(S.Session)}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       Sessions.drop_none(key, sessions)
 
-def L.amf.release.forgets_ue(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, rel, ue, ep, ei, ev, eo):
+def L.amf.release.forgets_ue(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, rel, diag, ue, ep, ei, ev, eo):
   sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{1, 41, crit, value}}, ep)
-  %sep : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, _)))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, _)))) == [] : List<&2, S.Session>}
+  %sep : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, _)))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, _)))) == [] : Tb.Table(S.Session)}
   sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
-  %sei : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(R.Route.of_ies(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), entropy, _)))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(R.Route.of_ies(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), entropy, _)))) == [] : List<&2, S.Session>}
-  sev = Equal.sym(Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>, V.UEContextReleaseComplete.view(ies), Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel}}, ev)
-  %sev : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_of_view(st, assoc, _))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_of_view(st, assoc, _))))) == [] : List<&2, S.Session>}
+  %sei : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(R.Route.of_ies(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), entropy, _)))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(R.Route.of_ies(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), entropy, _)))) == [] : Tb.Table(S.Session)}
+  sev = Equal.sym(Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>, V.UEContextReleaseComplete.view(ies), Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}}, ev)
+  %sev : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_of_view(st, assoc, _))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_of_view(st, assoc, _))))) == [] : Tb.Table(S.Session)}
   seo = Equal.sym(Maybe<&2, S.Ue>, Gmm.Gmm.owner(st, assoc, N.Ngap.of_big(amf), ran), Some{ue}, eo)
-  %seo : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), _))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), _))))) == [] : List<&2, S.Session>}
-  (Tx.forget_ue(N.Ngap.of_big(amf), U32.from_nat(List.length(&2, S.Session, S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(st)))), st), Tx.forget_sessions(N.Ngap.of_big(amf), U32.from_nat(List.length(&2, S.Session, S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(st)))), st))
+  %seo : {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), _))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), _))))) == [] : Tb.Table(S.Session)}
+  (Tx.forget_ue(N.Ngap.of_big(amf), Up.N4.deletion_count(S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(st))), st), Tx.forget_sessions(N.Ngap.of_big(amf), Up.N4.deletion_count(S.Sessions.of_ue(N.Ngap.of_big(amf), S.State.sessions(st))), st))
+
+# A phase change in place leaves every conflict as it was.
+def Ue.conflicts_rephase(hit: Bool, u: S.Ue, v: S.Ue, p: S.Phase) -> {S.Ue.conflicts(u, S.Ue.rephase_if(v, p, hit)) == S.Ue.conflicts(u, v) : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      match v:
+        case S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+          {==}
+
+def Ue.conflicts_rephase_l(hit: Bool, u: S.Ue, v: S.Ue, p: S.Phase) -> {S.Ue.conflicts(S.Ue.rephase_if(u, p, hit), v) == S.Ue.conflicts(u, v) : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      match u:
+        case S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+          {==}
+
+def Row.conflicts_rephase(key: U32, u: S.Ue, k: U32, v: S.Ue, p: S.Phase, hit: Bool) -> {S.Row.conflicts(key, u, k, S.Ue.rephase_if(v, p, hit)) == S.Row.conflicts(key, u, k, v) : Bool}:
+  e = Equal.sym(Bool, S.Ue.conflicts(u, S.Ue.rephase_if(v, p, hit)), S.Ue.conflicts(u, v), Ue.conflicts_rephase(hit, u, v, p))
+  %e : {Bool.or(U32.is_eq(k, key), _) == Bool.or(U32.is_eq(k, key), S.Ue.conflicts(u, v)) : Bool}
+  {==}
+
+def Row.conflicts_rephase_l(key: U32, u: S.Ue, k: U32, v: S.Ue, p: S.Phase, hit: Bool) -> {S.Row.conflicts(key, S.Ue.rephase_if(u, p, hit), k, v) == S.Row.conflicts(key, u, k, v) : Bool}:
+  e = Equal.sym(Bool, S.Ue.conflicts(S.Ue.rephase_if(u, p, hit), v), S.Ue.conflicts(u, v), Ue.conflicts_rephase_l(hit, u, v, p))
+  %e : {Bool.or(U32.is_eq(k, key), _) == Bool.or(U32.is_eq(k, key), S.Ue.conflicts(u, v)) : Bool}
+  {==}
+
+def Clear.rephase(+key2: U32, +u: S.Ue, +key: U32, +p: S.Phase, ues: Tb.Table(S.Ue)) -> {S.Ues.clear(key2, u, S.Ues.rephase(key, p, ues)) == S.Ues.clear(key2, u, ues) : Bool}:
+  match ues:
+    case Nil{}:
+      {==}
+    case (+k, +v) <> +more:
+      e1 = Equal.sym(Bool, S.Row.conflicts(key2, u, k, S.Ue.rephase_if(v, p, U32.is_eq(k, key))), S.Row.conflicts(key2, u, k, v), Row.conflicts_rephase(key2, u, k, v, p, U32.is_eq(k, key)))
+      %e1 : {Bool.and(Bool.not(_), S.Ues.clear(key2, u, S.Ues.rephase(key, p, more))) == Bool.and(Bool.not(S.Row.conflicts(key2, u, k, v)), S.Ues.clear(key2, u, more)) : Bool}
+      e2 = Equal.sym(Bool, S.Ues.clear(key2, u, S.Ues.rephase(key, p, more)), S.Ues.clear(key2, u, more), Clear.rephase(key2, u, key, p, more))
+      %e2 : {Bool.and(Bool.not(S.Row.conflicts(key2, u, k, v)), _) == Bool.and(Bool.not(S.Row.conflicts(key2, u, k, v)), S.Ues.clear(key2, u, more)) : Bool}
+      {==}
+
+def Clear.subject_rephase(+key: U32, +u: S.Ue, +p: S.Phase, +hit: Bool, ues: Tb.Table(S.Ue)) -> {S.Ues.clear(key, S.Ue.rephase_if(u, p, hit), ues) == S.Ues.clear(key, u, ues) : Bool}:
+  match ues:
+    case Nil{}:
+      {==}
+    case (+k, +v) <> +more:
+      e1 = Equal.sym(Bool, S.Row.conflicts(key, S.Ue.rephase_if(u, p, hit), k, v), S.Row.conflicts(key, u, k, v), Row.conflicts_rephase_l(key, u, k, v, p, hit))
+      %e1 : {Bool.and(Bool.not(_), S.Ues.clear(key, S.Ue.rephase_if(u, p, hit), more)) == Bool.and(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more)) : Bool}
+      e2 = Equal.sym(Bool, S.Ues.clear(key, S.Ue.rephase_if(u, p, hit), more), S.Ues.clear(key, u, more), Clear.subject_rephase(key, u, p, hit, more))
+      %e2 : {Bool.and(Bool.not(S.Row.conflicts(key, u, k, v)), _) == Bool.and(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more)) : Bool}
+      {==}
+
+def Unique.rephase(+key: U32, +p: S.Phase, ues: Tb.Table(S.Ue)) -> {S.Ues.unique(S.Ues.rephase(key, p, ues)) == S.Ues.unique(ues) : Bool}:
+  match ues:
+    case Nil{}:
+      {==}
+    case (+k, +u) <> +more:
+      e1 = Equal.sym(Bool, S.Ues.clear(k, S.Ue.rephase_if(u, p, U32.is_eq(k, key)), S.Ues.rephase(key, p, more)), S.Ues.clear(k, u, S.Ues.rephase(key, p, more)), Clear.subject_rephase(k, u, p, U32.is_eq(k, key), S.Ues.rephase(key, p, more)))
+      %e1 : {Bool.and(_, S.Ues.unique(S.Ues.rephase(key, p, more))) == Bool.and(S.Ues.clear(k, u, more), S.Ues.unique(more)) : Bool}
+      e2 = Equal.sym(Bool, S.Ues.clear(k, u, S.Ues.rephase(key, p, more)), S.Ues.clear(k, u, more), Clear.rephase(k, u, key, p, more))
+      %e2 : {Bool.and(_, S.Ues.unique(S.Ues.rephase(key, p, more))) == Bool.and(S.Ues.clear(k, u, more), S.Ues.unique(more)) : Bool}
+      e3 = Equal.sym(Bool, S.Ues.unique(S.Ues.rephase(key, p, more)), S.Ues.unique(more), Unique.rephase(key, p, more))
+      %e3 : {Bool.and(S.Ues.clear(k, u, more), _) == Bool.and(S.Ues.clear(k, u, more), S.Ues.unique(more)) : Bool}
+      {==}
 
 # Indexes stay unique
 # -------------------
 # Every state change of a UE procedure is a transaction, and each transaction
-# keeps the table unique: a Put is a clear row in front of a sifting, a Del a
-# sifting, the rest leave the table alone.
+# keeps the table unique: a Put is a clear row in front of a sifting, a
+# Rephase changes no identity, a Del a sifting, the rest leave the table alone.
 
 def Tx.unique(tx: S.Tx, +st: S.State, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(S.Tx.apply(tx, st))) == True{} : Bool}:
   match tx:
@@ -360,27 +421,49 @@ def Tx.unique(tx: S.Tx, +st: S.State, e: {S.Ues.unique(S.State.ues(st)) == True{
       e
     case S.Put{+key, +ue}:
       match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           P.Bool.and_intro(S.Ues.clear(key, ue, S.Ues.sift(S.Clear{key, ue}, ues)), S.Ues.unique(S.Ues.sift(S.Clear{key, ue}, ues)), Clear.own(key, ue, ues), Unique.sift(S.Clear{key, ue}, ues, e))
+    case S.Rephase{+key, +phase}:
+      match st:
+        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          er = Equal.sym(Bool, S.Ues.unique(S.Ues.rephase(key, phase, ues)), S.Ues.unique(ues), Unique.rephase(key, phase, ues))
+          %er : {_ == True{} : Bool}
+          e
     case S.Del{+key}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           Unique.sift(S.Except{key}, ues, e)
+    case S.PutSession{key, s}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          e
+    case S.Revar{key, v}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          e
+    case S.DelSession{key}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          e
     case S.Subs{new}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          e
+    case S.SetLink{link}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           e
     case S.BumpUe{}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           e
     case S.BumpTimer{}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           e
     case S.BumpSeq{n}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           e
     case S.Both{+first, second}:
       Tx.unique(second, S.Tx.apply(first, st), Tx.unique(first, st, e))
@@ -424,20 +507,17 @@ def Config.unique(complete: Bool, st: S.State, tlvs: List<&2, T.Tlv>, entropy: B
       e
     case True{}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           e
 
-def Up.unique(st: S.State, assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_up(st, assoc)))) == True{} : Bool}:
+def AssocUp.unique(st: S.State, assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_up(st, assoc)))) == True{} : Bool}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       e
 
 def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:
-    case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      +left = S.Ues.drop_assoc(assoc, ues)
-      ru = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(K.Kernel.released(config, subs, S.Assocs.drop(assoc, assocs), left, next_ue, next_timer, recovery, S.Sessions.partition(left, sessions), pfcp_seq))), left, Kernel.released_ues(config, subs, S.Assocs.drop(assoc, assocs), left, next_ue, next_timer, recovery, S.Sessions.partition(left, sessions), pfcp_seq))
-      %ru : {S.Ues.unique(_) == True{} : Bool}
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       Unique.sift(S.Others{assoc}, ues, e)
 
 def Step.unique(+st: S.State, ev: F.Evt, +entropy: B.Bytes(), e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))) == True{} : Bool}:
@@ -445,15 +525,15 @@ def Step.unique(+st: S.State, ev: F.Evt, +entropy: B.Bytes(), e: {S.Ues.unique(S
     case F.Config{len, +tlvs}:
       Config.unique(S.Cfg.complete(tlvs), st, tlvs, entropy, e)
     case F.NgapAssocUp{assoc}:
-      Up.unique(st, assoc, e)
+      AssocUp.unique(st, assoc, e)
     case F.NgapAssocDown{assoc}:
       Down.unique(st, assoc, e)
     case F.NgapData{assoc, stream, len, bytes}:
       Route.pdu_unique(st, assoc, stream, entropy, Fr.Pdu.read(bytes), e)
     case F.PfcpData{len, bytes}:
-      e
+      Render.unique(st, Gsm.Gsm.pfcp_data(st, bytes), e)
     case F.TimerFired{timer}:
-      Render.unique(st, Gmm.Gmm.timer(st, timer), e)
+      Render.unique(st, K.Kernel.fired(st, timer), e)
 
 def L.amf.indexes.unique(st, ev, entropy, e):
   ({==}, Step.unique(st, ev, entropy, e))

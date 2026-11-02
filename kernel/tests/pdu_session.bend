@@ -212,7 +212,7 @@ def setup_failure(ran: B.Bytes()) -> B.Bytes():
   N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(58, Fr.Criticality.ignore(), G.PDUSessionResourceFailedToSetupListSURes.write([G.PDUSessionResourceFailedToSetupItemSURes{1, Ap.pack(G.PDUSessionResourceSetupUnsuccessfulTransfer.write(G.PDUSessionResourceSetupUnsuccessfulTransfer{N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()), None{}, None{}}, 0n, [])), None{}}], 0n, []))])
 
 # UL NAS Transport with an N1 SM message, the PDU session identity, request type initial, and more IEs.
-def ul_transport(sm: B.Bytes(), more: B.Bytes()) -> B.Bytes():
+def ul_transport(+sm: B.Bytes(), more: B.Bytes()) -> B.Bytes():
   List.append(&2, U32, [126, 0, 103, 1, 0, U32.from_nat(List.length(&2, U32, sm))], List.append(&2, U32, sm, List.append(&2, U32, [18, 1, 129], more)))
 
 # The plaintext inside a protected DL NAS Transport (NEA0).
