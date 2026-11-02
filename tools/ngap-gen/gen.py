@@ -6,13 +6,16 @@
 Writes OUT_DIR/types.bend: for every type in the tier M+R closure a datatype
 (or alias), `T.read`, `T.write`, `T.after` and `T.valid`, built on
 kernel/aper.bend and kernel/ngap/frame.bend; plus `T.roundtrips` and the
-per-message IE dispatch used by the tests. The generator is untrusted: the
-checker judges what it emits. Needs pycrate 0.8.1; run with python -I.
+per-message IE dispatch used by the tests. views.bend holds one view per
+message; laws.bend and proofs.bend (gen_proofs.py) the codec laws of every
+type with their proofs. The generator is untrusted: the checker judges what
+it emits. Needs pycrate 0.8.1; run with python -I.
 """
 import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import gen_proofs  # noqa: E402
 import ngap_model as M  # noqa: E402
 
 KEYWORDS = {"def", "type", "match", "case", "import", "as", "is", "for", "law", "return",
@@ -854,7 +857,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     (out / "types.bend").write_text("\n".join(g.lines).rstrip() + "\n")
     (out / "views.bend").write_text(g.emit_views())
-    print(f"{len(g.types)} types -> {out / 'types.bend'}, {len(g.messages)} views -> {out / 'views.bend'}")
+    proofs = gen_proofs.Proofs(g)
+    (out / "laws.bend").write_text(proofs.laws())
+    (out / "proofs.bend").write_text(proofs.proofs())
+    print(f"{len(g.types)} types, {len(g.messages)} views, laws and proofs -> {out}")
 
 
 if __name__ == "__main__":

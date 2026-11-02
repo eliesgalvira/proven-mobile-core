@@ -1490,3 +1490,70 @@ def L.aper.padding.zero(bits):
       {==}
     case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> Nil{}:
       {==}
+
+# Fixed-size strings whose count is a parameter, the shape the generated
+# codec uses: the value's own length must equal the count.
+
+def Bits.rt_n(+n: Nat, +bs: Ap.Bits(), +rem: Nat, +rest: Ap.Bits(), ok: {Nat.is_eq(List.length(&2, Bool, bs), n) == True{} : Bool}) -> {Ap.Bits.read(n, Ap.Cur{rem, Ap.Bits.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Bits.after(n, rem), rest})} : Ap.Rd(Ap.Bits())}:
+  el = P.Nat.eq_of_is_eq(List.length(&2, Bool, bs), n, ok)
+  %el : {Ap.Bits.read(_, Ap.Cur{rem, Ap.Bits.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Bits.after(_, rem), rest})} : Ap.Rd(Ap.Bits())}
+  L.aper.bits.roundtrip(bs, rem, rest)
+
+def Bits.dv_n.go(+n: Nat, +rem: Nat, bits: Ap.Bits(), +bs: Ap.Bits(), +c2: Ap.Cur, e: {Ap.Bits.go(n, Ap.Rem.add(n, rem), bits) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}) -> {Nat.is_eq(List.length(&2, Bool, bs), n) == True{} : Bool}:
+  slen = Equal.sym(Nat, List.length(&2, Bool, bs), n, Bits.len(bs, c2, n, Ap.Rem.add(n, rem), Bits.spec(n, Ap.Rem.add(n, rem), bits, bs, c2, e)))
+  %slen : {Nat.is_eq(_, n) == True{} : Bool}
+  P.Nat.is_eq_refl(n)
+
+def Bits.dv_n(+n: Nat, c: Ap.Cur, +bs: Ap.Bits(), +c2: Ap.Cur, e: {Ap.Bits.read(n, c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}) -> {Nat.is_eq(List.length(&2, Bool, bs), n) == True{} : Bool}:
+  match c:
+    case Ap.Cur{+rem, bits}:
+      Bits.dv_n.go(n, rem, bits, bs, c2, e)
+
+def ABits.rt_n(+n: Nat, +bs: Ap.Bits(), +rem: Nat, +rest: Ap.Bits(), ok: {Nat.is_eq(List.length(&2, Bool, bs), n) == True{} : Bool}) -> {Ap.ABits.read(n, Ap.Cur{rem, Ap.ABits.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.ABits.after(n, rem), rest})} : Ap.Rd(Ap.Bits())}:
+  ar = Align.rt(rem, List.append(&2, Bool, bs, rest))
+  %ar : {Ap.ABits.aligned(n, _) == Done{(bs, Ap.Cur{Ap.ABits.after(n, rem), rest})} : Ap.Rd(Ap.Bits())}
+  Bits.rt_n(n, bs, 0n, rest, ok)
+
+def ABits.dv_n.al(+n: Nat, ru: Ap.Rd(Unit), +bs: Ap.Bits(), +c2: Ap.Cur, +e: {Ap.ABits.aligned(n, ru) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}) -> {Nat.is_eq(List.length(&2, Bool, bs), n) == True{} : Bool}:
+  match ru:
+    case Fail{err}:
+      Rd.absurd(Ap.Bits(), {Nat.is_eq(List.length(&2, Bool, bs), n) == True{} : Bool}, err, bs, c2, e)
+    case Done{(u, c)}:
+      Bits.dv_n(n, c, bs, c2, e)
+
+def ABits.dv_n(+n: Nat, c: Ap.Cur, +bs: Ap.Bits(), +c2: Ap.Cur, +e: {Ap.ABits.read(n, c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}) -> {Nat.is_eq(List.length(&2, Bool, bs), n) == True{} : Bool}:
+  ABits.dv_n.al(n, Ap.Align.read(c), bs, c2, e)
+
+def Octets.rt_n(+n: Nat, +bs: B.Bytes(), +rem: Nat, +rest: Ap.Bits(), +ok: {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}) -> {Ap.Octets.read(n, Ap.Cur{rem, Ap.Octets.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Octets.after(rem), rest})} : Ap.Rd(B.Bytes())}:
+  el = P.Nat.eq_of_is_eq(List.length(&2, U32, bs), n, P.Bool.and_true_l(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs), ok))
+  %el : {Ap.Octets.read(_, Ap.Cur{rem, Ap.Octets.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Octets.after(rem), rest})} : Ap.Rd(B.Bytes())}
+  L.aper.octets.roundtrip(bs, rem, rest, P.Bool.and_true_r(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs), ok))
+
+def Octets.dv_n.fin(+n: Nat, +bs: B.Bytes(), +c2: Ap.Cur, +rem: Nat, +bits: Ap.Bits(), s: Octets.Spec(bs, c2, n, rem, bits)) -> {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}:
+  (al, s2) = s
+  (len, be) = s2
+  slen = Equal.sym(Nat, List.length(&2, U32, bs), n, len)
+  P.Bool.and_intro(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs), (%slen : {Nat.is_eq(_, n) == True{} : Bool}; P.Nat.is_eq_refl(n)), al)
+
+def Octets.dv_n.go(+n: Nat, +rem: Nat, +bits: Ap.Bits(), +bs: B.Bytes(), +c2: Ap.Cur, e: {Ap.Octets.go(n, rem, bits) == Done{(bs, c2)} : Ap.Rd(B.Bytes())}) -> {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}:
+  Octets.dv_n.fin(n, bs, c2, rem, bits, Octets.spec(n, rem, bits, bs, c2, e))
+
+def Octets.dv_n(+n: Nat, c: Ap.Cur, +bs: B.Bytes(), +c2: Ap.Cur, e: {Ap.Octets.read(n, c) == Done{(bs, c2)} : Ap.Rd(B.Bytes())}) -> {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}:
+  match c:
+    case Ap.Cur{+rem, bits}:
+      Octets.dv_n.go(n, rem, bits, bs, c2, e)
+
+def AOctets.rt_n(+n: Nat, +bs: B.Bytes(), +rem: Nat, +rest: Ap.Bits(), +ok: {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}) -> {Ap.AOctets.read(n, Ap.Cur{rem, Ap.AOctets.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.AOctets.after(rem), rest})} : Ap.Rd(B.Bytes())}:
+  ar = Align.rt(rem, Ap.Octets.write(bs, 0n, rest))
+  %ar : {Ap.AOctets.aligned(n, _) == Done{(bs, Ap.Cur{Ap.AOctets.after(rem), rest})} : Ap.Rd(B.Bytes())}
+  Octets.rt_n(n, bs, 0n, rest, ok)
+
+def AOctets.dv_n.al(+n: Nat, ru: Ap.Rd(Unit), +bs: B.Bytes(), +c2: Ap.Cur, +e: {Ap.AOctets.aligned(n, ru) == Done{(bs, c2)} : Ap.Rd(B.Bytes())}) -> {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}:
+  match ru:
+    case Fail{err}:
+      Rd.absurd(B.Bytes(), {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}, err, bs, c2, e)
+    case Done{(u, c)}:
+      Octets.dv_n(n, c, bs, c2, e)
+
+def AOctets.dv_n(+n: Nat, c: Ap.Cur, +bs: B.Bytes(), +c2: Ap.Cur, +e: {Ap.AOctets.read(n, c) == Done{(bs, c2)} : Ap.Rd(B.Bytes())}) -> {Bool.and(Nat.is_eq(List.length(&2, U32, bs), n), B.all_bytes(bs)) == True{} : Bool}:
+  AOctets.dv_n.al(n, Ap.Align.read(c), bs, c2, e)

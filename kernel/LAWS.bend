@@ -843,6 +843,9 @@ law aper.padding.zero:
 
 # ngap framing (ticket 13)
 # ------------------------
+# The roundtrip and decode_valid laws of the 140 generated types are stated
+# with the code they are about, in kernel/ngap/gen/laws.bend, and proven in
+# kernel/ngap/gen/proofs.bend; PROOF.bend imports them.
 
 law ngap.ie.roundtrip:
   for +ie: Fr.Ie

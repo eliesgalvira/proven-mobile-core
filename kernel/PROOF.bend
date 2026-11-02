@@ -12,3 +12,4 @@ import ./proofs/sm_ies.bend as PQ
 import ./proofs/aper.bend as PA
 import ./proofs/ngap_frame.bend as PF
 import ./proofs/ngap_view.bend as PV
+import ./ngap/gen/proofs.bend as PG
