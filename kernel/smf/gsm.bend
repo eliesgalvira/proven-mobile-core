@@ -42,12 +42,42 @@ def Gsm.default_rule() -> Q.Rule:
 def Gsm.ambr() -> B.Bytes():
   Q.Ambr.write(Q.Ambr{6, 1000, 6, 1000})
 
-def Gsm.dns_opts(cfg: S.Cfg, wanted: Bool) -> List<&2, I.Ie>:
+def Gsm.rule_filters(r: Q.Rule) -> Q.RuleFilters:
+  match r:
+    case Q.Rule{qri, len, op, filters, tail}:
+      filters
+
+# The ePCO containers of an Accept: the DNS server, when asked for.
+def Gsm.epco_containers(cfg: S.Cfg, wanted: Bool) -> List<&2, Q.Container>:
   match wanted:
     case True{}:
-      [I.Ie{123, I.TlvE{}, 8, Q.Epco.write(Q.Epco{[Q.Container{13, I.LenBody{4, S.Cfg.dns(cfg)}}]})}]
+      [Q.Container{13, I.LenBody{4, S.Cfg.dns(cfg)}}]
     case False{}:
       []
+
+def Gsm.has_container(+id: U32, cs: List<&2, Q.Container>) -> Bool:
+  match cs:
+    case Nil{}:
+      False{}
+    case Q.Container{i, lb} <> more:
+      Bool.or(U32.is_eq(i, id), Gsm.has_container(id, more))
+
+def Gsm.ids_unique(cs: List<&2, Q.Container>) -> Bool:
+  match cs:
+    case Nil{}:
+      True{}
+    case Q.Container{+id, lb} <> +more:
+      Bool.and(Bool.not(Gsm.has_container(id, more)), Gsm.ids_unique(more))
+
+def Gsm.epco_opts(cs: List<&2, Q.Container>) -> List<&2, I.Ie>:
+  match cs:
+    case Nil{}:
+      []
+    case +c <> +more:
+      [I.Ie{123, I.TlvE{}, U32.from_nat(Q.Epco.size(Q.Epco{c <> more})), Q.Epco.write(Q.Epco{c <> more})}]
+
+def Gsm.dns_opts(cfg: S.Cfg, wanted: Bool) -> List<&2, I.Ie>:
+  Gsm.epco_opts(Gsm.epco_containers(cfg, wanted))
 
 # A UE that asked for IPv4v6 learns it got IPv4 only (#50).
 def Gsm.type_opts(v4v6: Bool) -> List<&2, I.Ie>:
@@ -169,8 +199,11 @@ def Gsm.cancel(g: Maybe<&2, S.Guard>) -> List<&2, N.Act>:
       [N.TimerCancel{S.Guard.timer(guard)}]
 
 # A session given up: its UE told why, eUPF told, the row and guard gone.
-def Gsm.abort(st: S.State, +skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32) -> N.GOut():
-  N.Out.join(Gsm.to_ue(st, S.Session.ue(s), S.Session.psi(s), Gsm.reject(S.Session.psi(s), pti, cause)), N.Out.also(Gsm.forget([(skey, s)], seq), Gsm.cancel(S.SPhase.guard(S.Session.phase(s)))))
+def Gsm.abort_m(+skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
+  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), Gsm.reject(S.Session.psi(s), pti, cause), m), N.Out.also(Gsm.forget([(skey, s)], seq), Gsm.cancel(S.SPhase.guard(S.Session.phase(s)))))
+
+def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32) -> N.GOut():
+  Gsm.abort_m(skey, s, pti, cause, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
 
 # Establishment
 # -------------
@@ -211,13 +244,6 @@ def Gsm.slice_ok(cfg: S.Cfg, m: Maybe<&2, B.Bytes()>) -> Bool:
       True{}
     case Some{s}:
       U32.is_eq(N.Ngap.cap_byte(s, 0n), N.Ngap.cap_byte(S.Cfg.sst(cfg), 0n))
-
-def Gsm.has_container(+id: U32, cs: List<&2, Q.Container>) -> Bool:
-  match cs:
-    case Nil{}:
-      False{}
-    case Q.Container{i, lb} <> more:
-      Bool.or(U32.is_eq(i, id), Gsm.has_container(id, more))
 
 def Gsm.wants_dns(r: Q.Res(Q.Epco)) -> Bool:
   match r:
@@ -324,9 +350,9 @@ def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, 
       Gsm.setup_ue(st, skey, s, guard, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st))
 
 # Refused, or no UP SEID: the UE is told (#38), nothing of the session remains.
-def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: B.Bytes(), up: Maybe<&2, B.Bytes()>, ok: Bool) -> N.GOut():
-  match up ok:
-    case Some{up_seid} True{}:
+def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: B.Bytes(), ok: Bool, up: Maybe<&2, B.Bytes()>) -> N.GOut():
+  match ok up:
+    case True{} Some{up_seid}:
       Gsm.setup(st, skey, s, guard, pti, accept, up_seid, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
     case _ _:
       Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))
@@ -334,7 +360,7 @@ def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, p
 def Gsm.established_phase(st: S.State, skey: U32, s: S.Session, +msg: Pf.Msg, p: S.SPhase) -> N.GOut():
   match p:
     case S.Creating{guard, pti, accept}:
-      Gsm.established_as(st, skey, s, guard, pti, accept, Up.N4.up_seid(msg), Up.N4.accepted(Up.N4.cause(msg)))
+      Gsm.established_as(st, skey, s, guard, pti, accept, Up.N4.accepted(Up.N4.cause(msg)), Up.N4.up_seid(msg))
     case _:
       N.Out.warn("PFCP: Session Establishment Response for a session not being created")
 

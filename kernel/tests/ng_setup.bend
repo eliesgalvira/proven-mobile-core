@@ -169,7 +169,7 @@ def ies_of(r: Result<&2, &2, B.Err, Fr.Pdu>) -> List<&2, Fr.Ie>:
 
 def guami_ok(r: Result<&2, &2, B.Err, W.NGSetupResponse.View>) -> Bool:
   match r:
-    case Done{W.NGSetupResponse.View{amfname, G.ServedGUAMIItem{G.GUAMI{plmn, region, set_id, pointer, ext}, backup, ext2} <> Nil{}, capacity, plmns}}:
+    case Done{W.NGSetupResponse.View{amfname, G.ServedGUAMIItem{G.GUAMI{plmn, region, set_id, pointer, ext}, backup, ext2} <> Nil{}, capacity, plmns, diagnostics}}:
       Bool.and(B.bytes_eq(plmn, [0, 241, 16]), Bool.and(bits_eq(region, Ap.unpack([2])), Bool.and(Nat.is_eq(List.length(&2, Bool, set_id), 10n), B.bytes_eq(amfname, [115, 112, 101, 99, 107, 45, 97, 109, 102, 48]))))
     case _:
       False{}
@@ -254,7 +254,7 @@ def main() -> IO(Unit):
     C.Check.report("an undecodable PDU: the association stays known", S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_bad))))
     +o_inc : S.Out() = K.Kernel.step(S.State.initial(), F.Evt.config_make([T.Tlv.make(1, [0, 241, 16])]), entropy())
     C.Check.report("an incomplete Config: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_inc))), Nat.is_eq(count_logs(K.Kernel.actions(o_inc)), 1n)))
-    +st_ues : S.State = with_ues(st2, [(7, ue_of(1, [1])), (8, ue_of(2, [1])), (9, ue_of(1, [2]))], [(1, S.Session{7, [0, 0, 0, 0, 0, 0, 0, 1]}), (2, S.Session{8, [0, 0, 0, 0, 0, 0, 0, 2]})])
+    +st_ues : S.State = with_ues(st2, [(7, ue_of(1, [1])), (8, ue_of(2, [1])), (9, ue_of(1, [2]))], [(1, S.Session{S.SId{7, 1, 1, 1}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 1], 0, S.Active{}}}), (2, S.Session{S.SId{8, 1, 2, 2}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 2], 0, S.Active{}}})])
     +o_down : S.Out() = K.Kernel.step(st_ues, F.NgapAssocDown{1}, entropy())
     C.Check.report("NgapAssocDown: only the other association's UE remains", B.bytes_eq(ue_keys(K.Kernel.state(o_down)), [8]))
     C.Check.report("NgapAssocDown: the released UE's session is deleted at eUPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.actions(o_down))), 1n), pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(K.Kernel.actions(o_down)))), 54, True{})))

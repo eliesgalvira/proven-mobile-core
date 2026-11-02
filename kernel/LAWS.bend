@@ -16,6 +16,7 @@ import ./nas/mm.bend as Mm
 import ./nas/mobile_id.bend as Mi
 import ./nas/sm.bend as Sm
 import ./nas/sm_ies.bend as Q
+import ./nas/sm.bend as Sm
 import ./aper.bend as Ap
 import ./ngap/frame.bend as Fr
 import ./ngap/gen/types.bend as G
@@ -28,7 +29,10 @@ import ./state.bend as St
 import ./step.bend as Ke
 import ./amf/ngap.bend as Ng
 import ./amf/gmm.bend as Gm
+import ./smf/gsm.bend as Gs
+import ./pfcp.bend as Pf
 import ./ausf.bend as Au
+import ./smf/n4.bend as Up
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -1134,12 +1138,13 @@ law amf.ue_context_release.owner_only:
   for +cause: G.Cause
   for +uli: Maybe<&2, G.UserLocationInformation>
   for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
+  for +diag: Maybe<&2, G.CriticalityDiagnostics>
   for +ue: St.Ue
   for +eu: {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
   for +ea: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 42, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseRequest.view(ies) == Done{GV.UEContextReleaseRequest.View{amf, ran, pdus, cause}} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
-  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
 
 # GHSA-88pq-hpwv-2vjw: after the owner's UE Context Release Complete, no UE
 # context and no session carries the UE's AMF-UE-NGAP-ID. Timers live in the
@@ -1160,13 +1165,14 @@ law amf.release.forgets_ue:
   for +ran: B.Bytes()
   for +uli: Maybe<&2, G.UserLocationInformation>
   for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
+  for +diag: Maybe<&2, G.CriticalityDiagnostics>
   for +ue: St.Ue
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
-  for +ev: {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}
+  for +ev: {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}
   for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
   {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Ue>}
-  & {St.Sessions.of_ue(Ng.Ngap.of_big(amf), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == [] : List<&2, St.Session>}
+  & {St.Sessions.of_ue(Ng.Ngap.of_big(amf), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == [] : Tb.Table(St.Session)}
 
 # GHSA-7g3v-g4gp-p624: the indexes are the contexts themselves, so every entry
 # is a context and every context is indexed; what remains is that no two
@@ -1215,3 +1221,161 @@ law amf.registration.completes_or_releases:
   for +ev: F.Evt
   for +entropy: B.Bytes()
   {St.Ues.guarded(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
+
+# smf (ticket 19)
+# ---------------
+# PDU session establishment.
+
+# GHSA-ch5j-wv55-jmr6: a PDU Session Establishment Request that fails
+# validation (the session identity, request type, DNN, slice, type, or no
+# association) leaves the sessions and the PFCP sequence as they were; the UE
+# is told why and nothing else happens.
+law smf.establish.reject_leaves_state:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +nas: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +ue: St.Ue
+  for +ctx: N.Nas.Ctx
+  for +prot: N.Nas.Protection
+  for +plain: B.Bytes()
+  for +count: N.Nas.Count
+  for +ctx2: N.Nas.Ctx
+  for +old: N.Nas.Ctx
+  for +fields: List<&2, I.Field>
+  for +opts: List<&2, I.Ie>
+  for +psi: U32
+  for +pti: U32
+  for +sfields: List<&2, I.Field>
+  for +sopts: List<&2, I.Ie>
+  for +cfg: St.Cfg
+  for +cause: U32
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, uli}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}
+  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
+  for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
+  for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
+  for +er: {St.Ue.phase(ue) == St.Registered{old} : St.Phase}
+  for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
+  for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.EstablishmentRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
+  for +ef: {St.State.config(st) == Some{cfg} : Maybe<&2, St.Cfg>}
+  for +ex: {Gs.Gsm.validate(cfg, psi, opts, sopts, Up.N4.up(st)) == Gs.Refuse{cause} : Gs.Check}
+  {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
+  & ({St.State.pfcp_seq(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.pfcp_seq(st) : U32}
+  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == Ng.Acts.render([Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}]) : List<&2, F.Action>})
+
+# GHSA-855g-699w-9w28: when eUPF refuses the Session Establishment, or when
+# no answer comes in time, no session entry remains for the PDU session, so
+# no address, TEID or SEID is held for it.
+law smf.establish.failure_releases:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +msg: Pf.Msg
+  for +rest: B.Bytes()
+  for +skey: U32
+  for +s: St.Session
+  for +guard: St.Guard
+  for +pti: U32
+  for +accept: B.Bytes()
+  for +timer: U32
+  for +em: {Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)}
+  for +ek: {Pf.Msg.kind(msg) == 51 : U32}
+  for +es: {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>}
+  for +ep: {St.Session.phase(s) == St.Creating{guard, pti, accept} : St.SPhase}
+  for +ec: {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
+  for +et: {St.Ues.by_timer(timer, St.State.ues(st)) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Ue>>}
+  for +eg: {St.Sessions.by_timer(timer, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>}
+  {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>}
+  & {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, St.Session>}
+
+# GHSA-x8ww-5xvf-qxg6: a PDU Session Modification Request gets Modification
+# Reject #31; the sessions are as they were. A later milestone that offers
+# modification must replace this law with one stating that contradictory
+# directives are rejected.
+law smf.modification.rejected:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +nas: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +ue: St.Ue
+  for +ctx: N.Nas.Ctx
+  for +prot: N.Nas.Protection
+  for +plain: B.Bytes()
+  for +count: N.Nas.Count
+  for +ctx2: N.Nas.Ctx
+  for +old: N.Nas.Ctx
+  for +fields: List<&2, I.Field>
+  for +opts: List<&2, I.Ie>
+  for +psi: U32
+  for +pti: U32
+  for +sfields: List<&2, I.Field>
+  for +sopts: List<&2, I.Ie>
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, uli}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}
+  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
+  for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
+  for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
+  for +er: {St.Ue.phase(ue) == St.Registered{old} : St.Phase}
+  for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
+  for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.ModificationRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
+  {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
+  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == Ng.Acts.render([Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}]) : List<&2, F.Action>}
+
+# GHSA-g97g-v8mh-wg24: a session holds the one default QoS rule, with one
+# packet filter, and modification (the only way to add filters) is rejected,
+# so no session ever holds more than sixteen packet filters.
+law smf.packet_filters.capacity_reject:
+  {Nat.is_le(Q.RuleFilters.count(Gs.Gsm.rule_filters(Gs.Gsm.default_rule())), 16n) == True{} : Bool}
+
+# GHSA-f77j-h86j-2vcf: the ePCO of an Accept holds each container identifier at
+# most once, however many times the request repeats it.
+law smf.epco.response_bounded:
+  for +cfg: St.Cfg
+  for +wanted: Bool
+  {Gs.Gsm.epco_unique(Gs.Gsm.dns_opts(cfg, wanted)) == True{} : Bool}
+
+# No two live sessions share a UE IPv4 address or an uplink TEID (nor a key or
+# a PDU session identity of one UE), in the initial state and after every step.
+law smf.ip_pool.unique:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +e: {St.Sessions.unique(St.State.sessions(st)) == True{} : Bool}
+  {St.Sessions.unique(St.State.sessions(St.State.initial())) == True{} : Bool}
+  & {St.Sessions.unique(St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
+
+# The same invariant, read for the TEID: a session clear of the others shares no TEID with them.
+law smf.teid.unique:
+  for +key: U32
+  for +s: St.Session
+  for +k: U32
+  for +t: St.Session
+  for +more: Tb.Table(St.Session)
+  for +e: {St.Sessions.clear(key, s, (k, t) <> more) == True{} : Bool}
+  {U32.is_eq(St.Session.teid(s), St.Session.teid(t)) == False{} : Bool}
