@@ -215,10 +215,13 @@ def Tb_keys(t: List<&2, Sigma<&2, &2, U32, _ => S.Ue>>) -> List<&2, U32>:
 def ue_keys(st: S.State) -> List<&2, U32>:
   Tb_keys(S.State.ues(st))
 
+def ue_of(assoc: U32, ran: B.Bytes()) -> S.Ue:
+  S.Ue{assoc, ran, 1, None{}, [], 0, S.Releasing{}, []}
+
 def with_ues(st: S.State, ues: List<&2, Sigma<&2, &2, U32, _ => S.Ue>>, sessions: List<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> S.State:
   match st:
-    case S.State{config, assocs, old_ues, old_sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      S.State{config, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}
+    case S.State{config, subs, assocs, old_ues, old_sessions, pfcp_seq, next_ue, next_timer, recovery}:
+      S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -251,7 +254,7 @@ def main() -> IO(Unit):
     C.Check.report("an undecodable PDU: the association stays known", S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_bad))))
     +o_inc : S.Out() = K.Kernel.step(S.State.initial(), F.Evt.config_make([T.Tlv.make(1, [0, 241, 16])]), entropy())
     C.Check.report("an incomplete Config: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_inc))), Nat.is_eq(count_logs(K.Kernel.actions(o_inc)), 1n)))
-    +st_ues : S.State = with_ues(st2, [(7, S.Ue{1, [1], 1}), (8, S.Ue{2, [1], 1}), (9, S.Ue{1, [2], 2})], [(1, S.Session{7, [0, 0, 0, 0, 0, 0, 0, 1]}), (2, S.Session{8, [0, 0, 0, 0, 0, 0, 0, 2]})])
+    +st_ues : S.State = with_ues(st2, [(7, ue_of(1, [1])), (8, ue_of(2, [1])), (9, ue_of(1, [2]))], [(1, S.Session{7, [0, 0, 0, 0, 0, 0, 0, 1]}), (2, S.Session{8, [0, 0, 0, 0, 0, 0, 0, 2]})])
     +o_down : S.Out() = K.Kernel.step(st_ues, F.NgapAssocDown{1}, entropy())
     C.Check.report("NgapAssocDown: only the other association's UE remains", B.bytes_eq(ue_keys(K.Kernel.state(o_down)), [8]))
     C.Check.report("NgapAssocDown: the released UE's session is deleted at eUPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.actions(o_down))), 1n), pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(K.Kernel.actions(o_down)))), 54, True{})))

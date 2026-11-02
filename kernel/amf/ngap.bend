@@ -6,6 +6,7 @@ import ../ngap/gen/types.bend as G
 import ../ngap/gen/views.bend as V
 import ../frame.bend as F
 import ../state.bend as S
+import ../table.bend as Tb
 
 # The AMF's NGAP side: PDUs in, PDUs out. Non-UE-associated signalling uses
 # stream 0 (TS 38.412 §7).
@@ -102,17 +103,18 @@ def Ngap.is_procedure(kind: Nat, code: Nat, k: Nat, c: Nat) -> Bool:
 
 # What the laws ask of a reply: whether an action carries an NG Setup Response,
 # and whether a request's supported TA list names the configured PLMN and TAC.
-def Ngap.pdu_is(kind: Nat, code: Nat, r: Result<&2, &2, B.Err, Fr.Pdu>) -> Bool:
-  match r:
-    case Fail{e}:
+# A PDU's first two octets are its kind (in the top bits) and procedure code.
+def Ngap.header_is(bs: B.Bytes(), +k: U32, +c: U32) -> Bool:
+  match bs:
+    case b0 <> b1 <> rest:
+      Bool.and(U32.is_eq(b0, k), U32.is_eq(b1, c))
+    case _:
       False{}
-    case Done{Fr.Pdu{k, c, crit, value}}:
-      Bool.and(Nat.is_eq(U32.to_nat(k), kind), Nat.is_eq(U32.to_nat(c), code))
 
 def Ngap.is_ng_setup_response(a: F.Action) -> Bool:
   match a:
     case F.NgapSend{assoc, stream, len, bytes}:
-      Ngap.pdu_is(1n, 21n, Fr.Pdu.read(bytes))
+      Ngap.header_is(bytes, 32, 21)
     case _:
       False{}
 
@@ -166,34 +168,86 @@ def NgSetup.supported_pdu(config: Maybe<&2, S.Cfg>, r: Result<&2, &2, B.Err, Fr.
 def NgSetup.supported_request(config: Maybe<&2, S.Cfg>, bytes: B.Bytes()) -> Bool:
   NgSetup.supported_pdu(config, Fr.Pdu.read(bytes))
 
-# Incoming PDUs
-# -------------
+# UE-associated signalling
+# ------------------------
 
-# Procedures are told apart by comparing the PDU kind and procedure code in
-# turn, so that a proof can follow each branch.
-def Ngap.d1(st: S.State, +assoc: U32, stream: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> S.Out():
-  match ok:
-    case True{}:
-      NgSetup.of_view(st, assoc, V.NGSetupRequest.view(ies))
-    case False{}:
-      (st, Ngap.unhandled(assoc))
+def Ngap.nas_cause(index: U32) -> G.Cause:
+  G.Cause_nas{Ap.Root{index}}
 
-def Ngap.dispatch(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> S.Out():
-  Ngap.d1(st, assoc, stream, ies, Ngap.is_procedure(kind, code, 0n, 21n))
+def Ngap.radio_cause(index: U32) -> G.Cause:
+  G.Cause_radioNetwork{Ap.Root{index}}
 
-def Ngap.of_ies(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, r: Ap.Rd(List<&2, Fr.Ie>)) -> S.Out():
-  match r:
-    case Fail{e}:
-      (st, Ngap.bad_pdu(assoc))
-    case Done{(ies, c)}:
-      Ngap.dispatch(st, assoc, stream, kind, code, ies)
+# An NGAP id below 2^32 as the minimal octets its INTEGER type carries, and back.
+def Ngap.strip(bs: B.Bytes()) -> B.Bytes():
+  match bs:
+    case 0 <> b <> rest:
+      Ngap.strip(b <> rest)
+    case _:
+      bs
 
-def Ngap.of_pdu(st: S.State, +assoc: U32, stream: U32, r: Result<&2, &2, B.Err, Fr.Pdu>) -> S.Out():
-  match r:
-    case Fail{e}:
-      (st, Ngap.bad_pdu(assoc))
-    case Done{Fr.Pdu{kind, code, crit, value}}:
-      Ngap.of_ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}))
+def Ngap.big(v: U32) -> B.Bytes():
+  Ngap.strip(B.write_u32(v, []))
 
-def Ngap.data(st: S.State, +assoc: U32, stream: U32, bytes: B.Bytes()) -> S.Out():
-  Ngap.of_pdu(st, assoc, stream, Fr.Pdu.read(bytes))
+def Ngap.of_big_go(bs: B.Bytes(), acc: U32) -> U32:
+  match bs:
+    case Nil{}:
+      acc
+    case b <> rest:
+      Ngap.of_big_go(rest, B.cat8(b, acc))
+
+def Ngap.of_big(bs: B.Bytes()) -> U32:
+  Ngap.of_big_go(bs, 0)
+
+def Ngap.dl_nas_transport(key: U32, ran_id: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.initiating(), 4, Fr.Criticality.ignore(), [Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(38, Fr.Criticality.reject(), G.NAS_PDU.write(nas, 0n, []))])
+
+def Ngap.release_command(key: U32, ran_id: B.Bytes(), cause: G.Cause) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.initiating(), 41, Fr.Criticality.reject(), [Ngap.ie(114, Fr.Criticality.reject(), G.UE_NGAP_IDs.write(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, 0n, [])), Ngap.ie(15, Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))])
+
+# What a UE procedure asks for, rendered to frame actions at the boundary.
+type Act is Data:
+  DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
+  Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
+  ErrInd{assoc: U32, cause: G.Cause}
+  Note{level: F.Level, text: String}
+  TimerStart{timer: U32, ms: U32}
+  TimerCancel{timer: U32}
+
+def GOut() -> Data:
+  Sigma<&2, &2, S.State, _ => List<&2, Act>>
+
+def Act.render(a: Act) -> F.Action:
+  match a:
+    case DlNas{assoc, stream, key, ran_id, nas}:
+      Ngap.send(assoc, stream, Ngap.dl_nas_transport(key, ran_id, nas))
+    case Release{assoc, stream, key, ran_id, cause}:
+      Ngap.send(assoc, stream, Ngap.release_command(key, ran_id, cause))
+    case ErrInd{assoc, cause}:
+      Ngap.error_indication(assoc, cause)
+    case Note{level, text}:
+      F.Action.log_make(level, text)
+    case TimerStart{timer, ms}:
+      F.TimerStart{timer, ms}
+    case TimerCancel{timer}:
+      F.TimerCancel{timer}
+
+def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
+  match acts:
+    case Nil{}:
+      []
+    case a <> more:
+      Act.render(a) <> Acts.render(more)
+
+def render_out(o: GOut()) -> S.Out():
+  match o:
+    case (st, acts):
+      (st, Acts.render(acts))
+
+def Ngap.bad_nas(assoc: U32) -> List<&2, Act>:
+  [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.semantic_error())}, Note{F.Warn{}, "NGAP: NAS message not understood, no context created"}]
+
+def Ngap.bad_view_acts(assoc: U32) -> List<&2, Act>:
+  [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.abstract_syntax_error_reject())}, Note{F.Warn{}, "NGAP: message rejected, abstract syntax error"}]
+
+def Ngap.unknown_ue(assoc: U32) -> List<&2, Act>:
+  [ErrInd{assoc, Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID())}, Note{F.Warn{}, "NGAP: UE-associated message for a UE this association does not own"}]
