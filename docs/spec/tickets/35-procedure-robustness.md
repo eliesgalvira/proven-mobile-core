@@ -1,0 +1,17 @@
+# 35 Procedure robustness
+
+Depends on: 32, 33. Estimate: 3–4 h.
+
+## Goal
+
+1. **PFCP retransmission:** T1 = 3 s and N1 = 3 means three retransmissions after the first send, each with the same sequence number (TS 29.244 §6.4). Today there are two, each with a new sequence number.
+2. **Failures after the Accept:** a Setting timeout, or a refused or timed-out modification, sends a PDU Session Release Command and frees the session. It does not send an Establishment Reject, and it does not drop the session silently.
+3. **Identifier collisions:** when a 5G-TMSI, TEID or SEID drawn from entropy collides with a live one, draw again. Never evict on a collision. Takeover applies only to SUPI and 5G-GUTI (ticket 32).
+4. **AMF-UE-NGAP-ID:** an ID of 2³² or more is an unknown UE, never folded into 32 bits (`Ngap.of_big`).
+5. **Returning UEs:** a UE that comes back with an integrity-protected initial message (security header type 1) is read without verification, as TS 24.501 §4.4.6 allows. A Registration Request then goes to identification and authentication; a Service Request gets Service Reject #9.
+6. **N4 association:** if Heartbeat Responses stop, the link goes down and new sessions are refused until it is back up.
+7. **Config:** check the AMF Set ID and AMF Pointer ranges (10 and 6 bits) in `Cfg.complete`.
+
+## Verify
+
+`scripts/check.sh`
