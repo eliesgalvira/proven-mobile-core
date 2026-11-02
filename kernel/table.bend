@@ -29,21 +29,6 @@ def Table.present(-V: Data, m: Maybe<&2, V>) -> Bool:
 def Table.has(-V: Data, +k: U32, t: Table(V)) -> Bool:
   Table.present(V, Table.get(V, k, t))
 
-def Table.set_row(-V: Data, k: U32, v: V, key: U32, w: V, more: Table(V), later: Table(V), hit: Bool) -> Table(V):
-  match hit:
-    case True{}:
-      (k, v) <> more
-    case False{}:
-      (key, w) <> later
-
-# Replaces the row with that key, or appends one.
-def Table.set(-V: Data, +k: U32, +v: V, t: Table(V)) -> Table(V):
-  match t:
-    case Nil{}:
-      [(k, v)]
-    case (+key, w) <> +more:
-      Table.set_row(V, k, v, key, w, more, Table.set(V, k, v, more), U32.is_eq(key, k))
-
 # The row, kept or dropped, in front of the rest.
 def Table.keep(-V: Data, key: U32, v: V, rest: Table(V), keep: Bool) -> Table(V):
   match keep:

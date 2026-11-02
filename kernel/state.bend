@@ -173,20 +173,6 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
     case other:
       other
 
-def Phase.releasing(p: Phase) -> Bool:
-  match p:
-    case Releasing{}:
-      True{}
-    case _:
-      False{}
-
-def Phase.registered(p: Phase) -> Bool:
-  match p:
-    case Registered{ctx}:
-      True{}
-    case _:
-      False{}
-
 # A UE context: the NGAP association that owns it, its RAN-UE-NGAP-ID there,
 # the stream its InitialUEMessage arrived on, its SUPI and 5G-TMSI once given,
 # the plain Registration Request, the ngKSI in use, its phase and the last
@@ -326,11 +312,6 @@ def State.next_timer(st: State) -> U32:
   match st:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
       next_timer
-
-def State.recovery(st: State) -> B.Bytes():
-  match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      recovery
 
 # What one step answers: the next state and the actions to perform.
 def Out() -> Data:
