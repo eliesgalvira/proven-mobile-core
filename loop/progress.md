@@ -1,5 +1,13 @@
 # Loop progress
 
+## Summary (2026-11-02, commit on `loop/m1`)
+
+- **Done: tickets 01 to 21.** The kernel decodes and encodes NAS, NGAP (generated from TS 38.413), PFCP and the edge frames with proven round-trip, validity and suffix laws; it runs NG Setup, registration with 5G-AKA and NAS security, Initial Context Setup, release and takeover, and PDU session establishment against eUPF, reproducing the captured messages byte for byte. `kernel/main.bend` is the process, `edge/` the Rust thin layer. 133 hand-written laws and 471 generated ones pass `bend --verdict`; every in-scope advisory law is proven (`scripts/acceptance.py --strict`: 26 laws, 0 failures); 694 kernel checks and 14 cargo tests pass; `scripts/check.sh` is green.
+- **Needs human: ticket 22 (e2e).** `e2e/` is written (compose bench, core image, `run.sh`), but this VM has no SCTP and no Docker daemon, so `e2e/run.sh` stops at its first step (`loop/blockers.md`). Run it on a host with Docker, Nix and the `sctp` module; it prints `E2E PASS` or the failing step.
+- **Blocked: ticket 23 (acceptance)** only on 22. Its own checks pass and `loop/acceptance-report.md` is written; two clauses remain arguments rather than laws (listed there). Flip it to `done` when the e2e passes.
+- **Next:** run `e2e/run.sh` locally and fix what it shows (the kernel's logic is covered by replay tests, the untested part is the live SCTP/UDP plumbing in `edge/`); then review `loop/upstream-bend/` drafts and `loop/decisions.md`. Deliberately out of scope and untouched: 4G, voice, roaming, policy and billing, handover.
+
+
 Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets are in `docs/spec/tickets/`.
 
 | # | Ticket | Status | Depends on | Notes |
@@ -26,4 +34,4 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 20 | kernel-main | done | 15, 19 | 7481566: kernel/main.bend listens on 127.0.0.1, takes one edge and answers every event frame with one Actions frame, echoing Log actions to stderr; protocol errors exit 1; scripts/frame-client.py drives it with Config, NgapAssocUp and the captured NG Setup Request and checks the captured NG Setup Response |
 | 21 | edge | done | 15 | bfde196: Rust crate edge/ (library + binary): spawns the kernel and sends Config from TOML, SCTP N2 through libc in one unsafe module with stream ids and PPID 60, UDP N4 to the UPF only, timer heap, 32 bytes of OS entropy per event, one event in flight, exits non-zero on a dead or invalid kernel; 14 cargo tests incl. a fake kernel; test-vectors/frames.json shared with kernel/tests/frame.bend; SCTP loopback skips here (loop/blockers.md) |
 | 22 | e2e | needs-human | 20, 21 | e2e/ written (compose, core Dockerfile, edge.toml, run.sh) but the VM has no SCTP, see loop/blockers.md; Elies: run `e2e/run.sh` on a host with Docker, Nix and the sctp module |
-| 23 | acceptance | in-progress | 01–22 | |
+| 23 | acceptance | blocked | 01–22 | 1d2ad79: `scripts/test-kernel.sh --strict` (694 checks, none skipped), `acceptance.py --strict` (26 laws, 0 failures) and `scripts/check.sh` pass; `loop/acceptance-report.md` written; the audit strengthened `smf.establish.failure_releases` to all four failure paths, added `ngap.no_big_nat` (ticket 13) and renamed `aper.padding.zero`; blocked only on ticket 22 (`needs-human`), flip to `done` once `e2e/run.sh` passes |
