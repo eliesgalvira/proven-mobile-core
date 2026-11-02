@@ -348,17 +348,87 @@ def Failure.pfcp(+st: S.State, +entropy: B.Bytes(), len: U32, +bytes: B.Bytes(),
   %sec : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.established_as(st, skey, s, guard, pti, accept, _, Up.N4.up_seid(msg)))))) == None{} : Maybe<&2, S.Session>}
   Abort.ue(skey, s, pti, 38, S.State.pfcp_seq(st), Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), st)
 
-def Failure.timer(+st: S.State, +entropy: B.Bytes(), +timer: U32, +skey: U32, +s: S.Session, guard: S.Guard, +pti: U32, accept: B.Bytes(), ep: {S.Session.phase(s) == S.Creating{guard, pti, accept} : S.SPhase}, et: {S.Ues.by_timer(timer, S.State.ues(st)) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Ue>>}, eg: {S.Sessions.by_timer(timer, S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(K.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, S.Session>}:
+# A forgotten session is gone, whatever else the answer carries.
+def Forget.gone(+skey: U32, +s: S.Session, seq: U32, acts: List<&2, N.Act>, st: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, N.Out.also(Gsm.Gsm.forget([(skey, s)], seq), acts))))) == None{} : Maybe<&2, S.Session>}:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+      SDel.get(skey, sessions)
+
+# The guard expires while the session is pending: it goes, whatever the phase.
+def Expired.gone(+skey: U32, +s: S.Session, p: S.SPhase, pend: {S.SPhase.pending(p) == True{} : Bool}, +st: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.expired(st, skey, s, p))))) == None{} : Maybe<&2, S.Session>}:
+  match p:
+    case S.Creating{guard, pti, accept}:
+      Abort.ue(skey, s, pti, 38, S.State.pfcp_seq(st), Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), st)
+    case S.Setting{guard, pti}:
+      Abort.ue(skey, s, pti, 38, S.State.pfcp_seq(st), Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), st)
+    case S.Modifying{guard}:
+      Forget.gone(skey, s, S.State.pfcp_seq(st), [N.Note{F.Warn{}, "PFCP: no Session Modification Response; session released"}], st)
+    case S.Active{}:
+      Empty.absurd({Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.expired(st, skey, s, S.Active{}))))) == None{} : Maybe<&2, S.Session>}, P.Refute.bool(pend))
+
+def Failure.timer(+st: S.State, +entropy: B.Bytes(), +timer: U32, +skey: U32, +s: S.Session, pend: {S.SPhase.pending(S.Session.phase(s)) == True{} : Bool}, et: {S.Ues.by_timer(timer, S.State.ues(st)) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Ue>>}, eg: {S.Sessions.by_timer(timer, S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(K.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, S.Session>}:
   set = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => S.Ue>>, S.Ues.by_timer(timer, S.State.ues(st)), None{}, et)
   %set : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, K.Kernel.fired_ue(st, timer, _))))) == None{} : Maybe<&2, S.Session>}
   seg = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, S.Sessions.by_timer(timer, S.State.sessions(st)), Some{(skey, s)}, eg)
   %seg : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, K.Kernel.fired_session(st, timer, _))))) == None{} : Maybe<&2, S.Session>}
-  sep = Equal.sym(S.SPhase, S.Session.phase(s), S.Creating{guard, pti, accept}, ep)
-  %sep : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.expired(st, skey, s, _))))) == None{} : Maybe<&2, S.Session>}
-  Abort.ue(skey, s, pti, 38, S.State.pfcp_seq(st), Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), st)
+  Expired.gone(skey, s, S.Session.phase(s), pend, st)
 
-def L.smf.establish.failure_releases(st, entropy, len, bytes, msg, rest, skey, s, guard, pti, accept, timer, em, ek, es, ep, ec, et, eg):
-  (Failure.pfcp(st, entropy, len, bytes, msg, rest, skey, s, guard, pti, accept, em, ek, es, ep, ec), Failure.timer(st, entropy, timer, skey, s, guard, pti, accept, ep, et, eg))
+# eUPF refuses the Session Modification: the session goes.
+def Failure.modify(+st: S.State, +entropy: B.Bytes(), len: U32, +bytes: B.Bytes(), +msg: Pf.Msg, rest: B.Bytes(), +skey: U32, +s: S.Session, guard: S.Guard, em: {Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)}, ek: {Pf.Msg.kind(msg) == 53 : U32}, es: {S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, ep: {S.Session.phase(s) == S.Modifying{guard} : S.SPhase}, ec: {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(K.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, S.Session>}:
+  sem = Equal.sym(B.Read(Pf.Msg), Pf.Msg.read(bytes), Done{(msg, rest)}, em)
+  %sem : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.pfcp_msg(st, _))))) == None{} : Maybe<&2, S.Session>}
+  sek = Equal.sym(U32, Pf.Msg.kind(msg), 53, ek)
+  %sek : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.pfcp_k1(st, msg, _, U32.is_eq(_, 1)))))) == None{} : Maybe<&2, S.Session>}
+  ses = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), Some{(skey, s)}, es)
+  %ses : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.modified(st, msg, _))))) == None{} : Maybe<&2, S.Session>}
+  sep = Equal.sym(S.SPhase, S.Session.phase(s), S.Modifying{guard}, ep)
+  %sep : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.modified_phase(st, skey, s, msg, _))))) == None{} : Maybe<&2, S.Session>}
+  sec = Equal.sym(Bool, Up.N4.accepted(Up.N4.cause(msg)), False{}, ec)
+  %sec : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.modified_as(st, skey, s, guard, _))))) == None{} : Maybe<&2, S.Session>}
+  Forget.gone(skey, s, S.State.pfcp_seq(st), [N.TimerCancel{S.Guard.timer(guard)}, N.Note{F.Warn{}, "PFCP: Session Modification refused; session released"}], st)
+
+# The gNB reports the session failed to set up: the one item of the failed
+# list aborts it, between the sequence number spent and nothing else.
+def GnbFail.ctx(+skey: U32, +s: S.Session, pti: U32, seq: U32, key: U32, ue: S.Ue, mctx: Maybe<&2, Sec.Nas.Ctx>, st: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, N.Out.join((S.Keep{}, []), N.Out.join((S.BumpSeq{1}, []), N.Out.join(N.Out.join(Gsm.Gsm.to_ue_ctx(key, ue, S.Session.psi(s), Gsm.Gsm.reject(S.Session.psi(s), pti, 26), mctx), N.Out.also(Gsm.Gsm.forget([(skey, s)], seq), N.Guard.cancel(S.SPhase.guard(S.Session.phase(s))))), (S.Keep{}, [])))))))) == None{} : Maybe<&2, S.Session>}:
+  match mctx:
+    case None{}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          SDel.get(skey, sessions)
+    case Some{c}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          SDel.get(skey, sessions)
+
+def GnbFail.ue(+skey: U32, +s: S.Session, pti: U32, seq: U32, m: Maybe<&2, S.Ue>, st: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, N.Out.join((S.Keep{}, []), N.Out.join((S.BumpSeq{1}, []), N.Out.join(Gsm.Gsm.abort_m(skey, s, pti, 26, seq, m), (S.Keep{}, [])))))))) == None{} : Maybe<&2, S.Session>}:
+  match m:
+    case None{}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          SDel.get(skey, sessions)
+    case Some{+ue}:
+      GnbFail.ctx(skey, s, pti, seq, S.Session.ue(s), ue, S.Phase.ctx(S.Ue.phase(ue)), st)
+
+def Failure.gnb(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, len: U32, +bytes: B.Bytes(), crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +psi: U32, transfer: B.Bytes(), x: Maybe<&2, List<&2, Fr.Ie>>, diag: Maybe<&2, G.CriticalityDiagnostics>, uli: Maybe<&2, G.UserLocationInformation>, +ue: S.Ue, +skey: U32, +s: S.Session, guard: S.Guard, +pti: U32, ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, ev: {V.PDUSessionResourceSetupResponse.view(ies) == Done{V.PDUSessionResourceSetupResponse.View{amf, ran, None{}, Some{[G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x}]}, diag, uli}} : Result<&2, &2, B.Err, V.PDUSessionResourceSetupResponse.View>}, eo: {N.Owner.of(Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}, es: {S.Sessions.by_psi(N.Ngap.of_big(amf), psi, S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, eh: {S.Session.phase(s) == S.Setting{guard, pti} : S.SPhase}) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, S.Session>}:
+  sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{1, 29, crit, value}}, ep)
+  %sep : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, _)))) == None{} : Maybe<&2, S.Session>}
+  sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
+  %sei : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(R.Route.of_ies(st, assoc, stream, U32.to_nat(1), U32.to_nat(29), entropy, _)))) == None{} : Maybe<&2, S.Session>}
+  sev = Equal.sym(Result<&2, &2, B.Err, V.PDUSessionResourceSetupResponse.View>, V.PDUSessionResourceSetupResponse.view(ies), Done{V.PDUSessionResourceSetupResponse.View{amf, ran, None{}, Some{[G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x}]}, diag, uli}}, ev)
+  %sev : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.setup_response_of_view(st, assoc, _))))) == None{} : Maybe<&2, S.Session>}
+  seo = Equal.sym(Maybe<&2, S.Ue>, N.Owner.of(Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)), assoc, ran), Some{ue}, eo)
+  %seo : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, Gsm.Gsm.setup_response_ue(st, assoc, N.Ngap.of_big(amf), [], [G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x}], _))))) == None{} : Maybe<&2, S.Session>}
+  ses = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, S.Sessions.by_psi(N.Ngap.of_big(amf), psi, S.State.sessions(st)), Some{(skey, s)}, es)
+  %ses : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, N.Out.join(Gsm.Gsm.set_ups(st, N.Ngap.of_big(amf), [], S.State.pfcp_seq(st)), N.Out.join((S.BumpSeq{1}, []), N.Out.join(Gsm.Gsm.failed(st, U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, []))), _), Gsm.Gsm.faileds(st, N.Ngap.of_big(amf), [], U32.add(U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, []))), 1))))))))) == None{} : Maybe<&2, S.Session>}
+  seh = Equal.sym(S.SPhase, S.Session.phase(s), S.Setting{guard, pti}, eh)
+  %seh : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, N.Out.join(Gsm.Gsm.set_ups(st, N.Ngap.of_big(amf), [], S.State.pfcp_seq(st)), N.Out.join((S.BumpSeq{1}, []), N.Out.join(Gsm.Gsm.failed_phase(st, skey, s, U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, []))), _), Gsm.Gsm.faileds(st, N.Ngap.of_big(amf), [], U32.add(U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, []))), 1))))))))) == None{} : Maybe<&2, S.Session>}
+  GnbFail.ue(skey, s, pti, U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, []))), Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), st)
+
+def L.smf.establish.failure_releases(st, entropy, len, bytes, msg, rest, skey, s, guard, pti, accept, timer, assoc, stream, crit, value, ies, c, amf, ran, psi, transfer, x, diag, uli, ue):
+  (em => ek => es => ep => ec => Failure.pfcp(st, entropy, len, bytes, msg, rest, skey, s, guard, pti, accept, em, ek, es, ep, ec),
+   (pend => et => eg => Failure.timer(st, entropy, timer, skey, s, pend, et, eg),
+    (em => ek => es => ep => ec => Failure.modify(st, entropy, len, bytes, msg, rest, skey, s, guard, em, ek, es, ep, ec),
+     ep => ei => ev => eo => es => eh => Failure.gnb(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, psi, transfer, x, diag, uli, ue, skey, s, guard, pti, ep, ei, ev, eo, es, eh))))
 
 # What a UL NAS Transport comes to
 # --------------------------------

@@ -1463,10 +1463,10 @@ def L.aper.pack.padding(bits):
     case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> Nil{}:
       {==}
 
-def L.aper.padding.zero(bits):
+def L.aper.pack.padding_zero(bits):
   match bits:
     case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> rest:
-      L.aper.padding.zero(rest)
+      L.aper.pack.padding_zero(rest)
     case Nil{}:
       {==}
     case b7 <> Nil{}:

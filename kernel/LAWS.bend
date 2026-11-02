@@ -849,7 +849,7 @@ law aper.pack.padding:
   for +bits: Ap.Bits()
   {Ap.unpack(Ap.pack(bits)) == List.append(&2, Bool, bits, Ap.padding(bits)) : Ap.Bits()}
 
-law aper.padding.zero:
+law aper.pack.padding_zero:
   for +bits: Ap.Bits()
   {Ap.Tail.zero(Ap.padding(bits)) == True{} : Bool}
 
@@ -913,6 +913,15 @@ law ngap.pdu.decode_valid:
   for +p: Fr.Pdu
   for +e: {Fr.Pdu.read(bs) == Done{p} : Result<&2, &2, B.Err, Fr.Pdu>}
   {Fr.Pdu.valid(p) == True{} : Bool}
+
+# AMF-UE-NGAP-ID (40 bits) and BitRate (up to 4·10¹², extensible) decode to
+# byte lists, never to a Nat: at most five canonical octets for the id, and
+# octets for the bit rate in either form.
+law ngap.no_big_nat:
+  for +c: Ap.Cur
+  for +c2: Ap.Cur
+  (@v: B.Bytes() -> {G.AMF_UE_NGAP_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.AMF_UE_NGAP_ID())} -> {Nat.is_le(List.length(&2, U32, v), 5n) == True{} : Bool} & {B.all_bytes(v) == True{} : Bool})
+  & (@v: Ap.XBig -> {G.BitRate.read(c) == Done{(v, c2)} : Ap.Rd(G.BitRate())} -> {B.all_bytes(Ap.XBig.octets(v)) == True{} : Bool})
 
 # Message views (TS 38.413 §10.3). Every generated view passes Fr.View.prelude
 # first, so an IE id that appears twice fails the view (§10.3.6).
@@ -1274,9 +1283,11 @@ law smf.establish.reject_leaves_state:
   & ({St.State.pfcp_seq(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.pfcp_seq(st) : U32}
   & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == Ng.Acts.render([Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}]) : List<&2, F.Action>})
 
-# GHSA-855g-699w-9w28: when eUPF refuses the Session Establishment, or when
-# no answer comes in time, no session entry remains for the PDU session, so
-# no address, TEID or SEID is held for it.
+# GHSA-855g-699w-9w28: whichever later step fails, no session entry remains for
+# the PDU session, so no address, TEID or SEID is held for it: eUPF refuses the
+# Session Establishment; the guard expires while the session is being created,
+# set up or modified; eUPF refuses the Session Modification; or the gNB reports
+# the session failed to set up.
 law smf.establish.failure_releases:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1290,15 +1301,28 @@ law smf.establish.failure_releases:
   for +pti: U32
   for +accept: B.Bytes()
   for +timer: U32
-  for +em: {Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)}
-  for +ek: {Pf.Msg.kind(msg) == 51 : U32}
-  for +es: {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>}
-  for +ep: {St.Session.phase(s) == St.Creating{guard, pti, accept} : St.SPhase}
-  for +ec: {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
-  for +et: {St.Ues.by_timer(timer, St.State.ues(st)) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Ue>>}
-  for +eg: {St.Sessions.by_timer(timer, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>}
-  {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>}
-  & {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, St.Session>}
+  for +assoc: U32
+  for +stream: U32
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +psi: U32
+  for +transfer: B.Bytes()
+  for +x: Maybe<&2, List<&2, Fr.Ie>>
+  for +diag: Maybe<&2, G.CriticalityDiagnostics>
+  for +uli: Maybe<&2, G.UserLocationInformation>
+  for +ue: St.Ue
+  ({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 51 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Creating{guard, pti, accept} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})
+  & (({St.SPhase.pending(St.Session.phase(s)) == True{} : Bool} -> {St.Ues.by_timer(timer, St.State.ues(st)) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Ue>>} -> {St.Sessions.by_timer(timer, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>}
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, St.Session>})
+  & (({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 53 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Modifying{guard} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, None{}, Some{[G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x}]}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(Ng.Ngap.of_big(amf), psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})))
 
 # GHSA-x8ww-5xvf-qxg6: a PDU Session Modification Request gets Modification
 # Reject #31; the sessions are as they were. A later milestone that offers

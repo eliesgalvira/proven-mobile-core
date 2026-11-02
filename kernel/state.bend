@@ -304,6 +304,14 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
     case Active{}:
       None{}
 
+# A session still waiting on eUPF or the gNB, so its guard runs.
+def SPhase.pending(p: SPhase) -> Bool:
+  match p:
+    case Active{}:
+      False{}
+    case _:
+      True{}
+
 # The UP function's SEID, the sequence number of the PFCP request pending, the phase.
 type SVar is Data:
   SVar{up_seid: B.Bytes(), seq: U32, phase: SPhase}

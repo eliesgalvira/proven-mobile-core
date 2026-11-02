@@ -891,6 +891,13 @@ def XBig.valid(diff: Nat, x: XBig) -> Bool:
     case BExt{bs}:
       Open.valid(bs)
 
+def XBig.octets(x: XBig) -> B.Bytes():
+  match x:
+    case BRoot{bs}:
+      bs
+    case BExt{bs}:
+      bs
+
 def XBig.root(r: Rd(B.Bytes())) -> Rd(XBig):
   match r:
     case Fail{e}:

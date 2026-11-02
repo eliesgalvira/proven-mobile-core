@@ -209,7 +209,7 @@ def Pdu.rt(+kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +v: {Fr.Pdu.va
   %pp : {Fr.Pdu.r_ext(Ap.Bit.read(Ap.Cur{0n, _})) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   ap = App.pdu(Fr.Pdu{kind, code, crit, value}, [], Ap.padding(Fr.Pdu.bits(Fr.Pdu{kind, code, crit, value}, [])))
   %ap : {Fr.Pdu.r_ext(Ap.Bit.read(Ap.Cur{0n, _})) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
-  Pdu.rt.bits(kind, code, crit, value, Ap.padding(Fr.Pdu.bits(Fr.Pdu{kind, code, crit, value}, [])), L.aper.padding.zero(Fr.Pdu.bits(Fr.Pdu{kind, code, crit, value}, [])), vk, vc, vr, vo)
+  Pdu.rt.bits(kind, code, crit, value, Ap.padding(Fr.Pdu.bits(Fr.Pdu{kind, code, crit, value}, [])), L.aper.pack.padding_zero(Fr.Pdu.bits(Fr.Pdu{kind, code, crit, value}, [])), vk, vc, vr, vo)
 
 def L.ngap.pdu.roundtrip(p, v):
   match p:
