@@ -730,21 +730,23 @@ law aper.enum.decode_valid:
 # form, and a value that fits the root is only accepted in the root form.
 
 law aper.xint.roundtrip:
+  for +al: Bool
   for +n: Nat
   for +diff: U32
   for +x: Ap.XInt
   for +rem: Nat
   for +rest: Ap.Bits()
   for +v: {Ap.XInt.valid(n, diff, x) == True{} : Bool}
-  {Ap.XInt.read(n, diff, Ap.Cur{rem, Ap.XInt.write(n, x, rem, rest)}) == Done{(x, Ap.Cur{Ap.XInt.after(n, x, rem), rest})} : Ap.Rd(Ap.XInt)}
+  {Ap.XInt.read(al, n, diff, Ap.Cur{rem, Ap.XInt.write(al, n, x, rem, rest)}) == Done{(x, Ap.Cur{Ap.XInt.after(al, n, x, rem), rest})} : Ap.Rd(Ap.XInt)}
 
 law aper.xint.decode_valid:
+  for +al: Bool
   for +n: Nat
   for +diff: U32
   for +c: Ap.Cur
   for +x: Ap.XInt
   for +c2: Ap.Cur
-  for +e: {Ap.XInt.read(n, diff, c) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}
+  for +e: {Ap.XInt.read(al, n, diff, c) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}
   {Ap.XInt.valid(n, diff, x) == True{} : Bool}
 
 law aper.xbig.roundtrip:

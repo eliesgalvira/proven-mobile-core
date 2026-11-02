@@ -27,6 +27,14 @@ def Criticality.after(rem: Nat) -> Nat:
 def Criticality.valid(v: U32) -> Bool:
   Ap.Int.valid(2n, 2, v)
 
+# Whether an OPTIONAL component is present (its bit in a SEQUENCE preamble).
+def Present(-A: Data, m: Maybe<&2, A>) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{v}:
+      True{}
+
 # ProtocolIE-Field and ProtocolExtensionField: a 16-bit id, a criticality
 # and an open type.
 type Ie is Data:

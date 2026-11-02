@@ -1199,25 +1199,39 @@ def Bool.or_true_r(a: Bool, +b: Bool, ea: {a == False{} : Bool}, e: {Bool.or(a, 
     case False{}:
       e
 
-def L.aper.xint.roundtrip(n, diff, x, rem, rest, v):
+def XInt.root_rt(al: Bool, +n: Nat, +diff: U32, +i: U32, +rem: Nat, +rest: Ap.Bits(), +v: {Ap.Int.valid(n, diff, i) == True{} : Bool}) -> {Ap.XInt.root_read(al, n, diff, Ap.Cur{rem, Ap.XInt.root_write(al, n, i, rem, rest)}) == Done{(i, Ap.Cur{Ap.XInt.root_after(al, n, rem), rest})} : Ap.Rd(U32)}:
+  match al:
+    case False{}:
+      L.aper.int.roundtrip(n, diff, i, rem, rest, v)
+    case True{}:
+      L.aper.aint.roundtrip(n, diff, i, rem, rest, v)
+
+def L.aper.xint.roundtrip(al, n, diff, x, rem, rest, v):
   match x:
     case Ap.IRoot{i}:
-      ir = Equal.sym(Ap.Rd(U32), Ap.Int.read(n, diff, Ap.Cur{Ap.Rem.next(rem), Ap.Int.write(n, i, Ap.Rem.next(rem), rest)}), Done{(i, Ap.Cur{Ap.Int.after(n, Ap.Rem.next(rem)), rest})}, L.aper.int.roundtrip(n, diff, i, Ap.Rem.next(rem), rest, v))
-      %ir : {Ap.XInt.root(_) == Done{(Ap.IRoot{i}, Ap.Cur{Ap.Rem.add(n, Ap.Rem.next(rem)), rest})} : Ap.Rd(Ap.XInt)}
+      ir = Equal.sym(Ap.Rd(U32), Ap.XInt.root_read(al, n, diff, Ap.Cur{Ap.Rem.next(rem), Ap.XInt.root_write(al, n, i, Ap.Rem.next(rem), rest)}), Done{(i, Ap.Cur{Ap.XInt.root_after(al, n, Ap.Rem.next(rem)), rest})}, XInt.root_rt(al, n, diff, i, Ap.Rem.next(rem), rest, v))
+      %ir : {Ap.XInt.root(_) == Done{(Ap.IRoot{i}, Ap.Cur{Ap.XInt.root_after(al, n, Ap.Rem.next(rem)), rest})} : Ap.Rd(Ap.XInt)}
       {==}
     case Ap.IExt{bs}:
       orr = Equal.sym(Ap.Rd(B.Bytes()), Ap.Open.read(Ap.Cur{Ap.Rem.next(rem), Ap.Open.write(bs, Ap.Rem.next(rem), rest)}), Done{(bs, Ap.Cur{0n, rest})}, L.aper.open.roundtrip(bs, Ap.Rem.next(rem), rest, v))
       %orr : {Ap.XInt.ext(_) == Done{(Ap.IExt{bs}, Ap.Cur{0n, rest})} : Ap.Rd(Ap.XInt)}
       {==}
 
-def XInt.dv.root(+n: Nat, +diff: U32, +c0: Ap.Cur, ri: Ap.Rd(U32), +eri: {Ap.Int.read(n, diff, c0) == ri : Ap.Rd(U32)}, +x: Ap.XInt, +c2: Ap.Cur, +e: {Ap.XInt.root(ri) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}) -> {Ap.XInt.valid(n, diff, x) == True{} : Bool}:
+def XInt.root_dv(al: Bool, +n: Nat, +diff: U32, +c0: Ap.Cur, +i: U32, +c: Ap.Cur, +e: {Ap.XInt.root_read(al, n, diff, c0) == Done{(i, c)} : Ap.Rd(U32)}) -> {Ap.Int.valid(n, diff, i) == True{} : Bool}:
+  match al:
+    case False{}:
+      Int.dv(n, diff, c0, i, c, e)
+    case True{}:
+      L.aper.aint.decode_valid(n, diff, c0, i, c, e)
+
+def XInt.dv.root(+al: Bool, +n: Nat, +diff: U32, +c0: Ap.Cur, ri: Ap.Rd(U32), +eri: {Ap.XInt.root_read(al, n, diff, c0) == ri : Ap.Rd(U32)}, +x: Ap.XInt, +c2: Ap.Cur, +e: {Ap.XInt.root(ri) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}) -> {Ap.XInt.valid(n, diff, x) == True{} : Bool}:
   match ri:
     case Fail{err}:
       Rd.absurd(Ap.XInt, {Ap.XInt.valid(n, diff, x) == True{} : Bool}, err, x, c2, e)
     case Done{(+i, +c)}:
       ev = Equal.cong(Ap.Rd(Ap.XInt), Ap.XInt, y => Rd.value(Ap.XInt, y, x), Done{(Ap.IRoot{i}, c)}, Done{(x, c2)}, e)
       %ev : {Ap.XInt.valid(n, diff, _) == True{} : Bool}
-      Int.dv(n, diff, c0, i, c, eri)
+      XInt.root_dv(al, n, diff, c0, i, c, eri)
 
 def XInt.dv.ext(+n: Nat, +diff: U32, +c0: Ap.Cur, ro: Ap.Rd(B.Bytes()), +ero: {Ap.Open.read(c0) == ro : Ap.Rd(B.Bytes())}, +x: Ap.XInt, +c2: Ap.Cur, +e: {Ap.XInt.ext(ro) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}) -> {Ap.XInt.valid(n, diff, x) == True{} : Bool}:
   match ro:
@@ -1228,19 +1242,19 @@ def XInt.dv.ext(+n: Nat, +diff: U32, +c0: Ap.Cur, ro: Ap.Rd(B.Bytes()), +ero: {A
       %ev : {Ap.XInt.valid(n, diff, _) == True{} : Bool}
       L.aper.open.decode_valid(c0, bs, c, ero)
 
-def XInt.dv(+n: Nat, +diff: U32, rb: Ap.Rd(Bool), +x: Ap.XInt, +c2: Ap.Cur, +e: {Ap.XInt.bit(n, diff, rb) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}) -> {Ap.XInt.valid(n, diff, x) == True{} : Bool}:
+def XInt.dv(+al: Bool, +n: Nat, +diff: U32, rb: Ap.Rd(Bool), +x: Ap.XInt, +c2: Ap.Cur, +e: {Ap.XInt.bit(al, n, diff, rb) == Done{(x, c2)} : Ap.Rd(Ap.XInt)}) -> {Ap.XInt.valid(n, diff, x) == True{} : Bool}:
   match rb:
     case Fail{err}:
       Rd.absurd(Ap.XInt, {Ap.XInt.valid(n, diff, x) == True{} : Bool}, err, x, c2, e)
     case Done{(b, +c)}:
       match b:
         case False{}:
-          XInt.dv.root(n, diff, c, Ap.Int.read(n, diff, c), {==}, x, c2, e)
+          XInt.dv.root(al, n, diff, c, Ap.XInt.root_read(al, n, diff, c), {==}, x, c2, e)
         case True{}:
           XInt.dv.ext(n, diff, c, Ap.Open.read(c), {==}, x, c2, e)
 
-def L.aper.xint.decode_valid(n, diff, c, x, c2, e):
-  XInt.dv(n, diff, Ap.Bit.read(c), x, c2, e)
+def L.aper.xint.decode_valid(al, n, diff, c, x, c2, e):
+  XInt.dv(al, n, diff, Ap.Bit.read(c), x, c2, e)
 
 def L.aper.xbig.roundtrip(n, diff, x, rem, rest, v, w):
   match x:

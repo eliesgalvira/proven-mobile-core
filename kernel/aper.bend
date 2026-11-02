@@ -823,31 +823,53 @@ def XInt.ext(r: Rd(B.Bytes())) -> Rd(XInt):
     case Done{(bs, c)}:
       Done{(IExt{bs}, c)}
 
-def XInt.bit(n: Nat, diff: U32, r: Rd(Bool)) -> Rd(XInt):
+def XInt.root_read(al: Bool, n: Nat, diff: U32, c: Cur) -> Rd(U32):
+  match al:
+    case False{}:
+      Int.read(n, diff, c)
+    case True{}:
+      AInt.read(n, diff, c)
+
+def XInt.bit(al: Bool, n: Nat, diff: U32, r: Rd(Bool)) -> Rd(XInt):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(b, c)}:
       match b:
         case False{}:
-          XInt.root(Int.read(n, diff, c))
+          XInt.root(XInt.root_read(al, n, diff, c))
         case True{}:
           XInt.ext(Open.read(c))
 
-def XInt.read(n: Nat, diff: U32, c: Cur) -> Rd(XInt):
-  XInt.bit(n, diff, Bit.read(c))
+# `al` is True when the root range is 256 or more, so its value is aligned.
+def XInt.read(al: Bool, n: Nat, diff: U32, c: Cur) -> Rd(XInt):
+  XInt.bit(al, n, diff, Bit.read(c))
 
-def XInt.write(n: Nat, x: XInt, +rem: Nat, rest: Bits()) -> Bits():
+def XInt.root_write(al: Bool, n: Nat, v: U32, rem: Nat, rest: Bits()) -> Bits():
+  match al:
+    case False{}:
+      Int.write(n, v, rem, rest)
+    case True{}:
+      AInt.write(n, v, rem, rest)
+
+def XInt.write(al: Bool, n: Nat, x: XInt, +rem: Nat, rest: Bits()) -> Bits():
   match x:
     case IRoot{v}:
-      False{} <> Int.write(n, v, Rem.next(rem), rest)
+      False{} <> XInt.root_write(al, n, v, Rem.next(rem), rest)
     case IExt{bs}:
       True{} <> Open.write(bs, Rem.next(rem), rest)
 
-def XInt.after(n: Nat, x: XInt, rem: Nat) -> Nat:
+def XInt.root_after(al: Bool, n: Nat, rem: Nat) -> Nat:
+  match al:
+    case False{}:
+      Rem.add(n, rem)
+    case True{}:
+      Rem.add(n, 0n)
+
+def XInt.after(al: Bool, n: Nat, x: XInt, rem: Nat) -> Nat:
   match x:
     case IRoot{v}:
-      Rem.add(n, Rem.next(rem))
+      XInt.root_after(al, n, Rem.next(rem))
     case IExt{bs}:
       0n
 
