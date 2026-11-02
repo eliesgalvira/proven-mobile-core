@@ -69,6 +69,31 @@ def Cfg.sst(c: Cfg) -> B.Bytes():
     case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
       sst
 
+def Cfg.dnn(c: Cfg) -> B.Bytes():
+  match c:
+    case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
+      dnn
+
+def Cfg.pool(c: Cfg) -> B.Bytes():
+  match c:
+    case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
+      pool
+
+def Cfg.prefix(c: Cfg) -> B.Bytes():
+  match c:
+    case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
+      prefix
+
+def Cfg.dns(c: Cfg) -> B.Bytes():
+  match c:
+    case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
+      dns
+
+def Cfg.upf_n3(c: Cfg) -> B.Bytes():
+  match c:
+    case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
+      upf_n3
+
 def Cfg.suci_key(c: Cfg) -> B.Bytes():
   match c:
     case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
@@ -253,65 +278,187 @@ def Ue.with_reg(u: Ue, r: B.Bytes()) -> Ue:
     case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       Ue{assoc, ran_id, stream, supi, tmsi, r, ngksi, phase, last_dl}
 
-# A PDU session, keyed by its local SEID: its UE and the UP function's SEID.
-type Session is Data:
-  Session{ue: U32, up_seid: B.Bytes()}
+# A PDU session, keyed by its local SEID. Its identity (the UE, the PDU
+# session identity, the UE IPv4 address, the N3 uplink TEID) never changes;
+# the rest does as the procedure advances.
+type SId is Data:
+  SId{ue: U32, psi: U32, ip: U32, teid: U32}
 
-def Session.ue(s: Session) -> U32:
+# Where a session is: PFCP Session Establishment pending (the PTI and the
+# plain Accept to send on success), the gNB's resource setup pending, the
+# PFCP Session Modification with the gNB's tunnel pending, or active.
+type SPhase is Data:
+  Creating{guard: Guard, pti: U32, accept: B.Bytes()}
+  Setting{guard: Guard, pti: U32}
+  Modifying{guard: Guard}
+  Active{}
+
+def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
+  match p:
+    case Creating{guard, pti, accept}:
+      Some{guard}
+    case Setting{guard, pti}:
+      Some{guard}
+    case Modifying{guard}:
+      Some{guard}
+    case Active{}:
+      None{}
+
+# The UP function's SEID, the sequence number of the PFCP request pending, the phase.
+type SVar is Data:
+  SVar{up_seid: B.Bytes(), seq: U32, phase: SPhase}
+
+type Session is Data:
+  Session{id: SId, var: SVar}
+
+def Session.id(s: Session) -> SId:
   match s:
-    case Session{ue, up_seid}:
+    case Session{id, var}:
+      id
+
+def Session.var(s: Session) -> SVar:
+  match s:
+    case Session{id, var}:
+      var
+
+def Session.with_var(s: Session, v: SVar) -> Session:
+  match s:
+    case Session{id, var}:
+      Session{id, v}
+
+def SId.ue(i: SId) -> U32:
+  match i:
+    case SId{ue, psi, ip, teid}:
       ue
 
-def Session.up_seid(s: Session) -> B.Bytes():
-  match s:
-    case Session{ue, up_seid}:
+def SId.psi(i: SId) -> U32:
+  match i:
+    case SId{ue, psi, ip, teid}:
+      psi
+
+def SId.ip(i: SId) -> U32:
+  match i:
+    case SId{ue, psi, ip, teid}:
+      ip
+
+def SId.teid(i: SId) -> U32:
+  match i:
+    case SId{ue, psi, ip, teid}:
+      teid
+
+def Session.ue(s: Session) -> U32:
+  SId.ue(Session.id(s))
+
+def Session.psi(s: Session) -> U32:
+  SId.psi(Session.id(s))
+
+def Session.ip(s: Session) -> U32:
+  SId.ip(Session.id(s))
+
+def Session.teid(s: Session) -> U32:
+  SId.teid(Session.id(s))
+
+def SVar.up_seid(v: SVar) -> B.Bytes():
+  match v:
+    case SVar{up_seid, seq, phase}:
       up_seid
 
+def SVar.seq(v: SVar) -> U32:
+  match v:
+    case SVar{up_seid, seq, phase}:
+      seq
+
+def SVar.phase(v: SVar) -> SPhase:
+  match v:
+    case SVar{up_seid, seq, phase}:
+      phase
+
+def Session.up_seid(s: Session) -> B.Bytes():
+  SVar.up_seid(Session.var(s))
+
+def Session.seq(s: Session) -> U32:
+  SVar.seq(Session.var(s))
+
+def Session.phase(s: Session) -> SPhase:
+  SVar.phase(Session.var(s))
+
+# The PFCP association with eUPF, which the SMF starts: being asked for (T1
+# running, so many tries), paused after too many tries, or up (heartbeats).
+type Link is Data:
+  Idle{}
+  Asking{tries: U32}
+  Paused{}
+  Up{}
+
+# N4: the PFCP recovery stamp chosen at Config, and the association.
+type N4 is Data:
+  N4{recovery: B.Bytes(), link: Link}
+
+def N4.recovery(n: N4) -> B.Bytes():
+  match n:
+    case N4{recovery, link}:
+      recovery
+
+def N4.link(n: N4) -> Link:
+  match n:
+    case N4{recovery, link}:
+      link
+
+def N4.with_link(n: N4, l: Link) -> N4:
+  match n:
+    case N4{recovery, link}:
+      N4{recovery, l}
+
 type State is Data:
-  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, next_timer: U32, recovery: B.Bytes()}
+  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, next_timer: U32, n4: N4}
 
 def State.initial() -> State:
-  State{None{}, [], [], [], [], 1, 1, 1, []}
+  State{None{}, [], [], [], [], 1, 1, 1, N4{[], Idle{}}}
 
 def State.config(st: State) -> Maybe<&2, Cfg>:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       config
 
 def State.subs(st: State) -> List<&2, Au.Subscriber>:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       subs
 
 def State.assocs(st: State) -> List<&2, U32>:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       assocs
 
 def State.ues(st: State) -> Tb.Table(Ue):
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       ues
 
 def State.sessions(st: State) -> Tb.Table(Session):
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       sessions
 
 def State.pfcp_seq(st: State) -> U32:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       pfcp_seq
 
 def State.next_ue(st: State) -> U32:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       next_ue
 
 def State.next_timer(st: State) -> U32:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       next_timer
+
+def State.n4(st: State) -> N4:
+  match st:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+      n4
 
 # What one step answers: the next state and the actions to perform.
 def Out() -> Data:
@@ -361,29 +508,6 @@ def Ues.none_assoc(+a: U32, ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (key, u) <> more:
       Bool.and(Bool.not(U32.is_eq(Ue.assoc(u), a)), Ues.none_assoc(a, more))
-
-# Sessions whose UE is gone
-# -------------------------
-
-def Sessions.split(key: U32, s: Session, kept: Tb.Table(Session), gone: List<&2, Session>, owned: Bool) -> Sigma<&2, &2, Tb.Table(Session), _ => List<&2, Session>>:
-  match owned:
-    case True{}:
-      ((key, s) <> kept, gone)
-    case False{}:
-      (kept, s <> gone)
-
-def Sessions.split_go(key: U32, +s: Session, +ues: Tb.Table(Ue), r: Sigma<&2, &2, Tb.Table(Session), _ => List<&2, Session>>) -> Sigma<&2, &2, Tb.Table(Session), _ => List<&2, Session>>:
-  match r:
-    case (kept, gone):
-      Sessions.split(key, s, kept, gone, Tb.Table.has(Ue, Session.ue(s), ues))
-
-# The sessions whose UE still exists, and the orphans to release.
-def Sessions.partition(+ues: Tb.Table(Ue), sessions: Tb.Table(Session)) -> Sigma<&2, &2, Tb.Table(Session), _ => List<&2, Session>>:
-  match sessions:
-    case Nil{}:
-      ([], [])
-    case (key, +s) <> more:
-      Sessions.split_go(key, s, ues, Sessions.partition(ues, more))
 
 # The UE whose guard timer this is
 # --------------------------------
@@ -509,42 +633,164 @@ def Ues.evicted(key: U32, u: Ue, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
 def Ues.del(key: U32, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
   Ues.sift(Except{key}, ues)
 
-# Sessions of a UE
-# ----------------
-
-def Sessions.drop_ue(+ue: U32, sessions: Tb.Table(Session)) -> Tb.Table(Session):
-  match sessions:
-    case Nil{}:
-      []
-    case (key, +s) <> more:
-      Tb.Table.keep(Session, key, s, Sessions.drop_ue(ue, more), Bool.not(U32.is_eq(Session.ue(s), ue)))
-
-def Sessions.pick_ue(s: Session, rest: List<&2, Session>, hit: Bool) -> List<&2, Session>:
+# A phase change in place: the row under the key, its identity untouched.
+def Ue.rephase_if(u: Ue, p: Phase, hit: Bool) -> Ue:
   match hit:
     case True{}:
-      s <> rest
+      Ue.with_phase(u, p)
     case False{}:
-      rest
+      u
 
-def Sessions.of_ue(+ue: U32, sessions: Tb.Table(Session)) -> List<&2, Session>:
+def Ues.rephase(+key: U32, +p: Phase, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
+  match ues:
+    case Nil{}:
+      []
+    case (+k, u) <> more:
+      (k, Ue.rephase_if(u, p, U32.is_eq(k, key))) <> Ues.rephase(key, p, more)
+
+# Sessions
+# --------
+# The session indexes (UE IPv4, uplink TEID, the PDU session identity of a
+# UE) are the sessions themselves, searched, like the UE indexes.
+
+def Session.conflicts(+a: Session, +b: Session) -> Bool:
+  Bool.or(U32.is_eq(Session.ip(a), Session.ip(b)), Bool.or(U32.is_eq(Session.teid(a), Session.teid(b)), Bool.and(U32.is_eq(Session.ue(a), Session.ue(b)), U32.is_eq(Session.psi(a), Session.psi(b)))))
+
+def SRow.conflicts(key: U32, s: Session, k: U32, t: Session) -> Bool:
+  Bool.or(U32.is_eq(k, key), Session.conflicts(s, t))
+
+def Sessions.clear(+key: U32, +s: Session, sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      True{}
+    case (k, t) <> more:
+      Bool.and(Bool.not(SRow.conflicts(key, s, k, t)), Sessions.clear(key, s, more))
+
+def Sessions.unique(sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      True{}
+    case (+key, +s) <> +more:
+      Bool.and(Sessions.clear(key, s, more), Sessions.unique(more))
+
+# Which sessions to keep: those of other UEs, those of one UE, those whose UE
+# exists, the orphans, those clear of a session, the victims of one, all but a key.
+type SSieve is Data:
+  SOthers{ue: U32}
+  SOf{ue: U32}
+  SOwned{ues: Tb.Table(Ue)}
+  SOrphan{ues: Tb.Table(Ue)}
+  SClear{key: U32, s: Session}
+  SVictims{key: U32, s: Session}
+  SExcept{key: U32}
+
+def SSieve.keeps(s: SSieve, k: U32, t: Session) -> Bool:
+  match s:
+    case SOthers{ue}:
+      Bool.not(U32.is_eq(Session.ue(t), ue))
+    case SOf{ue}:
+      U32.is_eq(Session.ue(t), ue)
+    case SOwned{ues}:
+      Tb.Table.has(Ue, Session.ue(t), ues)
+    case SOrphan{ues}:
+      Bool.not(Tb.Table.has(Ue, Session.ue(t), ues))
+    case SClear{key, u}:
+      Bool.not(SRow.conflicts(key, u, k, t))
+    case SVictims{key, u}:
+      Bool.and(Bool.not(U32.is_eq(k, key)), Session.conflicts(u, t))
+    case SExcept{key}:
+      Bool.not(U32.is_eq(k, key))
+
+def Sessions.sift(+s: SSieve, sessions: Tb.Table(Session)) -> Tb.Table(Session):
   match sessions:
     case Nil{}:
       []
+    case (+k, +t) <> more:
+      Tb.Table.keep(Session, k, t, Sessions.sift(s, more), SSieve.keeps(s, k, t))
+
+def Sessions.drop_ue(ue: U32, sessions: Tb.Table(Session)) -> Tb.Table(Session):
+  Sessions.sift(SOthers{ue}, sessions)
+
+def Sessions.of_ue(ue: U32, sessions: Tb.Table(Session)) -> Tb.Table(Session):
+  Sessions.sift(SOf{ue}, sessions)
+
+def Sessions.put(+key: U32, +s: Session, sessions: Tb.Table(Session)) -> Tb.Table(Session):
+  (key, s) <> Sessions.sift(SClear{key, s}, sessions)
+
+def Sessions.evicted(key: U32, s: Session, sessions: Tb.Table(Session)) -> Tb.Table(Session):
+  Sessions.sift(SVictims{key, s}, sessions)
+
+def Sessions.del(key: U32, sessions: Tb.Table(Session)) -> Tb.Table(Session):
+  Sessions.sift(SExcept{key}, sessions)
+
+def Session.revar_if(s: Session, v: SVar, hit: Bool) -> Session:
+  match hit:
+    case True{}:
+      Session.with_var(s, v)
+    case False{}:
+      s
+
+def Sessions.revar(+key: U32, +v: SVar, sessions: Tb.Table(Session)) -> Tb.Table(Session):
+  match sessions:
+    case Nil{}:
+      []
+    case (+k, s) <> more:
+      (k, Session.revar_if(s, v, U32.is_eq(k, key))) <> Sessions.revar(key, v, more)
+
+# The session with a given UE IPv4 address, pending PFCP sequence number, guard timer, or UE and PDU session identity.
+def Sessions.has_ip(+ip: U32, sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      False{}
+    case (k, s) <> more:
+      Bool.or(U32.is_eq(Session.ip(s), ip), Sessions.has_ip(ip, more))
+
+def Sessions.pick(key: U32, s: Session, later: Maybe<&2, Sigma<&2, &2, U32, _ => Session>>, hit: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
+  match hit:
+    case True{}:
+      Some{(key, s)}
+    case False{}:
+      later
+
+def Sessions.by_seq(+seq: U32, sessions: Tb.Table(Session)) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
+  match sessions:
+    case Nil{}:
+      None{}
     case (key, +s) <> more:
-      Sessions.pick_ue(s, Sessions.of_ue(ue, more), U32.is_eq(Session.ue(s), ue))
+      Sessions.pick(key, s, Sessions.by_seq(seq, more), U32.is_eq(Session.seq(s), seq))
+
+def Sessions.by_timer(+timer: U32, sessions: Tb.Table(Session)) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
+  match sessions:
+    case Nil{}:
+      None{}
+    case (key, +s) <> more:
+      Sessions.pick(key, s, Sessions.by_timer(timer, more), Ues.timer_is(SPhase.guard(Session.phase(s)), timer))
+
+def Sessions.by_psi(+ue: U32, +psi: U32, sessions: Tb.Table(Session)) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
+  match sessions:
+    case Nil{}:
+      None{}
+    case (key, +s) <> more:
+      Sessions.pick(key, s, Sessions.by_psi(ue, psi, more), Bool.and(U32.is_eq(Session.ue(s), ue), U32.is_eq(Session.psi(s), psi)))
 
 # Transactions
 # ------------
-# A UE procedure answers with what to change, applied by one interpreter:
-# a context put (evicting the contexts it conflicts with), a context and its
-# sessions forgotten, the subscribers replaced, fresh ids consumed, PFCP
-# sequence numbers consumed.
+# A procedure answers with what to change, applied by one interpreter: a
+# context put (evicting the contexts it conflicts with) or rephased in place,
+# a context and its sessions forgotten, a session put (evicting likewise),
+# changed in place or forgotten, the subscribers replaced, the N4 link moved,
+# fresh ids and PFCP sequence numbers consumed.
 
 type Tx is Data:
   Keep{}
   Put{key: U32, ue: Ue}
+  Rephase{key: U32, phase: Phase}
   Del{key: U32}
+  PutSession{key: U32, s: Session}
+  Revar{key: U32, v: SVar}
+  DelSession{key: U32}
   Subs{subs: List<&2, Au.Subscriber>}
+  SetLink{link: Link}
   BumpUe{}
   BumpTimer{}
   BumpSeq{n: U32}
@@ -556,27 +802,47 @@ def Tx.apply(tx: Tx, st: State) -> State:
       st
     case Put{key, ue}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-          State{config, subs, assocs, Ues.put(key, ue, ues), sessions, pfcp_seq, next_ue, next_timer, recovery}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, Ues.put(key, ue, ues), sessions, pfcp_seq, next_ue, next_timer, n4}
+    case Rephase{key, phase}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, Ues.rephase(key, phase, ues), sessions, pfcp_seq, next_ue, next_timer, n4}
     case Del{+key}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-          State{config, subs, assocs, Ues.del(key, ues), Sessions.drop_ue(key, sessions), pfcp_seq, next_ue, next_timer, recovery}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, Ues.del(key, ues), Sessions.drop_ue(key, sessions), pfcp_seq, next_ue, next_timer, n4}
+    case PutSession{key, s}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, Sessions.put(key, s, sessions), pfcp_seq, next_ue, next_timer, n4}
+    case Revar{key, v}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, Sessions.revar(key, v, sessions), pfcp_seq, next_ue, next_timer, n4}
+    case DelSession{key}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, Sessions.del(key, sessions), pfcp_seq, next_ue, next_timer, n4}
     case Subs{new}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-          State{config, new, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, new, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}
+    case SetLink{link}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, N4.with_link(n4, link)}
     case BumpUe{}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-          State{config, subs, assocs, ues, sessions, pfcp_seq, U32.add(next_ue, 1), next_timer, recovery}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, U32.add(next_ue, 1), next_timer, n4}
     case BumpTimer{}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, U32.add(next_timer, 1), recovery}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, U32.add(next_timer, 1), n4}
     case BumpSeq{n}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-          State{config, subs, assocs, ues, sessions, U32.add(pfcp_seq, n), next_ue, next_timer, recovery}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, sessions, U32.add(pfcp_seq, n), next_ue, next_timer, n4}
     case Both{first, second}:
       Tx.apply(second, Tx.apply(first, st))

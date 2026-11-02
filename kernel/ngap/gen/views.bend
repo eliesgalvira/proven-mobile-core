@@ -12,31 +12,45 @@ import ./types.bend as G
 
 # DownlinkNASTransport
 type DownlinkNASTransport.View is Data:
-  DownlinkNASTransport.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), allowednssai: Maybe<&2, G.AllowedNSSAI()>}
+  DownlinkNASTransport.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, allowednssai: Maybe<&2, G.AllowedNSSAI()>}
 
 def DownlinkNASTransport.known() -> List<&2, U32>:
-  [10, 85, 48, 38, 0]
+  [10, 85, 48, 38, 110, 0]
 
-def DownlinkNASTransport.d_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), r: Result<&2, &2, B.Err, G.AllowedNSSAI()>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
+def DownlinkNASTransport.d_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, r: Result<&2, &2, B.Err, G.AllowedNSSAI()>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{allowednssai}:
-      Done{DownlinkNASTransport.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, Some{allowednssai}}}
+      Done{DownlinkNASTransport.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, ueaggregatemaximumbitrate, Some{allowednssai}}}
 
-def DownlinkNASTransport.v_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
+def DownlinkNASTransport.v_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
   match m:
     case None{}:
-      Done{DownlinkNASTransport.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, None{}}}
+      Done{DownlinkNASTransport.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, ueaggregatemaximumbitrate, None{}}}
     case Some{bs}:
-      DownlinkNASTransport.d_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, Fr.View.exact(G.AllowedNSSAI(), G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      DownlinkNASTransport.d_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, ueaggregatemaximumbitrate, Fr.View.exact(G.AllowedNSSAI(), G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def DownlinkNASTransport.d_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), r: Result<&2, &2, B.Err, G.UEAggregateMaximumBitRate>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{ueaggregatemaximumbitrate}:
+      DownlinkNASTransport.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, Some{ueaggregatemaximumbitrate}, Fr.Ies.lookup(0, ies))
+
+def DownlinkNASTransport.v_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, nas_pdu: G.NAS_PDU(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
+  match m:
+    case None{}:
+      DownlinkNASTransport.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, None{}, Fr.Ies.lookup(0, ies))
+    case Some{bs}:
+      DownlinkNASTransport.d_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, Fr.View.exact(G.UEAggregateMaximumBitRate, G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def DownlinkNASTransport.d_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, r: Result<&2, &2, B.Err, G.NAS_PDU()>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{nas_pdu}:
-      DownlinkNASTransport.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, Fr.Ies.lookup(0, ies))
+      DownlinkNASTransport.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, nas_pdu, Fr.Ies.lookup(110, ies))
 
 def DownlinkNASTransport.v_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, DownlinkNASTransport.View>:
   match m:
@@ -99,36 +113,50 @@ def DownlinkNASTransport.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, Dow
 
 # ErrorIndication
 type ErrorIndication.View is Data:
-  ErrorIndication.View{amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, fiveg_s_tmsi: Maybe<&2, G.FiveG_S_TMSI>}
+  ErrorIndication.View{amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>, fiveg_s_tmsi: Maybe<&2, G.FiveG_S_TMSI>}
 
 def ErrorIndication.known() -> List<&2, U32>:
-  [10, 85, 15, 26]
+  [10, 85, 15, 19, 26]
 
-def ErrorIndication.d_fiveg_s_tmsi(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, r: Result<&2, &2, B.Err, G.FiveG_S_TMSI>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
+def ErrorIndication.d_fiveg_s_tmsi(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>, r: Result<&2, &2, B.Err, G.FiveG_S_TMSI>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{fiveg_s_tmsi}:
-      Done{ErrorIndication.View{amf_ue_ngap_id, ran_ue_ngap_id, cause, Some{fiveg_s_tmsi}}}
+      Done{ErrorIndication.View{amf_ue_ngap_id, ran_ue_ngap_id, cause, criticalitydiagnostics, Some{fiveg_s_tmsi}}}
 
-def ErrorIndication.v_fiveg_s_tmsi(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
+def ErrorIndication.v_fiveg_s_tmsi(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
   match m:
     case None{}:
-      Done{ErrorIndication.View{amf_ue_ngap_id, ran_ue_ngap_id, cause, None{}}}
+      Done{ErrorIndication.View{amf_ue_ngap_id, ran_ue_ngap_id, cause, criticalitydiagnostics, None{}}}
     case Some{bs}:
-      ErrorIndication.d_fiveg_s_tmsi(ies, amf_ue_ngap_id, ran_ue_ngap_id, cause, Fr.View.exact(G.FiveG_S_TMSI, G.FiveG_S_TMSI.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      ErrorIndication.d_fiveg_s_tmsi(ies, amf_ue_ngap_id, ran_ue_ngap_id, cause, criticalitydiagnostics, Fr.View.exact(G.FiveG_S_TMSI, G.FiveG_S_TMSI.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def ErrorIndication.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      ErrorIndication.v_fiveg_s_tmsi(ies, amf_ue_ngap_id, ran_ue_ngap_id, cause, Some{criticalitydiagnostics}, Fr.Ies.lookup(26, ies))
+
+def ErrorIndication.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, cause: Maybe<&2, G.Cause>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
+  match m:
+    case None{}:
+      ErrorIndication.v_fiveg_s_tmsi(ies, amf_ue_ngap_id, ran_ue_ngap_id, cause, None{}, Fr.Ies.lookup(26, ies))
+    case Some{bs}:
+      ErrorIndication.d_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, cause, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def ErrorIndication.d_cause(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, r: Result<&2, &2, B.Err, G.Cause>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{cause}:
-      ErrorIndication.v_fiveg_s_tmsi(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{cause}, Fr.Ies.lookup(26, ies))
+      ErrorIndication.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{cause}, Fr.Ies.lookup(19, ies))
 
 def ErrorIndication.v_cause(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: Maybe<&2, G.AMF_UE_NGAP_ID()>, ran_ue_ngap_id: Maybe<&2, G.RAN_UE_NGAP_ID()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, ErrorIndication.View>:
   match m:
     case None{}:
-      ErrorIndication.v_fiveg_s_tmsi(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(26, ies))
+      ErrorIndication.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(19, ies))
     case Some{bs}:
       ErrorIndication.d_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.Cause, G.Cause.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
@@ -172,17 +200,31 @@ def ErrorIndication.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, ErrorInd
 
 # InitialContextSetupFailure
 type InitialContextSetupFailure.View is Data:
-  InitialContextSetupFailure.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), cause: G.Cause}
+  InitialContextSetupFailure.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), cause: G.Cause, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>}
 
 def InitialContextSetupFailure.known() -> List<&2, U32>:
-  [10, 85, 15]
+  [10, 85, 15, 19]
+
+def InitialContextSetupFailure.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), cause: G.Cause, r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, InitialContextSetupFailure.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      Done{InitialContextSetupFailure.View{amf_ue_ngap_id, ran_ue_ngap_id, cause, Some{criticalitydiagnostics}}}
+
+def InitialContextSetupFailure.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), cause: G.Cause, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupFailure.View>:
+  match m:
+    case None{}:
+      Done{InitialContextSetupFailure.View{amf_ue_ngap_id, ran_ue_ngap_id, cause, None{}}}
+    case Some{bs}:
+      InitialContextSetupFailure.d_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, cause, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def InitialContextSetupFailure.d_cause(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.Cause>) -> Result<&2, &2, B.Err, InitialContextSetupFailure.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{cause}:
-      Done{InitialContextSetupFailure.View{amf_ue_ngap_id, ran_ue_ngap_id, cause}}
+      InitialContextSetupFailure.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, cause, Fr.Ies.lookup(19, ies))
 
 def InitialContextSetupFailure.v_cause(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupFailure.View>:
   match m:
@@ -231,92 +273,106 @@ def InitialContextSetupFailure.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Er
 
 # InitialContextSetupRequest
 type InitialContextSetupRequest.View is Data:
-  InitialContextSetupRequest.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, securitykey: G.SecurityKey(), nas_pdu: Maybe<&2, G.NAS_PDU()>}
+  InitialContextSetupRequest.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, securitykey: G.SecurityKey(), nas_pdu: Maybe<&2, G.NAS_PDU()>}
 
 def InitialContextSetupRequest.known() -> List<&2, U32>:
-  [10, 85, 48, 28, 0, 119, 94, 38]
+  [10, 85, 48, 110, 28, 0, 119, 94, 38]
 
-def InitialContextSetupRequest.d_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, securitykey: G.SecurityKey(), r: Result<&2, &2, B.Err, G.NAS_PDU()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.d_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, securitykey: G.SecurityKey(), r: Result<&2, &2, B.Err, G.NAS_PDU()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{nas_pdu}:
-      Done{InitialContextSetupRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, uesecuritycapabilities, securitykey, Some{nas_pdu}}}
+      Done{InitialContextSetupRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, securitykey, Some{nas_pdu}}}
 
-def InitialContextSetupRequest.v_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, securitykey: G.SecurityKey(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.v_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, securitykey: G.SecurityKey(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match m:
     case None{}:
-      Done{InitialContextSetupRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, uesecuritycapabilities, securitykey, None{}}}
+      Done{InitialContextSetupRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, securitykey, None{}}}
     case Some{bs}:
-      InitialContextSetupRequest.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, uesecuritycapabilities, securitykey, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      InitialContextSetupRequest.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, securitykey, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
-def InitialContextSetupRequest.d_securitykey(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, r: Result<&2, &2, B.Err, G.SecurityKey()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.d_securitykey(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, r: Result<&2, &2, B.Err, G.SecurityKey()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{securitykey}:
-      InitialContextSetupRequest.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, uesecuritycapabilities, securitykey, Fr.Ies.lookup(38, ies))
+      InitialContextSetupRequest.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, securitykey, Fr.Ies.lookup(38, ies))
 
-def InitialContextSetupRequest.v_securitykey(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.v_securitykey(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), uesecuritycapabilities: G.UESecurityCapabilities, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match m:
     case None{}:
       Fail{B.Invalid{94}}
     case Some{bs}:
-      InitialContextSetupRequest.d_securitykey(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, uesecuritycapabilities, Fr.View.exact(G.SecurityKey(), G.SecurityKey.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      InitialContextSetupRequest.d_securitykey(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, Fr.View.exact(G.SecurityKey(), G.SecurityKey.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
-def InitialContextSetupRequest.d_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), r: Result<&2, &2, B.Err, G.UESecurityCapabilities>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.d_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), r: Result<&2, &2, B.Err, G.UESecurityCapabilities>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{uesecuritycapabilities}:
-      InitialContextSetupRequest.v_securitykey(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, uesecuritycapabilities, Fr.Ies.lookup(94, ies))
+      InitialContextSetupRequest.v_securitykey(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, Fr.Ies.lookup(94, ies))
 
-def InitialContextSetupRequest.v_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.v_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, allowednssai: G.AllowedNSSAI(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match m:
     case None{}:
       Fail{B.Invalid{119}}
     case Some{bs}:
-      InitialContextSetupRequest.d_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, Fr.View.exact(G.UESecurityCapabilities, G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      InitialContextSetupRequest.d_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, Fr.View.exact(G.UESecurityCapabilities, G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
-def InitialContextSetupRequest.d_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, r: Result<&2, &2, B.Err, G.AllowedNSSAI()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.d_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, r: Result<&2, &2, B.Err, G.AllowedNSSAI()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{allowednssai}:
-      InitialContextSetupRequest.v_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, allowednssai, Fr.Ies.lookup(119, ies))
+      InitialContextSetupRequest.v_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, Fr.Ies.lookup(119, ies))
 
-def InitialContextSetupRequest.v_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, guami: G.GUAMI, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.v_allowednssai(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, guami: G.GUAMI, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match m:
     case None{}:
       Fail{B.Invalid{0}}
     case Some{bs}:
-      InitialContextSetupRequest.d_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, Fr.View.exact(G.AllowedNSSAI(), G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      InitialContextSetupRequest.d_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, Fr.View.exact(G.AllowedNSSAI(), G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
-def InitialContextSetupRequest.d_guami(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, r: Result<&2, &2, B.Err, G.GUAMI>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.d_guami(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, r: Result<&2, &2, B.Err, G.GUAMI>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{guami}:
-      InitialContextSetupRequest.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, guami, Fr.Ies.lookup(0, ies))
+      InitialContextSetupRequest.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, Fr.Ies.lookup(0, ies))
 
-def InitialContextSetupRequest.v_guami(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+def InitialContextSetupRequest.v_guami(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match m:
     case None{}:
       Fail{B.Invalid{28}}
     case Some{bs}:
-      InitialContextSetupRequest.d_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, Fr.View.exact(G.GUAMI, G.GUAMI.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      InitialContextSetupRequest.d_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, Fr.View.exact(G.GUAMI, G.GUAMI.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def InitialContextSetupRequest.d_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, r: Result<&2, &2, B.Err, G.UEAggregateMaximumBitRate>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{ueaggregatemaximumbitrate}:
+      InitialContextSetupRequest.v_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, Some{ueaggregatemaximumbitrate}, Fr.Ies.lookup(28, ies))
+
+def InitialContextSetupRequest.v_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), oldamf: Maybe<&2, G.AMFName()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
+  match m:
+    case None{}:
+      InitialContextSetupRequest.v_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, None{}, Fr.Ies.lookup(28, ies))
+    case Some{bs}:
+      InitialContextSetupRequest.d_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, Fr.View.exact(G.UEAggregateMaximumBitRate, G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def InitialContextSetupRequest.d_oldamf(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.AMFName()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{oldamf}:
-      InitialContextSetupRequest.v_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{oldamf}, Fr.Ies.lookup(28, ies))
+      InitialContextSetupRequest.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{oldamf}, Fr.Ies.lookup(110, ies))
 
 def InitialContextSetupRequest.v_oldamf(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupRequest.View>:
   match m:
     case None{}:
-      InitialContextSetupRequest.v_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(28, ies))
+      InitialContextSetupRequest.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(110, ies))
     case Some{bs}:
       InitialContextSetupRequest.d_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.AMFName(), G.AMFName.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
@@ -360,17 +416,31 @@ def InitialContextSetupRequest.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Er
 
 # InitialContextSetupResponse
 type InitialContextSetupResponse.View is Data:
-  InitialContextSetupResponse.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID()}
+  InitialContextSetupResponse.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>}
 
 def InitialContextSetupResponse.known() -> List<&2, U32>:
-  [10, 85]
+  [10, 85, 19]
+
+def InitialContextSetupResponse.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, InitialContextSetupResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      Done{InitialContextSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, Some{criticalitydiagnostics}}}
+
+def InitialContextSetupResponse.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupResponse.View>:
+  match m:
+    case None{}:
+      Done{InitialContextSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, None{}}}
+    case Some{bs}:
+      InitialContextSetupResponse.d_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def InitialContextSetupResponse.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>) -> Result<&2, &2, B.Err, InitialContextSetupResponse.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{ran_ue_ngap_id}:
-      Done{InitialContextSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id}}
+      InitialContextSetupResponse.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(19, ies))
 
 def InitialContextSetupResponse.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, InitialContextSetupResponse.View>:
   match m:
@@ -576,17 +646,31 @@ def InitialUEMessage.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, Initial
 
 # NGSetupFailure
 type NGSetupFailure.View is Data:
-  NGSetupFailure.View{cause: G.Cause}
+  NGSetupFailure.View{cause: G.Cause, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>}
 
 def NGSetupFailure.known() -> List<&2, U32>:
-  [15]
+  [15, 19]
+
+def NGSetupFailure.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, cause: G.Cause, r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, NGSetupFailure.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      Done{NGSetupFailure.View{cause, Some{criticalitydiagnostics}}}
+
+def NGSetupFailure.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, cause: G.Cause, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, NGSetupFailure.View>:
+  match m:
+    case None{}:
+      Done{NGSetupFailure.View{cause, None{}}}
+    case Some{bs}:
+      NGSetupFailure.d_criticalitydiagnostics(ies, cause, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def NGSetupFailure.d_cause(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.Cause>) -> Result<&2, &2, B.Err, NGSetupFailure.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{cause}:
-      Done{NGSetupFailure.View{cause}}
+      NGSetupFailure.v_criticalitydiagnostics(ies, cause, Fr.Ies.lookup(19, ies))
 
 def NGSetupFailure.v_cause(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, NGSetupFailure.View>:
   match m:
@@ -666,17 +750,31 @@ def NGSetupRequest.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, NGSetupRe
 
 # NGSetupResponse
 type NGSetupResponse.View is Data:
-  NGSetupResponse.View{amfname: G.AMFName(), servedguamilist: G.ServedGUAMIList(), relativeamfcapacity: G.RelativeAMFCapacity(), plmnsupportlist: G.PLMNSupportList()}
+  NGSetupResponse.View{amfname: G.AMFName(), servedguamilist: G.ServedGUAMIList(), relativeamfcapacity: G.RelativeAMFCapacity(), plmnsupportlist: G.PLMNSupportList(), criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>}
 
 def NGSetupResponse.known() -> List<&2, U32>:
-  [1, 96, 86, 80]
+  [1, 96, 86, 80, 19]
+
+def NGSetupResponse.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amfname: G.AMFName(), servedguamilist: G.ServedGUAMIList(), relativeamfcapacity: G.RelativeAMFCapacity(), plmnsupportlist: G.PLMNSupportList(), r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, NGSetupResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      Done{NGSetupResponse.View{amfname, servedguamilist, relativeamfcapacity, plmnsupportlist, Some{criticalitydiagnostics}}}
+
+def NGSetupResponse.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amfname: G.AMFName(), servedguamilist: G.ServedGUAMIList(), relativeamfcapacity: G.RelativeAMFCapacity(), plmnsupportlist: G.PLMNSupportList(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, NGSetupResponse.View>:
+  match m:
+    case None{}:
+      Done{NGSetupResponse.View{amfname, servedguamilist, relativeamfcapacity, plmnsupportlist, None{}}}
+    case Some{bs}:
+      NGSetupResponse.d_criticalitydiagnostics(ies, amfname, servedguamilist, relativeamfcapacity, plmnsupportlist, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def NGSetupResponse.d_plmnsupportlist(+ies: List<&2, Fr.Ie>, amfname: G.AMFName(), servedguamilist: G.ServedGUAMIList(), relativeamfcapacity: G.RelativeAMFCapacity(), r: Result<&2, &2, B.Err, G.PLMNSupportList()>) -> Result<&2, &2, B.Err, NGSetupResponse.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{plmnsupportlist}:
-      Done{NGSetupResponse.View{amfname, servedguamilist, relativeamfcapacity, plmnsupportlist}}
+      NGSetupResponse.v_criticalitydiagnostics(ies, amfname, servedguamilist, relativeamfcapacity, plmnsupportlist, Fr.Ies.lookup(19, ies))
 
 def NGSetupResponse.v_plmnsupportlist(+ies: List<&2, Fr.Ie>, amfname: G.AMFName(), servedguamilist: G.ServedGUAMIList(), relativeamfcapacity: G.RelativeAMFCapacity(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, NGSetupResponse.View>:
   match m:
@@ -739,17 +837,31 @@ def NGSetupResponse.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, NGSetupR
 
 # PDUSessionResourceSetupRequest
 type PDUSessionResourceSetupRequest.View is Data:
-  PDUSessionResourceSetupRequest.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, pdusessionresourcesetuplistsureq: G.PDUSessionResourceSetupListSUReq()}
+  PDUSessionResourceSetupRequest.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, pdusessionresourcesetuplistsureq: G.PDUSessionResourceSetupListSUReq(), ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>}
 
 def PDUSessionResourceSetupRequest.known() -> List<&2, U32>:
-  [10, 85, 38, 74]
+  [10, 85, 38, 74, 110]
+
+def PDUSessionResourceSetupRequest.d_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, pdusessionresourcesetuplistsureq: G.PDUSessionResourceSetupListSUReq(), r: Result<&2, &2, B.Err, G.UEAggregateMaximumBitRate>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequest.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{ueaggregatemaximumbitrate}:
+      Done{PDUSessionResourceSetupRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, pdusessionresourcesetuplistsureq, Some{ueaggregatemaximumbitrate}}}
+
+def PDUSessionResourceSetupRequest.v_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, pdusessionresourcesetuplistsureq: G.PDUSessionResourceSetupListSUReq(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequest.View>:
+  match m:
+    case None{}:
+      Done{PDUSessionResourceSetupRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, pdusessionresourcesetuplistsureq, None{}}}
+    case Some{bs}:
+      PDUSessionResourceSetupRequest.d_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, pdusessionresourcesetuplistsureq, Fr.View.exact(G.UEAggregateMaximumBitRate, G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def PDUSessionResourceSetupRequest.d_pdusessionresourcesetuplistsureq(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, r: Result<&2, &2, B.Err, G.PDUSessionResourceSetupListSUReq()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequest.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{pdusessionresourcesetuplistsureq}:
-      Done{PDUSessionResourceSetupRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, pdusessionresourcesetuplistsureq}}
+      PDUSessionResourceSetupRequest.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, pdusessionresourcesetuplistsureq, Fr.Ies.lookup(110, ies))
 
 def PDUSessionResourceSetupRequest.v_pdusessionresourcesetuplistsureq(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequest.View>:
   match m:
@@ -812,104 +924,160 @@ def PDUSessionResourceSetupRequest.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, 
 
 # PDUSessionResourceSetupRequestTransfer
 type PDUSessionResourceSetupRequestTransfer.View is Data:
-  PDUSessionResourceSetupRequestTransfer.View{ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), qosflowsetuprequestlist: G.QosFlowSetupRequestList(), redundantul_ngu_up_tnlinformation: Maybe<&2, G.UPTransportLayerInformation>}
+  PDUSessionResourceSetupRequestTransfer.View{pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), qosflowsetuprequestlist: G.QosFlowSetupRequestList(), redundantul_ngu_up_tnlinformation: Maybe<&2, G.UPTransportLayerInformation>}
 
 def PDUSessionResourceSetupRequestTransfer.known() -> List<&2, U32>:
-  [139, 134, 136, 195]
+  [130, 139, 134, 136, 195]
 
-def PDUSessionResourceSetupRequestTransfer.d_redundantul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), qosflowsetuprequestlist: G.QosFlowSetupRequestList(), r: Result<&2, &2, B.Err, G.UPTransportLayerInformation>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.d_redundantul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), qosflowsetuprequestlist: G.QosFlowSetupRequestList(), r: Result<&2, &2, B.Err, G.UPTransportLayerInformation>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{redundantul_ngu_up_tnlinformation}:
-      Done{PDUSessionResourceSetupRequestTransfer.View{ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, Some{redundantul_ngu_up_tnlinformation}}}
+      Done{PDUSessionResourceSetupRequestTransfer.View{pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, Some{redundantul_ngu_up_tnlinformation}}}
 
-def PDUSessionResourceSetupRequestTransfer.v_redundantul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), qosflowsetuprequestlist: G.QosFlowSetupRequestList(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.v_redundantul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), qosflowsetuprequestlist: G.QosFlowSetupRequestList(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match m:
     case None{}:
-      Done{PDUSessionResourceSetupRequestTransfer.View{ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, None{}}}
+      Done{PDUSessionResourceSetupRequestTransfer.View{pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, None{}}}
     case Some{bs}:
-      PDUSessionResourceSetupRequestTransfer.d_redundantul_ngu_up_tnlinformation(ies, ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, Fr.View.exact(G.UPTransportLayerInformation, G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      PDUSessionResourceSetupRequestTransfer.d_redundantul_ngu_up_tnlinformation(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, Fr.View.exact(G.UPTransportLayerInformation, G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
-def PDUSessionResourceSetupRequestTransfer.d_qosflowsetuprequestlist(+ies: List<&2, Fr.Ie>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), r: Result<&2, &2, B.Err, G.QosFlowSetupRequestList()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.d_qosflowsetuprequestlist(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), r: Result<&2, &2, B.Err, G.QosFlowSetupRequestList()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{qosflowsetuprequestlist}:
-      PDUSessionResourceSetupRequestTransfer.v_redundantul_ngu_up_tnlinformation(ies, ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, Fr.Ies.lookup(195, ies))
+      PDUSessionResourceSetupRequestTransfer.v_redundantul_ngu_up_tnlinformation(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, qosflowsetuprequestlist, Fr.Ies.lookup(195, ies))
 
-def PDUSessionResourceSetupRequestTransfer.v_qosflowsetuprequestlist(+ies: List<&2, Fr.Ie>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.v_qosflowsetuprequestlist(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, pdusessiontype: G.PDUSessionType(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match m:
     case None{}:
       Fail{B.Invalid{136}}
     case Some{bs}:
-      PDUSessionResourceSetupRequestTransfer.d_qosflowsetuprequestlist(ies, ul_ngu_up_tnlinformation, pdusessiontype, Fr.View.exact(G.QosFlowSetupRequestList(), G.QosFlowSetupRequestList.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      PDUSessionResourceSetupRequestTransfer.d_qosflowsetuprequestlist(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, Fr.View.exact(G.QosFlowSetupRequestList(), G.QosFlowSetupRequestList.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
-def PDUSessionResourceSetupRequestTransfer.d_pdusessiontype(+ies: List<&2, Fr.Ie>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, r: Result<&2, &2, B.Err, G.PDUSessionType()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.d_pdusessiontype(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, r: Result<&2, &2, B.Err, G.PDUSessionType()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{pdusessiontype}:
-      PDUSessionResourceSetupRequestTransfer.v_qosflowsetuprequestlist(ies, ul_ngu_up_tnlinformation, pdusessiontype, Fr.Ies.lookup(136, ies))
+      PDUSessionResourceSetupRequestTransfer.v_qosflowsetuprequestlist(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, Fr.Ies.lookup(136, ies))
 
-def PDUSessionResourceSetupRequestTransfer.v_pdusessiontype(+ies: List<&2, Fr.Ie>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.v_pdusessiontype(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match m:
     case None{}:
       Fail{B.Invalid{134}}
     case Some{bs}:
-      PDUSessionResourceSetupRequestTransfer.d_pdusessiontype(ies, ul_ngu_up_tnlinformation, Fr.View.exact(G.PDUSessionType(), G.PDUSessionType.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      PDUSessionResourceSetupRequestTransfer.d_pdusessiontype(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, Fr.View.exact(G.PDUSessionType(), G.PDUSessionType.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
-def PDUSessionResourceSetupRequestTransfer.d_ul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.UPTransportLayerInformation>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.d_ul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, r: Result<&2, &2, B.Err, G.UPTransportLayerInformation>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{ul_ngu_up_tnlinformation}:
-      PDUSessionResourceSetupRequestTransfer.v_pdusessiontype(ies, ul_ngu_up_tnlinformation, Fr.Ies.lookup(134, ies))
+      PDUSessionResourceSetupRequestTransfer.v_pdusessiontype(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, Fr.Ies.lookup(134, ies))
 
-def PDUSessionResourceSetupRequestTransfer.v_ul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+def PDUSessionResourceSetupRequestTransfer.v_ul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match m:
     case None{}:
       Fail{B.Invalid{139}}
     case Some{bs}:
-      PDUSessionResourceSetupRequestTransfer.d_ul_ngu_up_tnlinformation(ies, Fr.View.exact(G.UPTransportLayerInformation, G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      PDUSessionResourceSetupRequestTransfer.d_ul_ngu_up_tnlinformation(ies, pdusessionaggregatemaximumbitrate, Fr.View.exact(G.UPTransportLayerInformation, G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceSetupRequestTransfer.d_pdusessionaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.PDUSessionAggregateMaximumBitRate>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{pdusessionaggregatemaximumbitrate}:
+      PDUSessionResourceSetupRequestTransfer.v_ul_ngu_up_tnlinformation(ies, Some{pdusessionaggregatemaximumbitrate}, Fr.Ies.lookup(139, ies))
+
+def PDUSessionResourceSetupRequestTransfer.v_pdusessionaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
+  match m:
+    case None{}:
+      PDUSessionResourceSetupRequestTransfer.v_ul_ngu_up_tnlinformation(ies, None{}, Fr.Ies.lookup(139, ies))
+    case Some{bs}:
+      PDUSessionResourceSetupRequestTransfer.d_pdusessionaggregatemaximumbitrate(ies, Fr.View.exact(G.PDUSessionAggregateMaximumBitRate, G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def PDUSessionResourceSetupRequestTransfer.v_prelude(r: Result<&2, &2, B.Err, List<&2, Fr.Ie>>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{+ies}:
-      PDUSessionResourceSetupRequestTransfer.v_ul_ngu_up_tnlinformation(ies, Fr.Ies.lookup(139, ies))
+      PDUSessionResourceSetupRequestTransfer.v_pdusessionaggregatemaximumbitrate(ies, Fr.Ies.lookup(130, ies))
 
 def PDUSessionResourceSetupRequestTransfer.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View>:
   PDUSessionResourceSetupRequestTransfer.v_prelude(Fr.View.prelude(PDUSessionResourceSetupRequestTransfer.known(), ies))
 
 # PDUSessionResourceSetupResponse
 type PDUSessionResourceSetupResponse.View is Data:
-  PDUSessionResourceSetupResponse.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), userlocationinformation: Maybe<&2, G.UserLocationInformation>}
+  PDUSessionResourceSetupResponse.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcesetuplistsures: Maybe<&2, G.PDUSessionResourceSetupListSURes()>, pdusessionresourcefailedtosetuplistsures: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>, userlocationinformation: Maybe<&2, G.UserLocationInformation>}
 
 def PDUSessionResourceSetupResponse.known() -> List<&2, U32>:
-  [10, 85, 121]
+  [10, 85, 75, 58, 19, 121]
 
-def PDUSessionResourceSetupResponse.d_userlocationinformation(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.UserLocationInformation>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+def PDUSessionResourceSetupResponse.d_userlocationinformation(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcesetuplistsures: Maybe<&2, G.PDUSessionResourceSetupListSURes()>, pdusessionresourcefailedtosetuplistsures: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>, r: Result<&2, &2, B.Err, G.UserLocationInformation>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{userlocationinformation}:
-      Done{PDUSessionResourceSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, Some{userlocationinformation}}}
+      Done{PDUSessionResourceSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, pdusessionresourcefailedtosetuplistsures, criticalitydiagnostics, Some{userlocationinformation}}}
 
-def PDUSessionResourceSetupResponse.v_userlocationinformation(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+def PDUSessionResourceSetupResponse.v_userlocationinformation(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcesetuplistsures: Maybe<&2, G.PDUSessionResourceSetupListSURes()>, pdusessionresourcefailedtosetuplistsures: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
   match m:
     case None{}:
-      Done{PDUSessionResourceSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, None{}}}
+      Done{PDUSessionResourceSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, pdusessionresourcefailedtosetuplistsures, criticalitydiagnostics, None{}}}
     case Some{bs}:
-      PDUSessionResourceSetupResponse.d_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.UserLocationInformation, G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(bs)})))
+      PDUSessionResourceSetupResponse.d_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, pdusessionresourcefailedtosetuplistsures, criticalitydiagnostics, Fr.View.exact(G.UserLocationInformation, G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceSetupResponse.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcesetuplistsures: Maybe<&2, G.PDUSessionResourceSetupListSURes()>, pdusessionresourcefailedtosetuplistsures: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>, r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      PDUSessionResourceSetupResponse.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, pdusessionresourcefailedtosetuplistsures, Some{criticalitydiagnostics}, Fr.Ies.lookup(121, ies))
+
+def PDUSessionResourceSetupResponse.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcesetuplistsures: Maybe<&2, G.PDUSessionResourceSetupListSURes()>, pdusessionresourcefailedtosetuplistsures: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+  match m:
+    case None{}:
+      PDUSessionResourceSetupResponse.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, pdusessionresourcefailedtosetuplistsures, None{}, Fr.Ies.lookup(121, ies))
+    case Some{bs}:
+      PDUSessionResourceSetupResponse.d_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, pdusessionresourcefailedtosetuplistsures, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceSetupResponse.d_pdusessionresourcefailedtosetuplistsures(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcesetuplistsures: Maybe<&2, G.PDUSessionResourceSetupListSURes()>, r: Result<&2, &2, B.Err, G.PDUSessionResourceFailedToSetupListSURes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{pdusessionresourcefailedtosetuplistsures}:
+      PDUSessionResourceSetupResponse.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, Some{pdusessionresourcefailedtosetuplistsures}, Fr.Ies.lookup(19, ies))
+
+def PDUSessionResourceSetupResponse.v_pdusessionresourcefailedtosetuplistsures(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcesetuplistsures: Maybe<&2, G.PDUSessionResourceSetupListSURes()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+  match m:
+    case None{}:
+      PDUSessionResourceSetupResponse.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, None{}, Fr.Ies.lookup(19, ies))
+    case Some{bs}:
+      PDUSessionResourceSetupResponse.d_pdusessionresourcefailedtosetuplistsures(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcesetuplistsures, Fr.View.exact(G.PDUSessionResourceFailedToSetupListSURes(), G.PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceSetupResponse.d_pdusessionresourcesetuplistsures(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.PDUSessionResourceSetupListSURes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{pdusessionresourcesetuplistsures}:
+      PDUSessionResourceSetupResponse.v_pdusessionresourcefailedtosetuplistsures(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{pdusessionresourcesetuplistsures}, Fr.Ies.lookup(58, ies))
+
+def PDUSessionResourceSetupResponse.v_pdusessionresourcesetuplistsures(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
+  match m:
+    case None{}:
+      PDUSessionResourceSetupResponse.v_pdusessionresourcefailedtosetuplistsures(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(58, ies))
+    case Some{bs}:
+      PDUSessionResourceSetupResponse.d_pdusessionresourcesetuplistsures(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.PDUSessionResourceSetupListSURes(), G.PDUSessionResourceSetupListSURes.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def PDUSessionResourceSetupResponse.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{ran_ue_ngap_id}:
-      PDUSessionResourceSetupResponse.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(121, ies))
+      PDUSessionResourceSetupResponse.v_pdusessionresourcesetuplistsures(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(75, ies))
 
 def PDUSessionResourceSetupResponse.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceSetupResponse.View>:
   match m:
@@ -989,22 +1157,36 @@ def UEContextReleaseCommand.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, 
 
 # UEContextReleaseComplete
 type UEContextReleaseComplete.View is Data:
-  UEContextReleaseComplete.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, pdusessionresourcelistcxtrelcpl: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>}
+  UEContextReleaseComplete.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, pdusessionresourcelistcxtrelcpl: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>}
 
 def UEContextReleaseComplete.known() -> List<&2, U32>:
-  [10, 85, 121, 60]
+  [10, 85, 121, 60, 19]
+
+def UEContextReleaseComplete.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, pdusessionresourcelistcxtrelcpl: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>, r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, UEContextReleaseComplete.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      Done{UEContextReleaseComplete.View{amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, pdusessionresourcelistcxtrelcpl, Some{criticalitydiagnostics}}}
+
+def UEContextReleaseComplete.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, pdusessionresourcelistcxtrelcpl: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, UEContextReleaseComplete.View>:
+  match m:
+    case None{}:
+      Done{UEContextReleaseComplete.View{amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, pdusessionresourcelistcxtrelcpl, None{}}}
+    case Some{bs}:
+      UEContextReleaseComplete.d_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, pdusessionresourcelistcxtrelcpl, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def UEContextReleaseComplete.d_pdusessionresourcelistcxtrelcpl(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, r: Result<&2, &2, B.Err, G.PDUSessionResourceListCxtRelCpl()>) -> Result<&2, &2, B.Err, UEContextReleaseComplete.View>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{pdusessionresourcelistcxtrelcpl}:
-      Done{UEContextReleaseComplete.View{amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, Some{pdusessionresourcelistcxtrelcpl}}}
+      UEContextReleaseComplete.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, Some{pdusessionresourcelistcxtrelcpl}, Fr.Ies.lookup(19, ies))
 
 def UEContextReleaseComplete.v_pdusessionresourcelistcxtrelcpl(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, UEContextReleaseComplete.View>:
   match m:
     case None{}:
-      Done{UEContextReleaseComplete.View{amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, None{}}}
+      UEContextReleaseComplete.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, None{}, Fr.Ies.lookup(19, ies))
     case Some{bs}:
       UEContextReleaseComplete.d_pdusessionresourcelistcxtrelcpl(ies, amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, Fr.View.exact(G.PDUSessionResourceListCxtRelCpl(), G.PDUSessionResourceListCxtRelCpl.read(Ap.Cur{0n, Ap.unpack(bs)})))
 

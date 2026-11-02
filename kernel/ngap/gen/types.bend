@@ -4888,6 +4888,153 @@ def DownlinkNASTransport.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DownlinkNASTran
 def DownlinkNASTransport.roundtrips(+bs: B.Bytes()) -> Bool:
   DownlinkNASTransport.roundtrips.end(bs, DownlinkNASTransport.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
+# BitRate ::= INTEGER (0..4000000000000, ...)
+def BitRate() -> Data:
+  Ap.XBig
+
+def BitRate.read(c: Ap.Cur) -> Ap.Rd(BitRate()):
+  Ap.XBig.read(3n, 5n, c)
+
+def BitRate.write(+v: BitRate(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.XBig.write(3n, v, rem, rest)
+
+def BitRate.after(+v: BitRate(), +rem: Nat) -> Nat:
+  Ap.XBig.after(v, rem)
+
+def BitRate.valid(+v: BitRate()) -> Bool:
+  Ap.XBig.valid(5n, v)
+
+def BitRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(BitRate())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(BitRate.valid(v), B.bytes_eq(Ap.pack(BitRate.write(v, 0n, [])), bs)))
+
+def BitRate.roundtrips(+bs: B.Bytes()) -> Bool:
+  BitRate.roundtrips.end(bs, BitRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# UEAggregateMaximumBitRate ::= SEQUENCE { uEAggregateMaximumBitRateDL BitRate, uEAggregateMaximumBitRateUL BitRate, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type UEAggregateMaximumBitRate is Data:
+  UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL: BitRate(), uEAggregateMaximumBitRateUL: BitRate(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def UEAggregateMaximumBitRate.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def UEAggregateMaximumBitRate.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def UEAggregateMaximumBitRate.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def UEAggregateMaximumBitRate.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def UEAggregateMaximumBitRate.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      UEAggregateMaximumBitRate.s_iE_Extensions(Fr.Exts.read(c))
+
+def UEAggregateMaximumBitRate.valid(x: UEAggregateMaximumBitRate) -> Bool:
+  match x:
+    case UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}:
+      Bool.and(BitRate.valid(uEAggregateMaximumBitRateDL), Bool.and(BitRate.valid(uEAggregateMaximumBitRateUL), UEAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)))
+
+def UEAggregateMaximumBitRate.r_iE_Extensions(uEAggregateMaximumBitRateDL: BitRate(), uEAggregateMaximumBitRateUL: BitRate(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(UEAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, c)}
+
+def UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateUL(p_iE_Extensions: Bool, uEAggregateMaximumBitRateDL: BitRate(), r: Ap.Rd(BitRate())) -> Ap.Rd(UEAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(uEAggregateMaximumBitRateUL, c)}:
+      UEAggregateMaximumBitRate.r_iE_Extensions(uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, UEAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, c))
+
+def UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateDL(p_iE_Extensions: Bool, r: Ap.Rd(BitRate())) -> Ap.Rd(UEAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(uEAggregateMaximumBitRateDL, c)}:
+      UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateUL(p_iE_Extensions, uEAggregateMaximumBitRateDL, BitRate.read(c))
+
+def UEAggregateMaximumBitRate.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(UEAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateDL(p_iE_Extensions, BitRate.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def UEAggregateMaximumBitRate.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(UEAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          UEAggregateMaximumBitRate.r_bm(Ap.Bits.read(1n, c))
+
+def UEAggregateMaximumBitRate.read(c: Ap.Cur) -> Ap.Rd(UEAggregateMaximumBitRate):
+  UEAggregateMaximumBitRate.r_ext(Ap.Bit.read(c))
+
+def UEAggregateMaximumBitRate.write(x: UEAggregateMaximumBitRate, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case UEAggregateMaximumBitRate{+uEAggregateMaximumBitRateDL, +uEAggregateMaximumBitRateUL, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = BitRate.after(uEAggregateMaximumBitRateDL, r0)
+      +r2 = BitRate.after(uEAggregateMaximumBitRateUL, r1)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), BitRate.write(uEAggregateMaximumBitRateDL, r0, BitRate.write(uEAggregateMaximumBitRateUL, r1, UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, r2, rest)))))
+
+def UEAggregateMaximumBitRate.after(x: UEAggregateMaximumBitRate, +rem: Nat) -> Nat:
+  match x:
+    case UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = BitRate.after(uEAggregateMaximumBitRateDL, r0)
+      +r2 = BitRate.after(uEAggregateMaximumBitRateUL, r1)
+      +r3 = UEAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, r2)
+      r3
+
+def UEAggregateMaximumBitRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UEAggregateMaximumBitRate)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(UEAggregateMaximumBitRate.valid(v), B.bytes_eq(Ap.pack(UEAggregateMaximumBitRate.write(v, 0n, [])), bs)))
+
+def UEAggregateMaximumBitRate.roundtrips(+bs: B.Bytes()) -> Bool:
+  UEAggregateMaximumBitRate.roundtrips.end(bs, UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
 # AMF-UE-NGAP-ID ::= INTEGER (0..1099511627775)
 def AMF_UE_NGAP_ID() -> Data:
   B.Bytes()
@@ -7667,34 +7814,6 @@ def AllocationAndRetentionPriority.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Alloc
 def AllocationAndRetentionPriority.roundtrips(+bs: B.Bytes()) -> Bool:
   AllocationAndRetentionPriority.roundtrips.end(bs, AllocationAndRetentionPriority.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
-# BitRate ::= INTEGER (0..4000000000000, ...)
-def BitRate() -> Data:
-  Ap.XBig
-
-def BitRate.read(c: Ap.Cur) -> Ap.Rd(BitRate()):
-  Ap.XBig.read(3n, 5n, c)
-
-def BitRate.write(+v: BitRate(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
-  Ap.XBig.write(3n, v, rem, rest)
-
-def BitRate.after(+v: BitRate(), +rem: Nat) -> Nat:
-  Ap.XBig.after(v, rem)
-
-def BitRate.valid(+v: BitRate()) -> Bool:
-  Ap.XBig.valid(5n, v)
-
-def BitRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(BitRate())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(BitRate.valid(v), B.bytes_eq(Ap.pack(BitRate.write(v, 0n, [])), bs)))
-
-def BitRate.roundtrips(+bs: B.Bytes()) -> Bool:
-  BitRate.roundtrips.end(bs, BitRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NotificationControl ::= ENUMERATED { notification-requested, ... }
 def NotificationControl() -> Data:
   Ap.Enum
@@ -8865,6 +8984,125 @@ def UPTransportLayerInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UPTransp
 def UPTransportLayerInformation.roundtrips(+bs: B.Bytes()) -> Bool:
   UPTransportLayerInformation.roundtrips.end(bs, UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
+# PDUSessionAggregateMaximumBitRate ::= SEQUENCE { pDUSessionAggregateMaximumBitRateDL BitRate, pDUSessionAggregateMaximumBitRateUL BitRate, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type PDUSessionAggregateMaximumBitRate is Data:
+  PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL: BitRate(), pDUSessionAggregateMaximumBitRateUL: BitRate(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionAggregateMaximumBitRate.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionAggregateMaximumBitRate.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionAggregateMaximumBitRate.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionAggregateMaximumBitRate.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionAggregateMaximumBitRate.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionAggregateMaximumBitRate.valid(x: PDUSessionAggregateMaximumBitRate) -> Bool:
+  match x:
+    case PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}:
+      Bool.and(BitRate.valid(pDUSessionAggregateMaximumBitRateDL), Bool.and(BitRate.valid(pDUSessionAggregateMaximumBitRateUL), PDUSessionAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)))
+
+def PDUSessionAggregateMaximumBitRate.r_iE_Extensions(pDUSessionAggregateMaximumBitRateDL: BitRate(), pDUSessionAggregateMaximumBitRateUL: BitRate(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, c)}
+
+def PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateUL(p_iE_Extensions: Bool, pDUSessionAggregateMaximumBitRateDL: BitRate(), r: Ap.Rd(BitRate())) -> Ap.Rd(PDUSessionAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionAggregateMaximumBitRateUL, c)}:
+      PDUSessionAggregateMaximumBitRate.r_iE_Extensions(pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, c))
+
+def PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateDL(p_iE_Extensions: Bool, r: Ap.Rd(BitRate())) -> Ap.Rd(PDUSessionAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionAggregateMaximumBitRateDL, c)}:
+      PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateUL(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, BitRate.read(c))
+
+def PDUSessionAggregateMaximumBitRate.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateDL(p_iE_Extensions, BitRate.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionAggregateMaximumBitRate.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionAggregateMaximumBitRate):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          PDUSessionAggregateMaximumBitRate.r_bm(Ap.Bits.read(1n, c))
+
+def PDUSessionAggregateMaximumBitRate.read(c: Ap.Cur) -> Ap.Rd(PDUSessionAggregateMaximumBitRate):
+  PDUSessionAggregateMaximumBitRate.r_ext(Ap.Bit.read(c))
+
+def PDUSessionAggregateMaximumBitRate.write(x: PDUSessionAggregateMaximumBitRate, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionAggregateMaximumBitRate{+pDUSessionAggregateMaximumBitRateDL, +pDUSessionAggregateMaximumBitRateUL, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = BitRate.after(pDUSessionAggregateMaximumBitRateDL, r0)
+      +r2 = BitRate.after(pDUSessionAggregateMaximumBitRateUL, r1)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), BitRate.write(pDUSessionAggregateMaximumBitRateDL, r0, BitRate.write(pDUSessionAggregateMaximumBitRateUL, r1, PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, r2, rest)))))
+
+def PDUSessionAggregateMaximumBitRate.after(x: PDUSessionAggregateMaximumBitRate, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = BitRate.after(pDUSessionAggregateMaximumBitRateDL, r0)
+      +r2 = BitRate.after(pDUSessionAggregateMaximumBitRateUL, r1)
+      +r3 = PDUSessionAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, r2)
+      r3
+
+def PDUSessionAggregateMaximumBitRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionAggregateMaximumBitRate)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionAggregateMaximumBitRate.valid(v), B.bytes_eq(Ap.pack(PDUSessionAggregateMaximumBitRate.write(v, 0n, [])), bs)))
+
+def PDUSessionAggregateMaximumBitRate.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionAggregateMaximumBitRate.roundtrips.end(bs, PDUSessionAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
 # PDUSessionResourceSetupResponse: a protocol IE container (TS 38.413 §9.2).
 def PDUSessionResourceSetupResponse() -> Data:
   List<&2, Fr.Ie>
@@ -8904,11 +9142,111 @@ def PDUSessionResourceSetupResponse.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUS
 def PDUSessionResourceSetupResponse.roundtrips(+bs: B.Bytes()) -> Bool:
   PDUSessionResourceSetupResponse.roundtrips.end(bs, PDUSessionResourceSetupResponse.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
-# ErrorIndication: a protocol IE container (TS 38.413 §9.2).
-def ErrorIndication() -> Data:
-  List<&2, Fr.Ie>
+# PDUSessionResourceFailedToSetupItemSURes-pDUSessionResourceSetupUnsuccessfulTransfer ::= Open
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer() -> Data:
+  B.Bytes()
 
-def ErrorIndication.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(ErrorIndication()):
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()):
+  Ap.Open.read(c)
+
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(+v: PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Open.write(v, rem, rest)
+
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(+v: PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +rem: Nat) -> Nat:
+  Ap.Open.after(rem)
+
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(+v: PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()) -> Bool:
+  Ap.Open.valid(v)
+
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(v, 0n, [])), bs)))
+
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# PDUSessionResourceFailedToSetupItemSURes ::= SEQUENCE { pDUSessionID PDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer OCTET STRING (CONTAINING PDUSessionResourceSetupUnsuccessfulTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type PDUSessionResourceFailedToSetupItemSURes is Data:
+  PDUSessionResourceFailedToSetupItemSURes{pDUSessionID: PDUSessionID(), pDUSessionResourceSetupUnsuccessfulTransfer: PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionResourceFailedToSetupItemSURes.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceFailedToSetupItemSURes.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionResourceFailedToSetupItemSURes.valid(x: PDUSessionResourceFailedToSetupItemSURes) -> Bool:
+  match x:
+    case PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}:
+      Bool.and(PDUSessionID.valid(pDUSessionID), Bool.and(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer), PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(iE_Extensions)))
+
+def PDUSessionResourceFailedToSetupItemSURes.r_iE_Extensions(pDUSessionID: PDUSessionID(), pDUSessionResourceSetupUnsuccessfulTransfer: PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionResourceFailedToSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, c)}
+
+def PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionResourceSetupUnsuccessfulTransfer(p_iE_Extensions: Bool, pDUSessionID: PDUSessionID(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())) -> Ap.Rd(PDUSessionResourceFailedToSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionResourceSetupUnsuccessfulTransfer, c)}:
+      PDUSessionResourceFailedToSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p_iE_Extensions, c))
+
+def PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionID(p_iE_Extensions: Bool, r: Ap.Rd(PDUSessionID())) -> Ap.Rd(PDUSessionResourceFailedToSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionID, c)}:
+      PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionResourceSetupUnsuccessfulTransfer(p_iE_Extensions, pDUSessionID, PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(c))
+
+def PDUSessionResourceFailedToSetupItemSURes.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionResourceFailedToSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionID(p_iE_Extensions, PDUSessionID.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionResourceFailedToSetupItemSURes.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceFailedToSetupItemSURes):
   match r:
     case Fail{e}:
       Fail{e}
@@ -8917,31 +9255,1140 @@ def ErrorIndication.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(ErrorIndication()):
         case True{}:
           Fail{B.Unsupported{1}}
         case False{}:
-          Fr.Ies.read(c)
+          PDUSessionResourceFailedToSetupItemSURes.r_bm(Ap.Bits.read(1n, c))
 
-def ErrorIndication.read(c: Ap.Cur) -> Ap.Rd(ErrorIndication()):
-  ErrorIndication.r_ext(Ap.Bit.read(c))
+def PDUSessionResourceFailedToSetupItemSURes.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceFailedToSetupItemSURes):
+  PDUSessionResourceFailedToSetupItemSURes.r_ext(Ap.Bit.read(c))
 
-def ErrorIndication.write(+v: ErrorIndication(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
-  Ap.Bit.write(False{}, rem, Fr.Ies.write(v, Ap.Bit.after(rem), rest))
+def PDUSessionResourceFailedToSetupItemSURes.write(x: PDUSessionResourceFailedToSetupItemSURes, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionResourceFailedToSetupItemSURes{+pDUSessionID, +pDUSessionResourceSetupUnsuccessfulTransfer, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, r1)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), PDUSessionID.write(pDUSessionID, r0, PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, r1, PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, r2, rest)))))
 
-def ErrorIndication.after(+v: ErrorIndication(), +rem: Nat) -> Nat:
-  0n
+def PDUSessionResourceFailedToSetupItemSURes.after(x: PDUSessionResourceFailedToSetupItemSURes, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, r1)
+      +r3 = PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(iE_Extensions, r2)
+      r3
 
-def ErrorIndication.valid(+v: ErrorIndication()) -> Bool:
-  Fr.Ies.valid(v)
-
-def ErrorIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ErrorIndication())) -> Bool:
+def PDUSessionResourceFailedToSetupItemSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemSURes)) -> Bool:
   match r:
     case Fail{e}:
       False{}
     case Done{(+v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ErrorIndication.valid(v), B.bytes_eq(Ap.pack(ErrorIndication.write(v, 0n, [])), bs)))
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemSURes.write(v, 0n, [])), bs)))
 
-def ErrorIndication.roundtrips(+bs: B.Bytes()) -> Bool:
-  ErrorIndication.roundtrips.end(bs, ErrorIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
+def PDUSessionResourceFailedToSetupItemSURes.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionResourceFailedToSetupItemSURes.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# PDUSessionResourceFailedToSetupListSURes ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceFailedToSetupItemSURes
+def PDUSessionResourceFailedToSetupListSURes() -> Data:
+  List<&2, PDUSessionResourceFailedToSetupItemSURes>
+
+def PDUSessionResourceFailedToSetupListSURes.all_valid(xs: PDUSessionResourceFailedToSetupListSURes()) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case x <> more:
+      Bool.and(PDUSessionResourceFailedToSetupItemSURes.valid(x), PDUSessionResourceFailedToSetupListSURes.all_valid(more))
+
+def PDUSessionResourceFailedToSetupListSURes.valid(+xs: PDUSessionResourceFailedToSetupListSURes()) -> Bool:
+  Bool.and(Ap.Size.valid(1n, 255n, List.length(&2, PDUSessionResourceFailedToSetupItemSURes, xs)), PDUSessionResourceFailedToSetupListSURes.all_valid(xs))
+
+def PDUSessionResourceFailedToSetupListSURes.cons(x: PDUSessionResourceFailedToSetupItemSURes, r: Ap.Rd(PDUSessionResourceFailedToSetupListSURes())) -> Ap.Rd(PDUSessionResourceFailedToSetupListSURes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(xs, c)}:
+      Done{(x <> xs, c)}
+
+def PDUSessionResourceFailedToSetupListSURes.next(r: Ap.Rd(PDUSessionResourceFailedToSetupItemSURes), more: Ap.Cur -> Ap.Rd(PDUSessionResourceFailedToSetupListSURes())) -> Ap.Rd(PDUSessionResourceFailedToSetupListSURes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(x, c)}:
+      PDUSessionResourceFailedToSetupListSURes.cons(x, more(c))
+
+def PDUSessionResourceFailedToSetupListSURes.items(n: Nat, c: Ap.Cur) -> Ap.Rd(PDUSessionResourceFailedToSetupListSURes()):
+  match n:
+    case 0n:
+      Done{([], c)}
+    case 1n+p:
+      PDUSessionResourceFailedToSetupListSURes.next(PDUSessionResourceFailedToSetupItemSURes.read(c), c2 => PDUSessionResourceFailedToSetupListSURes.items(p, c2))
+
+def PDUSessionResourceFailedToSetupListSURes.count(r: Ap.Rd(Nat)) -> Ap.Rd(PDUSessionResourceFailedToSetupListSURes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(n, c)}:
+      PDUSessionResourceFailedToSetupListSURes.items(n, c)
+
+def PDUSessionResourceFailedToSetupListSURes.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceFailedToSetupListSURes()):
+  PDUSessionResourceFailedToSetupListSURes.count(Ap.Size.read(True{}, 8n, 1n, 255n, c))
+
+def PDUSessionResourceFailedToSetupListSURes.items_write(xs: PDUSessionResourceFailedToSetupListSURes(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match xs:
+    case Nil{}:
+      rest
+    case +x <> more:
+      PDUSessionResourceFailedToSetupItemSURes.write(x, rem, PDUSessionResourceFailedToSetupListSURes.items_write(more, PDUSessionResourceFailedToSetupItemSURes.after(x, rem), rest))
+
+def PDUSessionResourceFailedToSetupListSURes.write(+xs: PDUSessionResourceFailedToSetupListSURes(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Size.write(True{}, 8n, 1n, List.length(&2, PDUSessionResourceFailedToSetupItemSURes, xs), rem, PDUSessionResourceFailedToSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))
+
+def PDUSessionResourceFailedToSetupListSURes.items_after(xs: PDUSessionResourceFailedToSetupListSURes(), +rem: Nat) -> Nat:
+  match xs:
+    case Nil{}:
+      rem
+    case x <> more:
+      PDUSessionResourceFailedToSetupListSURes.items_after(more, PDUSessionResourceFailedToSetupItemSURes.after(x, rem))
+
+def PDUSessionResourceFailedToSetupListSURes.after(+xs: PDUSessionResourceFailedToSetupListSURes(), +rem: Nat) -> Nat:
+  PDUSessionResourceFailedToSetupListSURes.items_after(xs, Ap.Size.after(True{}, 8n, rem))
+
+def PDUSessionResourceFailedToSetupListSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupListSURes())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupListSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupListSURes.write(v, 0n, [])), bs)))
+
+def PDUSessionResourceFailedToSetupListSURes.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionResourceFailedToSetupListSURes.roundtrips.end(bs, PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# ProcedureCode ::= INTEGER (0..255)
+def ProcedureCode() -> Data:
+  U32
+
+def ProcedureCode.read(c: Ap.Cur) -> Ap.Rd(ProcedureCode()):
+  Ap.AInt.read(8n, 255, c)
+
+def ProcedureCode.write(+v: ProcedureCode(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.AInt.write(8n, v, rem, rest)
+
+def ProcedureCode.after(+v: ProcedureCode(), +rem: Nat) -> Nat:
+  Ap.AInt.after(8n, rem)
+
+def ProcedureCode.valid(+v: ProcedureCode()) -> Bool:
+  Ap.Int.valid(8n, 255, v)
+
+def ProcedureCode.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ProcedureCode())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(ProcedureCode.valid(v), B.bytes_eq(Ap.pack(ProcedureCode.write(v, 0n, [])), bs)))
+
+def ProcedureCode.roundtrips(+bs: B.Bytes()) -> Bool:
+  ProcedureCode.roundtrips.end(bs, ProcedureCode.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# TriggeringMessage ::= ENUMERATED { initiating-message, successful-outcome, unsuccessful-outcome }
+def TriggeringMessage() -> Data:
+  Ap.Enum
+
+def TriggeringMessage.initiating_message() -> U32:
+  0
+
+def TriggeringMessage.successful_outcome() -> U32:
+  1
+
+def TriggeringMessage.unsuccessful_outcome() -> U32:
+  2
+
+def TriggeringMessage.read(c: Ap.Cur) -> Ap.Rd(TriggeringMessage()):
+  Ap.Enum.read(2n, 2, False{}, c)
+
+def TriggeringMessage.write(+v: TriggeringMessage(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Enum.write(2n, False{}, v, rem, rest)
+
+def TriggeringMessage.after(+v: TriggeringMessage(), +rem: Nat) -> Nat:
+  Ap.Enum.after(2n, False{}, v, rem)
+
+def TriggeringMessage.valid(+v: TriggeringMessage()) -> Bool:
+  Ap.Enum.valid(2n, 2, False{}, v)
+
+def TriggeringMessage.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TriggeringMessage())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(TriggeringMessage.valid(v), B.bytes_eq(Ap.pack(TriggeringMessage.write(v, 0n, [])), bs)))
+
+def TriggeringMessage.roundtrips(+bs: B.Bytes()) -> Bool:
+  TriggeringMessage.roundtrips.end(bs, TriggeringMessage.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# Criticality ::= ENUMERATED { reject, ignore, notify }
+def Criticality() -> Data:
+  Ap.Enum
+
+def Criticality.reject() -> U32:
+  0
+
+def Criticality.ignore() -> U32:
+  1
+
+def Criticality.notify() -> U32:
+  2
+
+def Criticality.read(c: Ap.Cur) -> Ap.Rd(Criticality()):
+  Ap.Enum.read(2n, 2, False{}, c)
+
+def Criticality.write(+v: Criticality(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Enum.write(2n, False{}, v, rem, rest)
+
+def Criticality.after(+v: Criticality(), +rem: Nat) -> Nat:
+  Ap.Enum.after(2n, False{}, v, rem)
+
+def Criticality.valid(+v: Criticality()) -> Bool:
+  Ap.Enum.valid(2n, 2, False{}, v)
+
+def Criticality.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Criticality())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(Criticality.valid(v), B.bytes_eq(Ap.pack(Criticality.write(v, 0n, [])), bs)))
+
+def Criticality.roundtrips(+bs: B.Bytes()) -> Bool:
+  Criticality.roundtrips.end(bs, Criticality.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# ProtocolIE-ID ::= INTEGER (0..65535)
+def ProtocolIE_ID() -> Data:
+  U32
+
+def ProtocolIE_ID.read(c: Ap.Cur) -> Ap.Rd(ProtocolIE_ID()):
+  Ap.AInt.read(16n, 65535, c)
+
+def ProtocolIE_ID.write(+v: ProtocolIE_ID(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.AInt.write(16n, v, rem, rest)
+
+def ProtocolIE_ID.after(+v: ProtocolIE_ID(), +rem: Nat) -> Nat:
+  Ap.AInt.after(16n, rem)
+
+def ProtocolIE_ID.valid(+v: ProtocolIE_ID()) -> Bool:
+  Ap.Int.valid(16n, 65535, v)
+
+def ProtocolIE_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ProtocolIE_ID())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(ProtocolIE_ID.valid(v), B.bytes_eq(Ap.pack(ProtocolIE_ID.write(v, 0n, [])), bs)))
+
+def ProtocolIE_ID.roundtrips(+bs: B.Bytes()) -> Bool:
+  ProtocolIE_ID.roundtrips.end(bs, ProtocolIE_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# TypeOfError ::= ENUMERATED { not-understood, missing, ... }
+def TypeOfError() -> Data:
+  Ap.Enum
+
+def TypeOfError.not_understood() -> U32:
+  0
+
+def TypeOfError.missing() -> U32:
+  1
+
+def TypeOfError.read(c: Ap.Cur) -> Ap.Rd(TypeOfError()):
+  Ap.Enum.read(1n, 1, True{}, c)
+
+def TypeOfError.write(+v: TypeOfError(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Enum.write(1n, True{}, v, rem, rest)
+
+def TypeOfError.after(+v: TypeOfError(), +rem: Nat) -> Nat:
+  Ap.Enum.after(1n, True{}, v, rem)
+
+def TypeOfError.valid(+v: TypeOfError()) -> Bool:
+  Ap.Enum.valid(1n, 1, True{}, v)
+
+def TypeOfError.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TypeOfError())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(TypeOfError.valid(v), B.bytes_eq(Ap.pack(TypeOfError.write(v, 0n, [])), bs)))
+
+def TypeOfError.roundtrips(+bs: B.Bytes()) -> Bool:
+  TypeOfError.roundtrips.end(bs, TypeOfError.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# CriticalityDiagnostics-IE-Item ::= SEQUENCE { iECriticality Criticality, iE-ID ProtocolIE-ID, typeOfError TypeOfError, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type CriticalityDiagnostics_IE_Item is Data:
+  CriticalityDiagnostics_IE_Item{iECriticality: Criticality(), iE_ID: ProtocolIE_ID(), typeOfError: TypeOfError(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def CriticalityDiagnostics_IE_Item.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def CriticalityDiagnostics_IE_Item.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def CriticalityDiagnostics_IE_Item.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def CriticalityDiagnostics_IE_Item.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def CriticalityDiagnostics_IE_Item.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      CriticalityDiagnostics_IE_Item.s_iE_Extensions(Fr.Exts.read(c))
+
+def CriticalityDiagnostics_IE_Item.valid(x: CriticalityDiagnostics_IE_Item) -> Bool:
+  match x:
+    case CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}:
+      Bool.and(Criticality.valid(iECriticality), Bool.and(ProtocolIE_ID.valid(iE_ID), Bool.and(TypeOfError.valid(typeOfError), CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions))))
+
+def CriticalityDiagnostics_IE_Item.r_iE_Extensions(iECriticality: Criticality(), iE_ID: ProtocolIE_ID(), typeOfError: TypeOfError(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(CriticalityDiagnostics_IE_Item):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, c)}
+
+def CriticalityDiagnostics_IE_Item.r_typeOfError(p_iE_Extensions: Bool, iECriticality: Criticality(), iE_ID: ProtocolIE_ID(), r: Ap.Rd(TypeOfError())) -> Ap.Rd(CriticalityDiagnostics_IE_Item):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(typeOfError, c)}:
+      CriticalityDiagnostics_IE_Item.r_iE_Extensions(iECriticality, iE_ID, typeOfError, CriticalityDiagnostics_IE_Item.o_iE_Extensions(p_iE_Extensions, c))
+
+def CriticalityDiagnostics_IE_Item.r_iE_ID(p_iE_Extensions: Bool, iECriticality: Criticality(), r: Ap.Rd(ProtocolIE_ID())) -> Ap.Rd(CriticalityDiagnostics_IE_Item):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_ID, c)}:
+      CriticalityDiagnostics_IE_Item.r_typeOfError(p_iE_Extensions, iECriticality, iE_ID, TypeOfError.read(c))
+
+def CriticalityDiagnostics_IE_Item.r_iECriticality(p_iE_Extensions: Bool, r: Ap.Rd(Criticality())) -> Ap.Rd(CriticalityDiagnostics_IE_Item):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iECriticality, c)}:
+      CriticalityDiagnostics_IE_Item.r_iE_ID(p_iE_Extensions, iECriticality, ProtocolIE_ID.read(c))
+
+def CriticalityDiagnostics_IE_Item.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(CriticalityDiagnostics_IE_Item):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          CriticalityDiagnostics_IE_Item.r_iECriticality(p_iE_Extensions, Criticality.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def CriticalityDiagnostics_IE_Item.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(CriticalityDiagnostics_IE_Item):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          CriticalityDiagnostics_IE_Item.r_bm(Ap.Bits.read(1n, c))
+
+def CriticalityDiagnostics_IE_Item.read(c: Ap.Cur) -> Ap.Rd(CriticalityDiagnostics_IE_Item):
+  CriticalityDiagnostics_IE_Item.r_ext(Ap.Bit.read(c))
+
+def CriticalityDiagnostics_IE_Item.write(x: CriticalityDiagnostics_IE_Item, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case CriticalityDiagnostics_IE_Item{+iECriticality, +iE_ID, +typeOfError, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = Criticality.after(iECriticality, r0)
+      +r2 = ProtocolIE_ID.after(iE_ID, r1)
+      +r3 = TypeOfError.after(typeOfError, r2)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), Criticality.write(iECriticality, r0, ProtocolIE_ID.write(iE_ID, r1, TypeOfError.write(typeOfError, r2, CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, r3, rest))))))
+
+def CriticalityDiagnostics_IE_Item.after(x: CriticalityDiagnostics_IE_Item, +rem: Nat) -> Nat:
+  match x:
+    case CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = Criticality.after(iECriticality, r0)
+      +r2 = ProtocolIE_ID.after(iE_ID, r1)
+      +r3 = TypeOfError.after(typeOfError, r2)
+      +r4 = CriticalityDiagnostics_IE_Item.a_iE_Extensions(iE_Extensions, r3)
+      r4
+
+def CriticalityDiagnostics_IE_Item.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CriticalityDiagnostics_IE_Item)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(CriticalityDiagnostics_IE_Item.valid(v), B.bytes_eq(Ap.pack(CriticalityDiagnostics_IE_Item.write(v, 0n, [])), bs)))
+
+def CriticalityDiagnostics_IE_Item.roundtrips(+bs: B.Bytes()) -> Bool:
+  CriticalityDiagnostics_IE_Item.roundtrips.end(bs, CriticalityDiagnostics_IE_Item.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# CriticalityDiagnostics-IE-List ::= SEQUENCE (SIZE(1..256)) OF CriticalityDiagnostics-IE-Item
+def CriticalityDiagnostics_IE_List() -> Data:
+  List<&2, CriticalityDiagnostics_IE_Item>
+
+def CriticalityDiagnostics_IE_List.all_valid(xs: CriticalityDiagnostics_IE_List()) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case x <> more:
+      Bool.and(CriticalityDiagnostics_IE_Item.valid(x), CriticalityDiagnostics_IE_List.all_valid(more))
+
+def CriticalityDiagnostics_IE_List.valid(+xs: CriticalityDiagnostics_IE_List()) -> Bool:
+  Bool.and(Ap.Size.valid(1n, 255n, List.length(&2, CriticalityDiagnostics_IE_Item, xs)), CriticalityDiagnostics_IE_List.all_valid(xs))
+
+def CriticalityDiagnostics_IE_List.cons(x: CriticalityDiagnostics_IE_Item, r: Ap.Rd(CriticalityDiagnostics_IE_List())) -> Ap.Rd(CriticalityDiagnostics_IE_List()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(xs, c)}:
+      Done{(x <> xs, c)}
+
+def CriticalityDiagnostics_IE_List.next(r: Ap.Rd(CriticalityDiagnostics_IE_Item), more: Ap.Cur -> Ap.Rd(CriticalityDiagnostics_IE_List())) -> Ap.Rd(CriticalityDiagnostics_IE_List()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(x, c)}:
+      CriticalityDiagnostics_IE_List.cons(x, more(c))
+
+def CriticalityDiagnostics_IE_List.items(n: Nat, c: Ap.Cur) -> Ap.Rd(CriticalityDiagnostics_IE_List()):
+  match n:
+    case 0n:
+      Done{([], c)}
+    case 1n+p:
+      CriticalityDiagnostics_IE_List.next(CriticalityDiagnostics_IE_Item.read(c), c2 => CriticalityDiagnostics_IE_List.items(p, c2))
+
+def CriticalityDiagnostics_IE_List.count(r: Ap.Rd(Nat)) -> Ap.Rd(CriticalityDiagnostics_IE_List()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(n, c)}:
+      CriticalityDiagnostics_IE_List.items(n, c)
+
+def CriticalityDiagnostics_IE_List.read(c: Ap.Cur) -> Ap.Rd(CriticalityDiagnostics_IE_List()):
+  CriticalityDiagnostics_IE_List.count(Ap.Size.read(True{}, 8n, 1n, 255n, c))
+
+def CriticalityDiagnostics_IE_List.items_write(xs: CriticalityDiagnostics_IE_List(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match xs:
+    case Nil{}:
+      rest
+    case +x <> more:
+      CriticalityDiagnostics_IE_Item.write(x, rem, CriticalityDiagnostics_IE_List.items_write(more, CriticalityDiagnostics_IE_Item.after(x, rem), rest))
+
+def CriticalityDiagnostics_IE_List.write(+xs: CriticalityDiagnostics_IE_List(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Size.write(True{}, 8n, 1n, List.length(&2, CriticalityDiagnostics_IE_Item, xs), rem, CriticalityDiagnostics_IE_List.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))
+
+def CriticalityDiagnostics_IE_List.items_after(xs: CriticalityDiagnostics_IE_List(), +rem: Nat) -> Nat:
+  match xs:
+    case Nil{}:
+      rem
+    case x <> more:
+      CriticalityDiagnostics_IE_List.items_after(more, CriticalityDiagnostics_IE_Item.after(x, rem))
+
+def CriticalityDiagnostics_IE_List.after(+xs: CriticalityDiagnostics_IE_List(), +rem: Nat) -> Nat:
+  CriticalityDiagnostics_IE_List.items_after(xs, Ap.Size.after(True{}, 8n, rem))
+
+def CriticalityDiagnostics_IE_List.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CriticalityDiagnostics_IE_List())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(CriticalityDiagnostics_IE_List.valid(v), B.bytes_eq(Ap.pack(CriticalityDiagnostics_IE_List.write(v, 0n, [])), bs)))
+
+def CriticalityDiagnostics_IE_List.roundtrips(+bs: B.Bytes()) -> Bool:
+  CriticalityDiagnostics_IE_List.roundtrips.end(bs, CriticalityDiagnostics_IE_List.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# CriticalityDiagnostics ::= SEQUENCE { procedureCode ProcedureCode OPTIONAL, triggeringMessage TriggeringMessage OPTIONAL, procedureCriticality Criticality OPTIONAL, iEsCriticalityDiagnostics CriticalityDiagnostics-IE-List OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type CriticalityDiagnostics is Data:
+  CriticalityDiagnostics{procedureCode: Maybe<&2, ProcedureCode()>, triggeringMessage: Maybe<&2, TriggeringMessage()>, procedureCriticality: Maybe<&2, Criticality()>, iEsCriticalityDiagnostics: Maybe<&2, CriticalityDiagnostics_IE_List()>, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def CriticalityDiagnostics.v_procedureCode(m: Maybe<&2, ProcedureCode()>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      ProcedureCode.valid(v)
+
+def CriticalityDiagnostics.w_procedureCode(m: Maybe<&2, ProcedureCode()>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      ProcedureCode.write(v, rem, rest)
+
+def CriticalityDiagnostics.a_procedureCode(m: Maybe<&2, ProcedureCode()>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      ProcedureCode.after(v, rem)
+
+def CriticalityDiagnostics.s_procedureCode(r: Ap.Rd(ProcedureCode())) -> Ap.Rd(Maybe<&2, ProcedureCode()>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def CriticalityDiagnostics.o_procedureCode(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, ProcedureCode()>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      CriticalityDiagnostics.s_procedureCode(ProcedureCode.read(c))
+
+def CriticalityDiagnostics.v_triggeringMessage(m: Maybe<&2, TriggeringMessage()>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      TriggeringMessage.valid(v)
+
+def CriticalityDiagnostics.w_triggeringMessage(m: Maybe<&2, TriggeringMessage()>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      TriggeringMessage.write(v, rem, rest)
+
+def CriticalityDiagnostics.a_triggeringMessage(m: Maybe<&2, TriggeringMessage()>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      TriggeringMessage.after(v, rem)
+
+def CriticalityDiagnostics.s_triggeringMessage(r: Ap.Rd(TriggeringMessage())) -> Ap.Rd(Maybe<&2, TriggeringMessage()>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def CriticalityDiagnostics.o_triggeringMessage(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, TriggeringMessage()>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      CriticalityDiagnostics.s_triggeringMessage(TriggeringMessage.read(c))
+
+def CriticalityDiagnostics.v_procedureCriticality(m: Maybe<&2, Criticality()>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Criticality.valid(v)
+
+def CriticalityDiagnostics.w_procedureCriticality(m: Maybe<&2, Criticality()>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Criticality.write(v, rem, rest)
+
+def CriticalityDiagnostics.a_procedureCriticality(m: Maybe<&2, Criticality()>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Criticality.after(v, rem)
+
+def CriticalityDiagnostics.s_procedureCriticality(r: Ap.Rd(Criticality())) -> Ap.Rd(Maybe<&2, Criticality()>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def CriticalityDiagnostics.o_procedureCriticality(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, Criticality()>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      CriticalityDiagnostics.s_procedureCriticality(Criticality.read(c))
+
+def CriticalityDiagnostics.v_iEsCriticalityDiagnostics(m: Maybe<&2, CriticalityDiagnostics_IE_List()>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      CriticalityDiagnostics_IE_List.valid(v)
+
+def CriticalityDiagnostics.w_iEsCriticalityDiagnostics(m: Maybe<&2, CriticalityDiagnostics_IE_List()>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      CriticalityDiagnostics_IE_List.write(v, rem, rest)
+
+def CriticalityDiagnostics.a_iEsCriticalityDiagnostics(m: Maybe<&2, CriticalityDiagnostics_IE_List()>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      CriticalityDiagnostics_IE_List.after(v, rem)
+
+def CriticalityDiagnostics.s_iEsCriticalityDiagnostics(r: Ap.Rd(CriticalityDiagnostics_IE_List())) -> Ap.Rd(Maybe<&2, CriticalityDiagnostics_IE_List()>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, CriticalityDiagnostics_IE_List()>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      CriticalityDiagnostics.s_iEsCriticalityDiagnostics(CriticalityDiagnostics_IE_List.read(c))
+
+def CriticalityDiagnostics.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def CriticalityDiagnostics.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def CriticalityDiagnostics.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def CriticalityDiagnostics.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def CriticalityDiagnostics.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      CriticalityDiagnostics.s_iE_Extensions(Fr.Exts.read(c))
+
+def CriticalityDiagnostics.valid(x: CriticalityDiagnostics) -> Bool:
+  match x:
+    case CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}:
+      Bool.and(CriticalityDiagnostics.v_procedureCode(procedureCode), Bool.and(CriticalityDiagnostics.v_triggeringMessage(triggeringMessage), Bool.and(CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), CriticalityDiagnostics.v_iE_Extensions(iE_Extensions)))))
+
+def CriticalityDiagnostics.r_iE_Extensions(procedureCode: Maybe<&2, ProcedureCode()>, triggeringMessage: Maybe<&2, TriggeringMessage()>, procedureCriticality: Maybe<&2, Criticality()>, iEsCriticalityDiagnostics: Maybe<&2, CriticalityDiagnostics_IE_List()>, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(CriticalityDiagnostics):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, c)}
+
+def CriticalityDiagnostics.r_iEsCriticalityDiagnostics(p_iE_Extensions: Bool, procedureCode: Maybe<&2, ProcedureCode()>, triggeringMessage: Maybe<&2, TriggeringMessage()>, procedureCriticality: Maybe<&2, Criticality()>, r: Ap.Rd(Maybe<&2, CriticalityDiagnostics_IE_List()>)) -> Ap.Rd(CriticalityDiagnostics):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iEsCriticalityDiagnostics, c)}:
+      CriticalityDiagnostics.r_iE_Extensions(procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, CriticalityDiagnostics.o_iE_Extensions(p_iE_Extensions, c))
+
+def CriticalityDiagnostics.r_procedureCriticality(p_iEsCriticalityDiagnostics: Bool, p_iE_Extensions: Bool, procedureCode: Maybe<&2, ProcedureCode()>, triggeringMessage: Maybe<&2, TriggeringMessage()>, r: Ap.Rd(Maybe<&2, Criticality()>)) -> Ap.Rd(CriticalityDiagnostics):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(procedureCriticality, c)}:
+      CriticalityDiagnostics.r_iEsCriticalityDiagnostics(p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, c))
+
+def CriticalityDiagnostics.r_triggeringMessage(p_procedureCriticality: Bool, p_iEsCriticalityDiagnostics: Bool, p_iE_Extensions: Bool, procedureCode: Maybe<&2, ProcedureCode()>, r: Ap.Rd(Maybe<&2, TriggeringMessage()>)) -> Ap.Rd(CriticalityDiagnostics):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(triggeringMessage, c)}:
+      CriticalityDiagnostics.r_procedureCriticality(p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, CriticalityDiagnostics.o_procedureCriticality(p_procedureCriticality, c))
+
+def CriticalityDiagnostics.r_procedureCode(p_triggeringMessage: Bool, p_procedureCriticality: Bool, p_iEsCriticalityDiagnostics: Bool, p_iE_Extensions: Bool, r: Ap.Rd(Maybe<&2, ProcedureCode()>)) -> Ap.Rd(CriticalityDiagnostics):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(procedureCode, c)}:
+      CriticalityDiagnostics.r_triggeringMessage(p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, CriticalityDiagnostics.o_triggeringMessage(p_triggeringMessage, c))
+
+def CriticalityDiagnostics.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(CriticalityDiagnostics):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_procedureCode <> p_triggeringMessage <> p_procedureCriticality <> p_iEsCriticalityDiagnostics <> p_iE_Extensions <> Nil{}:
+          CriticalityDiagnostics.r_procedureCode(p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, CriticalityDiagnostics.o_procedureCode(p_procedureCode, c))
+        case _:
+          Fail{B.Short{}}
+
+def CriticalityDiagnostics.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(CriticalityDiagnostics):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          CriticalityDiagnostics.r_bm(Ap.Bits.read(5n, c))
+
+def CriticalityDiagnostics.read(c: Ap.Cur) -> Ap.Rd(CriticalityDiagnostics):
+  CriticalityDiagnostics.r_ext(Ap.Bit.read(c))
+
+def CriticalityDiagnostics.write(x: CriticalityDiagnostics, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case CriticalityDiagnostics{+procedureCode, +triggeringMessage, +procedureCriticality, +iEsCriticalityDiagnostics, +iE_Extensions}:
+      +r0 = Ap.Bits.after(5n, Ap.Bit.after(rem))
+      +r1 = CriticalityDiagnostics.a_procedureCode(procedureCode, r0)
+      +r2 = CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, r1)
+      +r3 = CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, r2)
+      +r4 = CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, r3)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(ProcedureCode(), procedureCode), Fr.Present(TriggeringMessage(), triggeringMessage), Fr.Present(Criticality(), procedureCriticality), Fr.Present(CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), CriticalityDiagnostics.w_procedureCode(procedureCode, r0, CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, r1, CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, r2, CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, r3, CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, r4, rest)))))))
+
+def CriticalityDiagnostics.after(x: CriticalityDiagnostics, +rem: Nat) -> Nat:
+  match x:
+    case CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}:
+      +r0 = Ap.Bits.after(5n, Ap.Bit.after(rem))
+      +r1 = CriticalityDiagnostics.a_procedureCode(procedureCode, r0)
+      +r2 = CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, r1)
+      +r3 = CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, r2)
+      +r4 = CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, r3)
+      +r5 = CriticalityDiagnostics.a_iE_Extensions(iE_Extensions, r4)
+      r5
+
+def CriticalityDiagnostics.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CriticalityDiagnostics)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(CriticalityDiagnostics.valid(v), B.bytes_eq(Ap.pack(CriticalityDiagnostics.write(v, 0n, [])), bs)))
+
+def CriticalityDiagnostics.roundtrips(+bs: B.Bytes()) -> Bool:
+  CriticalityDiagnostics.roundtrips.end(bs, CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# PDUSessionResourceSetupUnsuccessfulTransfer ::= SEQUENCE { cause Cause, criticalityDiagnostics CriticalityDiagnostics OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type PDUSessionResourceSetupUnsuccessfulTransfer is Data:
+  PDUSessionResourceSetupUnsuccessfulTransfer{cause: Cause, criticalityDiagnostics: Maybe<&2, CriticalityDiagnostics>, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(m: Maybe<&2, CriticalityDiagnostics>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      CriticalityDiagnostics.valid(v)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(m: Maybe<&2, CriticalityDiagnostics>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      CriticalityDiagnostics.write(v, rem, rest)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(m: Maybe<&2, CriticalityDiagnostics>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      CriticalityDiagnostics.after(v, rem)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.s_criticalityDiagnostics(r: Ap.Rd(CriticalityDiagnostics)) -> Ap.Rd(Maybe<&2, CriticalityDiagnostics>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, CriticalityDiagnostics>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.s_criticalityDiagnostics(CriticalityDiagnostics.read(c))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.valid(x: PDUSessionResourceSetupUnsuccessfulTransfer) -> Bool:
+  match x:
+    case PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}:
+      Bool.and(Cause.valid(cause), Bool.and(PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics), PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(iE_Extensions)))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.r_iE_Extensions(cause: Cause, criticalityDiagnostics: Maybe<&2, CriticalityDiagnostics>, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, c)}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.r_criticalityDiagnostics(p_iE_Extensions: Bool, cause: Cause, r: Ap.Rd(Maybe<&2, CriticalityDiagnostics>)) -> Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(criticalityDiagnostics, c)}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.r_iE_Extensions(cause, criticalityDiagnostics, PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p_iE_Extensions, c))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.r_cause(p_criticalityDiagnostics: Bool, p_iE_Extensions: Bool, r: Ap.Rd(Cause)) -> Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(cause, c)}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.r_criticalityDiagnostics(p_iE_Extensions, cause, PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p_criticalityDiagnostics, c))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_criticalityDiagnostics <> p_iE_Extensions <> Nil{}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.r_cause(p_criticalityDiagnostics, p_iE_Extensions, Cause.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.r_bm(Ap.Bits.read(2n, c))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer):
+  PDUSessionResourceSetupUnsuccessfulTransfer.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.write(x: PDUSessionResourceSetupUnsuccessfulTransfer, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionResourceSetupUnsuccessfulTransfer{+cause, +criticalityDiagnostics, +iE_Extensions}:
+      +r0 = Ap.Bits.after(2n, Ap.Bit.after(rem))
+      +r1 = Cause.after(cause, r0)
+      +r2 = PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, r1)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(CriticalityDiagnostics, criticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), Cause.write(cause, r0, PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, r1, PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, r2, rest)))))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.after(x: PDUSessionResourceSetupUnsuccessfulTransfer, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}:
+      +r0 = Ap.Bits.after(2n, Ap.Bit.after(rem))
+      +r1 = Cause.after(cause, r0)
+      +r2 = PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, r1)
+      +r3 = PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, r2)
+      r3
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupUnsuccessfulTransfer.write(v, 0n, [])), bs)))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(bs, PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# PDUSessionResourceSetupItemSURes-pDUSessionResourceSetupResponseTransfer ::= Open
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer() -> Data:
+  B.Bytes()
+
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()):
+  Ap.Open.read(c)
+
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(+v: PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Open.write(v, rem, rest)
+
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(+v: PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +rem: Nat) -> Nat:
+  Ap.Open.after(rem)
+
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(+v: PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()) -> Bool:
+  Ap.Open.valid(v)
+
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(v, 0n, [])), bs)))
+
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrips.end(bs, PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# PDUSessionResourceSetupItemSURes ::= SEQUENCE { pDUSessionID PDUSessionID, pDUSessionResourceSetupResponseTransfer OCTET STRING (CONTAINING PDUSessionResourceSetupResponseTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type PDUSessionResourceSetupItemSURes is Data:
+  PDUSessionResourceSetupItemSURes{pDUSessionID: PDUSessionID(), pDUSessionResourceSetupResponseTransfer: PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionResourceSetupItemSURes.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionResourceSetupItemSURes.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionResourceSetupItemSURes.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionResourceSetupItemSURes.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceSetupItemSURes.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceSetupItemSURes.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionResourceSetupItemSURes.valid(x: PDUSessionResourceSetupItemSURes) -> Bool:
+  match x:
+    case PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}:
+      Bool.and(PDUSessionID.valid(pDUSessionID), Bool.and(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer), PDUSessionResourceSetupItemSURes.v_iE_Extensions(iE_Extensions)))
+
+def PDUSessionResourceSetupItemSURes.r_iE_Extensions(pDUSessionID: PDUSessionID(), pDUSessionResourceSetupResponseTransfer: PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionResourceSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, c)}
+
+def PDUSessionResourceSetupItemSURes.r_pDUSessionResourceSetupResponseTransfer(p_iE_Extensions: Bool, pDUSessionID: PDUSessionID(), r: Ap.Rd(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())) -> Ap.Rd(PDUSessionResourceSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionResourceSetupResponseTransfer, c)}:
+      PDUSessionResourceSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupResponseTransfer, PDUSessionResourceSetupItemSURes.o_iE_Extensions(p_iE_Extensions, c))
+
+def PDUSessionResourceSetupItemSURes.r_pDUSessionID(p_iE_Extensions: Bool, r: Ap.Rd(PDUSessionID())) -> Ap.Rd(PDUSessionResourceSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionID, c)}:
+      PDUSessionResourceSetupItemSURes.r_pDUSessionResourceSetupResponseTransfer(p_iE_Extensions, pDUSessionID, PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(c))
+
+def PDUSessionResourceSetupItemSURes.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionResourceSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceSetupItemSURes.r_pDUSessionID(p_iE_Extensions, PDUSessionID.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionResourceSetupItemSURes.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceSetupItemSURes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          PDUSessionResourceSetupItemSURes.r_bm(Ap.Bits.read(1n, c))
+
+def PDUSessionResourceSetupItemSURes.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceSetupItemSURes):
+  PDUSessionResourceSetupItemSURes.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceSetupItemSURes.write(x: PDUSessionResourceSetupItemSURes, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionResourceSetupItemSURes{+pDUSessionID, +pDUSessionResourceSetupResponseTransfer, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, r1)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), PDUSessionID.write(pDUSessionID, r0, PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, r1, PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, r2, rest)))))
+
+def PDUSessionResourceSetupItemSURes.after(x: PDUSessionResourceSetupItemSURes, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, r1)
+      +r3 = PDUSessionResourceSetupItemSURes.a_iE_Extensions(iE_Extensions, r2)
+      r3
+
+def PDUSessionResourceSetupItemSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemSURes)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemSURes.write(v, 0n, [])), bs)))
+
+def PDUSessionResourceSetupItemSURes.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionResourceSetupItemSURes.roundtrips.end(bs, PDUSessionResourceSetupItemSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
+# PDUSessionResourceSetupListSURes ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceSetupItemSURes
+def PDUSessionResourceSetupListSURes() -> Data:
+  List<&2, PDUSessionResourceSetupItemSURes>
+
+def PDUSessionResourceSetupListSURes.all_valid(xs: PDUSessionResourceSetupListSURes()) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case x <> more:
+      Bool.and(PDUSessionResourceSetupItemSURes.valid(x), PDUSessionResourceSetupListSURes.all_valid(more))
+
+def PDUSessionResourceSetupListSURes.valid(+xs: PDUSessionResourceSetupListSURes()) -> Bool:
+  Bool.and(Ap.Size.valid(1n, 255n, List.length(&2, PDUSessionResourceSetupItemSURes, xs)), PDUSessionResourceSetupListSURes.all_valid(xs))
+
+def PDUSessionResourceSetupListSURes.cons(x: PDUSessionResourceSetupItemSURes, r: Ap.Rd(PDUSessionResourceSetupListSURes())) -> Ap.Rd(PDUSessionResourceSetupListSURes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(xs, c)}:
+      Done{(x <> xs, c)}
+
+def PDUSessionResourceSetupListSURes.next(r: Ap.Rd(PDUSessionResourceSetupItemSURes), more: Ap.Cur -> Ap.Rd(PDUSessionResourceSetupListSURes())) -> Ap.Rd(PDUSessionResourceSetupListSURes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(x, c)}:
+      PDUSessionResourceSetupListSURes.cons(x, more(c))
+
+def PDUSessionResourceSetupListSURes.items(n: Nat, c: Ap.Cur) -> Ap.Rd(PDUSessionResourceSetupListSURes()):
+  match n:
+    case 0n:
+      Done{([], c)}
+    case 1n+p:
+      PDUSessionResourceSetupListSURes.next(PDUSessionResourceSetupItemSURes.read(c), c2 => PDUSessionResourceSetupListSURes.items(p, c2))
+
+def PDUSessionResourceSetupListSURes.count(r: Ap.Rd(Nat)) -> Ap.Rd(PDUSessionResourceSetupListSURes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(n, c)}:
+      PDUSessionResourceSetupListSURes.items(n, c)
+
+def PDUSessionResourceSetupListSURes.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceSetupListSURes()):
+  PDUSessionResourceSetupListSURes.count(Ap.Size.read(True{}, 8n, 1n, 255n, c))
+
+def PDUSessionResourceSetupListSURes.items_write(xs: PDUSessionResourceSetupListSURes(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match xs:
+    case Nil{}:
+      rest
+    case +x <> more:
+      PDUSessionResourceSetupItemSURes.write(x, rem, PDUSessionResourceSetupListSURes.items_write(more, PDUSessionResourceSetupItemSURes.after(x, rem), rest))
+
+def PDUSessionResourceSetupListSURes.write(+xs: PDUSessionResourceSetupListSURes(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Size.write(True{}, 8n, 1n, List.length(&2, PDUSessionResourceSetupItemSURes, xs), rem, PDUSessionResourceSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))
+
+def PDUSessionResourceSetupListSURes.items_after(xs: PDUSessionResourceSetupListSURes(), +rem: Nat) -> Nat:
+  match xs:
+    case Nil{}:
+      rem
+    case x <> more:
+      PDUSessionResourceSetupListSURes.items_after(more, PDUSessionResourceSetupItemSURes.after(x, rem))
+
+def PDUSessionResourceSetupListSURes.after(+xs: PDUSessionResourceSetupListSURes(), +rem: Nat) -> Nat:
+  PDUSessionResourceSetupListSURes.items_after(xs, Ap.Size.after(True{}, 8n, rem))
+
+def PDUSessionResourceSetupListSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupListSURes())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupListSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupListSURes.write(v, 0n, [])), bs)))
+
+def PDUSessionResourceSetupListSURes.roundtrips(+bs: B.Bytes()) -> Bool:
+  PDUSessionResourceSetupListSURes.roundtrips.end(bs, PDUSessionResourceSetupListSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # AssociatedQosFlowItem-qosFlowMappingIndication ::= Enum
 def AssociatedQosFlowItem_qosFlowMappingIndication() -> Data:
@@ -10139,6 +11586,45 @@ def PDUSessionResourceSetupResponseTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap
 def PDUSessionResourceSetupResponseTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
   PDUSessionResourceSetupResponseTransfer.roundtrips.end(bs, PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
+# ErrorIndication: a protocol IE container (TS 38.413 §9.2).
+def ErrorIndication() -> Data:
+  List<&2, Fr.Ie>
+
+def ErrorIndication.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(ErrorIndication()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          Fr.Ies.read(c)
+
+def ErrorIndication.read(c: Ap.Cur) -> Ap.Rd(ErrorIndication()):
+  ErrorIndication.r_ext(Ap.Bit.read(c))
+
+def ErrorIndication.write(+v: ErrorIndication(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Bit.write(False{}, rem, Fr.Ies.write(v, Ap.Bit.after(rem), rest))
+
+def ErrorIndication.after(+v: ErrorIndication(), +rem: Nat) -> Nat:
+  0n
+
+def ErrorIndication.valid(+v: ErrorIndication()) -> Bool:
+  Fr.Ies.valid(v)
+
+def ErrorIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ErrorIndication())) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(+v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Bool.and(Ap.Tail.zero(bits), Bool.and(ErrorIndication.valid(v), B.bytes_eq(Ap.pack(ErrorIndication.write(v, 0n, [])), bs)))
+
+def ErrorIndication.roundtrips(+bs: B.Bytes()) -> Bool:
+  ErrorIndication.roundtrips.end(bs, ErrorIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
+
 def DownlinkNASTransport.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
@@ -10149,6 +11635,8 @@ def DownlinkNASTransport.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>
       Some{AMFName.roundtrips(value)}
     case 38n:
       Some{NAS_PDU.roundtrips(value)}
+    case 110n:
+      Some{UEAggregateMaximumBitRate.roundtrips(value)}
     case 0n:
       Some{AllowedNSSAI.roundtrips(value)}
     case _:
@@ -10162,6 +11650,8 @@ def ErrorIndication.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
       Some{RAN_UE_NGAP_ID.roundtrips(value)}
     case 15n:
       Some{Cause.roundtrips(value)}
+    case 19n:
+      Some{CriticalityDiagnostics.roundtrips(value)}
     case 26n:
       Some{FiveG_S_TMSI.roundtrips(value)}
     case _:
@@ -10175,6 +11665,8 @@ def InitialContextSetupFailure.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2,
       Some{RAN_UE_NGAP_ID.roundtrips(value)}
     case 15n:
       Some{Cause.roundtrips(value)}
+    case 19n:
+      Some{CriticalityDiagnostics.roundtrips(value)}
     case _:
       None{}
 
@@ -10186,6 +11678,8 @@ def InitialContextSetupRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2,
       Some{RAN_UE_NGAP_ID.roundtrips(value)}
     case 48n:
       Some{AMFName.roundtrips(value)}
+    case 110n:
+      Some{UEAggregateMaximumBitRate.roundtrips(value)}
     case 28n:
       Some{GUAMI.roundtrips(value)}
     case 0n:
@@ -10205,6 +11699,8 @@ def InitialContextSetupResponse.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2
       Some{AMF_UE_NGAP_ID.roundtrips(value)}
     case 85n:
       Some{RAN_UE_NGAP_ID.roundtrips(value)}
+    case 19n:
+      Some{CriticalityDiagnostics.roundtrips(value)}
     case _:
       None{}
 
@@ -10239,6 +11735,8 @@ def NGSetupFailure.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 15n:
       Some{Cause.roundtrips(value)}
+    case 19n:
+      Some{CriticalityDiagnostics.roundtrips(value)}
     case _:
       None{}
 
@@ -10263,6 +11761,8 @@ def NGSetupResponse.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
       Some{RelativeAMFCapacity.roundtrips(value)}
     case 80n:
       Some{PLMNSupportList.roundtrips(value)}
+    case 19n:
+      Some{CriticalityDiagnostics.roundtrips(value)}
     case _:
       None{}
 
@@ -10276,11 +11776,15 @@ def PDUSessionResourceSetupRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe
       Some{NAS_PDU.roundtrips(value)}
     case 74n:
       Some{PDUSessionResourceSetupListSUReq.roundtrips(value)}
+    case 110n:
+      Some{UEAggregateMaximumBitRate.roundtrips(value)}
     case _:
       None{}
 
 def PDUSessionResourceSetupRequestTransfer.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
+    case 130n:
+      Some{PDUSessionAggregateMaximumBitRate.roundtrips(value)}
     case 139n:
       Some{UPTransportLayerInformation.roundtrips(value)}
     case 134n:
@@ -10298,6 +11802,12 @@ def PDUSessionResourceSetupResponse.ie_check(id: Nat, +value: B.Bytes()) -> Mayb
       Some{AMF_UE_NGAP_ID.roundtrips(value)}
     case 85n:
       Some{RAN_UE_NGAP_ID.roundtrips(value)}
+    case 75n:
+      Some{PDUSessionResourceSetupListSURes.roundtrips(value)}
+    case 58n:
+      Some{PDUSessionResourceFailedToSetupListSURes.roundtrips(value)}
+    case 19n:
+      Some{CriticalityDiagnostics.roundtrips(value)}
     case 121n:
       Some{UserLocationInformation.roundtrips(value)}
     case _:
@@ -10322,6 +11832,8 @@ def UEContextReleaseComplete.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, B
       Some{UserLocationInformation.roundtrips(value)}
     case 60n:
       Some{PDUSessionResourceListCxtRelCpl.roundtrips(value)}
+    case 19n:
+      Some{CriticalityDiagnostics.roundtrips(value)}
     case _:
       None{}
 

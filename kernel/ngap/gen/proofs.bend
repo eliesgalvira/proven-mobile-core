@@ -6735,6 +6735,223 @@ def DownlinkNASTransport.sx(+rem: Nat, bits: Ap.Bits(), +v: G.DownlinkNASTranspo
 def GL.ngap.DownlinkNASTransport.suffix(rem, bits, v, rem2, bits2, e):
   DownlinkNASTransport.sx(rem, bits, v, rem2, bits2, e)
 
+def BitRate.Sx(+bits: Ap.Bits(), +v: G.BitRate(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.BitRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.BitRate.after(v, rem) : Nat}
+
+def GL.ngap.BitRate.roundtrip(v, rem, rest, ok):
+  L.aper.xbig.roundtrip(3n, 5n, v, rem, rest, ok, {==})
+
+def GL.ngap.BitRate.decode_valid(c, v, c2, e):
+  L.aper.xbig.decode_valid(3n, 5n, c, v, c2, e)
+
+def GL.ngap.BitRate.suffix(rem, bits, v, rem2, bits2, e):
+  PC.XBig.sx(3n, 5n, rem, bits, v, rem2, bits2, e)
+
+def UEAggregateMaximumBitRate.Sx(+bits: Ap.Bits(), +v: G.UEAggregateMaximumBitRate, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.UEAggregateMaximumBitRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEAggregateMaximumBitRate.after(v, rem) : Nat}
+
+def UEAggregateMaximumBitRate.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.UEAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}) -> {G.UEAggregateMaximumBitRate.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.UEAggregateMaximumBitRate.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.UEAggregateMaximumBitRate.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.UEAggregateMaximumBitRate.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def UEAggregateMaximumBitRate.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.UEAggregateMaximumBitRate.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.UEAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.UEAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.UEAggregateMaximumBitRate.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def UEAggregateMaximumBitRate.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.UEAggregateMaximumBitRate.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.UEAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.UEAggregateMaximumBitRate.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      UEAggregateMaximumBitRate.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def UEAggregateMaximumBitRate.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.UEAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.UEAggregateMaximumBitRate.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def UEAggregateMaximumBitRate.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.UEAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.UEAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          UEAggregateMaximumBitRate.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def UEAggregateMaximumBitRate.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.UEAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.UEAggregateMaximumBitRate.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      UEAggregateMaximumBitRate.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def UEAggregateMaximumBitRate.rt(+uEAggregateMaximumBitRateDL: G.BitRate(), +uEAggregateMaximumBitRateUL: G.BitRate(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.UEAggregateMaximumBitRate.valid(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}) == True{} : Bool}) -> {G.UEAggregateMaximumBitRate.read(Ap.Cur{rem, G.UEAggregateMaximumBitRate.write(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, rem, rest)}) == Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.UEAggregateMaximumBitRate.after(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.UEAggregateMaximumBitRate)}:
+  ok0 = P.Bool.and_true_l(G.BitRate.valid(uEAggregateMaximumBitRateDL), Bool.and(G.BitRate.valid(uEAggregateMaximumBitRateUL), G.UEAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)), ok)
+  +okr0 = P.Bool.and_true_r(G.BitRate.valid(uEAggregateMaximumBitRateDL), Bool.and(G.BitRate.valid(uEAggregateMaximumBitRateUL), G.UEAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)), ok)
+  ok1 = P.Bool.and_true_l(G.BitRate.valid(uEAggregateMaximumBitRateUL), G.UEAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions), okr0)
+  +okr1 = P.Bool.and_true_r(G.BitRate.valid(uEAggregateMaximumBitRateUL), G.UEAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions), okr0)
+  e0 = Equal.sym(Ap.Rd(G.BitRate()), G.BitRate.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)))}), Done{(uEAggregateMaximumBitRateDL, Ap.Cur{G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))})}, GL.ngap.BitRate.roundtrip(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)), ok0))
+  %e0 : {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateDL(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.UEAggregateMaximumBitRate.after(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.UEAggregateMaximumBitRate)}
+  e1 = Equal.sym(Ap.Rd(G.BitRate()), G.BitRate.read(Ap.Cur{G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))}), Done{(uEAggregateMaximumBitRateUL, Ap.Cur{G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)})}, GL.ngap.BitRate.roundtrip(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest), ok1))
+  %e1 : {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateUL(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), uEAggregateMaximumBitRateDL, _) == Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.UEAggregateMaximumBitRate.after(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.UEAggregateMaximumBitRate)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.UEAggregateMaximumBitRate.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)}), Done{(iE_Extensions, Ap.Cur{G.UEAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest})}, UEAggregateMaximumBitRate.o_rt_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest, okr1))
+  %e2 : {G.UEAggregateMaximumBitRate.r_iE_Extensions(uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, _) == Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.UEAggregateMaximumBitRate.after(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.UEAggregateMaximumBitRate)}
+  {==}
+
+def GL.ngap.UEAggregateMaximumBitRate.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}:
+      UEAggregateMaximumBitRate.rt(uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions, rem, rest, ok)
+
+def UEAggregateMaximumBitRate.dv_iE_Extensions(+p_iE_Extensions: Bool, +uEAggregateMaximumBitRateDL: G.BitRate(), +uEAggregateMaximumBitRateUL: G.BitRate(), +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.UEAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.UEAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.UEAggregateMaximumBitRate.r_iE_Extensions(uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, r) == Done{(v, c2)} : Ap.Rd(G.UEAggregateMaximumBitRate)}, ok0: {G.BitRate.valid(uEAggregateMaximumBitRateDL) == True{} : Bool}, ok1: {G.BitRate.valid(uEAggregateMaximumBitRateUL) == True{} : Bool}) -> {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.UEAggregateMaximumBitRate), G.UEAggregateMaximumBitRate, y => PA.Rd.value(G.UEAggregateMaximumBitRate, y, v), Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.UEAggregateMaximumBitRate.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.BitRate.valid(uEAggregateMaximumBitRateDL), Bool.and(G.BitRate.valid(uEAggregateMaximumBitRateUL), G.UEAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)), ok0, P.Bool.and_intro(G.BitRate.valid(uEAggregateMaximumBitRateUL), G.UEAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions), ok1, UEAggregateMaximumBitRate.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))
+
+def UEAggregateMaximumBitRate.dv_uEAggregateMaximumBitRateUL(+p_iE_Extensions: Bool, +uEAggregateMaximumBitRateDL: G.BitRate(), +c: Ap.Cur, r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(c) == r : Ap.Rd(G.BitRate())}, +v: G.UEAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateUL(p_iE_Extensions, uEAggregateMaximumBitRateDL, r) == Done{(v, c2)} : Ap.Rd(G.UEAggregateMaximumBitRate)}, ok0: {G.BitRate.valid(uEAggregateMaximumBitRateDL) == True{} : Bool}) -> {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+uEAggregateMaximumBitRateUL, +c3)}:
+      UEAggregateMaximumBitRate.dv_iE_Extensions(p_iE_Extensions, uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, c3, G.UEAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, GL.ngap.BitRate.decode_valid(c, uEAggregateMaximumBitRateUL, c3, er))
+
+def UEAggregateMaximumBitRate.dv_uEAggregateMaximumBitRateDL(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(c) == r : Ap.Rd(G.BitRate())}, +v: G.UEAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateDL(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.UEAggregateMaximumBitRate)}) -> {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+uEAggregateMaximumBitRateDL, +c3)}:
+      UEAggregateMaximumBitRate.dv_uEAggregateMaximumBitRateUL(p_iE_Extensions, uEAggregateMaximumBitRateDL, c3, G.BitRate.read(c3), {==}, v, c2, e, GL.ngap.BitRate.decode_valid(c, uEAggregateMaximumBitRateDL, c3, er))
+
+def UEAggregateMaximumBitRate.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.UEAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.UEAggregateMaximumBitRate.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.UEAggregateMaximumBitRate)}) -> {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          UEAggregateMaximumBitRate.dv_uEAggregateMaximumBitRateDL(p_iE_Extensions, c3, G.BitRate.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def UEAggregateMaximumBitRate.dv_ext(rb: Ap.Rd(Bool), +v: G.UEAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.UEAggregateMaximumBitRate.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.UEAggregateMaximumBitRate)}) -> {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.UEAggregateMaximumBitRate, {G.UEAggregateMaximumBitRate.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          UEAggregateMaximumBitRate.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.UEAggregateMaximumBitRate.decode_valid(c, v, c2, e):
+  UEAggregateMaximumBitRate.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def UEAggregateMaximumBitRate.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +uEAggregateMaximumBitRateDL: G.BitRate(), +uEAggregateMaximumBitRateUL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.UEAggregateMaximumBitRate), G.UEAggregateMaximumBitRate, y => PA.Rd.value(G.UEAggregateMaximumBitRate, y, v), Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.UEAggregateMaximumBitRate), Ap.Cur, y => PA.Rd.cur(G.UEAggregateMaximumBitRate, y, Ap.Cur{rem2, bits2}), Done{(G.UEAggregateMaximumBitRate{uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : UEAggregateMaximumBitRate.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.UEAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)))), (%er : {_ == G.UEAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}; (%pr : {r3 == G.UEAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def UEAggregateMaximumBitRate.sx_iE_Extensions(+p_iE_Extensions: Bool, +uEAggregateMaximumBitRateDL: G.BitRate(), +uEAggregateMaximumBitRateUL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.UEAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.r_iE_Extensions(uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.BitRate.after(uEAggregateMaximumBitRateUL, G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          UEAggregateMaximumBitRate.sx_iE_Extensions.go(p_iE_Extensions, uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, UEAggregateMaximumBitRate.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateUL.go(+p_iE_Extensions: Bool, +uEAggregateMaximumBitRateDL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +uEAggregateMaximumBitRateUL: G.BitRate(), +r3: Nat, +b3: Ap.Bits(), +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.r_iE_Extensions(uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, G.UEAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: {bi == G.BitRate.write(uEAggregateMaximumBitRateUL, ri, b3) : Ap.Bits()} & {r3 == G.BitRate.after(uEAggregateMaximumBitRateUL, ri) : Nat}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  UEAggregateMaximumBitRate.sx_iE_Extensions(p_iE_Extensions, uEAggregateMaximumBitRateDL, uEAggregateMaximumBitRateUL, rem, bits, r3, b3, G.UEAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(uEAggregateMaximumBitRateUL, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)), (%pr : {r3 == G.BitRate.after(uEAggregateMaximumBitRateUL, _) : Nat}; s2))
+
+def UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateUL(+p_iE_Extensions: Bool, +uEAggregateMaximumBitRateDL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.BitRate())}, +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateUL(p_iE_Extensions, uEAggregateMaximumBitRateDL, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.BitRate.after(uEAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+uEAggregateMaximumBitRateUL, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateUL.go(p_iE_Extensions, uEAggregateMaximumBitRateDL, rem, bits, ri, bi, uEAggregateMaximumBitRateUL, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.BitRate.suffix(ri, bi, uEAggregateMaximumBitRateUL, r3, b3, er))
+
+def UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateDL.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +uEAggregateMaximumBitRateDL: G.BitRate(), +r3: Nat, +b3: Ap.Bits(), +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateUL(p_iE_Extensions, uEAggregateMaximumBitRateDL, G.BitRate.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.BitRate.write(uEAggregateMaximumBitRateDL, ri, b3) : Ap.Bits()} & {r3 == G.BitRate.after(uEAggregateMaximumBitRateDL, ri) : Nat}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateUL(p_iE_Extensions, uEAggregateMaximumBitRateDL, rem, bits, r3, b3, G.BitRate.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(uEAggregateMaximumBitRateDL, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.BitRate.after(uEAggregateMaximumBitRateDL, _) : Nat}; s2))
+
+def UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateDL(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.BitRate())}, +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateDL(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+uEAggregateMaximumBitRateDL, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateDL.go(p_iE_Extensions, rem, bits, ri, bi, uEAggregateMaximumBitRateDL, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.BitRate.suffix(ri, bi, uEAggregateMaximumBitRateDL, r3, b3, er))
+
+def UEAggregateMaximumBitRate.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.r_uEAggregateMaximumBitRateDL(p_iE_Extensions, G.BitRate.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  UEAggregateMaximumBitRate.sx_uEAggregateMaximumBitRateDL(p_iE_Extensions, rem, bits, r1, b1, G.BitRate.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def UEAggregateMaximumBitRate.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              UEAggregateMaximumBitRate.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def UEAggregateMaximumBitRate.sx(+rem: Nat, bits: Ap.Bits(), +v: G.UEAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.UEAggregateMaximumBitRate.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}) -> UEAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          UEAggregateMaximumBitRate.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.UEAggregateMaximumBitRate.suffix(rem, bits, v, rem2, bits2, e):
+  UEAggregateMaximumBitRate.sx(rem, bits, v, rem2, bits2, e)
+
 def AMF_UE_NGAP_ID.Sx(+bits: Ap.Bits(), +v: G.AMF_UE_NGAP_ID(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
   {bits == G.AMF_UE_NGAP_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AMF_UE_NGAP_ID.after(v, rem) : Nat}
 
@@ -10588,18 +10805,6 @@ def AllocationAndRetentionPriority.sx(+rem: Nat, bits: Ap.Bits(), +v: G.Allocati
 def GL.ngap.AllocationAndRetentionPriority.suffix(rem, bits, v, rem2, bits2, e):
   AllocationAndRetentionPriority.sx(rem, bits, v, rem2, bits2, e)
 
-def BitRate.Sx(+bits: Ap.Bits(), +v: G.BitRate(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
-  {bits == G.BitRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.BitRate.after(v, rem) : Nat}
-
-def GL.ngap.BitRate.roundtrip(v, rem, rest, ok):
-  L.aper.xbig.roundtrip(3n, 5n, v, rem, rest, ok, {==})
-
-def GL.ngap.BitRate.decode_valid(c, v, c2, e):
-  L.aper.xbig.decode_valid(3n, 5n, c, v, c2, e)
-
-def GL.ngap.BitRate.suffix(rem, bits, v, rem2, bits2, e):
-  PC.XBig.sx(3n, 5n, rem, bits, v, rem2, bits2, e)
-
 def NotificationControl.Sx(+bits: Ap.Bits(), +v: G.NotificationControl(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
   {bits == G.NotificationControl.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NotificationControl.after(v, rem) : Nat}
 
@@ -12388,6 +12593,211 @@ def UPTransportLayerInformation.sx_idx(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b
 def GL.ngap.UPTransportLayerInformation.suffix(rem, bits, v, rem2, bits2, e):
   UPTransportLayerInformation.sx_idx(rem, bits, rem, bits, Ap.Size.read(False{}, 1n, 0n, 1n, Ap.Cur{rem, bits}), {==}, v, rem2, bits2, e, {==}, {==})
 
+def PDUSessionAggregateMaximumBitRate.Sx(+bits: Ap.Bits(), +v: G.PDUSessionAggregateMaximumBitRate, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionAggregateMaximumBitRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionAggregateMaximumBitRate.after(v, rem) : Nat}
+
+def PDUSessionAggregateMaximumBitRate.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionAggregateMaximumBitRate.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionAggregateMaximumBitRate.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionAggregateMaximumBitRate.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionAggregateMaximumBitRate.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionAggregateMaximumBitRate.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionAggregateMaximumBitRate.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionAggregateMaximumBitRate.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionAggregateMaximumBitRate.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionAggregateMaximumBitRate.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionAggregateMaximumBitRate.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionAggregateMaximumBitRate.rt(+pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +pDUSessionAggregateMaximumBitRateUL: G.BitRate(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionAggregateMaximumBitRate.valid(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{rem, G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.after(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}:
+  ok0 = P.Bool.and_true_l(G.BitRate.valid(pDUSessionAggregateMaximumBitRateDL), Bool.and(G.BitRate.valid(pDUSessionAggregateMaximumBitRateUL), G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)), ok)
+  +okr0 = P.Bool.and_true_r(G.BitRate.valid(pDUSessionAggregateMaximumBitRateDL), Bool.and(G.BitRate.valid(pDUSessionAggregateMaximumBitRateUL), G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)), ok)
+  ok1 = P.Bool.and_true_l(G.BitRate.valid(pDUSessionAggregateMaximumBitRateUL), G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions), okr0)
+  +okr1 = P.Bool.and_true_r(G.BitRate.valid(pDUSessionAggregateMaximumBitRateUL), G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions), okr0)
+  e0 = Equal.sym(Ap.Rd(G.BitRate()), G.BitRate.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)))}), Done{(pDUSessionAggregateMaximumBitRateDL, Ap.Cur{G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))})}, GL.ngap.BitRate.roundtrip(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)), ok0))
+  %e0 : {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateDL(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.after(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
+  e1 = Equal.sym(Ap.Rd(G.BitRate()), G.BitRate.read(Ap.Cur{G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))}), Done{(pDUSessionAggregateMaximumBitRateUL, Ap.Cur{G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)})}, GL.ngap.BitRate.roundtrip(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest), ok1))
+  %e1 : {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateUL(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), pDUSessionAggregateMaximumBitRateDL, _) == Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.after(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest})}, PDUSessionAggregateMaximumBitRate.o_rt_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest, okr1))
+  %e2 : {G.PDUSessionAggregateMaximumBitRate.r_iE_Extensions(pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, _) == Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.after(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
+  {==}
+
+def GL.ngap.PDUSessionAggregateMaximumBitRate.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}:
+      PDUSessionAggregateMaximumBitRate.rt(pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions, rem, rest, ok)
+
+def PDUSessionAggregateMaximumBitRate.dv_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +pDUSessionAggregateMaximumBitRateUL: G.BitRate(), +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.PDUSessionAggregateMaximumBitRate.r_iE_Extensions(pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, ok0: {G.BitRate.valid(pDUSessionAggregateMaximumBitRateDL) == True{} : Bool}, ok1: {G.BitRate.valid(pDUSessionAggregateMaximumBitRateUL) == True{} : Bool}) -> {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionAggregateMaximumBitRate), G.PDUSessionAggregateMaximumBitRate, y => PA.Rd.value(G.PDUSessionAggregateMaximumBitRate, y, v), Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionAggregateMaximumBitRate.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.BitRate.valid(pDUSessionAggregateMaximumBitRateDL), Bool.and(G.BitRate.valid(pDUSessionAggregateMaximumBitRateUL), G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions)), ok0, P.Bool.and_intro(G.BitRate.valid(pDUSessionAggregateMaximumBitRateUL), G.PDUSessionAggregateMaximumBitRate.v_iE_Extensions(iE_Extensions), ok1, PDUSessionAggregateMaximumBitRate.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))
+
+def PDUSessionAggregateMaximumBitRate.dv_pDUSessionAggregateMaximumBitRateUL(+p_iE_Extensions: Bool, +pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +c: Ap.Cur, r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(c) == r : Ap.Rd(G.BitRate())}, +v: G.PDUSessionAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateUL(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, ok0: {G.BitRate.valid(pDUSessionAggregateMaximumBitRateDL) == True{} : Bool}) -> {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionAggregateMaximumBitRateUL, +c3)}:
+      PDUSessionAggregateMaximumBitRate.dv_iE_Extensions(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, c3, G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, GL.ngap.BitRate.decode_valid(c, pDUSessionAggregateMaximumBitRateUL, c3, er))
+
+def PDUSessionAggregateMaximumBitRate.dv_pDUSessionAggregateMaximumBitRateDL(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(c) == r : Ap.Rd(G.BitRate())}, +v: G.PDUSessionAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateDL(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}) -> {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionAggregateMaximumBitRateDL, +c3)}:
+      PDUSessionAggregateMaximumBitRate.dv_pDUSessionAggregateMaximumBitRateUL(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, c3, G.BitRate.read(c3), {==}, v, c2, e, GL.ngap.BitRate.decode_valid(c, pDUSessionAggregateMaximumBitRateDL, c3, er))
+
+def PDUSessionAggregateMaximumBitRate.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.PDUSessionAggregateMaximumBitRate.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}) -> {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionAggregateMaximumBitRate.dv_pDUSessionAggregateMaximumBitRateDL(p_iE_Extensions, c3, G.BitRate.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionAggregateMaximumBitRate.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionAggregateMaximumBitRate, +c2: Ap.Cur, +e: {G.PDUSessionAggregateMaximumBitRate.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}) -> {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          PDUSessionAggregateMaximumBitRate.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.PDUSessionAggregateMaximumBitRate.decode_valid(c, v, c2, e):
+  PDUSessionAggregateMaximumBitRate.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionAggregateMaximumBitRate.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +pDUSessionAggregateMaximumBitRateUL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionAggregateMaximumBitRate), G.PDUSessionAggregateMaximumBitRate, y => PA.Rd.value(G.PDUSessionAggregateMaximumBitRate, y, v), Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionAggregateMaximumBitRate), Ap.Cur, y => PA.Rd.cur(G.PDUSessionAggregateMaximumBitRate, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionAggregateMaximumBitRate.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionAggregateMaximumBitRate.w_iE_Extensions(iE_Extensions, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}; (%pr : {r3 == G.PDUSessionAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionAggregateMaximumBitRate.sx_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +pDUSessionAggregateMaximumBitRateUL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.r_iE_Extensions(pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionAggregateMaximumBitRate.sx_iE_Extensions.go(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionAggregateMaximumBitRate.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateUL.go(+p_iE_Extensions: Bool, +pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionAggregateMaximumBitRateUL: G.BitRate(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.r_iE_Extensions(pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: {bi == G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, ri, b3) : Ap.Bits()} & {r3 == G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, ri) : Nat}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionAggregateMaximumBitRate.sx_iE_Extensions(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, rem, bits, r3, b3, G.PDUSessionAggregateMaximumBitRate.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.BitRate.write(pDUSessionAggregateMaximumBitRateUL, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)), (%pr : {r3 == G.BitRate.after(pDUSessionAggregateMaximumBitRateUL, _) : Nat}; s2))
+
+def PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateUL(+p_iE_Extensions: Bool, +pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.BitRate())}, +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateUL(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionAggregateMaximumBitRateUL, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateUL.go(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, rem, bits, ri, bi, pDUSessionAggregateMaximumBitRateUL, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.BitRate.suffix(ri, bi, pDUSessionAggregateMaximumBitRateUL, r3, b3, er))
+
+def PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateDL.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionAggregateMaximumBitRateDL: G.BitRate(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateUL(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, G.BitRate.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, ri, b3) : Ap.Bits()} & {r3 == G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, ri) : Nat}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateUL(p_iE_Extensions, pDUSessionAggregateMaximumBitRateDL, rem, bits, r3, b3, G.BitRate.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.BitRate.write(pDUSessionAggregateMaximumBitRateDL, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.BitRate.after(pDUSessionAggregateMaximumBitRateDL, _) : Nat}; s2))
+
+def PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateDL(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.BitRate()), +er: {G.BitRate.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.BitRate())}, +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateDL(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionAggregateMaximumBitRateDL, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateDL.go(p_iE_Extensions, rem, bits, ri, bi, pDUSessionAggregateMaximumBitRateDL, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.BitRate.suffix(ri, bi, pDUSessionAggregateMaximumBitRateDL, r3, b3, er))
+
+def PDUSessionAggregateMaximumBitRate.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.r_pDUSessionAggregateMaximumBitRateDL(p_iE_Extensions, G.BitRate.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionAggregateMaximumBitRate.sx_pDUSessionAggregateMaximumBitRateDL(p_iE_Extensions, rem, bits, r1, b1, G.BitRate.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def PDUSessionAggregateMaximumBitRate.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionAggregateMaximumBitRate.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionAggregateMaximumBitRate.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionAggregateMaximumBitRate, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}) -> PDUSessionAggregateMaximumBitRate.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionAggregateMaximumBitRate.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.PDUSessionAggregateMaximumBitRate.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionAggregateMaximumBitRate.sx(rem, bits, v, rem2, bits2, e)
+
 def PDUSessionResourceSetupResponse.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceSetupResponse(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
   {bits == G.PDUSessionResourceSetupResponse.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupResponse.after(v, rem) : Nat}
 
@@ -12426,43 +12836,1870 @@ def PDUSessionResourceSetupResponse.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSess
 def GL.ngap.PDUSessionResourceSetupResponse.suffix(rem, bits, v, rem2, bits2, e):
   PDUSessionResourceSetupResponse.sx(rem, bits, v, rem2, bits2, e)
 
-def ErrorIndication.Sx(+bits: Ap.Bits(), +v: G.ErrorIndication(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
-  {bits == G.ErrorIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ErrorIndication.after(v, rem) : Nat}
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem) : Nat}
 
-def GL.ngap.ErrorIndication.roundtrip(v, rem, rest, ok):
-  L.ngap.ies.roundtrip(v, Ap.Bit.after(rem), rest, ok)
+def GL.ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrip(v, rem, rest, ok):
+  L.aper.open.roundtrip(v, rem, rest, ok)
 
-def ErrorIndication.dv(rb: Ap.Rd(Bool), +v: G.ErrorIndication(), +c2: Ap.Cur, +e: {G.ErrorIndication.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.ErrorIndication())}) -> {G.ErrorIndication.valid(v) == True{} : Bool}:
+def GL.ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.decode_valid(c, v, c2, e):
+  L.aper.open.decode_valid(c, v, c2, e)
+
+def GL.ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.suffix(rem, bits, v, rem2, bits2, e):
+  PC.Open.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceFailedToSetupItemSURes.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemSURes.after(v, rem) : Nat}
+
+def PDUSessionResourceFailedToSetupItemSURes.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceFailedToSetupItemSURes.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionResourceFailedToSetupItemSURes.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupItemSURes.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceFailedToSetupItemSURes.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceFailedToSetupItemSURes.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceFailedToSetupItemSURes.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionResourceFailedToSetupItemSURes.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceFailedToSetupItemSURes.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceFailedToSetupItemSURes.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceFailedToSetupItemSURes.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceFailedToSetupItemSURes.rt(+pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupUnsuccessfulTransfer: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceFailedToSetupItemSURes.valid(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemSURes.write(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.after(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}:
+  ok0 = P.Bool.and_true_l(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(iE_Extensions)), ok)
+  +okr0 = P.Bool.and_true_r(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(iE_Extensions)), ok)
+  ok1 = P.Bool.and_true_l(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(iE_Extensions), okr0)
+  +okr1 = P.Bool.and_true_r(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(iE_Extensions), okr0)
+  e0 = Equal.sym(Ap.Rd(G.PDUSessionID()), G.PDUSessionID.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)))}), Done{(pDUSessionID, Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))})}, GL.ngap.PDUSessionID.roundtrip(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)), ok0))
+  %e0 : {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionID(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.after(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
+  e1 = Equal.sym(Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))}), Done{(pDUSessionResourceSetupUnsuccessfulTransfer, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)})}, GL.ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrip(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest), ok1))
+  %e1 : {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionResourceSetupUnsuccessfulTransfer(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), pDUSessionID, _) == Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.after(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest})}, PDUSessionResourceFailedToSetupItemSURes.o_rt_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest, okr1))
+  %e2 : {G.PDUSessionResourceFailedToSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, _) == Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.after(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
+  {==}
+
+def GL.ngap.PDUSessionResourceFailedToSetupItemSURes.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}:
+      PDUSessionResourceFailedToSetupItemSURes.rt(pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions, rem, rest, ok)
+
+def PDUSessionResourceFailedToSetupItemSURes.dv_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupUnsuccessfulTransfer: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceFailedToSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}, ok1: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer) == True{} : Bool}) -> {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes), G.PDUSessionResourceFailedToSetupItemSURes, y => PA.Rd.value(G.PDUSessionResourceFailedToSetupItemSURes, y, v), Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionResourceFailedToSetupItemSURes.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(iE_Extensions)), ok0, P.Bool.and_intro(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(pDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceFailedToSetupItemSURes.v_iE_Extensions(iE_Extensions), ok1, PDUSessionResourceFailedToSetupItemSURes.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))
+
+def PDUSessionResourceFailedToSetupItemSURes.dv_pDUSessionResourceSetupUnsuccessfulTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +c: Ap.Cur, r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()), +er: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(c) == r : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}, +v: G.PDUSessionResourceFailedToSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionResourceSetupUnsuccessfulTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}) -> {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionResourceSetupUnsuccessfulTransfer, +c3)}:
+      PDUSessionResourceFailedToSetupItemSURes.dv_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, c3, G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, GL.ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.decode_valid(c, pDUSessionResourceSetupUnsuccessfulTransfer, c3, er))
+
+def PDUSessionResourceFailedToSetupItemSURes.dv_pDUSessionID(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(c) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceFailedToSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}) -> {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionID, +c3)}:
+      PDUSessionResourceFailedToSetupItemSURes.dv_pDUSessionResourceSetupUnsuccessfulTransfer(p_iE_Extensions, pDUSessionID, c3, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(c3), {==}, v, c2, e, GL.ngap.PDUSessionID.decode_valid(c, pDUSessionID, c3, er))
+
+def PDUSessionResourceFailedToSetupItemSURes.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionResourceFailedToSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}) -> {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceFailedToSetupItemSURes.dv_pDUSessionID(p_iE_Extensions, c3, G.PDUSessionID.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionResourceFailedToSetupItemSURes.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceFailedToSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}) -> {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}:
   match rb:
     case Fail{err}:
-      PA.Rd.absurd(G.ErrorIndication(), {G.ErrorIndication.valid(v) == True{} : Bool}, err, v, c2, e)
-    case Done{(ext, c)}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
       match ext:
         case True{}:
-          PA.Rd.absurd(G.ErrorIndication(), {G.ErrorIndication.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+          PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
         case False{}:
-          L.ngap.ies.decode_valid(c, v, c2, e)
+          PDUSessionResourceFailedToSetupItemSURes.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
 
-def GL.ngap.ErrorIndication.decode_valid(c, v, c2, e):
-  ErrorIndication.dv(Ap.Bit.read(c), v, c2, e)
+def GL.ngap.PDUSessionResourceFailedToSetupItemSURes.decode_valid(c, v, c2, e):
+  PDUSessionResourceFailedToSetupItemSURes.dv_ext(Ap.Bit.read(c), v, c2, e)
 
-def ErrorIndication.sx.go(+rem: Nat, +rest: Ap.Bits(), +v: G.ErrorIndication(), +rem2: Nat, +bits2: Ap.Bits(), s: PC.Canon(rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), rem2, 0n)) -> ErrorIndication.Sx(False{} <> rest, v, rem, rem2, bits2):
+def PDUSessionResourceFailedToSetupItemSURes.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupUnsuccessfulTransfer: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes), G.PDUSessionResourceFailedToSetupItemSURes, y => PA.Rd.value(G.PDUSessionResourceFailedToSetupItemSURes, y, v), Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes), Ap.Cur, y => PA.Rd.cur(G.PDUSessionResourceFailedToSetupItemSURes, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionResourceFailedToSetupItemSURes.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceFailedToSetupItemSURes.w_iE_Extensions(iE_Extensions, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}; (%pr : {r3 == G.PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionResourceFailedToSetupItemSURes.sx_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupUnsuccessfulTransfer: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceFailedToSetupItemSURes.sx_iE_Extensions.go(p_iE_Extensions, pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceFailedToSetupItemSURes.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionResourceSetupUnsuccessfulTransfer.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionResourceSetupUnsuccessfulTransfer: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: {bi == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, ri) : Nat}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
   (s1, s2) = s
-  (Equal.cong(Ap.Bits(), Ap.Bits(), l => False{} <> l, rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), s1), s2)
+  PDUSessionResourceFailedToSetupItemSURes.sx_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, rem, bits, r3, b3, G.PDUSessionResourceFailedToSetupItemSURes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(pDUSessionResourceSetupUnsuccessfulTransfer, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(pDUSessionResourceSetupUnsuccessfulTransfer, _) : Nat}; s2))
 
-def ErrorIndication.sx(+rem: Nat, bits: Ap.Bits(), +v: G.ErrorIndication(), +rem2: Nat, +bits2: Ap.Bits(), +e: {G.ErrorIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ErrorIndication())}) -> ErrorIndication.Sx(bits, v, rem, rem2, bits2):
+def PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionResourceSetupUnsuccessfulTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()), +er: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}, +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionResourceSetupUnsuccessfulTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionResourceSetupUnsuccessfulTransfer, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionResourceSetupUnsuccessfulTransfer.go(p_iE_Extensions, pDUSessionID, rem, bits, ri, bi, pDUSessionResourceSetupUnsuccessfulTransfer, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.suffix(ri, bi, pDUSessionResourceSetupUnsuccessfulTransfer, r3, b3, er))
+
+def PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionID.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionID: G.PDUSessionID(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionResourceSetupUnsuccessfulTransfer(p_iE_Extensions, pDUSessionID, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.PDUSessionID.write(pDUSessionID, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionID.after(pDUSessionID, ri) : Nat}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionResourceSetupUnsuccessfulTransfer(p_iE_Extensions, pDUSessionID, rem, bits, r3, b3, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionID.after(pDUSessionID, _) : Nat}; s2))
+
+def PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionID(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionID, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionID.go(p_iE_Extensions, rem, bits, ri, bi, pDUSessionID, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionID.suffix(ri, bi, pDUSessionID, r3, b3, er))
+
+def PDUSessionResourceFailedToSetupItemSURes.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_pDUSessionID(p_iE_Extensions, G.PDUSessionID.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionResourceFailedToSetupItemSURes.sx_pDUSessionID(p_iE_Extensions, rem, bits, r1, b1, G.PDUSessionID.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def PDUSessionResourceFailedToSetupItemSURes.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionResourceFailedToSetupItemSURes.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionResourceFailedToSetupItemSURes.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}) -> PDUSessionResourceFailedToSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
   match bits:
     case Nil{}:
-      PA.Rd.absurd(G.ErrorIndication(), ErrorIndication.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+      PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
     case b <> +rest:
       match b:
         case True{}:
-          PA.Rd.absurd(G.ErrorIndication(), ErrorIndication.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+          PA.Rd.absurd(G.PDUSessionResourceFailedToSetupItemSURes, PDUSessionResourceFailedToSetupItemSURes.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
         case False{}:
-          ErrorIndication.sx.go(rem, rest, v, rem2, bits2, PF.Ies.sx(Ap.Bit.after(rem), rest, v, rem2, bits2, e))
+          PDUSessionResourceFailedToSetupItemSURes.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
 
-def GL.ngap.ErrorIndication.suffix(rem, bits, v, rem2, bits2, e):
-  ErrorIndication.sx(rem, bits, v, rem2, bits2, e)
+def GL.ngap.PDUSessionResourceFailedToSetupItemSURes.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceFailedToSetupItemSURes.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceFailedToSetupListSURes.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceFailedToSetupListSURes(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceFailedToSetupListSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListSURes.after(v, rem) : Nat}
+
+def PDUSessionResourceFailedToSetupListSURes.items_rt(xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem: Nat, +rest: Ap.Bits(), +av: {G.PDUSessionResourceFailedToSetupListSURes.all_valid(xs) == True{} : Bool}) -> {Done{(xs, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.items_after(xs, rem), rest})} == G.PDUSessionResourceFailedToSetupListSURes.items(List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs), Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, rem, rest)}) : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +more:
+      ir = Equal.sym(Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes), G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemSURes.write(x, rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(more, G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem), rest))}), Done{(x, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem), G.PDUSessionResourceFailedToSetupListSURes.items_write(more, G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem), rest)})}, GL.ngap.PDUSessionResourceFailedToSetupItemSURes.roundtrip(x, rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(more, G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem), rest), P.Bool.and_true_l(G.PDUSessionResourceFailedToSetupItemSURes.valid(x), G.PDUSessionResourceFailedToSetupListSURes.all_valid(more), av)))
+      %ir : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.items_after(x <> more, rem), rest})} == G.PDUSessionResourceFailedToSetupListSURes.next(_, c2 => G.PDUSessionResourceFailedToSetupListSURes.items(List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, more), c2)) : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}
+      ih = PDUSessionResourceFailedToSetupListSURes.items_rt(more, G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem), rest, P.Bool.and_true_r(G.PDUSessionResourceFailedToSetupItemSURes.valid(x), G.PDUSessionResourceFailedToSetupListSURes.all_valid(more), av))
+      %ih : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.items_after(x <> more, rem), rest})} == G.PDUSessionResourceFailedToSetupListSURes.cons(x, _) : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}
+      {==}
+
+def PDUSessionResourceFailedToSetupListSURes.rt(+xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceFailedToSetupListSURes.valid(xs) == True{} : Bool}) -> {G.PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListSURes.write(xs, rem, rest)}) == Done{(xs, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}:
+  sr = Equal.sym(Ap.Rd(Nat), Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, Ap.Size.write(True{}, 8n, 1n, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs), rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))}), Done{(List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)})}, L.aper.size.roundtrip(True{}, 8n, 1n, 255n, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs), rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest), P.Bool.and_true_l(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs)), G.PDUSessionResourceFailedToSetupListSURes.all_valid(xs), ok), {==}))
+  %sr : {G.PDUSessionResourceFailedToSetupListSURes.count(_) == Done{(xs, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}
+  Equal.sym(Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), Done{(xs, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.items_after(xs, Ap.Size.after(True{}, 8n, rem)), rest})}, G.PDUSessionResourceFailedToSetupListSURes.items(List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)}), PDUSessionResourceFailedToSetupListSURes.items_rt(xs, Ap.Size.after(True{}, 8n, rem), rest, P.Bool.and_true_r(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs)), G.PDUSessionResourceFailedToSetupListSURes.all_valid(xs), ok)))
+
+def GL.ngap.PDUSessionResourceFailedToSetupListSURes.roundtrip(v, rem, rest, ok):
+  PDUSessionResourceFailedToSetupListSURes.rt(v, rem, rest, ok)
+
+def PDUSessionResourceFailedToSetupListSURes.Spec(xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, n: Nat) -> Type:
+  {G.PDUSessionResourceFailedToSetupListSURes.all_valid(xs) == True{} : Bool} & {List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs) == n : Nat}
+
+def PDUSessionResourceFailedToSetupListSURes.spec.finish(+p: Nat, +x: G.PDUSessionResourceFailedToSetupItemSURes, +xs2: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, vi: {G.PDUSessionResourceFailedToSetupItemSURes.valid(x) == True{} : Bool}, s: PDUSessionResourceFailedToSetupListSURes.Spec(xs2, p)) -> PDUSessionResourceFailedToSetupListSURes.Spec(x <> xs2, 1n+p):
+  (av, len) = s
+  (P.Bool.and_intro(G.PDUSessionResourceFailedToSetupItemSURes.valid(x), G.PDUSessionResourceFailedToSetupListSURes.all_valid(xs2), vi, av), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs2), p, len))
+
+def PDUSessionResourceFailedToSetupListSURes.spec.cons(+p: Nat, +x: G.PDUSessionResourceFailedToSetupItemSURes, +c3: Ap.Cur, rl: Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), +erl: {G.PDUSessionResourceFailedToSetupListSURes.items(p, c3) == rl : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceFailedToSetupItemSURes> -> @c5: Ap.Cur -> {G.PDUSessionResourceFailedToSetupListSURes.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)} -> PDUSessionResourceFailedToSetupListSURes.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupListSURes.cons(x, rl) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}, vi: {G.PDUSessionResourceFailedToSetupItemSURes.valid(x) == True{} : Bool}) -> PDUSessionResourceFailedToSetupListSURes.Spec(xs, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, PDUSessionResourceFailedToSetupListSURes.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+xs2, +c5)}:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y, xs), Done{(x <> xs2, c5)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceFailedToSetupListSURes.Spec(_, 1n+p)
+      PDUSessionResourceFailedToSetupListSURes.spec.finish(p, x, xs2, vi, ih(c3, xs2, c5, erl))
+
+def PDUSessionResourceFailedToSetupListSURes.spec.step(+p: Nat, +c: Ap.Cur, ri: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes), +eri: {G.PDUSessionResourceFailedToSetupItemSURes.read(c) == ri : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceFailedToSetupItemSURes> -> @c5: Ap.Cur -> {G.PDUSessionResourceFailedToSetupListSURes.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)} -> PDUSessionResourceFailedToSetupListSURes.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupListSURes.next(ri, c4 => G.PDUSessionResourceFailedToSetupListSURes.items(p, c4)) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}) -> PDUSessionResourceFailedToSetupListSURes.Spec(xs, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, PDUSessionResourceFailedToSetupListSURes.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+x, +c3)}:
+      PDUSessionResourceFailedToSetupListSURes.spec.cons(p, x, c3, G.PDUSessionResourceFailedToSetupListSURes.items(p, c3), {==}, ih, xs, c2, e, GL.ngap.PDUSessionResourceFailedToSetupItemSURes.decode_valid(c, x, c3, eri))
+
+def PDUSessionResourceFailedToSetupListSURes.spec(n: Nat, +c: Ap.Cur, +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupListSURes.items(n, c) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}) -> PDUSessionResourceFailedToSetupListSURes.Spec(xs, n):
+  match n:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y, xs), Done{([], c)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceFailedToSetupListSURes.Spec(_, 0n)
+      ({==}, {==})
+    case 1n++p:
+      PDUSessionResourceFailedToSetupListSURes.spec.step(p, c, G.PDUSessionResourceFailedToSetupItemSURes.read(c), {==}, c4 => xs2 => c5 => e2 => PDUSessionResourceFailedToSetupListSURes.spec(p, c4, xs2, c5, e2), xs, c2, e)
+
+def PDUSessionResourceFailedToSetupListSURes.dv.finish(+n: Nat, +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, sv: {Ap.Size.valid(1n, 255n, n) == True{} : Bool}, s: PDUSessionResourceFailedToSetupListSURes.Spec(xs, n)) -> {G.PDUSessionResourceFailedToSetupListSURes.valid(xs) == True{} : Bool}:
+  (av, len) = s
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs), n, len)
+  P.Bool.and_intro(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs)), G.PDUSessionResourceFailedToSetupListSURes.all_valid(xs), (%slen : {Ap.Size.valid(1n, 255n, _) == True{} : Bool}; sv), av)
+
+def PDUSessionResourceFailedToSetupListSURes.dv(+c0: Ap.Cur, rn: Ap.Rd(Nat), +ern: {Ap.Size.read(True{}, 8n, 1n, 255n, c0) == rn : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceFailedToSetupListSURes.count(rn) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}) -> {G.PDUSessionResourceFailedToSetupListSURes.valid(xs) == True{} : Bool}:
+  match rn:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, {G.PDUSessionResourceFailedToSetupListSURes.valid(xs) == True{} : Bool}, err, xs, c2, e)
+    case Done{(+n, +c)}:
+      PDUSessionResourceFailedToSetupListSURes.dv.finish(n, xs, L.aper.size.decode_valid(True{}, 8n, 1n, 255n, c0, n, c, ern), PDUSessionResourceFailedToSetupListSURes.spec(n, c, xs, c2, e))
+
+def GL.ngap.PDUSessionResourceFailedToSetupListSURes.decode_valid(c, v, c2, e):
+  PDUSessionResourceFailedToSetupListSURes.dv(c, Ap.Size.read(True{}, 8n, 1n, 255n, c), {==}, v, c2, e)
+
+def PDUSessionResourceFailedToSetupListSURes.Sxi(+bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem: Nat, rem2: Nat, +bits2: Ap.Bits(), k: Nat) -> Type:
+  ({bits == G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListSURes.items_after(xs, rem) : Nat}) & {List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs) == k : Nat}
+
+def PDUSessionResourceFailedToSetupListSURes.sx.finish(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceFailedToSetupItemSURes, +r3: Nat, +b3: Ap.Bits(), +xs2: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +r5: Nat, +b5: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), si: {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem) : Nat}, s: PDUSessionResourceFailedToSetupListSURes.Sxi(b3, xs2, r3, r5, b5, p), eb: {b5 == bits2 : Ap.Bits()}, er: {r5 == rem2 : Nat}) -> PDUSessionResourceFailedToSetupListSURes.Sxi(bits, x <> xs2, rem, rem2, bits2, 1n+p):
+  (i1, +i2) = si
+  (cn, len) = s
+  (h1, h2) = cn
+  (((%i2 : {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(x, rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(xs2, _, bits2)) : Ap.Bits()}; (%eb : {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(x, rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(xs2, r3, _)) : Ap.Bits()}; (%h1 : {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(x, rem, _) : Ap.Bits()}; i1))), (%er : {_ == G.PDUSessionResourceFailedToSetupListSURes.items_after(xs2, G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem)) : Nat}; (%i2 : {r5 == G.PDUSessionResourceFailedToSetupListSURes.items_after(xs2, _) : Nat}; h2))), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs2), p, len))
+
+def PDUSessionResourceFailedToSetupListSURes.sx.cons(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceFailedToSetupItemSURes, +r3: Nat, +b3: Ap.Bits(), rl: Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), +erl: {G.PDUSessionResourceFailedToSetupListSURes.items(p, Ap.Cur{r3, b3}) == rl : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceFailedToSetupItemSURes> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceFailedToSetupListSURes.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)} -> PDUSessionResourceFailedToSetupListSURes.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupListSURes.cons(x, rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}, si: {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceFailedToSetupItemSURes.after(x, rem) : Nat}) -> PDUSessionResourceFailedToSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, PDUSessionResourceFailedToSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+xs2, c5)}:
+      match c5:
+        case Ap.Cur{+r5, +b5}:
+          ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y, xs), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y, Ap.Cur{rem2, bits2}), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          %ev : PDUSessionResourceFailedToSetupListSURes.Sxi(bits, _, rem, rem2, bits2, 1n+p)
+          PDUSessionResourceFailedToSetupListSURes.sx.finish(p, rem, bits, x, r3, b3, xs2, r5, b5, rem2, bits2, si, ih(b3, r3, xs2, r5, b5, erl), Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec), Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec))
+
+def PDUSessionResourceFailedToSetupListSURes.sx.step(+p: Nat, +rem: Nat, +bits: Ap.Bits(), ri: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes), +eri: {G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, bits}) == ri : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceFailedToSetupItemSURes> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceFailedToSetupListSURes.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)} -> PDUSessionResourceFailedToSetupListSURes.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupListSURes.next(ri, c4 => G.PDUSessionResourceFailedToSetupListSURes.items(p, c4)) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}) -> PDUSessionResourceFailedToSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, PDUSessionResourceFailedToSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+x, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceFailedToSetupListSURes.sx.cons(p, rem, bits, x, r3, b3, G.PDUSessionResourceFailedToSetupListSURes.items(p, Ap.Cur{r3, b3}), {==}, ih, xs, rem2, bits2, e, GL.ngap.PDUSessionResourceFailedToSetupItemSURes.suffix(rem, bits, x, r3, b3, eri))
+
+def PDUSessionResourceFailedToSetupListSURes.sx.items(k: Nat, +rem: Nat, +bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupListSURes.items(k, Ap.Cur{rem, bits}) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}) -> PDUSessionResourceFailedToSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, k):
+  match k:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y, xs), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, y, Ap.Cur{rem2, bits2}), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      %ev : PDUSessionResourceFailedToSetupListSURes.Sxi(bits, _, rem, rem2, bits2, 0n)
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec), Equal.sym(Nat, rem, rem2, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec))), {==})
+    case 1n++p:
+      PDUSessionResourceFailedToSetupListSURes.sx.step(p, rem, bits, G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, bits}), {==}, b4 => r4 => xs2 => r5 => b5 => e2 => PDUSessionResourceFailedToSetupListSURes.sx.items(p, r4, b4, xs2, r5, b5, e2), xs, rem2, bits2, e)
+
+def PDUSessionResourceFailedToSetupListSURes.sx.go(+rem: Nat, +bits: Ap.Bits(), +k: Nat, +r1: Nat, +b1: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), ss: PC.Canon(bits, Ap.Size.write(True{}, 8n, 1n, k, rem, b1), r1, Ap.Size.after(True{}, 8n, rem)), s: PDUSessionResourceFailedToSetupListSURes.Sxi(b1, xs, r1, rem2, bits2, k)) -> PDUSessionResourceFailedToSetupListSURes.Sx(bits, xs, rem, rem2, bits2):
+  (s1, +s2) = ss
+  (cn, len) = s
+  (h1, h2) = cn
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceFailedToSetupItemSURes, xs), k, len)
+  ((%slen : {bits == Ap.Size.write(True{}, 8n, 1n, _, rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), bits2)) : Ap.Bits()}; (%s2 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, G.PDUSessionResourceFailedToSetupListSURes.items_write(xs, _, bits2)) : Ap.Bits()}; (%h1 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, _) : Ap.Bits()}; s1))), (%s2 : {rem2 == G.PDUSessionResourceFailedToSetupListSURes.items_after(xs, _) : Nat}; h2))
+
+def PDUSessionResourceFailedToSetupListSURes.sx.count(+rem: Nat, +bits: Ap.Bits(), rl: Ap.Rd(Nat), +erl: {Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}) == rl : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceFailedToSetupListSURes.count(rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>)}) -> PDUSessionResourceFailedToSetupListSURes.Sx(bits, xs, rem, rem2, bits2):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceFailedToSetupItemSURes>, PDUSessionResourceFailedToSetupListSURes.Sx(bits, xs, rem, rem2, bits2), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+k, c1)}:
+      match c1:
+        case Ap.Cur{+r1, +b1}:
+          PDUSessionResourceFailedToSetupListSURes.sx.go(rem, bits, k, r1, b1, xs, rem2, bits2, PC.Size.sx(True{}, 8n, 1n, 255n, rem, bits, k, r1, b1, erl), PDUSessionResourceFailedToSetupListSURes.sx.items(k, r1, b1, xs, rem2, bits2, e))
+
+def GL.ngap.PDUSessionResourceFailedToSetupListSURes.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceFailedToSetupListSURes.sx.count(rem, bits, Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}), {==}, v, rem2, bits2, e)
+
+def ProcedureCode.Sx(+bits: Ap.Bits(), +v: G.ProcedureCode(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.ProcedureCode.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ProcedureCode.after(v, rem) : Nat}
+
+def GL.ngap.ProcedureCode.roundtrip(v, rem, rest, ok):
+  L.aper.aint.roundtrip(8n, 255, v, rem, rest, ok)
+
+def GL.ngap.ProcedureCode.decode_valid(c, v, c2, e):
+  L.aper.aint.decode_valid(8n, 255, c, v, c2, e)
+
+def GL.ngap.ProcedureCode.suffix(rem, bits, v, rem2, bits2, e):
+  PC.AInt.sx(8n, 255, rem, bits, v, rem2, bits2, e, {==})
+
+def TriggeringMessage.Sx(+bits: Ap.Bits(), +v: G.TriggeringMessage(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.TriggeringMessage.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TriggeringMessage.after(v, rem) : Nat}
+
+def GL.ngap.TriggeringMessage.roundtrip(v, rem, rest, ok):
+  L.aper.enum.roundtrip(2n, 2, False{}, v, rem, rest, ok)
+
+def GL.ngap.TriggeringMessage.decode_valid(c, v, c2, e):
+  L.aper.enum.decode_valid(2n, 2, False{}, c, v, c2, e)
+
+def GL.ngap.TriggeringMessage.suffix(rem, bits, v, rem2, bits2, e):
+  PC.Enum.sx(2n, 2, False{}, rem, bits, v, rem2, bits2, e, {==})
+
+def Criticality.Sx(+bits: Ap.Bits(), +v: G.Criticality(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.Criticality.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.Criticality.after(v, rem) : Nat}
+
+def GL.ngap.Criticality.roundtrip(v, rem, rest, ok):
+  L.aper.enum.roundtrip(2n, 2, False{}, v, rem, rest, ok)
+
+def GL.ngap.Criticality.decode_valid(c, v, c2, e):
+  L.aper.enum.decode_valid(2n, 2, False{}, c, v, c2, e)
+
+def GL.ngap.Criticality.suffix(rem, bits, v, rem2, bits2, e):
+  PC.Enum.sx(2n, 2, False{}, rem, bits, v, rem2, bits2, e, {==})
+
+def ProtocolIE_ID.Sx(+bits: Ap.Bits(), +v: G.ProtocolIE_ID(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.ProtocolIE_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ProtocolIE_ID.after(v, rem) : Nat}
+
+def GL.ngap.ProtocolIE_ID.roundtrip(v, rem, rest, ok):
+  L.aper.aint.roundtrip(16n, 65535, v, rem, rest, ok)
+
+def GL.ngap.ProtocolIE_ID.decode_valid(c, v, c2, e):
+  L.aper.aint.decode_valid(16n, 65535, c, v, c2, e)
+
+def GL.ngap.ProtocolIE_ID.suffix(rem, bits, v, rem2, bits2, e):
+  PC.AInt.sx(16n, 65535, rem, bits, v, rem2, bits2, e, {==})
+
+def TypeOfError.Sx(+bits: Ap.Bits(), +v: G.TypeOfError(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.TypeOfError.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TypeOfError.after(v, rem) : Nat}
+
+def GL.ngap.TypeOfError.roundtrip(v, rem, rest, ok):
+  L.aper.enum.roundtrip(1n, 1, True{}, v, rem, rest, ok)
+
+def GL.ngap.TypeOfError.decode_valid(c, v, c2, e):
+  L.aper.enum.decode_valid(1n, 1, True{}, c, v, c2, e)
+
+def GL.ngap.TypeOfError.suffix(rem, bits, v, rem2, bits2, e):
+  PC.Enum.sx(1n, 1, True{}, rem, bits, v, rem2, bits2, e, {==})
+
+def CriticalityDiagnostics_IE_Item.Sx(+bits: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_Item, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.CriticalityDiagnostics_IE_Item.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics_IE_Item.after(v, rem) : Nat}
+
+def CriticalityDiagnostics_IE_Item.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(m) == True{} : Bool}) -> {G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.CriticalityDiagnostics_IE_Item.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def CriticalityDiagnostics_IE_Item.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def CriticalityDiagnostics_IE_Item.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      CriticalityDiagnostics_IE_Item.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def CriticalityDiagnostics_IE_Item.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def CriticalityDiagnostics_IE_Item.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          CriticalityDiagnostics_IE_Item.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def CriticalityDiagnostics_IE_Item.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      CriticalityDiagnostics_IE_Item.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def CriticalityDiagnostics_IE_Item.rt(+iECriticality: G.Criticality(), +iE_ID: G.ProtocolIE_ID(), +typeOfError: G.TypeOfError(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.CriticalityDiagnostics_IE_Item.valid(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}) == True{} : Bool}) -> {G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, G.CriticalityDiagnostics_IE_Item.write(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, rem, rest)}) == Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}:
+  ok0 = P.Bool.and_true_l(G.Criticality.valid(iECriticality), Bool.and(G.ProtocolIE_ID.valid(iE_ID), Bool.and(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions))), ok)
+  +okr0 = P.Bool.and_true_r(G.Criticality.valid(iECriticality), Bool.and(G.ProtocolIE_ID.valid(iE_ID), Bool.and(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions))), ok)
+  ok1 = P.Bool.and_true_l(G.ProtocolIE_ID.valid(iE_ID), Bool.and(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions)), okr0)
+  +okr1 = P.Bool.and_true_r(G.ProtocolIE_ID.valid(iE_ID), Bool.and(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions)), okr0)
+  ok2 = P.Bool.and_true_l(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions), okr1)
+  +okr2 = P.Bool.and_true_r(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions), okr1)
+  e0 = Equal.sym(Ap.Rd(G.Criticality()), G.Criticality.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest))))}), Done{(iECriticality, Ap.Cur{G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest)))})}, GL.ngap.Criticality.roundtrip(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest))), ok0))
+  %e0 : {G.CriticalityDiagnostics_IE_Item.r_iECriticality(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
+  e1 = Equal.sym(Ap.Rd(G.ProtocolIE_ID()), G.ProtocolIE_ID.read(Ap.Cur{G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest)))}), Done{(iE_ID, Ap.Cur{G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest))})}, GL.ngap.ProtocolIE_ID.roundtrip(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest)), ok1))
+  %e1 : {G.CriticalityDiagnostics_IE_Item.r_iE_ID(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), iECriticality, _) == Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
+  e2 = Equal.sym(Ap.Rd(G.TypeOfError()), G.TypeOfError.read(Ap.Cur{G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest))}), Done{(typeOfError, Ap.Cur{G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest)})}, GL.ngap.TypeOfError.roundtrip(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest), ok2))
+  %e2 : {G.CriticalityDiagnostics_IE_Item.r_typeOfError(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), iECriticality, iE_ID, _) == Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
+  e3 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest)}), Done{(iE_Extensions, Ap.Cur{G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))))), rest})}, CriticalityDiagnostics_IE_Item.o_rt_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest, okr2))
+  %e3 : {G.CriticalityDiagnostics_IE_Item.r_iE_Extensions(iECriticality, iE_ID, typeOfError, _) == Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
+  {==}
+
+def GL.ngap.CriticalityDiagnostics_IE_Item.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}:
+      CriticalityDiagnostics_IE_Item.rt(iECriticality, iE_ID, typeOfError, iE_Extensions, rem, rest, ok)
+
+def CriticalityDiagnostics_IE_Item.dv_iE_Extensions(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +iE_ID: G.ProtocolIE_ID(), +typeOfError: G.TypeOfError(), +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.CriticalityDiagnostics_IE_Item, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.r_iE_Extensions(iECriticality, iE_ID, typeOfError, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, ok0: {G.Criticality.valid(iECriticality) == True{} : Bool}, ok1: {G.ProtocolIE_ID.valid(iE_ID) == True{} : Bool}, ok2: {G.TypeOfError.valid(typeOfError) == True{} : Bool}) -> {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.CriticalityDiagnostics_IE_Item), G.CriticalityDiagnostics_IE_Item, y => PA.Rd.value(G.CriticalityDiagnostics_IE_Item, y, v), Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.CriticalityDiagnostics_IE_Item.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.Criticality.valid(iECriticality), Bool.and(G.ProtocolIE_ID.valid(iE_ID), Bool.and(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions))), ok0, P.Bool.and_intro(G.ProtocolIE_ID.valid(iE_ID), Bool.and(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions)), ok1, P.Bool.and_intro(G.TypeOfError.valid(typeOfError), G.CriticalityDiagnostics_IE_Item.v_iE_Extensions(iE_Extensions), ok2, CriticalityDiagnostics_IE_Item.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er))))
+
+def CriticalityDiagnostics_IE_Item.dv_typeOfError(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +iE_ID: G.ProtocolIE_ID(), +c: Ap.Cur, r: Ap.Rd(G.TypeOfError()), +er: {G.TypeOfError.read(c) == r : Ap.Rd(G.TypeOfError())}, +v: G.CriticalityDiagnostics_IE_Item, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.r_typeOfError(p_iE_Extensions, iECriticality, iE_ID, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, ok0: {G.Criticality.valid(iECriticality) == True{} : Bool}, ok1: {G.ProtocolIE_ID.valid(iE_ID) == True{} : Bool}) -> {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+typeOfError, +c3)}:
+      CriticalityDiagnostics_IE_Item.dv_iE_Extensions(p_iE_Extensions, iECriticality, iE_ID, typeOfError, c3, G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, ok1, GL.ngap.TypeOfError.decode_valid(c, typeOfError, c3, er))
+
+def CriticalityDiagnostics_IE_Item.dv_iE_ID(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +c: Ap.Cur, r: Ap.Rd(G.ProtocolIE_ID()), +er: {G.ProtocolIE_ID.read(c) == r : Ap.Rd(G.ProtocolIE_ID())}, +v: G.CriticalityDiagnostics_IE_Item, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.r_iE_ID(p_iE_Extensions, iECriticality, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, ok0: {G.Criticality.valid(iECriticality) == True{} : Bool}) -> {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_ID, +c3)}:
+      CriticalityDiagnostics_IE_Item.dv_typeOfError(p_iE_Extensions, iECriticality, iE_ID, c3, G.TypeOfError.read(c3), {==}, v, c2, e, ok0, GL.ngap.ProtocolIE_ID.decode_valid(c, iE_ID, c3, er))
+
+def CriticalityDiagnostics_IE_Item.dv_iECriticality(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.Criticality()), +er: {G.Criticality.read(c) == r : Ap.Rd(G.Criticality())}, +v: G.CriticalityDiagnostics_IE_Item, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.r_iECriticality(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}) -> {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iECriticality, +c3)}:
+      CriticalityDiagnostics_IE_Item.dv_iE_ID(p_iE_Extensions, iECriticality, c3, G.ProtocolIE_ID.read(c3), {==}, v, c2, e, GL.ngap.Criticality.decode_valid(c, iECriticality, c3, er))
+
+def CriticalityDiagnostics_IE_Item.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.CriticalityDiagnostics_IE_Item, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}) -> {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          CriticalityDiagnostics_IE_Item.dv_iECriticality(p_iE_Extensions, c3, G.Criticality.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def CriticalityDiagnostics_IE_Item.dv_ext(rb: Ap.Rd(Bool), +v: G.CriticalityDiagnostics_IE_Item, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_Item.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}) -> {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          CriticalityDiagnostics_IE_Item.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.CriticalityDiagnostics_IE_Item.decode_valid(c, v, c2, e):
+  CriticalityDiagnostics_IE_Item.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def CriticalityDiagnostics_IE_Item.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +iE_ID: G.ProtocolIE_ID(), +typeOfError: G.TypeOfError(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), bi))))) : Ap.Bits()}, +pr: {ri == G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}, s: ({bi == G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.CriticalityDiagnostics_IE_Item), G.CriticalityDiagnostics_IE_Item, y => PA.Rd.value(G.CriticalityDiagnostics_IE_Item, y, v), Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.CriticalityDiagnostics_IE_Item), Ap.Cur, y => PA.Rd.cur(G.CriticalityDiagnostics_IE_Item, y, Ap.Cur{rem2, bits2}), Done{(G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : CriticalityDiagnostics_IE_Item.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), _)))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))), b3)))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics_IE_Item.w_iE_Extensions(iE_Extensions, _, b3)))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; pre)))), (%er : {_ == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(iE_Extensions, G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))))) : Nat}; (%pr : {r3 == G.CriticalityDiagnostics_IE_Item.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def CriticalityDiagnostics_IE_Item.sx_iE_Extensions(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +iE_ID: G.ProtocolIE_ID(), +typeOfError: G.TypeOfError(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_iE_Extensions(iECriticality, iE_ID, typeOfError, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))), bi))))) : Ap.Bits()}, pr: {ri == G.TypeOfError.after(typeOfError, G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics_IE_Item.sx_iE_Extensions.go(p_iE_Extensions, iECriticality, iE_ID, typeOfError, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, CriticalityDiagnostics_IE_Item.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def CriticalityDiagnostics_IE_Item.sx_typeOfError.go(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +iE_ID: G.ProtocolIE_ID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +typeOfError: G.TypeOfError(), +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_iE_Extensions(iECriticality, iE_ID, typeOfError, G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}, s: {bi == G.TypeOfError.write(typeOfError, ri, b3) : Ap.Bits()} & {r3 == G.TypeOfError.after(typeOfError, ri) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  CriticalityDiagnostics_IE_Item.sx_iE_Extensions(p_iE_Extensions, iECriticality, iE_ID, typeOfError, rem, bits, r3, b3, G.CriticalityDiagnostics_IE_Item.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.TypeOfError.write(typeOfError, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)), (%pr : {r3 == G.TypeOfError.after(typeOfError, _) : Nat}; s2))
+
+def CriticalityDiagnostics_IE_Item.sx_typeOfError(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +iE_ID: G.ProtocolIE_ID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.TypeOfError()), +er: {G.TypeOfError.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.TypeOfError())}, +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_typeOfError(p_iE_Extensions, iECriticality, iE_ID, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.ProtocolIE_ID.after(iE_ID, G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+typeOfError, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics_IE_Item.sx_typeOfError.go(p_iE_Extensions, iECriticality, iE_ID, rem, bits, ri, bi, typeOfError, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.TypeOfError.suffix(ri, bi, typeOfError, r3, b3, er))
+
+def CriticalityDiagnostics_IE_Item.sx_iE_ID.go(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_ID: G.ProtocolIE_ID(), +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_typeOfError(p_iE_Extensions, iECriticality, iE_ID, G.TypeOfError.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: {bi == G.ProtocolIE_ID.write(iE_ID, ri, b3) : Ap.Bits()} & {r3 == G.ProtocolIE_ID.after(iE_ID, ri) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  CriticalityDiagnostics_IE_Item.sx_typeOfError(p_iE_Extensions, iECriticality, iE_ID, rem, bits, r3, b3, G.TypeOfError.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.ProtocolIE_ID.write(iE_ID, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)), (%pr : {r3 == G.ProtocolIE_ID.after(iE_ID, _) : Nat}; s2))
+
+def CriticalityDiagnostics_IE_Item.sx_iE_ID(+p_iE_Extensions: Bool, +iECriticality: G.Criticality(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.ProtocolIE_ID()), +er: {G.ProtocolIE_ID.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.ProtocolIE_ID())}, +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_iE_ID(p_iE_Extensions, iECriticality, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.Criticality.after(iECriticality, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_ID, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics_IE_Item.sx_iE_ID.go(p_iE_Extensions, iECriticality, rem, bits, ri, bi, iE_ID, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.ProtocolIE_ID.suffix(ri, bi, iE_ID, r3, b3, er))
+
+def CriticalityDiagnostics_IE_Item.sx_iECriticality.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iECriticality: G.Criticality(), +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_iE_ID(p_iE_Extensions, iECriticality, G.ProtocolIE_ID.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.Criticality.write(iECriticality, ri, b3) : Ap.Bits()} & {r3 == G.Criticality.after(iECriticality, ri) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  CriticalityDiagnostics_IE_Item.sx_iE_ID(p_iE_Extensions, iECriticality, rem, bits, r3, b3, G.ProtocolIE_ID.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Criticality.write(iECriticality, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.Criticality.after(iECriticality, _) : Nat}; s2))
+
+def CriticalityDiagnostics_IE_Item.sx_iECriticality(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.Criticality()), +er: {G.Criticality.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.Criticality())}, +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_iECriticality(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iECriticality, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics_IE_Item.sx_iECriticality.go(p_iE_Extensions, rem, bits, ri, bi, iECriticality, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.Criticality.suffix(ri, bi, iECriticality, r3, b3, er))
+
+def CriticalityDiagnostics_IE_Item.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_iECriticality(p_iE_Extensions, G.Criticality.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  CriticalityDiagnostics_IE_Item.sx_iECriticality(p_iE_Extensions, rem, bits, r1, b1, G.Criticality.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def CriticalityDiagnostics_IE_Item.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              CriticalityDiagnostics_IE_Item.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def CriticalityDiagnostics_IE_Item.sx(+rem: Nat, bits: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_Item, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}) -> CriticalityDiagnostics_IE_Item.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics_IE_Item, CriticalityDiagnostics_IE_Item.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          CriticalityDiagnostics_IE_Item.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.CriticalityDiagnostics_IE_Item.suffix(rem, bits, v, rem2, bits2, e):
+  CriticalityDiagnostics_IE_Item.sx(rem, bits, v, rem2, bits2, e)
+
+def CriticalityDiagnostics_IE_List.Sx(+bits: Ap.Bits(), +v: G.CriticalityDiagnostics_IE_List(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.CriticalityDiagnostics_IE_List.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics_IE_List.after(v, rem) : Nat}
+
+def CriticalityDiagnostics_IE_List.items_rt(xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem: Nat, +rest: Ap.Bits(), +av: {G.CriticalityDiagnostics_IE_List.all_valid(xs) == True{} : Bool}) -> {Done{(xs, Ap.Cur{G.CriticalityDiagnostics_IE_List.items_after(xs, rem), rest})} == G.CriticalityDiagnostics_IE_List.items(List.length(&2, G.CriticalityDiagnostics_IE_Item, xs), Ap.Cur{rem, G.CriticalityDiagnostics_IE_List.items_write(xs, rem, rest)}) : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +more:
+      ir = Equal.sym(Ap.Rd(G.CriticalityDiagnostics_IE_Item), G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, G.CriticalityDiagnostics_IE_Item.write(x, rem, G.CriticalityDiagnostics_IE_List.items_write(more, G.CriticalityDiagnostics_IE_Item.after(x, rem), rest))}), Done{(x, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(x, rem), G.CriticalityDiagnostics_IE_List.items_write(more, G.CriticalityDiagnostics_IE_Item.after(x, rem), rest)})}, GL.ngap.CriticalityDiagnostics_IE_Item.roundtrip(x, rem, G.CriticalityDiagnostics_IE_List.items_write(more, G.CriticalityDiagnostics_IE_Item.after(x, rem), rest), P.Bool.and_true_l(G.CriticalityDiagnostics_IE_Item.valid(x), G.CriticalityDiagnostics_IE_List.all_valid(more), av)))
+      %ir : {Done{(x <> more, Ap.Cur{G.CriticalityDiagnostics_IE_List.items_after(x <> more, rem), rest})} == G.CriticalityDiagnostics_IE_List.next(_, c2 => G.CriticalityDiagnostics_IE_List.items(List.length(&2, G.CriticalityDiagnostics_IE_Item, more), c2)) : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}
+      ih = CriticalityDiagnostics_IE_List.items_rt(more, G.CriticalityDiagnostics_IE_Item.after(x, rem), rest, P.Bool.and_true_r(G.CriticalityDiagnostics_IE_Item.valid(x), G.CriticalityDiagnostics_IE_List.all_valid(more), av))
+      %ih : {Done{(x <> more, Ap.Cur{G.CriticalityDiagnostics_IE_List.items_after(x <> more, rem), rest})} == G.CriticalityDiagnostics_IE_List.cons(x, _) : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}
+      {==}
+
+def CriticalityDiagnostics_IE_List.rt(+xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.CriticalityDiagnostics_IE_List.valid(xs) == True{} : Bool}) -> {G.CriticalityDiagnostics_IE_List.read(Ap.Cur{rem, G.CriticalityDiagnostics_IE_List.write(xs, rem, rest)}) == Done{(xs, Ap.Cur{G.CriticalityDiagnostics_IE_List.after(xs, rem), rest})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}:
+  sr = Equal.sym(Ap.Rd(Nat), Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, Ap.Size.write(True{}, 8n, 1n, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs), rem, G.CriticalityDiagnostics_IE_List.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))}), Done{(List.length(&2, G.CriticalityDiagnostics_IE_Item, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.CriticalityDiagnostics_IE_List.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)})}, L.aper.size.roundtrip(True{}, 8n, 1n, 255n, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs), rem, G.CriticalityDiagnostics_IE_List.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest), P.Bool.and_true_l(Ap.Size.valid(1n, 255n, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs)), G.CriticalityDiagnostics_IE_List.all_valid(xs), ok), {==}))
+  %sr : {G.CriticalityDiagnostics_IE_List.count(_) == Done{(xs, Ap.Cur{G.CriticalityDiagnostics_IE_List.after(xs, rem), rest})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}
+  Equal.sym(Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), Done{(xs, Ap.Cur{G.CriticalityDiagnostics_IE_List.items_after(xs, Ap.Size.after(True{}, 8n, rem)), rest})}, G.CriticalityDiagnostics_IE_List.items(List.length(&2, G.CriticalityDiagnostics_IE_Item, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.CriticalityDiagnostics_IE_List.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)}), CriticalityDiagnostics_IE_List.items_rt(xs, Ap.Size.after(True{}, 8n, rem), rest, P.Bool.and_true_r(Ap.Size.valid(1n, 255n, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs)), G.CriticalityDiagnostics_IE_List.all_valid(xs), ok)))
+
+def GL.ngap.CriticalityDiagnostics_IE_List.roundtrip(v, rem, rest, ok):
+  CriticalityDiagnostics_IE_List.rt(v, rem, rest, ok)
+
+def CriticalityDiagnostics_IE_List.Spec(xs: List<&2, G.CriticalityDiagnostics_IE_Item>, n: Nat) -> Type:
+  {G.CriticalityDiagnostics_IE_List.all_valid(xs) == True{} : Bool} & {List.length(&2, G.CriticalityDiagnostics_IE_Item, xs) == n : Nat}
+
+def CriticalityDiagnostics_IE_List.spec.finish(+p: Nat, +x: G.CriticalityDiagnostics_IE_Item, +xs2: List<&2, G.CriticalityDiagnostics_IE_Item>, vi: {G.CriticalityDiagnostics_IE_Item.valid(x) == True{} : Bool}, s: CriticalityDiagnostics_IE_List.Spec(xs2, p)) -> CriticalityDiagnostics_IE_List.Spec(x <> xs2, 1n+p):
+  (av, len) = s
+  (P.Bool.and_intro(G.CriticalityDiagnostics_IE_Item.valid(x), G.CriticalityDiagnostics_IE_List.all_valid(xs2), vi, av), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs2), p, len))
+
+def CriticalityDiagnostics_IE_List.spec.cons(+p: Nat, +x: G.CriticalityDiagnostics_IE_Item, +c3: Ap.Cur, rl: Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), +erl: {G.CriticalityDiagnostics_IE_List.items(p, c3) == rl : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.CriticalityDiagnostics_IE_Item> -> @c5: Ap.Cur -> {G.CriticalityDiagnostics_IE_List.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)} -> CriticalityDiagnostics_IE_List.Spec(xs2, p), +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_List.cons(x, rl) == Done{(xs, c2)} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}, vi: {G.CriticalityDiagnostics_IE_Item.valid(x) == True{} : Bool}) -> CriticalityDiagnostics_IE_List.Spec(xs, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.CriticalityDiagnostics_IE_Item>, CriticalityDiagnostics_IE_List.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+xs2, +c5)}:
+      ev = Equal.cong(Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), List<&2, G.CriticalityDiagnostics_IE_Item>, y => PA.Rd.value(List<&2, G.CriticalityDiagnostics_IE_Item>, y, xs), Done{(x <> xs2, c5)}, Done{(xs, c2)}, e)
+      %ev : CriticalityDiagnostics_IE_List.Spec(_, 1n+p)
+      CriticalityDiagnostics_IE_List.spec.finish(p, x, xs2, vi, ih(c3, xs2, c5, erl))
+
+def CriticalityDiagnostics_IE_List.spec.step(+p: Nat, +c: Ap.Cur, ri: Ap.Rd(G.CriticalityDiagnostics_IE_Item), +eri: {G.CriticalityDiagnostics_IE_Item.read(c) == ri : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.CriticalityDiagnostics_IE_Item> -> @c5: Ap.Cur -> {G.CriticalityDiagnostics_IE_List.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)} -> CriticalityDiagnostics_IE_List.Spec(xs2, p), +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_List.next(ri, c4 => G.CriticalityDiagnostics_IE_List.items(p, c4)) == Done{(xs, c2)} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}) -> CriticalityDiagnostics_IE_List.Spec(xs, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.CriticalityDiagnostics_IE_Item>, CriticalityDiagnostics_IE_List.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+x, +c3)}:
+      CriticalityDiagnostics_IE_List.spec.cons(p, x, c3, G.CriticalityDiagnostics_IE_List.items(p, c3), {==}, ih, xs, c2, e, GL.ngap.CriticalityDiagnostics_IE_Item.decode_valid(c, x, c3, eri))
+
+def CriticalityDiagnostics_IE_List.spec(n: Nat, +c: Ap.Cur, +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_List.items(n, c) == Done{(xs, c2)} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}) -> CriticalityDiagnostics_IE_List.Spec(xs, n):
+  match n:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), List<&2, G.CriticalityDiagnostics_IE_Item>, y => PA.Rd.value(List<&2, G.CriticalityDiagnostics_IE_Item>, y, xs), Done{([], c)}, Done{(xs, c2)}, e)
+      %ev : CriticalityDiagnostics_IE_List.Spec(_, 0n)
+      ({==}, {==})
+    case 1n++p:
+      CriticalityDiagnostics_IE_List.spec.step(p, c, G.CriticalityDiagnostics_IE_Item.read(c), {==}, c4 => xs2 => c5 => e2 => CriticalityDiagnostics_IE_List.spec(p, c4, xs2, c5, e2), xs, c2, e)
+
+def CriticalityDiagnostics_IE_List.dv.finish(+n: Nat, +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, sv: {Ap.Size.valid(1n, 255n, n) == True{} : Bool}, s: CriticalityDiagnostics_IE_List.Spec(xs, n)) -> {G.CriticalityDiagnostics_IE_List.valid(xs) == True{} : Bool}:
+  (av, len) = s
+  slen = Equal.sym(Nat, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs), n, len)
+  P.Bool.and_intro(Ap.Size.valid(1n, 255n, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs)), G.CriticalityDiagnostics_IE_List.all_valid(xs), (%slen : {Ap.Size.valid(1n, 255n, _) == True{} : Bool}; sv), av)
+
+def CriticalityDiagnostics_IE_List.dv(+c0: Ap.Cur, rn: Ap.Rd(Nat), +ern: {Ap.Size.read(True{}, 8n, 1n, 255n, c0) == rn : Ap.Rd(Nat)}, +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics_IE_List.count(rn) == Done{(xs, c2)} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}) -> {G.CriticalityDiagnostics_IE_List.valid(xs) == True{} : Bool}:
+  match rn:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.CriticalityDiagnostics_IE_Item>, {G.CriticalityDiagnostics_IE_List.valid(xs) == True{} : Bool}, err, xs, c2, e)
+    case Done{(+n, +c)}:
+      CriticalityDiagnostics_IE_List.dv.finish(n, xs, L.aper.size.decode_valid(True{}, 8n, 1n, 255n, c0, n, c, ern), CriticalityDiagnostics_IE_List.spec(n, c, xs, c2, e))
+
+def GL.ngap.CriticalityDiagnostics_IE_List.decode_valid(c, v, c2, e):
+  CriticalityDiagnostics_IE_List.dv(c, Ap.Size.read(True{}, 8n, 1n, 255n, c), {==}, v, c2, e)
+
+def CriticalityDiagnostics_IE_List.Sxi(+bits: Ap.Bits(), +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem: Nat, rem2: Nat, +bits2: Ap.Bits(), k: Nat) -> Type:
+  ({bits == G.CriticalityDiagnostics_IE_List.items_write(xs, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics_IE_List.items_after(xs, rem) : Nat}) & {List.length(&2, G.CriticalityDiagnostics_IE_Item, xs) == k : Nat}
+
+def CriticalityDiagnostics_IE_List.sx.finish(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.CriticalityDiagnostics_IE_Item, +r3: Nat, +b3: Ap.Bits(), +xs2: List<&2, G.CriticalityDiagnostics_IE_Item>, +r5: Nat, +b5: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), si: {bits == G.CriticalityDiagnostics_IE_Item.write(x, rem, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.after(x, rem) : Nat}, s: CriticalityDiagnostics_IE_List.Sxi(b3, xs2, r3, r5, b5, p), eb: {b5 == bits2 : Ap.Bits()}, er: {r5 == rem2 : Nat}) -> CriticalityDiagnostics_IE_List.Sxi(bits, x <> xs2, rem, rem2, bits2, 1n+p):
+  (i1, +i2) = si
+  (cn, len) = s
+  (h1, h2) = cn
+  (((%i2 : {bits == G.CriticalityDiagnostics_IE_Item.write(x, rem, G.CriticalityDiagnostics_IE_List.items_write(xs2, _, bits2)) : Ap.Bits()}; (%eb : {bits == G.CriticalityDiagnostics_IE_Item.write(x, rem, G.CriticalityDiagnostics_IE_List.items_write(xs2, r3, _)) : Ap.Bits()}; (%h1 : {bits == G.CriticalityDiagnostics_IE_Item.write(x, rem, _) : Ap.Bits()}; i1))), (%er : {_ == G.CriticalityDiagnostics_IE_List.items_after(xs2, G.CriticalityDiagnostics_IE_Item.after(x, rem)) : Nat}; (%i2 : {r5 == G.CriticalityDiagnostics_IE_List.items_after(xs2, _) : Nat}; h2))), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs2), p, len))
+
+def CriticalityDiagnostics_IE_List.sx.cons(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.CriticalityDiagnostics_IE_Item, +r3: Nat, +b3: Ap.Bits(), rl: Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), +erl: {G.CriticalityDiagnostics_IE_List.items(p, Ap.Cur{r3, b3}) == rl : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.CriticalityDiagnostics_IE_Item> -> @r5: Nat -> @b5: Ap.Bits() -> {G.CriticalityDiagnostics_IE_List.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)} -> CriticalityDiagnostics_IE_List.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_List.cons(x, rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}, si: {bits == G.CriticalityDiagnostics_IE_Item.write(x, rem, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics_IE_Item.after(x, rem) : Nat}) -> CriticalityDiagnostics_IE_List.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.CriticalityDiagnostics_IE_Item>, CriticalityDiagnostics_IE_List.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+xs2, c5)}:
+      match c5:
+        case Ap.Cur{+r5, +b5}:
+          ev = Equal.cong(Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), List<&2, G.CriticalityDiagnostics_IE_Item>, y => PA.Rd.value(List<&2, G.CriticalityDiagnostics_IE_Item>, y, xs), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          +ec = Equal.cong(Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), Ap.Cur, y => PA.Rd.cur(List<&2, G.CriticalityDiagnostics_IE_Item>, y, Ap.Cur{rem2, bits2}), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          %ev : CriticalityDiagnostics_IE_List.Sxi(bits, _, rem, rem2, bits2, 1n+p)
+          CriticalityDiagnostics_IE_List.sx.finish(p, rem, bits, x, r3, b3, xs2, r5, b5, rem2, bits2, si, ih(b3, r3, xs2, r5, b5, erl), Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec), Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec))
+
+def CriticalityDiagnostics_IE_List.sx.step(+p: Nat, +rem: Nat, +bits: Ap.Bits(), ri: Ap.Rd(G.CriticalityDiagnostics_IE_Item), +eri: {G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, bits}) == ri : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.CriticalityDiagnostics_IE_Item> -> @r5: Nat -> @b5: Ap.Bits() -> {G.CriticalityDiagnostics_IE_List.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)} -> CriticalityDiagnostics_IE_List.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_List.next(ri, c4 => G.CriticalityDiagnostics_IE_List.items(p, c4)) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}) -> CriticalityDiagnostics_IE_List.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.CriticalityDiagnostics_IE_Item>, CriticalityDiagnostics_IE_List.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+x, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics_IE_List.sx.cons(p, rem, bits, x, r3, b3, G.CriticalityDiagnostics_IE_List.items(p, Ap.Cur{r3, b3}), {==}, ih, xs, rem2, bits2, e, GL.ngap.CriticalityDiagnostics_IE_Item.suffix(rem, bits, x, r3, b3, eri))
+
+def CriticalityDiagnostics_IE_List.sx.items(k: Nat, +rem: Nat, +bits: Ap.Bits(), +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_List.items(k, Ap.Cur{rem, bits}) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}) -> CriticalityDiagnostics_IE_List.Sxi(bits, xs, rem, rem2, bits2, k):
+  match k:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), List<&2, G.CriticalityDiagnostics_IE_Item>, y => PA.Rd.value(List<&2, G.CriticalityDiagnostics_IE_Item>, y, xs), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      +ec = Equal.cong(Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>), Ap.Cur, y => PA.Rd.cur(List<&2, G.CriticalityDiagnostics_IE_Item>, y, Ap.Cur{rem2, bits2}), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      %ev : CriticalityDiagnostics_IE_List.Sxi(bits, _, rem, rem2, bits2, 0n)
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec), Equal.sym(Nat, rem, rem2, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec))), {==})
+    case 1n++p:
+      CriticalityDiagnostics_IE_List.sx.step(p, rem, bits, G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, bits}), {==}, b4 => r4 => xs2 => r5 => b5 => e2 => CriticalityDiagnostics_IE_List.sx.items(p, r4, b4, xs2, r5, b5, e2), xs, rem2, bits2, e)
+
+def CriticalityDiagnostics_IE_List.sx.go(+rem: Nat, +bits: Ap.Bits(), +k: Nat, +r1: Nat, +b1: Ap.Bits(), +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem2: Nat, +bits2: Ap.Bits(), ss: PC.Canon(bits, Ap.Size.write(True{}, 8n, 1n, k, rem, b1), r1, Ap.Size.after(True{}, 8n, rem)), s: CriticalityDiagnostics_IE_List.Sxi(b1, xs, r1, rem2, bits2, k)) -> CriticalityDiagnostics_IE_List.Sx(bits, xs, rem, rem2, bits2):
+  (s1, +s2) = ss
+  (cn, len) = s
+  (h1, h2) = cn
+  slen = Equal.sym(Nat, List.length(&2, G.CriticalityDiagnostics_IE_Item, xs), k, len)
+  ((%slen : {bits == Ap.Size.write(True{}, 8n, 1n, _, rem, G.CriticalityDiagnostics_IE_List.items_write(xs, Ap.Size.after(True{}, 8n, rem), bits2)) : Ap.Bits()}; (%s2 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, G.CriticalityDiagnostics_IE_List.items_write(xs, _, bits2)) : Ap.Bits()}; (%h1 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, _) : Ap.Bits()}; s1))), (%s2 : {rem2 == G.CriticalityDiagnostics_IE_List.items_after(xs, _) : Nat}; h2))
+
+def CriticalityDiagnostics_IE_List.sx.count(+rem: Nat, +bits: Ap.Bits(), rl: Ap.Rd(Nat), +erl: {Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}) == rl : Ap.Rd(Nat)}, +xs: List<&2, G.CriticalityDiagnostics_IE_Item>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics_IE_List.count(rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.CriticalityDiagnostics_IE_Item>)}) -> CriticalityDiagnostics_IE_List.Sx(bits, xs, rem, rem2, bits2):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.CriticalityDiagnostics_IE_Item>, CriticalityDiagnostics_IE_List.Sx(bits, xs, rem, rem2, bits2), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+k, c1)}:
+      match c1:
+        case Ap.Cur{+r1, +b1}:
+          CriticalityDiagnostics_IE_List.sx.go(rem, bits, k, r1, b1, xs, rem2, bits2, PC.Size.sx(True{}, 8n, 1n, 255n, rem, bits, k, r1, b1, erl), CriticalityDiagnostics_IE_List.sx.items(k, r1, b1, xs, rem2, bits2, e))
+
+def GL.ngap.CriticalityDiagnostics_IE_List.suffix(rem, bits, v, rem2, bits2, e):
+  CriticalityDiagnostics_IE_List.sx.count(rem, bits, Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}), {==}, v, rem2, bits2, e)
+
+def CriticalityDiagnostics.Sx(+bits: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.CriticalityDiagnostics.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics.after(v, rem) : Nat}
+
+def CriticalityDiagnostics.o_rt_procedureCode(m: Maybe<&2, G.ProcedureCode()>, +r: Nat, +inner: Ap.Bits(), ok: {G.CriticalityDiagnostics.v_procedureCode(m) == True{} : Bool}) -> {G.CriticalityDiagnostics.o_procedureCode(Fr.Present(G.ProcedureCode(), m), Ap.Cur{r, G.CriticalityDiagnostics.w_procedureCode(m, r, inner)}) == Done{(m, Ap.Cur{G.CriticalityDiagnostics.a_procedureCode(m, r), inner})} : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(G.ProcedureCode()), G.ProcedureCode.read(Ap.Cur{r, G.ProcedureCode.write(x, r, inner)}), Done{(x, Ap.Cur{G.ProcedureCode.after(x, r), inner})}, GL.ngap.ProcedureCode.roundtrip(x, r, inner, ok))
+      %e1 : {G.CriticalityDiagnostics.s_procedureCode(_) == Done{(Some{x}, Ap.Cur{G.ProcedureCode.after(x, r), inner})} : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}
+      {==}
+
+def CriticalityDiagnostics.o_dv_procedureCode.some(+c: Ap.Cur, r: Ap.Rd(G.ProcedureCode()), +er: {G.ProcedureCode.read(c) == r : Ap.Rd(G.ProcedureCode())}, +m: Maybe<&2, G.ProcedureCode()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.s_procedureCode(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}) -> {G.CriticalityDiagnostics.v_procedureCode(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.ProcedureCode()>, {G.CriticalityDiagnostics.v_procedureCode(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.ProcedureCode()>), Maybe<&2, G.ProcedureCode()>, y => PA.Rd.value(Maybe<&2, G.ProcedureCode()>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_procedureCode(_) == True{} : Bool}
+      GL.ngap.ProcedureCode.decode_valid(c, x, c3, er)
+
+def CriticalityDiagnostics.o_dv_procedureCode(p: Bool, +c: Ap.Cur, +m: Maybe<&2, G.ProcedureCode()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.o_procedureCode(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}) -> {G.CriticalityDiagnostics.v_procedureCode(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.ProcedureCode()>), Maybe<&2, G.ProcedureCode()>, y => PA.Rd.value(Maybe<&2, G.ProcedureCode()>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_procedureCode(_) == True{} : Bool}
+      {==}
+    case True{}:
+      CriticalityDiagnostics.o_dv_procedureCode.some(c, G.ProcedureCode.read(c), {==}, m, c2, e)
+
+def CriticalityDiagnostics.o_sx_procedureCode.go(+r: Nat, +b: Ap.Bits(), +x: G.ProcedureCode(), +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, G.ProcedureCode()>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}, s: {b == G.ProcedureCode.write(x, r, b4) : Ap.Bits()} & {r4 == G.ProcedureCode.after(x, r) : Nat}) -> ({b == G.CriticalityDiagnostics.w_procedureCode(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCode(m, r) : Nat}) & {True{} == Fr.Present(G.ProcedureCode(), m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, G.ProcedureCode()>), Maybe<&2, G.ProcedureCode()>, y => PA.Rd.value(Maybe<&2, G.ProcedureCode()>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, G.ProcedureCode()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.ProcedureCode()>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.CriticalityDiagnostics.w_procedureCode(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCode(_, r) : Nat}) & {True{} == Fr.Present(G.ProcedureCode(), _) : Bool}
+  (((%eb : {b == G.ProcedureCode.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == G.ProcedureCode.after(x, r) : Nat}; s2)), {==})
+
+def CriticalityDiagnostics.o_sx_procedureCode.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(G.ProcedureCode()), +erd: {G.ProcedureCode.read(Ap.Cur{r, b}) == rd : Ap.Rd(G.ProcedureCode())}, +m: Maybe<&2, G.ProcedureCode()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.s_procedureCode(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}) -> ({b == G.CriticalityDiagnostics.w_procedureCode(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCode(m, r) : Nat}) & {True{} == Fr.Present(G.ProcedureCode(), m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.ProcedureCode()>, ({b == G.CriticalityDiagnostics.w_procedureCode(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCode(m, r) : Nat}) & {True{} == Fr.Present(G.ProcedureCode(), m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          CriticalityDiagnostics.o_sx_procedureCode.go(r, b, x, r4, b4, m, r3, b3, e, GL.ngap.ProcedureCode.suffix(r, b, x, r4, b4, erd))
+
+def CriticalityDiagnostics.o_sx_procedureCode(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, G.ProcedureCode()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.o_procedureCode(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}) -> ({b == G.CriticalityDiagnostics.w_procedureCode(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCode(m, r) : Nat}) & {p == Fr.Present(G.ProcedureCode(), m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.ProcedureCode()>), Maybe<&2, G.ProcedureCode()>, y => PA.Rd.value(Maybe<&2, G.ProcedureCode()>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, G.ProcedureCode()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.ProcedureCode()>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.CriticalityDiagnostics.w_procedureCode(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCode(_, r) : Nat}) & {False{} == Fr.Present(G.ProcedureCode(), _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      CriticalityDiagnostics.o_sx_procedureCode.some(r, b, G.ProcedureCode.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def CriticalityDiagnostics.o_rt_triggeringMessage(m: Maybe<&2, G.TriggeringMessage()>, +r: Nat, +inner: Ap.Bits(), ok: {G.CriticalityDiagnostics.v_triggeringMessage(m) == True{} : Bool}) -> {G.CriticalityDiagnostics.o_triggeringMessage(Fr.Present(G.TriggeringMessage(), m), Ap.Cur{r, G.CriticalityDiagnostics.w_triggeringMessage(m, r, inner)}) == Done{(m, Ap.Cur{G.CriticalityDiagnostics.a_triggeringMessage(m, r), inner})} : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(G.TriggeringMessage()), G.TriggeringMessage.read(Ap.Cur{r, G.TriggeringMessage.write(x, r, inner)}), Done{(x, Ap.Cur{G.TriggeringMessage.after(x, r), inner})}, GL.ngap.TriggeringMessage.roundtrip(x, r, inner, ok))
+      %e1 : {G.CriticalityDiagnostics.s_triggeringMessage(_) == Done{(Some{x}, Ap.Cur{G.TriggeringMessage.after(x, r), inner})} : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}
+      {==}
+
+def CriticalityDiagnostics.o_dv_triggeringMessage.some(+c: Ap.Cur, r: Ap.Rd(G.TriggeringMessage()), +er: {G.TriggeringMessage.read(c) == r : Ap.Rd(G.TriggeringMessage())}, +m: Maybe<&2, G.TriggeringMessage()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.s_triggeringMessage(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}) -> {G.CriticalityDiagnostics.v_triggeringMessage(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.TriggeringMessage()>, {G.CriticalityDiagnostics.v_triggeringMessage(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.TriggeringMessage()>), Maybe<&2, G.TriggeringMessage()>, y => PA.Rd.value(Maybe<&2, G.TriggeringMessage()>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_triggeringMessage(_) == True{} : Bool}
+      GL.ngap.TriggeringMessage.decode_valid(c, x, c3, er)
+
+def CriticalityDiagnostics.o_dv_triggeringMessage(p: Bool, +c: Ap.Cur, +m: Maybe<&2, G.TriggeringMessage()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.o_triggeringMessage(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}) -> {G.CriticalityDiagnostics.v_triggeringMessage(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.TriggeringMessage()>), Maybe<&2, G.TriggeringMessage()>, y => PA.Rd.value(Maybe<&2, G.TriggeringMessage()>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_triggeringMessage(_) == True{} : Bool}
+      {==}
+    case True{}:
+      CriticalityDiagnostics.o_dv_triggeringMessage.some(c, G.TriggeringMessage.read(c), {==}, m, c2, e)
+
+def CriticalityDiagnostics.o_sx_triggeringMessage.go(+r: Nat, +b: Ap.Bits(), +x: G.TriggeringMessage(), +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, G.TriggeringMessage()>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}, s: {b == G.TriggeringMessage.write(x, r, b4) : Ap.Bits()} & {r4 == G.TriggeringMessage.after(x, r) : Nat}) -> ({b == G.CriticalityDiagnostics.w_triggeringMessage(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_triggeringMessage(m, r) : Nat}) & {True{} == Fr.Present(G.TriggeringMessage(), m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, G.TriggeringMessage()>), Maybe<&2, G.TriggeringMessage()>, y => PA.Rd.value(Maybe<&2, G.TriggeringMessage()>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, G.TriggeringMessage()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.TriggeringMessage()>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.CriticalityDiagnostics.w_triggeringMessage(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_triggeringMessage(_, r) : Nat}) & {True{} == Fr.Present(G.TriggeringMessage(), _) : Bool}
+  (((%eb : {b == G.TriggeringMessage.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == G.TriggeringMessage.after(x, r) : Nat}; s2)), {==})
+
+def CriticalityDiagnostics.o_sx_triggeringMessage.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(G.TriggeringMessage()), +erd: {G.TriggeringMessage.read(Ap.Cur{r, b}) == rd : Ap.Rd(G.TriggeringMessage())}, +m: Maybe<&2, G.TriggeringMessage()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.s_triggeringMessage(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}) -> ({b == G.CriticalityDiagnostics.w_triggeringMessage(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_triggeringMessage(m, r) : Nat}) & {True{} == Fr.Present(G.TriggeringMessage(), m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.TriggeringMessage()>, ({b == G.CriticalityDiagnostics.w_triggeringMessage(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_triggeringMessage(m, r) : Nat}) & {True{} == Fr.Present(G.TriggeringMessage(), m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          CriticalityDiagnostics.o_sx_triggeringMessage.go(r, b, x, r4, b4, m, r3, b3, e, GL.ngap.TriggeringMessage.suffix(r, b, x, r4, b4, erd))
+
+def CriticalityDiagnostics.o_sx_triggeringMessage(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, G.TriggeringMessage()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.o_triggeringMessage(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}) -> ({b == G.CriticalityDiagnostics.w_triggeringMessage(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_triggeringMessage(m, r) : Nat}) & {p == Fr.Present(G.TriggeringMessage(), m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.TriggeringMessage()>), Maybe<&2, G.TriggeringMessage()>, y => PA.Rd.value(Maybe<&2, G.TriggeringMessage()>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, G.TriggeringMessage()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.TriggeringMessage()>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.CriticalityDiagnostics.w_triggeringMessage(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_triggeringMessage(_, r) : Nat}) & {False{} == Fr.Present(G.TriggeringMessage(), _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      CriticalityDiagnostics.o_sx_triggeringMessage.some(r, b, G.TriggeringMessage.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def CriticalityDiagnostics.o_rt_procedureCriticality(m: Maybe<&2, G.Criticality()>, +r: Nat, +inner: Ap.Bits(), ok: {G.CriticalityDiagnostics.v_procedureCriticality(m) == True{} : Bool}) -> {G.CriticalityDiagnostics.o_procedureCriticality(Fr.Present(G.Criticality(), m), Ap.Cur{r, G.CriticalityDiagnostics.w_procedureCriticality(m, r, inner)}) == Done{(m, Ap.Cur{G.CriticalityDiagnostics.a_procedureCriticality(m, r), inner})} : Ap.Rd(Maybe<&2, G.Criticality()>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(G.Criticality()), G.Criticality.read(Ap.Cur{r, G.Criticality.write(x, r, inner)}), Done{(x, Ap.Cur{G.Criticality.after(x, r), inner})}, GL.ngap.Criticality.roundtrip(x, r, inner, ok))
+      %e1 : {G.CriticalityDiagnostics.s_procedureCriticality(_) == Done{(Some{x}, Ap.Cur{G.Criticality.after(x, r), inner})} : Ap.Rd(Maybe<&2, G.Criticality()>)}
+      {==}
+
+def CriticalityDiagnostics.o_dv_procedureCriticality.some(+c: Ap.Cur, r: Ap.Rd(G.Criticality()), +er: {G.Criticality.read(c) == r : Ap.Rd(G.Criticality())}, +m: Maybe<&2, G.Criticality()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.s_procedureCriticality(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.Criticality()>)}) -> {G.CriticalityDiagnostics.v_procedureCriticality(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.Criticality()>, {G.CriticalityDiagnostics.v_procedureCriticality(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.Criticality()>), Maybe<&2, G.Criticality()>, y => PA.Rd.value(Maybe<&2, G.Criticality()>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_procedureCriticality(_) == True{} : Bool}
+      GL.ngap.Criticality.decode_valid(c, x, c3, er)
+
+def CriticalityDiagnostics.o_dv_procedureCriticality(p: Bool, +c: Ap.Cur, +m: Maybe<&2, G.Criticality()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.o_procedureCriticality(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.Criticality()>)}) -> {G.CriticalityDiagnostics.v_procedureCriticality(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.Criticality()>), Maybe<&2, G.Criticality()>, y => PA.Rd.value(Maybe<&2, G.Criticality()>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_procedureCriticality(_) == True{} : Bool}
+      {==}
+    case True{}:
+      CriticalityDiagnostics.o_dv_procedureCriticality.some(c, G.Criticality.read(c), {==}, m, c2, e)
+
+def CriticalityDiagnostics.o_sx_procedureCriticality.go(+r: Nat, +b: Ap.Bits(), +x: G.Criticality(), +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, G.Criticality()>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.Criticality()>)}, s: {b == G.Criticality.write(x, r, b4) : Ap.Bits()} & {r4 == G.Criticality.after(x, r) : Nat}) -> ({b == G.CriticalityDiagnostics.w_procedureCriticality(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCriticality(m, r) : Nat}) & {True{} == Fr.Present(G.Criticality(), m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, G.Criticality()>), Maybe<&2, G.Criticality()>, y => PA.Rd.value(Maybe<&2, G.Criticality()>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, G.Criticality()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.Criticality()>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.CriticalityDiagnostics.w_procedureCriticality(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCriticality(_, r) : Nat}) & {True{} == Fr.Present(G.Criticality(), _) : Bool}
+  (((%eb : {b == G.Criticality.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == G.Criticality.after(x, r) : Nat}; s2)), {==})
+
+def CriticalityDiagnostics.o_sx_procedureCriticality.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(G.Criticality()), +erd: {G.Criticality.read(Ap.Cur{r, b}) == rd : Ap.Rd(G.Criticality())}, +m: Maybe<&2, G.Criticality()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.s_procedureCriticality(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.Criticality()>)}) -> ({b == G.CriticalityDiagnostics.w_procedureCriticality(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCriticality(m, r) : Nat}) & {True{} == Fr.Present(G.Criticality(), m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.Criticality()>, ({b == G.CriticalityDiagnostics.w_procedureCriticality(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCriticality(m, r) : Nat}) & {True{} == Fr.Present(G.Criticality(), m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          CriticalityDiagnostics.o_sx_procedureCriticality.go(r, b, x, r4, b4, m, r3, b3, e, GL.ngap.Criticality.suffix(r, b, x, r4, b4, erd))
+
+def CriticalityDiagnostics.o_sx_procedureCriticality(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, G.Criticality()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.o_procedureCriticality(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.Criticality()>)}) -> ({b == G.CriticalityDiagnostics.w_procedureCriticality(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCriticality(m, r) : Nat}) & {p == Fr.Present(G.Criticality(), m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.Criticality()>), Maybe<&2, G.Criticality()>, y => PA.Rd.value(Maybe<&2, G.Criticality()>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, G.Criticality()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.Criticality()>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.CriticalityDiagnostics.w_procedureCriticality(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCriticality(_, r) : Nat}) & {False{} == Fr.Present(G.Criticality(), _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      CriticalityDiagnostics.o_sx_procedureCriticality.some(r, b, G.Criticality.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def CriticalityDiagnostics.o_rt_iEsCriticalityDiagnostics(m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +r: Nat, +inner: Ap.Bits(), ok: {G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(m) == True{} : Bool}) -> {G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(Fr.Present(G.CriticalityDiagnostics_IE_List(), m), Ap.Cur{r, G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(m, r, inner)}) == Done{(m, Ap.Cur{G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(m, r), inner})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(G.CriticalityDiagnostics_IE_List()), G.CriticalityDiagnostics_IE_List.read(Ap.Cur{r, G.CriticalityDiagnostics_IE_List.write(x, r, inner)}), Done{(x, Ap.Cur{G.CriticalityDiagnostics_IE_List.after(x, r), inner})}, GL.ngap.CriticalityDiagnostics_IE_List.roundtrip(x, r, inner, ok))
+      %e1 : {G.CriticalityDiagnostics.s_iEsCriticalityDiagnostics(_) == Done{(Some{x}, Ap.Cur{G.CriticalityDiagnostics_IE_List.after(x, r), inner})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}
+      {==}
+
+def CriticalityDiagnostics.o_dv_iEsCriticalityDiagnostics.some(+c: Ap.Cur, r: Ap.Rd(G.CriticalityDiagnostics_IE_List()), +er: {G.CriticalityDiagnostics_IE_List.read(c) == r : Ap.Rd(G.CriticalityDiagnostics_IE_List())}, +m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.s_iEsCriticalityDiagnostics(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}) -> {G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, {G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(_) == True{} : Bool}
+      GL.ngap.CriticalityDiagnostics_IE_List.decode_valid(c, x, c3, er)
+
+def CriticalityDiagnostics.o_dv_iEsCriticalityDiagnostics(p: Bool, +c: Ap.Cur, +m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}) -> {G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(_) == True{} : Bool}
+      {==}
+    case True{}:
+      CriticalityDiagnostics.o_dv_iEsCriticalityDiagnostics.some(c, G.CriticalityDiagnostics_IE_List.read(c), {==}, m, c2, e)
+
+def CriticalityDiagnostics.o_sx_iEsCriticalityDiagnostics.go(+r: Nat, +b: Ap.Bits(), +x: G.CriticalityDiagnostics_IE_List(), +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}, s: {b == G.CriticalityDiagnostics_IE_List.write(x, r, b4) : Ap.Bits()} & {r4 == G.CriticalityDiagnostics_IE_List.after(x, r) : Nat}) -> ({b == G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(m, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics_IE_List(), m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(_, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics_IE_List(), _) : Bool}
+  (((%eb : {b == G.CriticalityDiagnostics_IE_List.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == G.CriticalityDiagnostics_IE_List.after(x, r) : Nat}; s2)), {==})
+
+def CriticalityDiagnostics.o_sx_iEsCriticalityDiagnostics.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(G.CriticalityDiagnostics_IE_List()), +erd: {G.CriticalityDiagnostics_IE_List.read(Ap.Cur{r, b}) == rd : Ap.Rd(G.CriticalityDiagnostics_IE_List())}, +m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.s_iEsCriticalityDiagnostics(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}) -> ({b == G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(m, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics_IE_List(), m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, ({b == G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(m, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics_IE_List(), m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          CriticalityDiagnostics.o_sx_iEsCriticalityDiagnostics.go(r, b, x, r4, b4, m, r3, b3, e, GL.ngap.CriticalityDiagnostics_IE_List.suffix(r, b, x, r4, b4, erd))
+
+def CriticalityDiagnostics.o_sx_iEsCriticalityDiagnostics(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}) -> ({b == G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(m, r) : Nat}) & {p == Fr.Present(G.CriticalityDiagnostics_IE_List(), m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.CriticalityDiagnostics_IE_List()>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(_, r) : Nat}) & {False{} == Fr.Present(G.CriticalityDiagnostics_IE_List(), _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      CriticalityDiagnostics.o_sx_iEsCriticalityDiagnostics.some(r, b, G.CriticalityDiagnostics_IE_List.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def CriticalityDiagnostics.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.CriticalityDiagnostics.v_iE_Extensions(m) == True{} : Bool}) -> {G.CriticalityDiagnostics.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.CriticalityDiagnostics.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.CriticalityDiagnostics.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.CriticalityDiagnostics.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def CriticalityDiagnostics.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.CriticalityDiagnostics.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.CriticalityDiagnostics.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def CriticalityDiagnostics.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.CriticalityDiagnostics.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      CriticalityDiagnostics.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def CriticalityDiagnostics.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.CriticalityDiagnostics.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.CriticalityDiagnostics.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def CriticalityDiagnostics.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.CriticalityDiagnostics.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.CriticalityDiagnostics.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          CriticalityDiagnostics.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def CriticalityDiagnostics.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.CriticalityDiagnostics.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.CriticalityDiagnostics.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.CriticalityDiagnostics.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      CriticalityDiagnostics.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def CriticalityDiagnostics.rt(+procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +procedureCriticality: Maybe<&2, G.Criticality()>, +iEsCriticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.CriticalityDiagnostics.valid(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}) == True{} : Bool}) -> {G.CriticalityDiagnostics.read(Ap.Cur{rem, G.CriticalityDiagnostics.write(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, rem, rest)}) == Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics.after(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}:
+  ok0 = P.Bool.and_true_l(G.CriticalityDiagnostics.v_procedureCode(procedureCode), Bool.and(G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage), Bool.and(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions)))), ok)
+  +okr0 = P.Bool.and_true_r(G.CriticalityDiagnostics.v_procedureCode(procedureCode), Bool.and(G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage), Bool.and(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions)))), ok)
+  ok1 = P.Bool.and_true_l(G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage), Bool.and(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions))), okr0)
+  +okr1 = P.Bool.and_true_r(G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage), Bool.and(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions))), okr0)
+  ok2 = P.Bool.and_true_l(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions)), okr1)
+  +okr2 = P.Bool.and_true_r(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions)), okr1)
+  ok3 = P.Bool.and_true_l(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions), okr2)
+  +okr3 = P.Bool.and_true_r(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions), okr2)
+  e0 = Equal.sym(Ap.Rd(Maybe<&2, G.ProcedureCode()>), G.CriticalityDiagnostics.o_procedureCode(Fr.Present(G.ProcedureCode(), procedureCode), Ap.Cur{Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest)))))}), Done{(procedureCode, Ap.Cur{G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest))))})}, CriticalityDiagnostics.o_rt_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest)))), ok0))
+  %e0 : {G.CriticalityDiagnostics.r_procedureCode(Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics.after(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}
+  e1 = Equal.sym(Ap.Rd(Maybe<&2, G.TriggeringMessage()>), G.CriticalityDiagnostics.o_triggeringMessage(Fr.Present(G.TriggeringMessage(), triggeringMessage), Ap.Cur{G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest))))}), Done{(triggeringMessage, Ap.Cur{G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest)))})}, CriticalityDiagnostics.o_rt_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest))), ok1))
+  %e1 : {G.CriticalityDiagnostics.r_triggeringMessage(Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions), procedureCode, _) == Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics.after(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, G.Criticality()>), G.CriticalityDiagnostics.o_procedureCriticality(Fr.Present(G.Criticality(), procedureCriticality), Ap.Cur{G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest)))}), Done{(procedureCriticality, Ap.Cur{G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest))})}, CriticalityDiagnostics.o_rt_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest)), ok2))
+  %e2 : {G.CriticalityDiagnostics.r_procedureCriticality(Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions), procedureCode, triggeringMessage, _) == Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics.after(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}
+  e3 = Equal.sym(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), Ap.Cur{G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest))}), Done{(iEsCriticalityDiagnostics, Ap.Cur{G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest)})}, CriticalityDiagnostics.o_rt_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest), ok3))
+  %e3 : {G.CriticalityDiagnostics.r_iEsCriticalityDiagnostics(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), procedureCode, triggeringMessage, procedureCriticality, _) == Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics.after(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}
+  e4 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.CriticalityDiagnostics.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest)}), Done{(iE_Extensions, Ap.Cur{G.CriticalityDiagnostics.a_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))))), rest})}, CriticalityDiagnostics.o_rt_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), rest, okr3))
+  %e4 : {G.CriticalityDiagnostics.r_iE_Extensions(procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, _) == Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{G.CriticalityDiagnostics.after(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}
+  {==}
+
+def GL.ngap.CriticalityDiagnostics.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}:
+      CriticalityDiagnostics.rt(procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions, rem, rest, ok)
+
+def CriticalityDiagnostics.dv_iE_Extensions(+p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +procedureCriticality: Maybe<&2, G.Criticality()>, +iEsCriticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.CriticalityDiagnostics.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.CriticalityDiagnostics, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.r_iE_Extensions(procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}, ok0: {G.CriticalityDiagnostics.v_procedureCode(procedureCode) == True{} : Bool}, ok1: {G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage) == True{} : Bool}, ok2: {G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality) == True{} : Bool}, ok3: {G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics) == True{} : Bool}) -> {G.CriticalityDiagnostics.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.CriticalityDiagnostics), G.CriticalityDiagnostics, y => PA.Rd.value(G.CriticalityDiagnostics, y, v), Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.CriticalityDiagnostics.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.CriticalityDiagnostics.v_procedureCode(procedureCode), Bool.and(G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage), Bool.and(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions)))), ok0, P.Bool.and_intro(G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage), Bool.and(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions))), ok1, P.Bool.and_intro(G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality), Bool.and(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions)), ok2, P.Bool.and_intro(G.CriticalityDiagnostics.v_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics), G.CriticalityDiagnostics.v_iE_Extensions(iE_Extensions), ok3, CriticalityDiagnostics.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))))
+
+def CriticalityDiagnostics.dv_iEsCriticalityDiagnostics(+p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +procedureCriticality: Maybe<&2, G.Criticality()>, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), +er: {G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, c) == r : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}, +v: G.CriticalityDiagnostics, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.r_iEsCriticalityDiagnostics(p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}, ok0: {G.CriticalityDiagnostics.v_procedureCode(procedureCode) == True{} : Bool}, ok1: {G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage) == True{} : Bool}, ok2: {G.CriticalityDiagnostics.v_procedureCriticality(procedureCriticality) == True{} : Bool}) -> {G.CriticalityDiagnostics.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iEsCriticalityDiagnostics, +c3)}:
+      CriticalityDiagnostics.dv_iE_Extensions(p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, c3, G.CriticalityDiagnostics.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, ok1, ok2, CriticalityDiagnostics.o_dv_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, c, iEsCriticalityDiagnostics, c3, er))
+
+def CriticalityDiagnostics.dv_procedureCriticality(+p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, G.Criticality()>), +er: {G.CriticalityDiagnostics.o_procedureCriticality(p_procedureCriticality, c) == r : Ap.Rd(Maybe<&2, G.Criticality()>)}, +v: G.CriticalityDiagnostics, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.r_procedureCriticality(p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}, ok0: {G.CriticalityDiagnostics.v_procedureCode(procedureCode) == True{} : Bool}, ok1: {G.CriticalityDiagnostics.v_triggeringMessage(triggeringMessage) == True{} : Bool}) -> {G.CriticalityDiagnostics.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+procedureCriticality, +c3)}:
+      CriticalityDiagnostics.dv_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, c3, G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, c3), {==}, v, c2, e, ok0, ok1, CriticalityDiagnostics.o_dv_procedureCriticality(p_procedureCriticality, c, procedureCriticality, c3, er))
+
+def CriticalityDiagnostics.dv_triggeringMessage(+p_triggeringMessage: Bool, +p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, G.TriggeringMessage()>), +er: {G.CriticalityDiagnostics.o_triggeringMessage(p_triggeringMessage, c) == r : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}, +v: G.CriticalityDiagnostics, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.r_triggeringMessage(p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}, ok0: {G.CriticalityDiagnostics.v_procedureCode(procedureCode) == True{} : Bool}) -> {G.CriticalityDiagnostics.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+triggeringMessage, +c3)}:
+      CriticalityDiagnostics.dv_procedureCriticality(p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, c3, G.CriticalityDiagnostics.o_procedureCriticality(p_procedureCriticality, c3), {==}, v, c2, e, ok0, CriticalityDiagnostics.o_dv_triggeringMessage(p_triggeringMessage, c, triggeringMessage, c3, er))
+
+def CriticalityDiagnostics.dv_procedureCode(+p_procedureCode: Bool, +p_triggeringMessage: Bool, +p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, G.ProcedureCode()>), +er: {G.CriticalityDiagnostics.o_procedureCode(p_procedureCode, c) == r : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}, +v: G.CriticalityDiagnostics, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.r_procedureCode(p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}) -> {G.CriticalityDiagnostics.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+procedureCode, +c3)}:
+      CriticalityDiagnostics.dv_triggeringMessage(p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, c3, G.CriticalityDiagnostics.o_triggeringMessage(p_triggeringMessage, c3), {==}, v, c2, e, CriticalityDiagnostics.o_dv_procedureCode(p_procedureCode, c, procedureCode, c3, er))
+
+def CriticalityDiagnostics.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.CriticalityDiagnostics, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}) -> {G.CriticalityDiagnostics.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_procedureCode <> p_triggeringMessage <> p_procedureCriticality <> p_iEsCriticalityDiagnostics <> p_iE_Extensions <> Nil{}:
+          CriticalityDiagnostics.dv_procedureCode(p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, c3, G.CriticalityDiagnostics.o_procedureCode(p_procedureCode, c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> q2 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> q2 <> q3 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> q2 <> q3 <> q4 <> q5 <> more:
+          PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def CriticalityDiagnostics.dv_ext(rb: Ap.Rd(Bool), +v: G.CriticalityDiagnostics, +c2: Ap.Cur, +e: {G.CriticalityDiagnostics.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}) -> {G.CriticalityDiagnostics.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          CriticalityDiagnostics.dv_bm(Ap.Bits.read(5n, c), v, c2, e)
+
+def GL.ngap.CriticalityDiagnostics.decode_valid(c, v, c2, e):
+  CriticalityDiagnostics.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def CriticalityDiagnostics.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +procedureCriticality: Maybe<&2, G.Criticality()>, +iEsCriticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), bi)))))) : Ap.Bits()}, +pr: {ri == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))) : Nat}, s: ({bi == G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.CriticalityDiagnostics), G.CriticalityDiagnostics, y => PA.Rd.value(G.CriticalityDiagnostics, y, v), Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.CriticalityDiagnostics), Ap.Cur, y => PA.Rd.cur(G.CriticalityDiagnostics, y, Ap.Cur{rem2, bits2}), Done{(G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : CriticalityDiagnostics.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), _))))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), _], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))), b3))))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), G.CriticalityDiagnostics.w_iE_Extensions(iE_Extensions, _, b3))))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), _)))))) : Ap.Bits()}; pre)))), (%er : {_ == G.CriticalityDiagnostics.a_iE_Extensions(iE_Extensions, G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))))) : Nat}; (%pr : {r3 == G.CriticalityDiagnostics.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def CriticalityDiagnostics.sx_iE_Extensions(+p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +procedureCriticality: Maybe<&2, G.Criticality()>, +iEsCriticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.CriticalityDiagnostics.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_iE_Extensions(procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), bi)))))) : Ap.Bits()}, pr: {ri == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))))) : Nat}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics.sx_iE_Extensions.go(p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, CriticalityDiagnostics.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def CriticalityDiagnostics.sx_iEsCriticalityDiagnostics.go(+p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +procedureCriticality: Maybe<&2, G.Criticality()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iEsCriticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics_IE_List()>, +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_iE_Extensions(procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, G.CriticalityDiagnostics.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), bi))))) : Ap.Bits()}, +pr: {ri == G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))) : Nat}, s: ({bi == G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, ri, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, ri) : Nat}) & {p_iEsCriticalityDiagnostics == Fr.Present(G.CriticalityDiagnostics_IE_List(), iEsCriticalityDiagnostics) : Bool}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  CriticalityDiagnostics.sx_iE_Extensions(p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, rem, bits, r3, b3, G.CriticalityDiagnostics.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), _, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))), b3)))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), G.CriticalityDiagnostics.w_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, _, b3)))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; pre))), (%pr : {r3 == G.CriticalityDiagnostics.a_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics, _) : Nat}; s2))
+
+def CriticalityDiagnostics.sx_iEsCriticalityDiagnostics(+p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +procedureCriticality: Maybe<&2, G.Criticality()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>), +er: {G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics_IE_List()>)}, +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_iEsCriticalityDiagnostics(p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), Fr.Present(G.Criticality(), procedureCriticality), p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), bi))))) : Ap.Bits()}, pr: {ri == G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))))) : Nat}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iEsCriticalityDiagnostics, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics.sx_iEsCriticalityDiagnostics.go(p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, rem, bits, ri, bi, iEsCriticalityDiagnostics, r3, b3, v, rem2, bits2, e, pre, pr, CriticalityDiagnostics.o_sx_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, ri, bi, iEsCriticalityDiagnostics, r3, b3, er))
+
+def CriticalityDiagnostics.sx_procedureCriticality.go(+p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +procedureCriticality: Maybe<&2, G.Criticality()>, +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_iEsCriticalityDiagnostics(p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, ri, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, ri) : Nat}) & {p_procedureCriticality == Fr.Present(G.Criticality(), procedureCriticality) : Bool}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  CriticalityDiagnostics.sx_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, procedureCriticality, rem, bits, r3, b3, G.CriticalityDiagnostics.o_iEsCriticalityDiagnostics(p_iEsCriticalityDiagnostics, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), _, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), G.CriticalityDiagnostics.w_procedureCriticality(procedureCriticality, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre))), (%pr : {r3 == G.CriticalityDiagnostics.a_procedureCriticality(procedureCriticality, _) : Nat}; s2))
+
+def CriticalityDiagnostics.sx_procedureCriticality(+p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, G.Criticality()>), +er: {G.CriticalityDiagnostics.o_procedureCriticality(p_procedureCriticality, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, G.Criticality()>)}, +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_procedureCriticality(p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), Fr.Present(G.TriggeringMessage(), triggeringMessage), p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)))) : Nat}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+procedureCriticality, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics.sx_procedureCriticality.go(p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, rem, bits, ri, bi, procedureCriticality, r3, b3, v, rem2, bits2, e, pre, pr, CriticalityDiagnostics.o_sx_procedureCriticality(p_procedureCriticality, ri, bi, procedureCriticality, r3, b3, er))
+
+def CriticalityDiagnostics.sx_triggeringMessage.go(+p_triggeringMessage: Bool, +p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +triggeringMessage: Maybe<&2, G.TriggeringMessage()>, +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_procedureCriticality(p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, G.CriticalityDiagnostics.o_procedureCriticality(p_procedureCriticality, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))) : Nat}, s: ({bi == G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, ri, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, ri) : Nat}) & {p_triggeringMessage == Fr.Present(G.TriggeringMessage(), triggeringMessage) : Bool}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  CriticalityDiagnostics.sx_procedureCriticality(p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, triggeringMessage, rem, bits, r3, b3, G.CriticalityDiagnostics.o_procedureCriticality(p_procedureCriticality, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), _, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))), b3)))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), G.CriticalityDiagnostics.w_triggeringMessage(triggeringMessage, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre))), (%pr : {r3 == G.CriticalityDiagnostics.a_triggeringMessage(triggeringMessage, _) : Nat}; s2))
+
+def CriticalityDiagnostics.sx_triggeringMessage(+p_triggeringMessage: Bool, +p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +procedureCode: Maybe<&2, G.ProcedureCode()>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, G.TriggeringMessage()>), +er: {G.CriticalityDiagnostics.o_triggeringMessage(p_triggeringMessage, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, G.TriggeringMessage()>)}, +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_triggeringMessage(p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.ProcedureCode(), procedureCode), p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.CriticalityDiagnostics.a_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem))) : Nat}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+triggeringMessage, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics.sx_triggeringMessage.go(p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, rem, bits, ri, bi, triggeringMessage, r3, b3, v, rem2, bits2, e, pre, pr, CriticalityDiagnostics.o_sx_triggeringMessage(p_triggeringMessage, ri, bi, triggeringMessage, r3, b3, er))
+
+def CriticalityDiagnostics.sx_procedureCode.go(+p_procedureCode: Bool, +p_triggeringMessage: Bool, +p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +procedureCode: Maybe<&2, G.ProcedureCode()>, +r3: Nat, +b3: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_triggeringMessage(p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, G.CriticalityDiagnostics.o_triggeringMessage(p_triggeringMessage, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(5n, Ap.Bit.after(rem)) : Nat}, s: ({bi == G.CriticalityDiagnostics.w_procedureCode(procedureCode, ri, b3) : Ap.Bits()} & {r3 == G.CriticalityDiagnostics.a_procedureCode(procedureCode, ri) : Nat}) & {p_procedureCode == Fr.Present(G.ProcedureCode(), procedureCode) : Bool}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  CriticalityDiagnostics.sx_triggeringMessage(p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, procedureCode, rem, bits, r3, b3, G.CriticalityDiagnostics.o_triggeringMessage(p_triggeringMessage, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, Ap.Bits.after(5n, Ap.Bit.after(rem)), b3))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.CriticalityDiagnostics.w_procedureCode(procedureCode, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre))), (%pr : {r3 == G.CriticalityDiagnostics.a_procedureCode(procedureCode, _) : Nat}; s2))
+
+def CriticalityDiagnostics.sx_procedureCode(+p_procedureCode: Bool, +p_triggeringMessage: Bool, +p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, G.ProcedureCode()>), +er: {G.CriticalityDiagnostics.o_procedureCode(p_procedureCode, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, G.ProcedureCode()>)}, +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_procedureCode(p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(5n, Ap.Bit.after(rem)) : Nat}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+procedureCode, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          CriticalityDiagnostics.sx_procedureCode.go(p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, rem, bits, ri, bi, procedureCode, r3, b3, v, rem2, bits2, e, pre, pr, CriticalityDiagnostics.o_sx_procedureCode(p_procedureCode, ri, bi, procedureCode, r3, b3, er))
+
+def CriticalityDiagnostics.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_procedureCode: Bool, +p_triggeringMessage: Bool, +p_procedureCriticality: Bool, +p_iEsCriticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_procedureCode(p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, G.CriticalityDiagnostics.o_procedureCode(p_procedureCode, Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], r0, b1), r1, Ap.Bits.after(5n, r0)) & {List.length(&2, Bool, [p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions]) == 5n : Nat}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  CriticalityDiagnostics.sx_procedureCode(p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, rem, bits, r1, b1, G.CriticalityDiagnostics.o_procedureCode(p_procedureCode, Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(5n, _) : Nat}; s2))
+
+def CriticalityDiagnostics.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(5n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_procedureCode <> +p_triggeringMessage <> +p_procedureCriticality <> +p_iEsCriticalityDiagnostics <> +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              CriticalityDiagnostics.sx_bm.go(rem, bits, r0, b0, p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(5n, r0, b0, [p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> q2 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> q2 <> q3 <> Nil{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> q2 <> q3 <> q4 <> q5 <> more:
+          PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def CriticalityDiagnostics.sx(+rem: Nat, bits: Ap.Bits(), +v: G.CriticalityDiagnostics, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.CriticalityDiagnostics.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}) -> CriticalityDiagnostics.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.CriticalityDiagnostics, CriticalityDiagnostics.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          CriticalityDiagnostics.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(5n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.CriticalityDiagnostics.suffix(rem, bits, v, rem2, bits2, e):
+  CriticalityDiagnostics.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem) : Nat}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_rt_criticalityDiagnostics(m: Maybe<&2, G.CriticalityDiagnostics>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(m) == True{} : Bool}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(Fr.Present(G.CriticalityDiagnostics, m), Ap.Cur{r, G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(m, r), inner})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(G.CriticalityDiagnostics), G.CriticalityDiagnostics.read(Ap.Cur{r, G.CriticalityDiagnostics.write(x, r, inner)}), Done{(x, Ap.Cur{G.CriticalityDiagnostics.after(x, r), inner})}, GL.ngap.CriticalityDiagnostics.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceSetupUnsuccessfulTransfer.s_criticalityDiagnostics(_) == Done{(Some{x}, Ap.Cur{G.CriticalityDiagnostics.after(x, r), inner})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}
+      {==}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_criticalityDiagnostics.some(+c: Ap.Cur, r: Ap.Rd(G.CriticalityDiagnostics), +er: {G.CriticalityDiagnostics.read(c) == r : Ap.Rd(G.CriticalityDiagnostics)}, +m: Maybe<&2, G.CriticalityDiagnostics>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.s_criticalityDiagnostics(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.CriticalityDiagnostics>, {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), Maybe<&2, G.CriticalityDiagnostics>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(_) == True{} : Bool}
+      GL.ngap.CriticalityDiagnostics.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_criticalityDiagnostics(p: Bool, +c: Ap.Cur, +m: Maybe<&2, G.CriticalityDiagnostics>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), Maybe<&2, G.CriticalityDiagnostics>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_criticalityDiagnostics.some(c, G.CriticalityDiagnostics.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_criticalityDiagnostics.go(+r: Nat, +b: Ap.Bits(), +x: G.CriticalityDiagnostics, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, G.CriticalityDiagnostics>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}, s: {b == G.CriticalityDiagnostics.write(x, r, b4) : Ap.Bits()} & {r4 == G.CriticalityDiagnostics.after(x, r) : Nat}) -> ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(m, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), Maybe<&2, G.CriticalityDiagnostics>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.CriticalityDiagnostics>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(_, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics, _) : Bool}
+  (((%eb : {b == G.CriticalityDiagnostics.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == G.CriticalityDiagnostics.after(x, r) : Nat}; s2)), {==})
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_criticalityDiagnostics.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(G.CriticalityDiagnostics), +erd: {G.CriticalityDiagnostics.read(Ap.Cur{r, b}) == rd : Ap.Rd(G.CriticalityDiagnostics)}, +m: Maybe<&2, G.CriticalityDiagnostics>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.s_criticalityDiagnostics(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}) -> ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(m, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, G.CriticalityDiagnostics>, ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(m, r) : Nat}) & {True{} == Fr.Present(G.CriticalityDiagnostics, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_criticalityDiagnostics.go(r, b, x, r4, b4, m, r3, b3, e, GL.ngap.CriticalityDiagnostics.suffix(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_criticalityDiagnostics(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, G.CriticalityDiagnostics>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}) -> ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(m, r) : Nat}) & {p == Fr.Present(G.CriticalityDiagnostics, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), Maybe<&2, G.CriticalityDiagnostics>, y => PA.Rd.value(Maybe<&2, G.CriticalityDiagnostics>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, G.CriticalityDiagnostics>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(_, r) : Nat}) & {False{} == Fr.Present(G.CriticalityDiagnostics, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_criticalityDiagnostics.some(r, b, G.CriticalityDiagnostics.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceSetupUnsuccessfulTransfer.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.rt(+cause: G.Cause, +criticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics>, +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupUnsuccessfulTransfer.write(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.after(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}:
+  ok0 = P.Bool.and_true_l(G.Cause.valid(cause), Bool.and(G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics), G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(iE_Extensions)), ok)
+  +okr0 = P.Bool.and_true_r(G.Cause.valid(cause), Bool.and(G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics), G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(iE_Extensions)), ok)
+  ok1 = P.Bool.and_true_l(G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics), G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(iE_Extensions), okr0)
+  +okr1 = P.Bool.and_true_r(G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics), G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(iE_Extensions), okr0)
+  e0 = Equal.sym(Ap.Rd(G.Cause), G.Cause.read(Ap.Cur{Ap.Bits.after(2n, Ap.Bit.after(rem)), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest)))}), Done{(cause, Ap.Cur{G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest))})}, GL.ngap.Cause.roundtrip(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest)), ok0))
+  %e0 : {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_cause(Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.after(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
+  e1 = Equal.sym(Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), Ap.Cur{G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest))}), Done{(criticalityDiagnostics, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest)})}, PDUSessionResourceSetupUnsuccessfulTransfer.o_rt_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest), ok1))
+  %e1 : {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_criticalityDiagnostics(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), cause, _) == Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.after(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))))), rest})}, PDUSessionResourceSetupUnsuccessfulTransfer.o_rt_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), rest, okr1))
+  %e2 : {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_iE_Extensions(cause, criticalityDiagnostics, _) == Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.after(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
+  {==}
+
+def GL.ngap.PDUSessionResourceSetupUnsuccessfulTransfer.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.rt(cause, criticalityDiagnostics, iE_Extensions, rem, rest, ok)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.dv_iE_Extensions(+p_iE_Extensions: Bool, +cause: G.Cause, +criticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics>, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_iE_Extensions(cause, criticalityDiagnostics, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, ok0: {G.Cause.valid(cause) == True{} : Bool}, ok1: {G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics) == True{} : Bool}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceSetupUnsuccessfulTransfer, y => PA.Rd.value(G.PDUSessionResourceSetupUnsuccessfulTransfer, y, v), Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.Cause.valid(cause), Bool.and(G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics), G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(iE_Extensions)), ok0, P.Bool.and_intro(G.PDUSessionResourceSetupUnsuccessfulTransfer.v_criticalityDiagnostics(criticalityDiagnostics), G.PDUSessionResourceSetupUnsuccessfulTransfer.v_iE_Extensions(iE_Extensions), ok1, PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.dv_criticalityDiagnostics(+p_criticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +cause: G.Cause, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), +er: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p_criticalityDiagnostics, c) == r : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}, +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_criticalityDiagnostics(p_iE_Extensions, cause, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, ok0: {G.Cause.valid(cause) == True{} : Bool}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+criticalityDiagnostics, +c3)}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.dv_iE_Extensions(p_iE_Extensions, cause, criticalityDiagnostics, c3, G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, PDUSessionResourceSetupUnsuccessfulTransfer.o_dv_criticalityDiagnostics(p_criticalityDiagnostics, c, criticalityDiagnostics, c3, er))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.dv_cause(+p_criticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.Cause), +er: {G.Cause.read(c) == r : Ap.Rd(G.Cause)}, +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_cause(p_criticalityDiagnostics, p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+cause, +c3)}:
+      PDUSessionResourceSetupUnsuccessfulTransfer.dv_criticalityDiagnostics(p_criticalityDiagnostics, p_iE_Extensions, cause, c3, G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p_criticalityDiagnostics, c3), {==}, v, c2, e, GL.ngap.Cause.decode_valid(c, cause, c3, er))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_criticalityDiagnostics <> p_iE_Extensions <> Nil{}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.dv_cause(p_criticalityDiagnostics, p_iE_Extensions, c3, G.Cause.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> q2 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}) -> {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.dv_bm(Ap.Bits.read(2n, c), v, c2, e)
+
+def GL.ngap.PDUSessionResourceSetupUnsuccessfulTransfer.decode_valid(c, v, c2, e):
+  PDUSessionResourceSetupUnsuccessfulTransfer.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +cause: G.Cause, +criticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer), G.PDUSessionResourceSetupUnsuccessfulTransfer, y => PA.Rd.value(G.PDUSessionResourceSetupUnsuccessfulTransfer, y, v), Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer), Ap.Cur, y => PA.Rd.cur(G.PDUSessionResourceSetupUnsuccessfulTransfer, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), _], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_iE_Extensions(iE_Extensions, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))))) : Nat}; (%pr : {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_iE_Extensions(+p_iE_Extensions: Bool, +cause: G.Cause, +criticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics>, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_iE_Extensions(cause, criticalityDiagnostics, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics), p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)))) : Nat}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.sx_iE_Extensions.go(p_iE_Extensions, cause, criticalityDiagnostics, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_criticalityDiagnostics.go(+p_criticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +cause: G.Cause, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +criticalityDiagnostics: Maybe<&2, G.CriticalityDiagnostics>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_iE_Extensions(cause, criticalityDiagnostics, G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))) : Nat}, s: ({bi == G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, ri) : Nat}) & {p_criticalityDiagnostics == Fr.Present(G.CriticalityDiagnostics, criticalityDiagnostics) : Bool}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  PDUSessionResourceSetupUnsuccessfulTransfer.sx_iE_Extensions(p_iE_Extensions, cause, criticalityDiagnostics, rem, bits, r3, b3, G.PDUSessionResourceSetupUnsuccessfulTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_, p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))), b3)))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupUnsuccessfulTransfer.w_criticalityDiagnostics(criticalityDiagnostics, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre))), (%pr : {r3 == G.PDUSessionResourceSetupUnsuccessfulTransfer.a_criticalityDiagnostics(criticalityDiagnostics, _) : Nat}; s2))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_criticalityDiagnostics(+p_criticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +cause: G.Cause, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>), +er: {G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p_criticalityDiagnostics, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, G.CriticalityDiagnostics>)}, +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_criticalityDiagnostics(p_iE_Extensions, cause, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(2n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.Cause.after(cause, Ap.Bits.after(2n, Ap.Bit.after(rem))) : Nat}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+criticalityDiagnostics, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.sx_criticalityDiagnostics.go(p_criticalityDiagnostics, p_iE_Extensions, cause, rem, bits, ri, bi, criticalityDiagnostics, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceSetupUnsuccessfulTransfer.o_sx_criticalityDiagnostics(p_criticalityDiagnostics, ri, bi, criticalityDiagnostics, r3, b3, er))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_cause.go(+p_criticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +cause: G.Cause, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_criticalityDiagnostics(p_iE_Extensions, cause, G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p_criticalityDiagnostics, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(2n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.Cause.write(cause, ri, b3) : Ap.Bits()} & {r3 == G.Cause.after(cause, ri) : Nat}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceSetupUnsuccessfulTransfer.sx_criticalityDiagnostics(p_criticalityDiagnostics, p_iE_Extensions, cause, rem, bits, r3, b3, G.PDUSessionResourceSetupUnsuccessfulTransfer.o_criticalityDiagnostics(p_criticalityDiagnostics, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.Cause.after(cause, _) : Nat}; s2))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_cause(+p_criticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.Cause), +er: {G.Cause.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.Cause)}, +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_cause(p_criticalityDiagnostics, p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(2n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+cause, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.sx_cause.go(p_criticalityDiagnostics, p_iE_Extensions, rem, bits, ri, bi, cause, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.Cause.suffix(ri, bi, cause, r3, b3, er))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_criticalityDiagnostics: Bool, +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_cause(p_criticalityDiagnostics, p_iE_Extensions, G.Cause.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], r0, b1), r1, Ap.Bits.after(2n, r0)) & {List.length(&2, Bool, [p_criticalityDiagnostics, p_iE_Extensions]) == 2n : Nat}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionResourceSetupUnsuccessfulTransfer.sx_cause(p_criticalityDiagnostics, p_iE_Extensions, rem, bits, r1, b1, G.Cause.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_criticalityDiagnostics, p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(2n, _) : Nat}; s2))
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(2n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_criticalityDiagnostics <> +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionResourceSetupUnsuccessfulTransfer.sx_bm.go(rem, bits, r0, b0, p_criticalityDiagnostics, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(2n, r0, b0, [p_criticalityDiagnostics, p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> q2 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionResourceSetupUnsuccessfulTransfer.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceSetupUnsuccessfulTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}) -> PDUSessionResourceSetupUnsuccessfulTransfer.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupUnsuccessfulTransfer, PDUSessionResourceSetupUnsuccessfulTransfer.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceSetupUnsuccessfulTransfer.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(2n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.PDUSessionResourceSetupUnsuccessfulTransfer.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceSetupUnsuccessfulTransfer.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(v, rem) : Nat}
+
+def GL.ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrip(v, rem, rest, ok):
+  L.aper.open.roundtrip(v, rem, rest, ok)
+
+def GL.ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.decode_valid(c, v, c2, e):
+  L.aper.open.decode_valid(c, v, c2, e)
+
+def GL.ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.suffix(rem, bits, v, rem2, bits2, e):
+  PC.Open.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceSetupItemSURes.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceSetupItemSURes, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceSetupItemSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSURes.after(v, rem) : Nat}
+
+def PDUSessionResourceSetupItemSURes.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceSetupItemSURes.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionResourceSetupItemSURes.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupItemSURes.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceSetupItemSURes.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceSetupItemSURes.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceSetupItemSURes.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionResourceSetupItemSURes.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceSetupItemSURes.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceSetupItemSURes.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceSetupItemSURes.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceSetupItemSURes.rt(+pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupResponseTransfer: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceSetupItemSURes.valid(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSURes.write(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupItemSURes.after(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}:
+  ok0 = P.Bool.and_true_l(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer), G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(iE_Extensions)), ok)
+  +okr0 = P.Bool.and_true_r(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer), G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(iE_Extensions)), ok)
+  ok1 = P.Bool.and_true_l(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer), G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(iE_Extensions), okr0)
+  +okr1 = P.Bool.and_true_r(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer), G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(iE_Extensions), okr0)
+  e0 = Equal.sym(Ap.Rd(G.PDUSessionID()), G.PDUSessionID.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)))}), Done{(pDUSessionID, Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))})}, GL.ngap.PDUSessionID.roundtrip(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)), ok0))
+  %e0 : {G.PDUSessionResourceSetupItemSURes.r_pDUSessionID(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupItemSURes.after(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
+  e1 = Equal.sym(Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))}), Done{(pDUSessionResourceSetupResponseTransfer, Ap.Cur{G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)})}, GL.ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrip(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest), ok1))
+  %e1 : {G.PDUSessionResourceSetupItemSURes.r_pDUSessionResourceSetupResponseTransfer(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), pDUSessionID, _) == Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupItemSURes.after(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest})}, PDUSessionResourceSetupItemSURes.o_rt_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest, okr1))
+  %e2 : {G.PDUSessionResourceSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupResponseTransfer, _) == Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceSetupItemSURes.after(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
+  {==}
+
+def GL.ngap.PDUSessionResourceSetupItemSURes.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}:
+      PDUSessionResourceSetupItemSURes.rt(pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions, rem, rest, ok)
+
+def PDUSessionResourceSetupItemSURes.dv_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupResponseTransfer: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupResponseTransfer, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}, ok1: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer) == True{} : Bool}) -> {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionResourceSetupItemSURes), G.PDUSessionResourceSetupItemSURes, y => PA.Rd.value(G.PDUSessionResourceSetupItemSURes, y, v), Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionResourceSetupItemSURes.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer), G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(iE_Extensions)), ok0, P.Bool.and_intro(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(pDUSessionResourceSetupResponseTransfer), G.PDUSessionResourceSetupItemSURes.v_iE_Extensions(iE_Extensions), ok1, PDUSessionResourceSetupItemSURes.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))
+
+def PDUSessionResourceSetupItemSURes.dv_pDUSessionResourceSetupResponseTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +c: Ap.Cur, r: Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()), +er: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(c) == r : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}, +v: G.PDUSessionResourceSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupItemSURes.r_pDUSessionResourceSetupResponseTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}) -> {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionResourceSetupResponseTransfer, +c3)}:
+      PDUSessionResourceSetupItemSURes.dv_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceSetupResponseTransfer, c3, G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, GL.ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.decode_valid(c, pDUSessionResourceSetupResponseTransfer, c3, er))
+
+def PDUSessionResourceSetupItemSURes.dv_pDUSessionID(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(c) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupItemSURes.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}) -> {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionID, +c3)}:
+      PDUSessionResourceSetupItemSURes.dv_pDUSessionResourceSetupResponseTransfer(p_iE_Extensions, pDUSessionID, c3, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(c3), {==}, v, c2, e, GL.ngap.PDUSessionID.decode_valid(c, pDUSessionID, c3, er))
+
+def PDUSessionResourceSetupItemSURes.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionResourceSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupItemSURes.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}) -> {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceSetupItemSURes.dv_pDUSessionID(p_iE_Extensions, c3, G.PDUSessionID.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionResourceSetupItemSURes.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceSetupItemSURes, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupItemSURes.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}) -> {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          PDUSessionResourceSetupItemSURes.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.PDUSessionResourceSetupItemSURes.decode_valid(c, v, c2, e):
+  PDUSessionResourceSetupItemSURes.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceSetupItemSURes.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupResponseTransfer: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionResourceSetupItemSURes), G.PDUSessionResourceSetupItemSURes, y => PA.Rd.value(G.PDUSessionResourceSetupItemSURes, y, v), Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionResourceSetupItemSURes), Ap.Cur, y => PA.Rd.cur(G.PDUSessionResourceSetupItemSURes, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionResourceSetupItemSURes.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceSetupItemSURes.w_iE_Extensions(iE_Extensions, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}; (%pr : {r3 == G.PDUSessionResourceSetupItemSURes.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionResourceSetupItemSURes.sx_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceSetupResponseTransfer: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupResponseTransfer, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceSetupItemSURes.sx_iE_Extensions.go(p_iE_Extensions, pDUSessionID, pDUSessionResourceSetupResponseTransfer, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceSetupItemSURes.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionResourceSetupItemSURes.sx_pDUSessionResourceSetupResponseTransfer.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionResourceSetupResponseTransfer: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.r_iE_Extensions(pDUSessionID, pDUSessionResourceSetupResponseTransfer, G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: {bi == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, ri) : Nat}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceSetupItemSURes.sx_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceSetupResponseTransfer, rem, bits, r3, b3, G.PDUSessionResourceSetupItemSURes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(pDUSessionResourceSetupResponseTransfer, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(pDUSessionResourceSetupResponseTransfer, _) : Nat}; s2))
+
+def PDUSessionResourceSetupItemSURes.sx_pDUSessionResourceSetupResponseTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()), +er: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}, +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.r_pDUSessionResourceSetupResponseTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionResourceSetupResponseTransfer, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceSetupItemSURes.sx_pDUSessionResourceSetupResponseTransfer.go(p_iE_Extensions, pDUSessionID, rem, bits, ri, bi, pDUSessionResourceSetupResponseTransfer, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.suffix(ri, bi, pDUSessionResourceSetupResponseTransfer, r3, b3, er))
+
+def PDUSessionResourceSetupItemSURes.sx_pDUSessionID.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionID: G.PDUSessionID(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.r_pDUSessionResourceSetupResponseTransfer(p_iE_Extensions, pDUSessionID, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.PDUSessionID.write(pDUSessionID, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionID.after(pDUSessionID, ri) : Nat}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceSetupItemSURes.sx_pDUSessionResourceSetupResponseTransfer(p_iE_Extensions, pDUSessionID, rem, bits, r3, b3, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionID.after(pDUSessionID, _) : Nat}; s2))
+
+def PDUSessionResourceSetupItemSURes.sx_pDUSessionID(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionID, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceSetupItemSURes.sx_pDUSessionID.go(p_iE_Extensions, rem, bits, ri, bi, pDUSessionID, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionID.suffix(ri, bi, pDUSessionID, r3, b3, er))
+
+def PDUSessionResourceSetupItemSURes.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.r_pDUSessionID(p_iE_Extensions, G.PDUSessionID.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionResourceSetupItemSURes.sx_pDUSessionID(p_iE_Extensions, rem, bits, r1, b1, G.PDUSessionID.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def PDUSessionResourceSetupItemSURes.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionResourceSetupItemSURes.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionResourceSetupItemSURes.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceSetupItemSURes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}) -> PDUSessionResourceSetupItemSURes.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceSetupItemSURes, PDUSessionResourceSetupItemSURes.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceSetupItemSURes.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.PDUSessionResourceSetupItemSURes.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceSetupItemSURes.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceSetupListSURes.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceSetupListSURes(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceSetupListSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupListSURes.after(v, rem) : Nat}
+
+def PDUSessionResourceSetupListSURes.items_rt(xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem: Nat, +rest: Ap.Bits(), +av: {G.PDUSessionResourceSetupListSURes.all_valid(xs) == True{} : Bool}) -> {Done{(xs, Ap.Cur{G.PDUSessionResourceSetupListSURes.items_after(xs, rem), rest})} == G.PDUSessionResourceSetupListSURes.items(List.length(&2, G.PDUSessionResourceSetupItemSURes, xs), Ap.Cur{rem, G.PDUSessionResourceSetupListSURes.items_write(xs, rem, rest)}) : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +more:
+      ir = Equal.sym(Ap.Rd(G.PDUSessionResourceSetupItemSURes), G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSURes.write(x, rem, G.PDUSessionResourceSetupListSURes.items_write(more, G.PDUSessionResourceSetupItemSURes.after(x, rem), rest))}), Done{(x, Ap.Cur{G.PDUSessionResourceSetupItemSURes.after(x, rem), G.PDUSessionResourceSetupListSURes.items_write(more, G.PDUSessionResourceSetupItemSURes.after(x, rem), rest)})}, GL.ngap.PDUSessionResourceSetupItemSURes.roundtrip(x, rem, G.PDUSessionResourceSetupListSURes.items_write(more, G.PDUSessionResourceSetupItemSURes.after(x, rem), rest), P.Bool.and_true_l(G.PDUSessionResourceSetupItemSURes.valid(x), G.PDUSessionResourceSetupListSURes.all_valid(more), av)))
+      %ir : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceSetupListSURes.items_after(x <> more, rem), rest})} == G.PDUSessionResourceSetupListSURes.next(_, c2 => G.PDUSessionResourceSetupListSURes.items(List.length(&2, G.PDUSessionResourceSetupItemSURes, more), c2)) : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}
+      ih = PDUSessionResourceSetupListSURes.items_rt(more, G.PDUSessionResourceSetupItemSURes.after(x, rem), rest, P.Bool.and_true_r(G.PDUSessionResourceSetupItemSURes.valid(x), G.PDUSessionResourceSetupListSURes.all_valid(more), av))
+      %ih : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceSetupListSURes.items_after(x <> more, rem), rest})} == G.PDUSessionResourceSetupListSURes.cons(x, _) : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}
+      {==}
+
+def PDUSessionResourceSetupListSURes.rt(+xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceSetupListSURes.valid(xs) == True{} : Bool}) -> {G.PDUSessionResourceSetupListSURes.read(Ap.Cur{rem, G.PDUSessionResourceSetupListSURes.write(xs, rem, rest)}) == Done{(xs, Ap.Cur{G.PDUSessionResourceSetupListSURes.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}:
+  sr = Equal.sym(Ap.Rd(Nat), Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, Ap.Size.write(True{}, 8n, 1n, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs), rem, G.PDUSessionResourceSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))}), Done{(List.length(&2, G.PDUSessionResourceSetupItemSURes, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)})}, L.aper.size.roundtrip(True{}, 8n, 1n, 255n, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs), rem, G.PDUSessionResourceSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest), P.Bool.and_true_l(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs)), G.PDUSessionResourceSetupListSURes.all_valid(xs), ok), {==}))
+  %sr : {G.PDUSessionResourceSetupListSURes.count(_) == Done{(xs, Ap.Cur{G.PDUSessionResourceSetupListSURes.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}
+  Equal.sym(Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), Done{(xs, Ap.Cur{G.PDUSessionResourceSetupListSURes.items_after(xs, Ap.Size.after(True{}, 8n, rem)), rest})}, G.PDUSessionResourceSetupListSURes.items(List.length(&2, G.PDUSessionResourceSetupItemSURes, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)}), PDUSessionResourceSetupListSURes.items_rt(xs, Ap.Size.after(True{}, 8n, rem), rest, P.Bool.and_true_r(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs)), G.PDUSessionResourceSetupListSURes.all_valid(xs), ok)))
+
+def GL.ngap.PDUSessionResourceSetupListSURes.roundtrip(v, rem, rest, ok):
+  PDUSessionResourceSetupListSURes.rt(v, rem, rest, ok)
+
+def PDUSessionResourceSetupListSURes.Spec(xs: List<&2, G.PDUSessionResourceSetupItemSURes>, n: Nat) -> Type:
+  {G.PDUSessionResourceSetupListSURes.all_valid(xs) == True{} : Bool} & {List.length(&2, G.PDUSessionResourceSetupItemSURes, xs) == n : Nat}
+
+def PDUSessionResourceSetupListSURes.spec.finish(+p: Nat, +x: G.PDUSessionResourceSetupItemSURes, +xs2: List<&2, G.PDUSessionResourceSetupItemSURes>, vi: {G.PDUSessionResourceSetupItemSURes.valid(x) == True{} : Bool}, s: PDUSessionResourceSetupListSURes.Spec(xs2, p)) -> PDUSessionResourceSetupListSURes.Spec(x <> xs2, 1n+p):
+  (av, len) = s
+  (P.Bool.and_intro(G.PDUSessionResourceSetupItemSURes.valid(x), G.PDUSessionResourceSetupListSURes.all_valid(xs2), vi, av), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs2), p, len))
+
+def PDUSessionResourceSetupListSURes.spec.cons(+p: Nat, +x: G.PDUSessionResourceSetupItemSURes, +c3: Ap.Cur, rl: Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), +erl: {G.PDUSessionResourceSetupListSURes.items(p, c3) == rl : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceSetupItemSURes> -> @c5: Ap.Cur -> {G.PDUSessionResourceSetupListSURes.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)} -> PDUSessionResourceSetupListSURes.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupListSURes.cons(x, rl) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}, vi: {G.PDUSessionResourceSetupItemSURes.valid(x) == True{} : Bool}) -> PDUSessionResourceSetupListSURes.Spec(xs, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceSetupItemSURes>, PDUSessionResourceSetupListSURes.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+xs2, +c5)}:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), List<&2, G.PDUSessionResourceSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceSetupItemSURes>, y, xs), Done{(x <> xs2, c5)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceSetupListSURes.Spec(_, 1n+p)
+      PDUSessionResourceSetupListSURes.spec.finish(p, x, xs2, vi, ih(c3, xs2, c5, erl))
+
+def PDUSessionResourceSetupListSURes.spec.step(+p: Nat, +c: Ap.Cur, ri: Ap.Rd(G.PDUSessionResourceSetupItemSURes), +eri: {G.PDUSessionResourceSetupItemSURes.read(c) == ri : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceSetupItemSURes> -> @c5: Ap.Cur -> {G.PDUSessionResourceSetupListSURes.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)} -> PDUSessionResourceSetupListSURes.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupListSURes.next(ri, c4 => G.PDUSessionResourceSetupListSURes.items(p, c4)) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}) -> PDUSessionResourceSetupListSURes.Spec(xs, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceSetupItemSURes>, PDUSessionResourceSetupListSURes.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+x, +c3)}:
+      PDUSessionResourceSetupListSURes.spec.cons(p, x, c3, G.PDUSessionResourceSetupListSURes.items(p, c3), {==}, ih, xs, c2, e, GL.ngap.PDUSessionResourceSetupItemSURes.decode_valid(c, x, c3, eri))
+
+def PDUSessionResourceSetupListSURes.spec(n: Nat, +c: Ap.Cur, +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupListSURes.items(n, c) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}) -> PDUSessionResourceSetupListSURes.Spec(xs, n):
+  match n:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), List<&2, G.PDUSessionResourceSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceSetupItemSURes>, y, xs), Done{([], c)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceSetupListSURes.Spec(_, 0n)
+      ({==}, {==})
+    case 1n++p:
+      PDUSessionResourceSetupListSURes.spec.step(p, c, G.PDUSessionResourceSetupItemSURes.read(c), {==}, c4 => xs2 => c5 => e2 => PDUSessionResourceSetupListSURes.spec(p, c4, xs2, c5, e2), xs, c2, e)
+
+def PDUSessionResourceSetupListSURes.dv.finish(+n: Nat, +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, sv: {Ap.Size.valid(1n, 255n, n) == True{} : Bool}, s: PDUSessionResourceSetupListSURes.Spec(xs, n)) -> {G.PDUSessionResourceSetupListSURes.valid(xs) == True{} : Bool}:
+  (av, len) = s
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs), n, len)
+  P.Bool.and_intro(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs)), G.PDUSessionResourceSetupListSURes.all_valid(xs), (%slen : {Ap.Size.valid(1n, 255n, _) == True{} : Bool}; sv), av)
+
+def PDUSessionResourceSetupListSURes.dv(+c0: Ap.Cur, rn: Ap.Rd(Nat), +ern: {Ap.Size.read(True{}, 8n, 1n, 255n, c0) == rn : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceSetupListSURes.count(rn) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}) -> {G.PDUSessionResourceSetupListSURes.valid(xs) == True{} : Bool}:
+  match rn:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceSetupItemSURes>, {G.PDUSessionResourceSetupListSURes.valid(xs) == True{} : Bool}, err, xs, c2, e)
+    case Done{(+n, +c)}:
+      PDUSessionResourceSetupListSURes.dv.finish(n, xs, L.aper.size.decode_valid(True{}, 8n, 1n, 255n, c0, n, c, ern), PDUSessionResourceSetupListSURes.spec(n, c, xs, c2, e))
+
+def GL.ngap.PDUSessionResourceSetupListSURes.decode_valid(c, v, c2, e):
+  PDUSessionResourceSetupListSURes.dv(c, Ap.Size.read(True{}, 8n, 1n, 255n, c), {==}, v, c2, e)
+
+def PDUSessionResourceSetupListSURes.Sxi(+bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem: Nat, rem2: Nat, +bits2: Ap.Bits(), k: Nat) -> Type:
+  ({bits == G.PDUSessionResourceSetupListSURes.items_write(xs, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupListSURes.items_after(xs, rem) : Nat}) & {List.length(&2, G.PDUSessionResourceSetupItemSURes, xs) == k : Nat}
+
+def PDUSessionResourceSetupListSURes.sx.finish(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceSetupItemSURes, +r3: Nat, +b3: Ap.Bits(), +xs2: List<&2, G.PDUSessionResourceSetupItemSURes>, +r5: Nat, +b5: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), si: {bits == G.PDUSessionResourceSetupItemSURes.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.after(x, rem) : Nat}, s: PDUSessionResourceSetupListSURes.Sxi(b3, xs2, r3, r5, b5, p), eb: {b5 == bits2 : Ap.Bits()}, er: {r5 == rem2 : Nat}) -> PDUSessionResourceSetupListSURes.Sxi(bits, x <> xs2, rem, rem2, bits2, 1n+p):
+  (i1, +i2) = si
+  (cn, len) = s
+  (h1, h2) = cn
+  (((%i2 : {bits == G.PDUSessionResourceSetupItemSURes.write(x, rem, G.PDUSessionResourceSetupListSURes.items_write(xs2, _, bits2)) : Ap.Bits()}; (%eb : {bits == G.PDUSessionResourceSetupItemSURes.write(x, rem, G.PDUSessionResourceSetupListSURes.items_write(xs2, r3, _)) : Ap.Bits()}; (%h1 : {bits == G.PDUSessionResourceSetupItemSURes.write(x, rem, _) : Ap.Bits()}; i1))), (%er : {_ == G.PDUSessionResourceSetupListSURes.items_after(xs2, G.PDUSessionResourceSetupItemSURes.after(x, rem)) : Nat}; (%i2 : {r5 == G.PDUSessionResourceSetupListSURes.items_after(xs2, _) : Nat}; h2))), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs2), p, len))
+
+def PDUSessionResourceSetupListSURes.sx.cons(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceSetupItemSURes, +r3: Nat, +b3: Ap.Bits(), rl: Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), +erl: {G.PDUSessionResourceSetupListSURes.items(p, Ap.Cur{r3, b3}) == rl : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceSetupItemSURes> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceSetupListSURes.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)} -> PDUSessionResourceSetupListSURes.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupListSURes.cons(x, rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}, si: {bits == G.PDUSessionResourceSetupItemSURes.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceSetupItemSURes.after(x, rem) : Nat}) -> PDUSessionResourceSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceSetupItemSURes>, PDUSessionResourceSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+xs2, c5)}:
+      match c5:
+        case Ap.Cur{+r5, +b5}:
+          ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), List<&2, G.PDUSessionResourceSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceSetupItemSURes>, y, xs), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceSetupItemSURes>, y, Ap.Cur{rem2, bits2}), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          %ev : PDUSessionResourceSetupListSURes.Sxi(bits, _, rem, rem2, bits2, 1n+p)
+          PDUSessionResourceSetupListSURes.sx.finish(p, rem, bits, x, r3, b3, xs2, r5, b5, rem2, bits2, si, ih(b3, r3, xs2, r5, b5, erl), Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec), Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec))
+
+def PDUSessionResourceSetupListSURes.sx.step(+p: Nat, +rem: Nat, +bits: Ap.Bits(), ri: Ap.Rd(G.PDUSessionResourceSetupItemSURes), +eri: {G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, bits}) == ri : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceSetupItemSURes> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceSetupListSURes.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)} -> PDUSessionResourceSetupListSURes.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupListSURes.next(ri, c4 => G.PDUSessionResourceSetupListSURes.items(p, c4)) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}) -> PDUSessionResourceSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceSetupItemSURes>, PDUSessionResourceSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+x, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceSetupListSURes.sx.cons(p, rem, bits, x, r3, b3, G.PDUSessionResourceSetupListSURes.items(p, Ap.Cur{r3, b3}), {==}, ih, xs, rem2, bits2, e, GL.ngap.PDUSessionResourceSetupItemSURes.suffix(rem, bits, x, r3, b3, eri))
+
+def PDUSessionResourceSetupListSURes.sx.items(k: Nat, +rem: Nat, +bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupListSURes.items(k, Ap.Cur{rem, bits}) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}) -> PDUSessionResourceSetupListSURes.Sxi(bits, xs, rem, rem2, bits2, k):
+  match k:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), List<&2, G.PDUSessionResourceSetupItemSURes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceSetupItemSURes>, y, xs), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceSetupItemSURes>, y, Ap.Cur{rem2, bits2}), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      %ev : PDUSessionResourceSetupListSURes.Sxi(bits, _, rem, rem2, bits2, 0n)
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec), Equal.sym(Nat, rem, rem2, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec))), {==})
+    case 1n++p:
+      PDUSessionResourceSetupListSURes.sx.step(p, rem, bits, G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, bits}), {==}, b4 => r4 => xs2 => r5 => b5 => e2 => PDUSessionResourceSetupListSURes.sx.items(p, r4, b4, xs2, r5, b5, e2), xs, rem2, bits2, e)
+
+def PDUSessionResourceSetupListSURes.sx.go(+rem: Nat, +bits: Ap.Bits(), +k: Nat, +r1: Nat, +b1: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), ss: PC.Canon(bits, Ap.Size.write(True{}, 8n, 1n, k, rem, b1), r1, Ap.Size.after(True{}, 8n, rem)), s: PDUSessionResourceSetupListSURes.Sxi(b1, xs, r1, rem2, bits2, k)) -> PDUSessionResourceSetupListSURes.Sx(bits, xs, rem, rem2, bits2):
+  (s1, +s2) = ss
+  (cn, len) = s
+  (h1, h2) = cn
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceSetupItemSURes, xs), k, len)
+  ((%slen : {bits == Ap.Size.write(True{}, 8n, 1n, _, rem, G.PDUSessionResourceSetupListSURes.items_write(xs, Ap.Size.after(True{}, 8n, rem), bits2)) : Ap.Bits()}; (%s2 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, G.PDUSessionResourceSetupListSURes.items_write(xs, _, bits2)) : Ap.Bits()}; (%h1 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, _) : Ap.Bits()}; s1))), (%s2 : {rem2 == G.PDUSessionResourceSetupListSURes.items_after(xs, _) : Nat}; h2))
+
+def PDUSessionResourceSetupListSURes.sx.count(+rem: Nat, +bits: Ap.Bits(), rl: Ap.Rd(Nat), +erl: {Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}) == rl : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceSetupItemSURes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceSetupListSURes.count(rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceSetupItemSURes>)}) -> PDUSessionResourceSetupListSURes.Sx(bits, xs, rem, rem2, bits2):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceSetupItemSURes>, PDUSessionResourceSetupListSURes.Sx(bits, xs, rem, rem2, bits2), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+k, c1)}:
+      match c1:
+        case Ap.Cur{+r1, +b1}:
+          PDUSessionResourceSetupListSURes.sx.go(rem, bits, k, r1, b1, xs, rem2, bits2, PC.Size.sx(True{}, 8n, 1n, 255n, rem, bits, k, r1, b1, erl), PDUSessionResourceSetupListSURes.sx.items(k, r1, b1, xs, rem2, bits2, e))
+
+def GL.ngap.PDUSessionResourceSetupListSURes.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceSetupListSURes.sx.count(rem, bits, Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}), {==}, v, rem2, bits2, e)
 
 def AssociatedQosFlowItem_qosFlowMappingIndication.Sx(+bits: Ap.Bits(), +v: G.AssociatedQosFlowItem_qosFlowMappingIndication(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
   {bits == G.AssociatedQosFlowItem_qosFlowMappingIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AssociatedQosFlowItem_qosFlowMappingIndication.after(v, rem) : Nat}
@@ -14377,3 +16614,41 @@ def PDUSessionResourceSetupResponseTransfer.sx(+rem: Nat, bits: Ap.Bits(), +v: G
 
 def GL.ngap.PDUSessionResourceSetupResponseTransfer.suffix(rem, bits, v, rem2, bits2, e):
   PDUSessionResourceSetupResponseTransfer.sx(rem, bits, v, rem2, bits2, e)
+
+def ErrorIndication.Sx(+bits: Ap.Bits(), +v: G.ErrorIndication(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.ErrorIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ErrorIndication.after(v, rem) : Nat}
+
+def GL.ngap.ErrorIndication.roundtrip(v, rem, rest, ok):
+  L.ngap.ies.roundtrip(v, Ap.Bit.after(rem), rest, ok)
+
+def ErrorIndication.dv(rb: Ap.Rd(Bool), +v: G.ErrorIndication(), +c2: Ap.Cur, +e: {G.ErrorIndication.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.ErrorIndication())}) -> {G.ErrorIndication.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.ErrorIndication(), {G.ErrorIndication.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.ErrorIndication(), {G.ErrorIndication.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          L.ngap.ies.decode_valid(c, v, c2, e)
+
+def GL.ngap.ErrorIndication.decode_valid(c, v, c2, e):
+  ErrorIndication.dv(Ap.Bit.read(c), v, c2, e)
+
+def ErrorIndication.sx.go(+rem: Nat, +rest: Ap.Bits(), +v: G.ErrorIndication(), +rem2: Nat, +bits2: Ap.Bits(), s: PC.Canon(rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), rem2, 0n)) -> ErrorIndication.Sx(False{} <> rest, v, rem, rem2, bits2):
+  (s1, s2) = s
+  (Equal.cong(Ap.Bits(), Ap.Bits(), l => False{} <> l, rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), s1), s2)
+
+def ErrorIndication.sx(+rem: Nat, bits: Ap.Bits(), +v: G.ErrorIndication(), +rem2: Nat, +bits2: Ap.Bits(), +e: {G.ErrorIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ErrorIndication())}) -> ErrorIndication.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.ErrorIndication(), ErrorIndication.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.ErrorIndication(), ErrorIndication.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          ErrorIndication.sx.go(rem, rest, v, rem2, bits2, PF.Ies.sx(Ap.Bit.after(rem), rest, v, rem2, bits2, e))
+
+def GL.ngap.ErrorIndication.suffix(rem, bits, v, rem2, bits2, e):
+  ErrorIndication.sx(rem, bits, v, rem2, bits2, e)
