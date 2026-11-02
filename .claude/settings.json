@@ -1,6 +1,50 @@
 {
   "permissions": {
-    "allow": ["Bash", "Edit", "Write", "WebFetch", "WebSearch"]
+    "allow": [
+      "Bash(scripts/check.sh)",
+      "Bash(scripts/test-kernel.sh*)",
+      "Bash(python3 -I scripts/*)",
+      "Bash(python3 -I tools/ngap-gen/*)",
+      "Bash(bend *)",
+      "Bash(build/kernel *)",
+      "Bash(cargo test *)",
+      "Bash(cargo build *)",
+      "Bash(cargo fmt *)",
+      "Bash(cargo clippy *)",
+      "Bash(nix build .#*)",
+      "Bash(nix flake check*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git fetch*)",
+      "Bash(git merge origin/main*)",
+      "Edit(kernel/**)",
+      "Edit(edge/**)",
+      "Edit(scripts/**)",
+      "Edit(tools/**)",
+      "Edit(e2e/**)",
+      "Edit(loop/**)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.3gpp.org)",
+      "Bash(git push origin loop/m1)",
+      "Bash(git push -u origin loop/m1)",
+      "Edit(test-vectors/**)",
+      "Edit(docs/security/**)",
+      "Edit(docs/research/**)"
+    ],
+    "ask": [
+      "Edit(docs/spec/**)",
+      "Edit(.claude/**)"
+    ],
+    "deny": [
+      "Bash(git push *main*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ]
   },
   "env": {
     "BEND_NO_TELEMETRY": "1",
@@ -12,14 +56,21 @@
       {
         "matcher": "startup|resume",
         "hooks": [
-          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh", "timeout": 600 }
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh",
+            "timeout": 600
+          }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop.sh" }
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop.sh"
+          }
         ]
       }
     ]
