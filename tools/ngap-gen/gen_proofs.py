@@ -475,7 +475,8 @@ class Proofs:
         def first(c):
             return f"{b}.dv_{names[0]}({', '.join(pflags(0) + [c, READ(0, c, pvar), '{==}', 'v', 'c2', 'e'])})"
 
-        bm_pat = " <> ".join(pvar(i) for i in opts) + " <> Nil{}"
+        # The first field's presence bit is both passed on and read with when that field is optional.
+        bm_pat = " <> ".join(("+" if i == 0 else "") + pvar(i) for i in opts) + " <> Nil{}"
         if k:
             self.out(f"def {b}.dv_bm(r: Ap.Rd(Ap.Bits()), +v: {gb}, +c2: Ap.Cur, +e: {{{gb}.r_bm(r) == Done{{(v, c2)}} : Ap.Rd({gb})}}) -> {goal}:")
             self.out("  match r:")

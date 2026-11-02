@@ -13945,7 +13945,7 @@ def CriticalityDiagnostics.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.CriticalityDiagnosti
       PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, err, v, c2, e)
     case Done{(bm, +c3)}:
       match bm:
-        case p_procedureCode <> p_triggeringMessage <> p_procedureCriticality <> p_iEsCriticalityDiagnostics <> p_iE_Extensions <> Nil{}:
+        case +p_procedureCode <> p_triggeringMessage <> p_procedureCriticality <> p_iEsCriticalityDiagnostics <> p_iE_Extensions <> Nil{}:
           CriticalityDiagnostics.dv_procedureCode(p_procedureCode, p_triggeringMessage, p_procedureCriticality, p_iEsCriticalityDiagnostics, p_iE_Extensions, c3, G.CriticalityDiagnostics.o_procedureCode(p_procedureCode, c3), {==}, v, c2, e)
         case Nil{}:
           PA.Rd.absurd(G.CriticalityDiagnostics, {G.CriticalityDiagnostics.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
