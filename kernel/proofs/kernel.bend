@@ -13,6 +13,7 @@ import ../amf/gmm.bend as Gmm
 import ../amf/route.bend as R
 import ../LAWS.bend as L
 import ./lib.bend as P
+import ../crypto/kdf.bend as Kd
 
 # Proofs of the step function's laws (ticket 16).
 
@@ -164,3 +165,46 @@ def Req.pdu(+st: S.State, +assoc: U32, stream: U32, entropy: B.Bytes(), r: Resul
 
 def L.amf.ng_setup.requires_supported_plmn(st, entropy, assoc, stream, len, bytes, e):
   Req.pdu(st, assoc, stream, entropy, Fr.Pdu.read(bytes), e)
+
+# Registration, part 1 (ticket 17)
+# --------------------------------
+
+def L.amf.initial_ue.reject_leaves_state(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, err, ep, ei, ev):
+  sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{0, 15, crit, value}}, ep)
+  %sep : {R.Route.of_pdu(st, assoc, stream, entropy, _) == (st, N.Acts.render(N.Ngap.bad_view_acts(assoc))) : S.Out()}
+  sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
+  %sei : {R.Route.of_ies(st, assoc, stream, U32.to_nat(0), U32.to_nat(15), entropy, _) == (st, N.Acts.render(N.Ngap.bad_view_acts(assoc))) : S.Out()}
+  sev = Equal.sym(Result<&2, &2, B.Err, V.InitialUEMessage.View>, V.InitialUEMessage.view(ies), Fail{err}, ev)
+  %sev : {N.render_out(Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, _)) == (st, N.Acts.render(N.Ngap.bad_view_acts(assoc))) : S.Out()}
+  {==}
+
+def L.ausf.res_star.full_length(av, res, e):
+  match av:
+    case Au.Av{+rand, autn, +xres_star, +hxres_star, k_ausf}:
+      +R = Bool.and(B.bytes_eq(Kd.kdf.hres_star(rand, res), hxres_star), B.bytes_eq(res, xres_star))
+      +e2 = P.Bool.and_true_r(Nat.is_eq(List.length(&2, U32, res), 16n), R, e)
+      (P.Bool.and_true_l(Nat.is_eq(List.length(&2, U32, res), 16n), R, e), (P.Bool.and_true_l(B.bytes_eq(Kd.kdf.hres_star(rand, res), hxres_star), B.bytes_eq(res, xres_star), e2), P.Bool.and_true_r(B.bytes_eq(Kd.kdf.hres_star(rand, res), hxres_star), B.bytes_eq(res, xres_star), e2)))
+
+# Every phase before registration carries its guard, so every context is guarded.
+def Ue.guarded(u: S.Ue) -> {S.Ue.guarded(u) == True{} : Bool}:
+  match u:
+    case S.Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
+      match phase:
+        case S.Identifying{guard}:
+          {==}
+        case S.Authenticating{guard, av, resynced}:
+          {==}
+        case S.Authenticated{guard, k_amf}:
+          {==}
+        case S.Releasing{}:
+          {==}
+
+def Ues.guarded(ues: Tb.Table(S.Ue)) -> {S.Ues.guarded(ues) == True{} : Bool}:
+  match ues:
+    case Nil{}:
+      {==}
+    case (key, +u) <> +more:
+      P.Bool.and_intro(S.Ue.guarded(u), S.Ues.guarded(more), Ue.guarded(u), Ues.guarded(more))
+
+def L.amf.auth.guarded(st, ev, entropy):
+  Ues.guarded(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))))

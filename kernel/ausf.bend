@@ -128,6 +128,16 @@ def Av.autn(av: Av) -> B.Bytes():
     case Av{rand, autn, xres_star, hxres_star, k_ausf}:
       autn
 
+def Av.xres_star(av: Av) -> B.Bytes():
+  match av:
+    case Av{rand, autn, xres_star, hxres_star, k_ausf}:
+      xres_star
+
+def Av.hxres_star(av: Av) -> B.Bytes():
+  match av:
+    case Av{rand, autn, xres_star, hxres_star, k_ausf}:
+      hxres_star
+
 def Av.k_ausf(av: Av) -> B.Bytes():
   match av:
     case Av{rand, autn, xres_star, hxres_star, k_ausf}:

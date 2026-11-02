@@ -25,6 +25,7 @@ import ./frame.bend as F
 import ./state.bend as St
 import ./step.bend as Ke
 import ./amf/ngap.bend as Ng
+import ./ausf.bend as Au
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -1066,3 +1067,43 @@ law kernel.bad_pdu.only_error_indication:
   for +err: B.Err
   for +e: {Fr.Pdu.read(bytes) == Fail{err} : Result<&2, &2, B.Err, Fr.Pdu>}
   {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.bad_pdu(assoc)) : St.Out()}
+
+# amf (ticket 17)
+# ---------------
+# Identification and 5G-AKA.
+
+# GHSA-cfp8-93x2-6h9x: an InitialUEMessage whose view fails leaves the state as
+# it was; the only actions are Error Indication and a log line.
+law amf.initial_ue.reject_leaves_state:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +err: B.Err
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 15, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.InitialUEMessage.view(ies) == Fail{err} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Acts.render(Ng.Ngap.bad_view_acts(assoc))) : St.Out()}
+
+# GHSA-r9rw-hx33-745g (5G analogue): authentication succeeds only when RES* is
+# sixteen octets, HRES* equals HXRES* over all of them and RES* equals XRES*
+# over all of them.
+law ausf.res_star.full_length:
+  for +av: Au.Av
+  for +res: B.Bytes()
+  for +e: {Au.Ausf.verify(av, res) == True{} : Bool}
+  {Nat.is_eq(List.length(&2, U32, res), 16n) == True{} : Bool} & ({B.bytes_eq(K.kdf.hres_star(Au.Av.rand(av), res), Au.Av.hxres_star(av)) == True{} : Bool} & {B.bytes_eq(res, Au.Av.xres_star(av)) == True{} : Bool})
+
+# Every UE context that is not registered holds exactly one guard timer or is
+# being released, in every state a step reaches.
+law amf.auth.guarded:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  {St.Ues.guarded(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}

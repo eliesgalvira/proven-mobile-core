@@ -376,3 +376,21 @@ def Ues.by_timer(+timer: U32, ues: Tb.Table(Ue)) -> Maybe<&2, Sigma<&2, &2, U32,
       None{}
     case (key, +u) <> more:
       Ues.pick_timer(key, u, Ues.by_timer(timer, more), Ues.timer_is(Ue.guard(u), timer))
+
+# A context that is not registered is bounded by a guard timer or is being released.
+def Phase.guarded(p: Phase) -> Bool:
+  match p:
+    case Releasing{}:
+      True{}
+    case other:
+      Tb.Table.present(Guard, Phase.guard(other))
+
+def Ue.guarded(u: Ue) -> Bool:
+  Phase.guarded(Ue.phase(u))
+
+def Ues.guarded(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, u) <> more:
+      Bool.and(Ue.guarded(u), Ues.guarded(more))
