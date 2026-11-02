@@ -18,7 +18,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 12 | aper | done | 02 | d10b54a: X.691 aligned PER primitives (bits, alignment, constrained/indefinite/small numbers, lengths, sizes, octets, bit/octet/printable strings, open types, enumerations) over a bit-list cursor; 55 checks incl. the IE walk over all 14 captured NGAP PDUs; 36 laws proven; padding_zero kept strict |
 | 13 | ngap | done | 03, 12 | 1358d02: generator over TS 38.413 V17.15.0 (pycrate 0.8.1) emitting 140 types with read/write/after/valid, per-message views with criticality handling, and 420 laws (roundtrip, decode_valid, suffix) with their proofs; frame codec and 10 hand-written laws; pycrate differential oracle agrees on all 14 captured PDUs; golden test; upstream draft 04 |
 | 14 | pfcp | done | 02, 03 | d65bfef: TS 29.244 header and IE codec with typed views (Node ID, F-SEID, F-TEID, UE IP, OHC, MBR, Cause and other one-octet IEs); all 20 captured PFCP messages decode, validate and re-encode (90 checks); 7 laws proven incl. the three advisory laws |
-| 15 | frames | todo | 02 | |
+| 15 | frames | in-progress | 02 | |
 | 16 | state-ng-setup | todo | 13, 15 | |
 | 17 | registration-auth | todo | 08, 09, 10, 16 | |
 | 18 | registration-complete | todo | 17 | |
