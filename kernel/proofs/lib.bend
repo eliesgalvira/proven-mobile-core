@@ -401,6 +401,13 @@ def Maybe.value(-A: Data, m: Maybe<&2, A>, d: A) -> A:
 # Nat ordering and equality
 # -------------------------
 
+def Nat.not_lt_zero(-G: Type, p: Nat, e: {Nat.is_lt(p, 0n) == True{} : Bool}) -> G:
+  match p:
+    case 0n:
+      Empty.absurd(G, Refute.bool(e))
+    case 1n+q:
+      Empty.absurd(G, Refute.bool(e))
+
 def Nat.eq_of_is_eq(a: Nat, b: Nat, e: {Nat.is_eq(a, b) == True{} : Bool}) -> {a == b : Nat}:
   match a b:
     case 0n 0n:

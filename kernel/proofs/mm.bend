@@ -413,25 +413,6 @@ def Fmt.pick_low(l: I.Low, oo: Bool, x: I.Fmt, e: {I.Fmt.pick(l, oo) == x : I.Fm
 def Format.low(t: List<&2, I.Rule>, +iei: U32, x: I.Fmt, e: {I.Opts.format(t, iei) == x : I.Fmt}, nt: Fmt.not_t1(x)) -> {U32.is_lt(iei, 128) == True{} : Bool}:
   P.U32.lt_of_not_ge(iei, 128, Fmt.pick_low(I.Table.low(t, iei), U32.is_ge(iei, 128), x, e, nt))
 
-# What take read has the length it was asked for.
-def Take.len_eq.go(+n: Nat, +body: B.Bytes(), +r: B.Bytes(), +rest: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, rest) == r : B.Bytes()}) -> {Nat.is_eq(List.length(&2, U32, body), n) == True{} : Bool}:
-  (l, a) = la
-  sl = Equal.sym(Nat, List.length(&2, U32, body), n, l)
-  %sl : {Nat.is_eq(_, n) == True{} : Bool}
-  P.Nat.is_eq_refl(n)
-
-def Take.len_eq(+n: Nat, +r: B.Bytes(), +body: B.Bytes(), +rest: B.Bytes(), e: {B.take(n, r) == Done{(body, rest)} : B.Read(B.Bytes())}) -> {Nat.is_eq(List.length(&2, U32, body), n) == True{} : Bool}:
-  Take.len_eq.go(n, body, r, rest, L.bytes.take.length(n, r, body, rest, e))
-
-def Take.len_eq2.go(+n: Nat, +body: B.Bytes(), +r: B.Bytes(), +rest: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, rest) == r : B.Bytes()}) -> {Nat.is_eq(n, List.length(&2, U32, body)) == True{} : Bool}:
-  (l, a) = la
-  sl = Equal.sym(Nat, List.length(&2, U32, body), n, l)
-  %sl : {Nat.is_eq(n, _) == True{} : Bool}
-  P.Nat.is_eq_refl(n)
-
-def Take.len_eq2(+n: Nat, +r: B.Bytes(), +body: B.Bytes(), +rest: B.Bytes(), e: {B.take(n, r) == Done{(body, rest)} : B.Read(B.Bytes())}) -> {Nat.is_eq(n, List.length(&2, U32, body)) == True{} : Bool}:
-  Take.len_eq2.go(n, body, r, rest, L.bytes.take.length(n, r, body, rest, e))
-
 def Len.dv8_join(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), +rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(len), r) == rt : B.Read(B.Bytes())}, e: {I.Len.join(len, rt) == Done{(lb, rest)} : B.Read(I.LenBody)}, fl: {B.fits8(len) == True{} : Bool}) -> {I.LenBody.valid8(lb) == True{} : Bool}:
   match rt:
     case Fail{err}:
@@ -439,7 +420,7 @@ def Len.dv8_join(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), +rt
     case Done{(+body, rest2)}:
       el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{len, body}, rest2)}, Done{(lb, rest)}, e)
       %el : {I.LenBody.valid8(_) == True{} : Bool}
-      P.Bool.and_intro(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
+      P.Bool.and_intro(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, PB.Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
 
 def Len.dv8(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), ok: Bool, ev: {B.fits8(len) == ok : Bool}, e: {I.Len.take(len, r, ok) == Done{(lb, rest)} : B.Read(I.LenBody)}) -> {I.LenBody.valid8(lb) == True{} : Bool}:
   match ok:
@@ -455,7 +436,7 @@ def Len.dv16_join(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), +r
     case Done{(+body, rest2)}:
       el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{len, body}, rest2)}, Done{(lb, rest)}, e)
       %el : {I.LenBody.valid16(_) == True{} : Bool}
-      P.Bool.and_intro(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
+      P.Bool.and_intro(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, PB.Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
 
 def Len.dv16(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), ok: Bool, ev: {B.fits16(len) == ok : Bool}, e: {I.Len.take(len, r, ok) == Done{(lb, rest)} : B.Read(I.LenBody)}) -> {I.LenBody.valid16(lb) == True{} : Bool}:
   match ok:
@@ -565,7 +546,7 @@ def Ie.dv_tv(+t: List<&2, I.Rule>, +iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie,
       %ei : Ie.Valid(t, _)
       shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.Tv{n}, hx)
       %shx : {I.Ie.valid(_, I.Ie{iei, I.Tv{n}, 0, body}) == True{} : Bool}
-      P.Bool.and_intro(Nat.is_eq(n, n), Bool.and(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}))), P.Nat.is_eq_refl(n), P.Bool.and_intro(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}), Format.low(t, iei, I.Tv{n}, hx, Unit{}), P.Bool.and_intro(Nat.is_eq(List.length(&2, U32, body), n), True{}, Take.len_eq(n, r, body, rest2, ert), {==}))))
+      P.Bool.and_intro(Nat.is_eq(n, n), Bool.and(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}))), P.Nat.is_eq_refl(n), P.Bool.and_intro(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}), Format.low(t, iei, I.Tv{n}, hx, Unit{}), P.Bool.and_intro(Nat.is_eq(List.length(&2, U32, body), n), True{}, PB.Take.len_eq(n, r, body, rest2, ert), {==}))))
 
 def Ie.dv_tlv(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.Tlv{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lv(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match rl:
@@ -696,31 +677,12 @@ def L.nas.mm.decode_valid(bs, m, e):
 # The bytes a decoded value came from are its encoding
 # ----------------------------------------------------
 
-def Bytes.all_app(+xs: B.Bytes(), +ys: B.Bytes(), +e: {B.all_bytes(List.append(&2, U32, xs, ys)) == True{} : Bool}) -> {B.all_bytes(ys) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      e
-    case x <> xt:
-      Bytes.all_app(xt, ys, P.Bool.and_true_r(B.is_byte(x), B.all_bytes(List.append(&2, U32, xt, ys)), e))
-
-def Take.sx.fin(-G: Type, +body: B.Bytes(), +r3: B.Bytes(), +r: B.Bytes(), +a: {List.append(&2, U32, body, r3) == r : B.Bytes()}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
-  sa = Equal.sym(B.Bytes(), List.append(&2, U32, body, r3), r, a)
-  k(a, Bytes.all_app(body, r3, (%sa : {B.all_bytes(_) == True{} : Bool}; ab)))
-
-def Take.sx.go(-G: Type, +n: Nat, +body: B.Bytes(), +r3: B.Bytes(), +r: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, r3) == r : B.Bytes()}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
-  (l, a) = la
-  Take.sx.fin(G, body, r3, r, a, ab, k)
-
-# What take leaves is a suffix of all-byte input, and the taken part is a prefix.
-def Take.sx(-G: Type, +n: Nat, +r: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), +e: {B.take(n, r) == Done{(body, r3)} : B.Read(B.Bytes())}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
-  Take.sx.go(G, n, body, r3, r, L.bytes.take.length(n, r, body, r3, e), ab, k)
-
 def Len.sx_join(-G: Type, +len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(len0), r) == rt : B.Read(B.Bytes())}, +e: {I.Len.join(len0, rt) == Done{(lb, r2)} : B.Read(I.LenBody)}, +ab: {B.all_bytes(r) == True{} : Bool}, k: @body: B.Bytes() -> @r3: B.Bytes() -> {Done{(I.LenBody{len0, body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)} -> {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
   match rt:
     case Fail{err}:
       Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), err, (lb, r2), e))
     case Done{(+body, +r3)}:
-      Take.sx(G, U32.to_nat(len0), r, body, r3, ert, ab, ap => al => k(body, r3, e, ap, al))
+      PB.Take.sx(G, U32.to_nat(len0), r, body, r3, ert, ab, ap => al => k(body, r3, e, ap, al))
 
 def Len.sx(-G: Type, +len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), ok: Bool, fits: Bool, +ev: {fits == ok : Bool}, +e: {I.Len.take(len0, r, ok) == Done{(lb, r2)} : B.Read(I.LenBody)}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {fits == True{} : Bool} -> @body: B.Bytes() -> @r3: B.Bytes() -> {Done{(I.LenBody{len0, body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)} -> {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
   match ok:
@@ -873,7 +835,7 @@ def Ie.sx_tv(+iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {
       er = Equal.cong(B.Read(I.Ie), B.Bytes(), x => P.Read.rest(I.Ie, x, r2), Done{(I.Ie{iei, I.Tv{n}, 0, body}, r3)}, Done{(ie, r2)}, e)
       %ei : Ie.Sx(_, r2, iei <> r)
       %er : Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, _, iei <> r)
-      Take.sx(Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, r3, iei <> r), n, r, body, r3, ert, ab, ap => al => Ie.sx_tv_fin(iei, n, r, body, r3, f8, ap, al))
+      PB.Take.sx(Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, r3, iei <> r), n, r, body, r3, ert, ab, ap => al => Ie.sx_tv_fin(iei, n, r, body, r3, f8, ap, al))
 
 def Ie.sx_tlv_fin(+iei: U32, +len0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, fl: {B.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1):
   +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len1, body}), Done{(I.LenBody{len0, body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)

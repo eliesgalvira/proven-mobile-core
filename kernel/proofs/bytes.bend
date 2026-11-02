@@ -279,3 +279,44 @@ def Tbcd.assemble(+digits: B.Digits(), +k: Nat, la: Tbcd.Spec(digits, k)) -> {Na
 
 def L.bytes.tbcd.length(bs, k, digits, rest, e):
   Tbcd.assemble(digits, k, Tbcd.main(k, digits, rest, bs, B.take(k, bs), tk => rs => e2 => L.bytes.take.length(k, bs, tk, rs, e2), e))
+
+# Lengths and suffixes of what `take` read
+# ----------------------------------------
+
+# What take read has the length it was asked for.
+def Take.len_eq.go(+n: Nat, +body: B.Bytes(), +r: B.Bytes(), +rest: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, rest) == r : B.Bytes()}) -> {Nat.is_eq(List.length(&2, U32, body), n) == True{} : Bool}:
+  (l, a) = la
+  sl = Equal.sym(Nat, List.length(&2, U32, body), n, l)
+  %sl : {Nat.is_eq(_, n) == True{} : Bool}
+  P.Nat.is_eq_refl(n)
+
+def Take.len_eq(+n: Nat, +r: B.Bytes(), +body: B.Bytes(), +rest: B.Bytes(), e: {B.take(n, r) == Done{(body, rest)} : B.Read(B.Bytes())}) -> {Nat.is_eq(List.length(&2, U32, body), n) == True{} : Bool}:
+  Take.len_eq.go(n, body, r, rest, L.bytes.take.length(n, r, body, rest, e))
+
+def Take.len_eq2.go(+n: Nat, +body: B.Bytes(), +r: B.Bytes(), +rest: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, rest) == r : B.Bytes()}) -> {Nat.is_eq(n, List.length(&2, U32, body)) == True{} : Bool}:
+  (l, a) = la
+  sl = Equal.sym(Nat, List.length(&2, U32, body), n, l)
+  %sl : {Nat.is_eq(n, _) == True{} : Bool}
+  P.Nat.is_eq_refl(n)
+
+def Take.len_eq2(+n: Nat, +r: B.Bytes(), +body: B.Bytes(), +rest: B.Bytes(), e: {B.take(n, r) == Done{(body, rest)} : B.Read(B.Bytes())}) -> {Nat.is_eq(n, List.length(&2, U32, body)) == True{} : Bool}:
+  Take.len_eq2.go(n, body, r, rest, L.bytes.take.length(n, r, body, rest, e))
+
+def Bytes.all_app(+xs: B.Bytes(), +ys: B.Bytes(), +e: {B.all_bytes(List.append(&2, U32, xs, ys)) == True{} : Bool}) -> {B.all_bytes(ys) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      e
+    case x <> xt:
+      Bytes.all_app(xt, ys, P.Bool.and_true_r(B.is_byte(x), B.all_bytes(List.append(&2, U32, xt, ys)), e))
+
+def Take.sx.fin(-G: Type, +body: B.Bytes(), +r3: B.Bytes(), +r: B.Bytes(), +a: {List.append(&2, U32, body, r3) == r : B.Bytes()}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  sa = Equal.sym(B.Bytes(), List.append(&2, U32, body, r3), r, a)
+  k(a, Bytes.all_app(body, r3, (%sa : {B.all_bytes(_) == True{} : Bool}; ab)))
+
+def Take.sx.go(-G: Type, +n: Nat, +body: B.Bytes(), +r3: B.Bytes(), +r: B.Bytes(), la: {List.length(&2, U32, body) == n : Nat} & {List.append(&2, U32, body, r3) == r : B.Bytes()}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  (l, a) = la
+  Take.sx.fin(G, body, r3, r, a, ab, k)
+
+# What take leaves is a suffix of all-byte input, and the taken part is a prefix.
+def Take.sx(-G: Type, +n: Nat, +r: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), +e: {B.take(n, r) == Done{(body, r3)} : B.Read(B.Bytes())}, +ab: {B.all_bytes(r) == True{} : Bool}, k: {List.append(&2, U32, body, r3) == r : B.Bytes()} -> {B.all_bytes(r3) == True{} : Bool} -> G) -> G:
+  Take.sx.go(G, n, body, r3, r, L.bytes.take.length(n, r, body, r3, e), ab, k)

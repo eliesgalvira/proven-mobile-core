@@ -594,7 +594,7 @@ def Payload.sx_ipv6(+bs: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), rt: B.Read(B.B
     case Fail{err}:
       Payload.absurd(p, r, bs, err, e)
     case Done{(+addr, +r1)}:
-      PM.Take.sx(Payload.Sx(p, r, bs), 16n, bs, addr, r1, ert, ab, ap => al => Payload.sx_ipv6_prefix(addr, r1, p, r, bs, e, ap, al))
+      PB.Take.sx(Payload.Sx(p, r, bs), 16n, bs, addr, r1, ert, ab, ap => al => Payload.sx_ipv6_prefix(addr, r1, p, r, bs, e, ap, al))
 
 def Payload.sx_six_fin(+bytes: B.Bytes(), +r1: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), ep: {Q.PSix{bytes} == p : Q.Payload}, er: {r1 == r : B.Bytes()}, ap: {List.append(&2, U32, bytes, r1) == bs : B.Bytes()}, al: {B.all_bytes(r1) == True{} : Bool}) -> Payload.Sx(p, r, bs):
   %ep : Payload.Sx(_, r, bs)
@@ -606,7 +606,7 @@ def Payload.sx_six(+bs: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), rt: B.Read(B.By
     case Fail{err}:
       Payload.absurd(p, r, bs, err, e)
     case Done{(+bytes, +r1)}:
-      Payload.eqs(Payload.Sx(p, r, bs), p, r, Q.PSix{bytes}, r1, e, ep => er => PM.Take.sx(Payload.Sx(p, r, bs), 6n, bs, bytes, r1, ert, ab, ap => al => Payload.sx_six_fin(bytes, r1, p, r, bs, ep, er, ap, al)))
+      Payload.eqs(Payload.Sx(p, r, bs), p, r, Q.PSix{bytes}, r1, e, ep => er => PB.Take.sx(Payload.Sx(p, r, bs), 6n, bs, bytes, r1, ert, ab, ap => al => Payload.sx_six_fin(bytes, r1, p, r, bs, ep, er, ap, al)))
 
 def Payload.sx(shape: Q.Shape, +bs: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +e: {Q.Payload.read(shape, bs) == Done{(p, r)} : B.Read(Q.Payload)}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> Payload.Sx(p, r, bs):
   match shape:
@@ -897,7 +897,7 @@ def Rule.only_sx(-G: Type, +qri: U32, +len: U32, +op0: U32, +rest: B.Bytes(), +r
     case Fail{err}:
       Rule.absurd_body(G, rule, err, e)
     case Done{(+ids, +r1)}:
-      PM.Take.sx(G, Q.Rule.count(op0), rest, ids, r1, ert, abr, ap => al => Rule.tail_sx(G, qri, len, op0, Q.Only{ids}, r1, rule, e, al, +p => +q => eq => w => k(op0, Q.Only{ids}, Q.Tail{p, q}, eq, Rule.bw_only(op0, ids, p, q, r1, rest, w, ap))))
+      PB.Take.sx(G, Q.Rule.count(op0), rest, ids, r1, ert, abr, ap => al => Rule.tail_sx(G, qri, len, op0, Q.Only{ids}, r1, rule, e, al, +p => +q => eq => w => k(op0, Q.Only{ids}, Q.Tail{p, q}, eq, Rule.bw_only(op0, ids, p, q, r1, rest, w, ap))))
 
 def Rule.none_sx(-G: Type, +qri: U32, +len: U32, +op0: U32, rest: B.Bytes(), +rule: Q.Rule, +e: {Q.Rule.end(qri, len, op0, Q.NoFilters{}, Q.NoTail{}, rest) == Done{rule} : Result<&2, &2, B.Err, Q.Rule>}, k: @op: U32 -> @fs: Q.RuleFilters -> @t: Q.RuleTail -> {Q.Rule{qri, len, op, fs, t} == rule : Q.Rule} -> {Q.Rule.body_write(op, fs, t) == op0 <> rest : B.Bytes()} -> G) -> G:
   match rest:

@@ -368,13 +368,6 @@ def L.aper.small.decode_valid(c, v, c2, e):
 # Nat
 # ---
 
-def Nat.not_lt_zero(-G: Type, p: Nat, e: {Nat.is_lt(p, 0n) == True{} : Bool}) -> G:
-  match p:
-    case 0n:
-      Empty.absurd(G, P.Refute.bool(e))
-    case 1n+q:
-      Empty.absurd(G, P.Refute.bool(e))
-
 def Nat.add_succ(a: Nat, +b: Nat) -> {1n+Nat.add(a, b) == Nat.add(a, 1n+b) : Nat}:
   match a:
     case 0n:
@@ -467,7 +460,7 @@ def Nat.of_to(n: Nat, +k: Nat, lt: {Nat.is_lt(k, Ap.Nat.pow2(n)) == True{} : Boo
         case 0n:
           {==}
         case 1n+p:
-          Nat.not_lt_zero({1n+p == 0n : Nat}, p, lt)
+          P.Nat.not_lt_zero({1n+p == 0n : Nat}, p, lt)
     case 1n++p:
       oc = Nat.of_lsb_cons(Ap.Nat.is_odd(k), Ap.Nat.to_lsb(p, Ap.Nat.half(k)))
       %oc : {k == _ : Nat}
@@ -489,7 +482,7 @@ def Nat.of_lsb_lt(ls: Ap.Bits()) -> {Nat.is_lt(Ap.Nat.of_lsb(ls), Ap.Nat.pow2(Li
 def Nat.le_lt_trans(a: Nat, b: Nat, c: Nat, e1: {Nat.is_le(a, b) == True{} : Bool}, e2: {Nat.is_lt(b, c) == True{} : Bool}) -> {Nat.is_lt(a, c) == True{} : Bool}:
   match a b c:
     case 0n b2 0n:
-      Nat.not_lt_zero({Nat.is_lt(0n, 0n) == True{} : Bool}, b2, e2)
+      P.Nat.not_lt_zero({Nat.is_lt(0n, 0n) == True{} : Bool}, b2, e2)
     case 0n b2 1n+r:
       {==}
     case 1n+p 0n c2:
@@ -502,7 +495,7 @@ def Nat.le_lt_trans(a: Nat, b: Nat, c: Nat, e1: {Nat.is_le(a, b) == True{} : Boo
 def Nat.lt_le_trans(a: Nat, b: Nat, c: Nat, e1: {Nat.is_lt(a, b) == True{} : Bool}, e2: {Nat.is_le(b, c) == True{} : Bool}) -> {Nat.is_lt(a, c) == True{} : Bool}:
   match a b c:
     case a2 0n c2:
-      Nat.not_lt_zero({Nat.is_lt(a2, c2) == True{} : Bool}, a2, e1)
+      P.Nat.not_lt_zero({Nat.is_lt(a2, c2) == True{} : Bool}, a2, e1)
     case 0n 1n+q 0n:
       Empty.absurd({Nat.is_lt(0n, 0n) == True{} : Bool}, P.Refute.bool(e2))
     case 0n 1n+q 1n+r:
