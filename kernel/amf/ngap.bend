@@ -27,25 +27,21 @@ def Ngap.send(assoc: U32, stream: U32, bytes: B.Bytes()) -> F.Action:
 def Ngap.error_indication(assoc: U32, cause: G.Cause) -> F.Action:
   Ngap.send(assoc, 0, Ngap.pdu(Fr.Pdu.initiating(), 7, Fr.Criticality.ignore(), [Ngap.ie(15, Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))]))
 
-# CauseProtocol indexes (§9.3.1.2).
-def Ngap.transfer_syntax_error() -> G.Cause:
-  G.Cause_protocol{Ap.Root{0}}
+def Ngap.protocol(index: U32) -> G.Cause:
+  G.Cause_protocol{Ap.Root{index}}
 
-def Ngap.abstract_syntax_error_reject() -> G.Cause:
-  G.Cause_protocol{Ap.Root{1}}
-
-def Ngap.not_compatible_with_state() -> G.Cause:
-  G.Cause_protocol{Ap.Root{3}}
+def Ngap.misc(index: U32) -> G.Cause:
+  G.Cause_misc{Ap.Root{index}}
 
 # An undecodable PDU: Error Indication and a log line, nothing else.
 def Ngap.bad_pdu(assoc: U32) -> List<&2, F.Action>:
-  [Ngap.error_indication(assoc, Ngap.transfer_syntax_error()), F.Action.log_make(F.Warn{}, "NGAP: PDU rejected, transfer syntax error")]
+  [Ngap.error_indication(assoc, Ngap.protocol(G.CauseProtocol.transfer_syntax_error())), F.Action.log_make(F.Warn{}, "NGAP: PDU rejected, transfer syntax error")]
 
 def Ngap.bad_view(assoc: U32) -> List<&2, F.Action>:
-  [Ngap.error_indication(assoc, Ngap.abstract_syntax_error_reject()), F.Action.log_make(F.Warn{}, "NGAP: message rejected, abstract syntax error")]
+  [Ngap.error_indication(assoc, Ngap.protocol(G.CauseProtocol.abstract_syntax_error_reject())), F.Action.log_make(F.Warn{}, "NGAP: message rejected, abstract syntax error")]
 
 def Ngap.unhandled(assoc: U32) -> List<&2, F.Action>:
-  [Ngap.error_indication(assoc, Ngap.not_compatible_with_state()), F.Action.log_make(F.Warn{}, "NGAP: message not handled")]
+  [Ngap.error_indication(assoc, Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), F.Action.log_make(F.Warn{}, "NGAP: message not handled")]
 
 # NG Setup (§8.7.1)
 # -----------------
@@ -75,21 +71,20 @@ def NgSetup.slices(cfg: S.Cfg) -> G.SliceSupportList():
 def NgSetup.response(+cfg: S.Cfg) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.successful(), 21, Fr.Criticality.reject(), [Ngap.ie(1, Fr.Criticality.reject(), G.AMFName.write(S.Cfg.name(cfg), 0n, [])), Ngap.ie(96, Fr.Criticality.reject(), G.ServedGUAMIList.write([G.ServedGUAMIItem{NgSetup.guami(cfg), None{}, None{}}], 0n, [])), Ngap.ie(86, Fr.Criticality.ignore(), G.RelativeAMFCapacity.write(255, 0n, [])), Ngap.ie(80, Fr.Criticality.reject(), G.PLMNSupportList.write([G.PLMNSupportItem{S.Cfg.plmn(cfg), NgSetup.slices(cfg), None{}}], 0n, []))])
 
-# NG Setup Failure with a CauseMisc index (§9.3.1.2): 4 unknown-PLMN-or-SNPN, 5 unspecified.
 def NgSetup.failure(misc: U32) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.unsuccessful(), 21, Fr.Criticality.reject(), [Ngap.ie(15, Fr.Criticality.ignore(), G.Cause.write(G.Cause_misc{Ap.Root{misc}}, 0n, []))])
+  Ngap.pdu(Fr.Pdu.unsuccessful(), 21, Fr.Criticality.reject(), [Ngap.ie(15, Fr.Criticality.ignore(), G.Cause.write(Ngap.misc(misc), 0n, []))])
 
 def NgSetup.answer(cfg: S.Cfg, supported: Bool) -> B.Bytes():
   match supported:
     case True{}:
       NgSetup.response(cfg)
     case False{}:
-      NgSetup.failure(4)
+      NgSetup.failure(G.CauseMisc.unknown_PLMN_or_SNPN())
 
 def NgSetup.reply(config: Maybe<&2, S.Cfg>, v: V.NGSetupRequest.View) -> B.Bytes():
   match config:
     case None{}:
-      NgSetup.failure(5)
+      NgSetup.failure(G.CauseMisc.unspecified())
     case Some{+cfg}:
       match v:
         case V.NGSetupRequest.View{globalrannodeid, supportedtalist, defaultpagingdrx}:
