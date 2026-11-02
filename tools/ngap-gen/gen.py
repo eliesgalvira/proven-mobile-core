@@ -8,7 +8,8 @@ Writes OUT_DIR/types.bend: for every type in the tier M+R closure a datatype
 kernel/aper.bend and kernel/ngap/frame.bend; plus `T.roundtrips` and the
 per-message IE dispatch used by the tests. views.bend holds one view per
 message; laws.bend and proofs.bend (gen_proofs.py) the codec laws of every
-type with their proofs. The generator is untrusted: the checker judges what
+type with their proofs; show.bend (gen_show.py) the normal form oracle.py
+compares with pycrate. The generator is untrusted: the checker judges what
 it emits. Needs pycrate 0.8.1; run with python -I.
 """
 import pathlib
@@ -16,6 +17,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import gen_proofs  # noqa: E402
+import gen_show  # noqa: E402
 import ngap_model as M  # noqa: E402
 
 KEYWORDS = {"def", "type", "match", "case", "import", "as", "is", "for", "law", "return",
@@ -117,7 +119,7 @@ class Gen:
         if kind == "INTEGER":
             lb, ub, ext = rng(const(obj, "VAL"))
             prim, al, n, diff = int_params(lb, ub)
-            t.lb = lb
+            t.lb, t.ub = lb, ub
             if ext:
                 t.kind = "alias"
                 if prim == "Big":
@@ -133,6 +135,7 @@ class Gen:
             t.kind, t.data, t.prim = "alias", "Ap.Enum", "Enum"
             t.args = (bitlen(count - 1), count - 1, "True{}" if obj._ext is not None else "False{}")
             t.values = list(obj._root) + list(obj._ext or [])
+            t.root_count = count
         elif kind == "BIT STRING":
             t.kind, t.data = "alias", "Ap.Bits()"
             c = const(obj, "SIZE")
@@ -176,6 +179,7 @@ class Gen:
                 return
             t.kind, t.ext = "record", obj._ext is not None
             t.fields = []
+            t.asn_fields = list(obj._root)
             for n in obj._root:
                 comp = obj._cont[n]
                 optional = bool(comp._flag) and "OPTIONAL" in comp._flag
@@ -186,6 +190,7 @@ class Gen:
         elif kind == "CHOICE":
             t.kind, t.ext = "choice", obj._ext is not None
             t.alts = []
+            t.asn_alts = list(obj._root)
             for n in obj._root:
                 atype = self.type_of(obj._cont[n], f"{t.name}-{n}")
                 t.alts.append((bname(n), atype))
@@ -860,7 +865,8 @@ def main():
     proofs = gen_proofs.Proofs(g)
     (out / "laws.bend").write_text(proofs.laws())
     (out / "proofs.bend").write_text(proofs.proofs())
-    print(f"{len(g.types)} types, {len(g.messages)} views, laws and proofs -> {out}")
+    (out / "show.bend").write_text(gen_show.Show(g).show())
+    print(f"{len(g.types)} types, {len(g.messages)} views, laws, proofs and show -> {out}")
 
 
 if __name__ == "__main__":

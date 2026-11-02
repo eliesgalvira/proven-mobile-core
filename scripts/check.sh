@@ -30,5 +30,9 @@ fi
 step "6. acceptance list"
 python3 -I scripts/acceptance.py
 
+step "7. ngap: generated code is current and agrees with pycrate on the capture"
+python3 -I tools/ngap-gen/test_gen.py
+python3 -I tools/ngap-gen/oracle.py
+
 echo
 echo "CHECK OK"
