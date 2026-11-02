@@ -233,3 +233,245 @@ def Ie.short(bs: B.Bytes(), +kind: U32, +len: U32, +tail: B.Bytes(), +eh: {Pf.Ie
 
 def L.pfcp.ie.suffix(bs):
   (ie => rest => e => Ie.exact(bs, ie, rest, e), kind => len => tail => eh => ab => lt => Ie.short(bs, kind, len, tail, eh, ab, lt))
+
+# Lists of IEs
+# ------------
+
+def Bytes.all_drop(n: Nat, bs: B.Bytes(), ab: {B.all_bytes(bs) == True{} : Bool}) -> {B.all_bytes(List.drop(&2, U32, bs, n)) == True{} : Bool}:
+  match n bs:
+    case 0n Nil{}:
+      ab
+    case 0n b <> t:
+      ab
+    case 1n+p Nil{}:
+      {==}
+    case 1n+p +b <> +t:
+      Bytes.all_drop(p, t, P.Bool.and_true_r(B.is_byte(b), B.all_bytes(t), ab))
+
+def Ie.rest_bytes.go(+bs: B.Bytes(), +ie: Pf.Ie, +rest: B.Bytes(), s: {List.drop(&2, U32, bs, Nat.add(4n, U32.to_nat(Pf.Ie.len(ie)))) == rest : B.Bytes()} & {List.length(&2, U32, Pf.Ie.body(ie)) == U32.to_nat(Pf.Ie.len(ie)) : Nat}, ab: {B.all_bytes(bs) == True{} : Bool}) -> {B.all_bytes(rest) == True{} : Bool}:
+  (dr, ln) = s
+  %dr : {B.all_bytes(_) == True{} : Bool}
+  Bytes.all_drop(Nat.add(4n, U32.to_nat(Pf.Ie.len(ie))), bs, ab)
+
+def Ie.rest_bytes(+bs: B.Bytes(), +ie: Pf.Ie, +rest: B.Bytes(), +e: {Pf.Ie.read(bs) == Done{(ie, rest)} : B.Read(Pf.Ie)}, ab: {B.all_bytes(bs) == True{} : Bool}) -> {B.all_bytes(rest) == True{} : Bool}:
+  Ie.rest_bytes.go(bs, ie, rest, Ie.exact(bs, ie, rest, e), ab)
+
+def Ies.rt(ies: List<&2, Pf.Ie>, fuel: Nat, +v: {Pf.Ies.valid(ies) == True{} : Bool}, +bound: {Nat.is_le(List.length(&2, U32, Pf.Ies.write(ies, [])), fuel) == True{} : Bool}) -> {Pf.Ies.read(fuel, Pf.Ies.write(ies, [])) == Done{ies} : Ies.Res()}:
+  match ies fuel:
+    case Nil{} 0n:
+      {==}
+    case Nil{} 1n+f:
+      {==}
+    case Pf.Ie{+kind, +len, +body} <> +more 0n:
+      Empty.absurd({Pf.Ies.read(0n, Pf.Ies.write(Pf.Ie{kind, len, body} <> more, [])) == Done{Pf.Ie{kind, len, body} <> more} : Ies.Res()}, P.Refute.bool(bound))
+    case Pf.Ie{+kind, +len, +body} <> +more 1n++f:
+      +W = Pf.Ies.write(more, [])
+      sr = Equal.sym(B.Read(Pf.Ie), Pf.Ie.read(Pf.Ie.write(Pf.Ie{kind, len, body}, W)), Done{(Pf.Ie{kind, len, body}, W)}, Ie.rt(kind, len, body, W, P.Bool.and_true_l(Pf.Ie.valid(Pf.Ie{kind, len, body}), Pf.Ies.valid(more), v)))
+      %sr : {Pf.Ies.next(_, left => Pf.Ies.read(f, left)) == Done{Pf.Ie{kind, len, body} <> more} : Ies.Res()}
+      ih = Equal.sym(Ies.Res(), Pf.Ies.read(f, W), Done{more}, Ies.rt(more, f, P.Bool.and_true_r(Pf.Ie.valid(Pf.Ie{kind, len, body}), Pf.Ies.valid(more), v), P.Nat.le_of_append(body, W, 3n, f, bound)))
+      %ih : {Pf.Ies.cons(Pf.Ie{kind, len, body}, _) == Done{Pf.Ie{kind, len, body} <> more} : Ies.Res()}
+      {==}
+
+def Ies.dv_cons(+ie: Pf.Ie, +ro: Ies.Res(), +ies: List<&2, Pf.Ie>, e: {Pf.Ies.cons(ie, ro) == Done{ies} : Ies.Res()}, hv: {Pf.Ie.valid(ie) == True{} : Bool}, ho: @ies2: List<&2, Pf.Ie> -> {ro == Done{ies2} : Ies.Res()} -> {Pf.Ies.valid(ies2) == True{} : Bool}) -> {Pf.Ies.valid(ies) == True{} : Bool}:
+  match ro:
+    case Fail{err}:
+      Empty.absurd({Pf.Ies.valid(ies) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, err, ies, e))
+    case Done{+ies2}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{ie <> ies2}, Done{ies}, e)
+      %eo : {Pf.Ies.valid(_) == True{} : Bool}
+      P.Bool.and_intro(Pf.Ie.valid(ie), Pf.Ies.valid(ies2), hv, ho(ies2, {==}))
+
+def Ies.dv_next(+f: Nat, +bs: B.Bytes(), +rb: B.Read(Pf.Ie), erb: {Pf.Ie.read(bs) == rb : B.Read(Pf.Ie)}, +ies: List<&2, Pf.Ie>, e: {Pf.Ies.next(rb, left => Pf.Ies.read(f, left)) == Done{ies} : Ies.Res()}, ih: @left: B.Bytes() -> @ies2: List<&2, Pf.Ie> -> {Pf.Ies.read(f, left) == Done{ies2} : Ies.Res()} -> {Pf.Ies.valid(ies2) == True{} : Bool}) -> {Pf.Ies.valid(ies) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      Empty.absurd({Pf.Ies.valid(ies) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, err, ies, e))
+    case Done{(+ie, +r2)}:
+      Ies.dv_cons(ie, Pf.Ies.read(f, r2), ies, e, Ie.dv(bs, ie, r2, erb), ies2 => e2 => ih(r2, ies2, e2))
+
+def Ies.dv(+fuel: Nat, +bs: B.Bytes(), +ies: List<&2, Pf.Ie>, e: {Pf.Ies.read(fuel, bs) == Done{ies} : Ies.Res()}) -> {Pf.Ies.valid(ies) == True{} : Bool}:
+  match fuel bs:
+    case 0n Nil{}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{[]}, Done{ies}, e)
+      %eo : {Pf.Ies.valid(_) == True{} : Bool}
+      {==}
+    case 1n+f Nil{}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{[]}, Done{ies}, e)
+      %eo : {Pf.Ies.valid(_) == True{} : Bool}
+      {==}
+    case 0n b <> r:
+      Empty.absurd({Pf.Ies.valid(ies) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, B.Invalid{b}, ies, e))
+    case 1n++f +b <> +r:
+      Ies.dv_next(f, b <> r, Pf.Ie.read(b <> r), {==}, ies, e, left => ies2 => e2 => Ies.dv(f, left, ies2, e2))
+
+# The IEs read from some bytes measure exactly those bytes.
+def Ies.len_cons(+bs: B.Bytes(), +ie: Pf.Ie, +r2: B.Bytes(), +ro: Ies.Res(), +ies: List<&2, Pf.Ie>, e: {Pf.Ies.cons(ie, ro) == Done{ies} : Ies.Res()}, cn: {List.length(&2, U32, bs) == Nat.add(4n, Nat.add(List.length(&2, U32, Pf.Ie.body(ie)), List.length(&2, U32, r2))) : Nat}, ih: @ies2: List<&2, Pf.Ie> -> {ro == Done{ies2} : Ies.Res()} -> {Pf.Ies.size(ies2) == List.length(&2, U32, r2) : Nat}) -> {Pf.Ies.size(ies) == List.length(&2, U32, bs) : Nat}:
+  match ro:
+    case Fail{err}:
+      Empty.absurd({Pf.Ies.size(ies) == List.length(&2, U32, bs) : Nat}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, err, ies, e))
+    case Done{+ies2}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{ie <> ies2}, Done{ies}, e)
+      %eo : {Pf.Ies.size(_) == List.length(&2, U32, bs) : Nat}
+      scn = Equal.sym(Nat, List.length(&2, U32, bs), Nat.add(4n, Nat.add(List.length(&2, U32, Pf.Ie.body(ie)), List.length(&2, U32, r2))), cn)
+      %scn : {Pf.Ies.size(ie <> ies2) == _ : Nat}
+      Equal.cong(Nat, Nat, n => Nat.add(4n, Nat.add(List.length(&2, U32, Pf.Ie.body(ie)), n)), Pf.Ies.size(ies2), List.length(&2, U32, r2), ih(ies2, {==}))
+
+def Ies.len_next(+f: Nat, +bs: B.Bytes(), +rb: B.Read(Pf.Ie), erb: {Pf.Ie.read(bs) == rb : B.Read(Pf.Ie)}, +ies: List<&2, Pf.Ie>, e: {Pf.Ies.next(rb, left => Pf.Ies.read(f, left)) == Done{ies} : Ies.Res()}, ih: @left: B.Bytes() -> @ies2: List<&2, Pf.Ie> -> {Pf.Ies.read(f, left) == Done{ies2} : Ies.Res()} -> {Pf.Ies.size(ies2) == List.length(&2, U32, left) : Nat}) -> {Pf.Ies.size(ies) == List.length(&2, U32, bs) : Nat}:
+  match rb:
+    case Fail{err}:
+      Empty.absurd({Pf.Ies.size(ies) == List.length(&2, U32, bs) : Nat}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, err, ies, e))
+    case Done{(+ie, +r2)}:
+      Ies.len_cons(bs, ie, r2, Pf.Ies.read(f, r2), ies, e, Ie.consumed(bs, ie, r2, erb), ies2 => e2 => ih(r2, ies2, e2))
+
+def Ies.len(+fuel: Nat, +bs: B.Bytes(), +ies: List<&2, Pf.Ie>, e: {Pf.Ies.read(fuel, bs) == Done{ies} : Ies.Res()}) -> {Pf.Ies.size(ies) == List.length(&2, U32, bs) : Nat}:
+  match fuel bs:
+    case 0n Nil{}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{[]}, Done{ies}, e)
+      %eo : {Pf.Ies.size(_) == 0n : Nat}
+      {==}
+    case 1n+f Nil{}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{[]}, Done{ies}, e)
+      %eo : {Pf.Ies.size(_) == 0n : Nat}
+      {==}
+    case 0n b <> r:
+      Empty.absurd({Pf.Ies.size(ies) == 1n+List.length(&2, U32, r) : Nat}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, B.Invalid{b}, ies, e))
+    case 1n++f +b <> +r:
+      Ies.len_next(f, b <> r, Pf.Ie.read(b <> r), {==}, ies, e, left => ies2 => e2 => Ies.len(f, left, ies2, e2))
+
+# The bytes a list of IEs was read from, before any tail, are its encoding.
+def Ies.sx_cons(+bs: B.Bytes(), +ie: Pf.Ie, +r2: B.Bytes(), +ro: Ies.Res(), +ies: List<&2, Pf.Ie>, +e: {Pf.Ies.cons(ie, ro) == Done{ies} : Ies.Res()}, +tail: B.Bytes(), w: {Pf.Ie.write(ie, List.append(&2, U32, r2, tail)) == List.append(&2, U32, bs, tail) : B.Bytes()}, ab2: {B.all_bytes(r2) == True{} : Bool}, ih: @ies2: List<&2, Pf.Ie> -> {ro == Done{ies2} : Ies.Res()} -> {B.all_bytes(r2) == True{} : Bool} -> {Pf.Ies.write(ies2, tail) == List.append(&2, U32, r2, tail) : B.Bytes()}) -> {Pf.Ies.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}:
+  match ro:
+    case Fail{err}:
+      Empty.absurd({Pf.Ies.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, err, ies, e))
+    case Done{+ies2}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{ie <> ies2}, Done{ies}, e)
+      %eo : {Pf.Ies.write(_, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}
+      sw = Equal.sym(B.Bytes(), Pf.Ies.write(ies2, tail), List.append(&2, U32, r2, tail), ih(ies2, {==}, ab2))
+      %sw : {Pf.Ie.write(ie, _) == List.append(&2, U32, bs, tail) : B.Bytes()}
+      w
+
+def Ies.sx_next(+f: Nat, +bs: B.Bytes(), +rb: B.Read(Pf.Ie), +erb: {Pf.Ie.read(bs) == rb : B.Read(Pf.Ie)}, +ies: List<&2, Pf.Ie>, +e: {Pf.Ies.next(rb, left => Pf.Ies.read(f, left)) == Done{ies} : Ies.Res()}, +ab: {B.all_bytes(bs) == True{} : Bool}, +tail: B.Bytes(), ih: @left: B.Bytes() -> @ies2: List<&2, Pf.Ie> -> {Pf.Ies.read(f, left) == Done{ies2} : Ies.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {Pf.Ies.write(ies2, tail) == List.append(&2, U32, left, tail) : B.Bytes()}) -> {Pf.Ies.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}:
+  match rb:
+    case Fail{err}:
+      Empty.absurd({Pf.Ies.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, err, ies, e))
+    case Done{(+ie, +r2)}:
+      Ies.sx_cons(bs, ie, r2, Pf.Ies.read(f, r2), ies, e, tail, Ie.sx(bs, ie, r2, erb, ab, tail), Ie.rest_bytes(bs, ie, r2, erb, ab), ies2 => e2 => ab2 => ih(r2, ies2, e2, ab2))
+
+def Ies.sx(+fuel: Nat, +bs: B.Bytes(), +ies: List<&2, Pf.Ie>, +e: {Pf.Ies.read(fuel, bs) == Done{ies} : Ies.Res()}, +ab: {B.all_bytes(bs) == True{} : Bool}, +tail: B.Bytes()) -> {Pf.Ies.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}:
+  match fuel bs:
+    case 0n Nil{}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{[]}, Done{ies}, e)
+      %eo : {Pf.Ies.write(_, tail) == tail : B.Bytes()}
+      {==}
+    case 1n+f Nil{}:
+      eo = Equal.cong(Ies.Res(), List<&2, Pf.Ie>, x => P.Res.value(B.Err, List<&2, Pf.Ie>, x, ies), Done{[]}, Done{ies}, e)
+      %eo : {Pf.Ies.write(_, tail) == tail : B.Bytes()}
+      {==}
+    case 0n b <> r:
+      Empty.absurd({Pf.Ies.write(ies, tail) == b <> List.append(&2, U32, r, tail) : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, Pf.Ie>, B.Invalid{b}, ies, e))
+    case 1n++f +b <> +r:
+      Ies.sx_next(f, b <> r, Pf.Ie.read(b <> r), {==}, ies, e, ab, tail, left => ies2 => e2 => ab2 => Ies.sx(f, left, ies2, e2, ab2, tail))
+
+# F-TEID
+# ------
+# GHSA-3mxx-vq7h-x8ff
+
+def Fteid.Res() -> Data:
+  Result<&2, &2, B.Err, Pf.Fteid>
+
+def Addr.Dv(a: Maybe<&2, B.Bytes()>, n: Nat, flag: Bool) -> Type:
+  {Pf.Addr.valid(a, n) == True{} : Bool} & {Pf.Addr.present(a) == flag : Bool}
+
+def Addr.dv_some(+n: Nat, +bs: B.Bytes(), r: B.Read(B.Bytes()), +ert: {B.take(n, bs) == r : B.Read(B.Bytes())}, +a: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), e: {Pf.Addr.some(r) == Done{(a, rest)} : B.Read(Maybe<&2, B.Bytes()>)}) -> Addr.Dv(a, n, True{}):
+  match r:
+    case Fail{err}:
+      Empty.absurd(Addr.Dv(a, n, True{}), P.Refute.fail_done(B.Err, B.ReadValue(Maybe<&2, B.Bytes()>), err, (a, rest), e))
+    case Done{(+tk, +rest2)}:
+      ev = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), Maybe<&2, B.Bytes()>, x => P.Read.value(Maybe<&2, B.Bytes()>, x, a), Done{(Some{tk}, rest2)}, Done{(a, rest)}, e)
+      %ev : Addr.Dv(_, n, True{})
+      (PB.Take.len_eq(n, bs, tk, rest2, ert), {==})
+
+def Addr.dv(flag: Bool, +n: Nat, +bs: B.Bytes(), +a: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), e: {Pf.Addr.read(flag, n, bs) == Done{(a, rest)} : B.Read(Maybe<&2, B.Bytes()>)}) -> Addr.Dv(a, n, flag):
+  match flag:
+    case False{}:
+      ev = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), Maybe<&2, B.Bytes()>, x => P.Read.value(Maybe<&2, B.Bytes()>, x, a), Done{(None{}, bs)}, Done{(a, rest)}, e)
+      %ev : Addr.Dv(_, n, False{})
+      ({==}, {==})
+    case True{}:
+      Addr.dv_some(n, bs, B.take(n, bs), {==}, a, rest, e)
+
+def Fteid.named(+flags: U32, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}:
+  P.Bool.and_true_l(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.or(Pf.bit(flags, 4), Bool.not(Pf.bit(flags, 8))), P.Bool.and_true_r(U32.is_lt(flags, 16), Bool.and(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.or(Pf.bit(flags, 4), Bool.not(Pf.bit(flags, 8)))), fv))
+
+def Fteid.dv_end(+x: Pf.Fteid, rest: B.Bytes(), +f: Pf.Fteid, e: {Pf.Exact.end(Pf.Fteid, x, rest) == Done{f} : Fteid.Res()}, v: {Pf.Fteid.valid(x) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match rest:
+    case Nil{}:
+      ev = Equal.cong(Fteid.Res(), Pf.Fteid, y => P.Res.value(B.Err, Pf.Fteid, y, f), Done{x}, Done{f}, e)
+      %ev : {Pf.Fteid.valid(_) == True{} : Bool}
+      v
+    case b <> more:
+      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, B.Invalid{b}, f, e))
+
+def Fteid.teid_valid(+flags: U32, +teid: U32, +v4: Maybe<&2, B.Bytes()>, +v6: Maybe<&2, B.Bytes()>, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}, h4: Addr.Dv(v4, 4n, Pf.bit(flags, 1)), h6: Addr.Dv(v6, 16n, Pf.bit(flags, 2))) -> {Pf.Fteid.valid(Pf.Teid{teid, v4, v6}) == True{} : Bool}:
+  (ok4, p4) = h4
+  (ok6, p6) = h6
+  sp4 = Equal.sym(Bool, Pf.Addr.present(v4), Pf.bit(flags, 1), p4)
+  %sp4 : {Bool.and(Bool.or(_, Pf.Addr.present(v6)), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n))) == True{} : Bool}
+  sp6 = Equal.sym(Bool, Pf.Addr.present(v6), Pf.bit(flags, 2), p6)
+  %sp6 : {Bool.and(Bool.or(Pf.bit(flags, 1), _), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n))) == True{} : Bool}
+  P.Bool.and_intro(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n)), Fteid.named(flags, fv), P.Bool.and_intro(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n), ok4, ok6))
+
+def Fteid.dv_v6(+flags: U32, +teid: U32, +v4: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 2), 16n, rest) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fteid, e: {Pf.Fteid.of_v6(teid, v4, r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}, h4: Addr.Dv(v4, 4n, Pf.bit(flags, 1))) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
+    case Done{(+v6, +rest2)}:
+      Fteid.dv_end(Pf.Teid{teid, v4, v6}, rest2, f, e, Fteid.teid_valid(flags, teid, v4, v6, fv, h4, Addr.dv(Pf.bit(flags, 2), 16n, rest, v6, rest2, er)))
+
+def Fteid.dv_v4(+flags: U32, +teid: U32, +rest: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 1), 4n, rest) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fteid, e: {Pf.Fteid.of_v4(flags, teid, r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
+    case Done{(+v4, +rest2)}:
+      Fteid.dv_v6(flags, teid, v4, rest2, Pf.Addr.read(Pf.bit(flags, 2), 16n, rest2), {==}, f, e, fv, Addr.dv(Pf.bit(flags, 1), 4n, rest, v4, rest2, er))
+
+def Fteid.dv_teid(+flags: U32, r: B.Read(U32), +f: Pf.Fteid, e: {Pf.Fteid.of_teid(flags, r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
+    case Done{(+teid, +rest)}:
+      Fteid.dv_v4(flags, teid, rest, Pf.Addr.read(Pf.bit(flags, 1), 4n, rest), {==}, f, e, fv)
+
+def Fteid.dv_chid(+flags: U32, r: B.Read(U32), +f: Pf.Fteid, e: {Pf.Fteid.of_chid(Pf.bit(flags, 1), Pf.bit(flags, 2), r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
+    case Done{(+chid, rest)}:
+      Fteid.dv_end(Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), Some{chid}}, rest, f, e, Fteid.named(flags, fv))
+
+def Fteid.dv_choose(+flags: U32, rest: B.Bytes(), chid: Bool, +f: Pf.Fteid, e: {Pf.Fteid.choose(flags, rest, chid) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match chid:
+    case True{}:
+      Fteid.dv_chid(flags, B.u8(rest), f, e, fv)
+    case False{}:
+      Fteid.dv_end(Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), None{}}, rest, f, e, Fteid.named(flags, fv))
+
+def Fteid.dv_form(+flags: U32, rest: B.Bytes(), ch: Bool, +f: Pf.Fteid, e: {Pf.Fteid.form(flags, rest, ch) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match ch:
+    case True{}:
+      Fteid.dv_choose(flags, rest, Pf.bit(flags, 8), f, e, fv)
+    case False{}:
+      Fteid.dv_teid(flags, B.u32(rest), f, e, fv)
+
+def Fteid.dv_ok(+flags: U32, rest: B.Bytes(), ok: Bool, eok: {Pf.Fteid.flags_valid(flags) == ok : Bool}, +f: Pf.Fteid, e: {Pf.Fteid.flags_ok(flags, rest, ok) == Done{f} : Fteid.Res()}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+  match ok:
+    case False{}:
+      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, B.Invalid{flags}, f, e))
+    case True{}:
+      Fteid.dv_form(flags, rest, Pf.bit(flags, 4), f, e, eok)
+
+def L.pfcp.fteid.decode_valid(body, f, e):
+  match body:
+    case Nil{}:
+      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
+    case +flags <> rest:
+      Fteid.dv_ok(flags, rest, Pf.Fteid.flags_valid(flags), {==}, f, e)
