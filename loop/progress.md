@@ -16,7 +16,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 10 | nas-5gmm | done | 02, 03 | a6e0c85: generic 5GMM codec (19 types), typed IE views incl. 5GS mobile identity; 110 checks on the capture; 10 laws proven (mm roundtrip/decode_valid/suffix, mobile identity ×3, IMEISV, payload container ×2) |
 | 11 | nas-5gsm | done | 10 | e46170b: 5GSM codec (9 types) sharing the 5GMM optional-IE machinery; typed QoS rules, packet filters, flow descriptions, Session-AMBR, PDU address, ePCO; 43 checks; 8 laws proven (sm ×3, qos_rules.suffix, mask_contiguous, session_ambr, epco ×2) |
 | 12 | aper | done | 02 | d10b54a: X.691 aligned PER primitives (bits, alignment, constrained/indefinite/small numbers, lengths, sizes, octets, bit/octet/printable strings, open types, enumerations) over a bit-list cursor; 55 checks incl. the IE walk over all 14 captured NGAP PDUs; 36 laws proven; padding_zero kept strict |
-| 13 | ngap | todo | 03, 12 | |
+| 13 | ngap | in-progress | 03, 12 | |
 | 14 | pfcp | todo | 02, 03 | |
 | 15 | frames | todo | 02 | |
 | 16 | state-ng-setup | todo | 13, 15 | |
