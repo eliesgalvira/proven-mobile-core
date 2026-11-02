@@ -17,7 +17,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 11 | nas-5gsm | done | 10 | e46170b: 5GSM codec (9 types) sharing the 5GMM optional-IE machinery; typed QoS rules, packet filters, flow descriptions, Session-AMBR, PDU address, ePCO; 43 checks; 8 laws proven (sm ×3, qos_rules.suffix, mask_contiguous, session_ambr, epco ×2) |
 | 12 | aper | done | 02 | d10b54a: X.691 aligned PER primitives (bits, alignment, constrained/indefinite/small numbers, lengths, sizes, octets, bit/octet/printable strings, open types, enumerations) over a bit-list cursor; 55 checks incl. the IE walk over all 14 captured NGAP PDUs; 36 laws proven; padding_zero kept strict |
 | 13 | ngap | done | 03, 12 | 1358d02: generator over TS 38.413 V17.15.0 (pycrate 0.8.1) emitting 140 types with read/write/after/valid, per-message views with criticality handling, and 420 laws (roundtrip, decode_valid, suffix) with their proofs; frame codec and 10 hand-written laws; pycrate differential oracle agrees on all 14 captured PDUs; golden test; upstream draft 04 |
-| 14 | pfcp | todo | 02, 03 | |
+| 14 | pfcp | in-progress | 02, 03 | |
 | 15 | frames | todo | 02 | |
 | 16 | state-ng-setup | todo | 13, 15 | |
 | 17 | registration-auth | todo | 08, 09, 10, 16 | |
