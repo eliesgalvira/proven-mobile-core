@@ -100,7 +100,8 @@ impl Assoc {
     }
 
     /// One whole message with its stream id; `None` once the peer has closed.
-    pub fn recv(&self) -> io::Result<Option<(u16, Vec<u8>)>> {
+    /// A message longer than `max` bytes is an error, so the caller drops the association.
+    pub fn recv(&self, max: usize) -> io::Result<Option<(u16, Vec<u8>)>> {
         let mut message = Vec::new();
         let mut stream = 0u16;
         let mut buf = vec![0u8; CHUNK];
@@ -123,6 +124,9 @@ impl Assoc {
                 stream = sid;
             }
             message.extend_from_slice(&buf[..n]);
+            if message.len() > max {
+                return Err(io::Error::new(io::ErrorKind::InvalidData, format!("SCTP message over {max} bytes")));
+            }
             if hdr.msg_flags & libc::MSG_EOR != 0 {
                 return Ok(Some((stream, message)));
             }
@@ -192,10 +196,12 @@ mod tests {
         let client = Assoc::connect(Ipv4Addr::LOCALHOST, port).unwrap();
         let server = listener.accept().unwrap();
         client.send(1, &[0, 21, 0, 61]).unwrap();
-        assert_eq!(server.recv().unwrap(), Some((1, vec![0, 21, 0, 61])));
+        assert_eq!(server.recv(4).unwrap(), Some((1, vec![0, 21, 0, 61])));
         server.send(0, &[32, 21]).unwrap();
-        assert_eq!(client.recv().unwrap(), Some((0, vec![32, 21])));
+        assert_eq!(client.recv(4).unwrap(), Some((0, vec![32, 21])));
+        client.send(0, &[1, 2, 3, 4, 5]).unwrap();
+        assert_eq!(server.recv(4).unwrap_err().kind(), io::ErrorKind::InvalidData);
         server.shutdown();
-        assert_eq!(client.recv().unwrap(), None);
+        assert_eq!(client.recv(4).unwrap(), None);
     }
 }

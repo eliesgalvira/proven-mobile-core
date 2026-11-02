@@ -6,6 +6,8 @@ use std::fmt;
 use std::io::{self, Read, Write};
 
 pub const MAX_BODY: usize = 262_144;
+/// The largest NGAP message that fits an NgapData event: the body less its kind, entropy, assoc, stream and length.
+pub const MAX_NGAP: usize = MAX_BODY - 1 - 32 - 4 - 2 - 4;
 pub type Entropy = [u8; 32];
 
 #[derive(Debug, Clone, PartialEq, Eq)]

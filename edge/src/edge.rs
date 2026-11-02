@@ -11,7 +11,7 @@ use std::thread;
 use std::time::Instant;
 
 use crate::config::{Config, N2_PORT, N4_PORT};
-use crate::frame::{Action, Entropy, Event};
+use crate::frame::{Action, Entropy, Event, MAX_NGAP};
 use crate::kernel::{self, Link};
 use crate::sctp;
 use crate::timers::Timers;
@@ -164,7 +164,7 @@ pub fn spawn_n2(listener: sctp::Listener, tx: Sender<Msg>) {
 
 fn read_assoc(id: u32, assoc: Arc<sctp::Assoc>, tx: Sender<Msg>) {
     loop {
-        match assoc.recv() {
+        match assoc.recv(MAX_NGAP) {
             Ok(Some((stream, bytes))) => {
                 if tx.send(Msg::Data(id, stream, bytes)).is_err() {
                     return;
