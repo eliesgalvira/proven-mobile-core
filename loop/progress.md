@@ -24,6 +24,6 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 18 | registration-complete | done | 17 | b869175: NAS security mode (SMC byte for byte, algorithm choice, SM Complete with RINMR), Initial Context Setup with the captured KgNB, Registration Accept with 5G-GUTI from entropy, Complete, deregistration, UE context release, identity takeover; UE procedures as transactions, UE table as one sieve; 32 checks; 5 laws proven |
 | 19 | pdu-session | done | 11, 14, 18 | 3df1030: N4 association (T1/N1, pause, heartbeats), PDU Session Establishment over UL NAS Transport with validation and allocation, PFCP Session Establishment/Modification/Deletion to eUPF, PDU Session Resource Setup with the captured transfer byte for byte, Accept with default rule and DNS, failure paths, modification rejected, sessions as identity plus variable part with one sieve; NGAP generator extended with the SMF's IEs; 22 checks; 7 laws proven |
 | 20 | kernel-main | done | 15, 19 | 7481566: kernel/main.bend listens on 127.0.0.1, takes one edge and answers every event frame with one Actions frame, echoing Log actions to stderr; protocol errors exit 1; scripts/frame-client.py drives it with Config, NgapAssocUp and the captured NG Setup Request and checks the captured NG Setup Response |
-| 21 | edge | todo | 15 | |
+| 21 | edge | in-progress | 15 | |
 | 22 | e2e | todo | 20, 21 | |
 | 23 | acceptance | todo | 01–22 | |
