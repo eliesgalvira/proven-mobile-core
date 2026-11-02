@@ -131,20 +131,18 @@ def Word.of_lsb(m: Nat, bs: Bits()) -> Word(m):
           WCon{b, Word.of_lsb(q, rest)}
 
 # Every bit from position n up is zero.
-def Word.high_zero(n: Nat, m: Nat, w: Word(m)) -> Bool:
-  match n m:
-    case 0n 0n:
+def Word.high_zero(m: Nat, w: Word(m), n: Nat) -> Bool:
+  match m:
+    case 0n:
       True{}
-    case 1n+p 0n:
-      True{}
-    case 0n 1n+q:
+    case 1n+q:
       match w:
         case WCon{b, t}:
-          Bool.and(Bool.not(b), Word.high_zero(0n, q, t))
-    case 1n+p 1n+q:
-      match w:
-        case WCon{b, t}:
-          Word.high_zero(p, q, t)
+          match n:
+            case 0n:
+              Bool.and(Bool.not(b), Word.high_zero(q, t, 0n))
+            case 1n+p:
+              Word.high_zero(q, t, p)
 
 # n bits in wire order (most significant first).
 def U32.to_bits(n: Nat, v: U32) -> Bits():
@@ -158,7 +156,7 @@ def U32.of_bits(bs: Bits()) -> U32:
 def U32.fits(n: Nat, v: U32) -> Bool:
   match v:
     case U32{w}:
-      Word.high_zero(n, 32n, w)
+      Word.high_zero(32n, w, n)
 
 def Nat.is_odd(n: Nat) -> Bool:
   match n:
@@ -260,7 +258,7 @@ def AInt.after(n: Nat, rem: Nat) -> Nat:
 
 # Normally small non-negative whole number (§11.6), values below 64 only.
 def Small.valid(v: U32) -> Bool:
-  U32.fits(6n, v)
+  Int.valid(6n, 63, v)
 
 def Small.form(r: Rd(Bool)) -> Rd(U32):
   match r:

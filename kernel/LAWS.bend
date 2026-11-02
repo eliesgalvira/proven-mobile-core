@@ -418,18 +418,18 @@ law nas.epco.encode_bounded:
 law aper.bit.roundtrip:
   for b: Bool
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   {Ap.Bit.read(Ap.Cur{rem, Ap.Bit.write(b, rem, rest)}) == Done{(b, Ap.Cur{Ap.Bit.after(rem), rest})} : Ap.Rd(Bool)}
 
 law aper.bits.roundtrip:
   for +bs: Ap.Bits()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   {Ap.Bits.read(List.length(&2, Bool, bs), Ap.Cur{rem, Ap.Bits.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Bits.after(List.length(&2, Bool, bs), rem), rest})} : Ap.Rd(Ap.Bits())}
 
 law aper.align.roundtrip:
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   {Ap.Align.read(Ap.Cur{rem, Ap.Align.write(rem, rest)}) == Done{(Unit{}, Ap.Cur{0n, rest})} : Ap.Rd(Unit)}
 
 # §11.1.4: alignment accepts nothing but the zero padding the writer makes.
@@ -446,7 +446,7 @@ law aper.int.roundtrip:
   for +diff: U32
   for +x: U32
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Int.valid(n, diff, x) == True{} : Bool}
   {Ap.Int.read(n, diff, Ap.Cur{rem, Ap.Int.write(n, x, rem, rest)}) == Done{(x, Ap.Cur{Ap.Int.after(n, rem), rest})} : Ap.Rd(U32)}
 
@@ -464,7 +464,7 @@ law aper.aint.roundtrip:
   for +diff: U32
   for +x: U32
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Int.valid(n, diff, x) == True{} : Bool}
   {Ap.AInt.read(n, diff, Ap.Cur{rem, Ap.AInt.write(n, x, rem, rest)}) == Done{(x, Ap.Cur{Ap.AInt.after(n, rem), rest})} : Ap.Rd(U32)}
 
@@ -483,7 +483,7 @@ law aper.big.roundtrip:
   for +diff: Nat
   for +bs: B.Bytes()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Big.valid(diff, bs) == True{} : Bool}
   for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
   {Ap.Big.read(n, diff, Ap.Cur{rem, Ap.Big.write(n, bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Big.after(rem), rest})} : Ap.Rd(B.Bytes())}
@@ -500,7 +500,7 @@ law aper.big.decode_valid:
 law aper.small.roundtrip:
   for +v: U32
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +ok: {Ap.Small.valid(v) == True{} : Bool}
   {Ap.Small.read(Ap.Cur{rem, Ap.Small.write(v, rem, rest)}) == Done{(v, Ap.Cur{Ap.Small.after(rem), rest})} : Ap.Rd(U32)}
 
@@ -514,7 +514,7 @@ law aper.small.decode_valid:
 law aper.len.roundtrip:
   for +n: Nat
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Len.valid(n) == True{} : Bool}
   {Ap.Len.read(Ap.Cur{rem, Ap.Len.write(n, rem, rest)}) == Done{(n, Ap.Cur{Ap.Len.after(rem), rest})} : Ap.Rd(Nat)}
 
@@ -535,7 +535,7 @@ law aper.size.roundtrip:
   for +diff: Nat
   for +k: Nat
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Size.valid(lo, diff, k) == True{} : Bool}
   for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
   {Ap.Size.read(al, n, lo, diff, Ap.Cur{rem, Ap.Size.write(al, n, lo, k, rem, rest)}) == Done{(k, Ap.Cur{Ap.Size.after(al, n, rem), rest})} : Ap.Rd(Nat)}
@@ -554,7 +554,7 @@ law aper.size.decode_valid:
 law aper.octets.roundtrip:
   for +bs: B.Bytes()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +ab: {B.all_bytes(bs) == True{} : Bool}
   {Ap.Octets.read(List.length(&2, U32, bs), Ap.Cur{rem, Ap.Octets.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Octets.after(rem), rest})} : Ap.Rd(B.Bytes())}
 
@@ -574,14 +574,14 @@ law aper.pack.roundtrip:
 law aper.aoctets.roundtrip:
   for +bs: B.Bytes()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +ab: {B.all_bytes(bs) == True{} : Bool}
   {Ap.AOctets.read(List.length(&2, U32, bs), Ap.Cur{rem, Ap.AOctets.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.AOctets.after(rem), rest})} : Ap.Rd(B.Bytes())}
 
 law aper.abits.roundtrip:
   for +bs: Ap.Bits()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   {Ap.ABits.read(List.length(&2, Bool, bs), Ap.Cur{rem, Ap.ABits.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.ABits.after(List.length(&2, Bool, bs), rem), rest})} : Ap.Rd(Ap.Bits())}
 
 law aper.octstr.roundtrip:
@@ -591,7 +591,7 @@ law aper.octstr.roundtrip:
   for +diff: Nat
   for +bs: B.Bytes()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.OctStr.valid(lo, diff, bs) == True{} : Bool}
   for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
   {Ap.OctStr.read(al, n, lo, diff, Ap.Cur{rem, Ap.OctStr.write(al, n, lo, bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.OctStr.after(rem), rest})} : Ap.Rd(B.Bytes())}
@@ -614,7 +614,7 @@ law aper.bitstr.roundtrip:
   for +diff: Nat
   for +bs: Ap.Bits()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.BitStr.valid(lo, diff, bs) == True{} : Bool}
   for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
   {Ap.BitStr.read(al, n, lo, diff, Ap.Cur{rem, Ap.BitStr.write(al, n, lo, bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.BitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
@@ -633,7 +633,7 @@ law aper.bitstr.decode_valid:
 law aper.ubitstr.roundtrip:
   for +bs: Ap.Bits()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.UBitStr.valid(bs) == True{} : Bool}
   {Ap.UBitStr.read(Ap.Cur{rem, Ap.UBitStr.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
 
@@ -647,7 +647,7 @@ law aper.ubitstr.decode_valid:
 law aper.open.roundtrip:
   for +bs: B.Bytes()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Open.valid(bs) == True{} : Bool}
   {Ap.Open.read(Ap.Cur{rem, Ap.Open.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.Open.after(rem), rest})} : Ap.Rd(B.Bytes())}
 
@@ -675,7 +675,7 @@ law aper.str.roundtrip:
   for +diff: Nat
   for +s: B.Bytes()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Str.valid(lo, diff, s) == True{} : Bool}
   for +w: {Nat.is_lt(diff, Ap.Nat.pow2(n)) == True{} : Bool}
   {Ap.Str.read(al, n, lo, diff, Ap.Cur{rem, Ap.Str.write(al, n, lo, s, rem, rest)}) == Done{(s, Ap.Cur{Ap.Str.after(rem), rest})} : Ap.Rd(B.Bytes())}
@@ -694,7 +694,7 @@ law aper.str.decode_valid:
 law aper.ustr.roundtrip:
   for +s: B.Bytes()
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.UStr.valid(s) == True{} : Bool}
   {Ap.UStr.read(Ap.Cur{rem, Ap.UStr.write(s, rem, rest)}) == Done{(s, Ap.Cur{Ap.UStr.after(rem), rest})} : Ap.Rd(B.Bytes())}
 
@@ -711,7 +711,7 @@ law aper.enum.roundtrip:
   for +ext: Bool
   for +e: Ap.Enum
   for +rem: Nat
-  for rest: Ap.Bits()
+  for +rest: Ap.Bits()
   for +v: {Ap.Enum.valid(n, diff, ext, e) == True{} : Bool}
   {Ap.Enum.read(n, diff, ext, Ap.Cur{rem, Ap.Enum.write(n, ext, e, rem, rest)}) == Done{(e, Ap.Cur{Ap.Enum.after(n, ext, e, rem), rest})} : Ap.Rd(Ap.Enum)}
 
