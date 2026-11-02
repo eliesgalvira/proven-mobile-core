@@ -300,9 +300,9 @@ def Owner.request(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, 
   sev = Equal.sym(Result<&2, &2, B.Err, V.UEContextReleaseRequest.View>, V.UEContextReleaseRequest.view(ies), Done{V.UEContextReleaseRequest.View{amf, ran, pdus, cause}}, ev)
   %sev : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_request_of_view(st, assoc, _))) == st : S.State}
   seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)), Some{ue}, eu)
-  %seu : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_request_ue(st, assoc, N.Ngap.of_big(amf), cause, Gmm.Gmm.owner_of(_, assoc, ran)))) == st : S.State}
+  %seu : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_request_ue(st, assoc, N.Ngap.of_big(amf), cause, N.Owner.of(_, assoc, ran)))) == st : S.State}
   sea = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), assoc), False{}, ea)
-  %sea : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_request_ue(st, assoc, N.Ngap.of_big(amf), cause, Gmm.Gmm.owner_if(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran)))))) == st : S.State}
+  %sea : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_request_ue(st, assoc, N.Ngap.of_big(amf), cause, N.Owner.check(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran)))))) == st : S.State}
   {==}
 
 def Owner.complete(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, len: U32, +bytes: B.Bytes(), crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), uli: Maybe<&2, G.UserLocationInformation>, rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>, diag: Maybe<&2, G.CriticalityDiagnostics>, +ue: S.Ue, eu: {Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, ea: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}, ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, ev: {V.UEContextReleaseComplete.view(ies) == Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
@@ -313,9 +313,9 @@ def Owner.complete(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32,
   sev = Equal.sym(Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>, V.UEContextReleaseComplete.view(ies), Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}}, ev)
   %sev : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_of_view(st, assoc, _))) == st : S.State}
   seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, N.Ngap.of_big(amf), S.State.ues(st)), Some{ue}, eu)
-  %seu : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), Gmm.Gmm.owner_of(_, assoc, ran)))) == st : S.State}
+  %seu : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), N.Owner.of(_, assoc, ran)))) == st : S.State}
   sea = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), assoc), False{}, ea)
-  %sea : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), Gmm.Gmm.owner_if(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran)))))) == st : S.State}
+  %sea : {K.Kernel.state(N.render_out(st, Gmm.Gmm.release_complete_ue(st, assoc, N.Ngap.of_big(amf), N.Owner.check(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran)))))) == st : S.State}
   {==}
 
 def L.amf.ue_context_release.owner_only(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, pdus, cause, uli, rel, diag, ue, eu, ea, ei):

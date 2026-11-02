@@ -85,13 +85,6 @@ def Gmm.caps(ue: S.Ue) -> B.Bytes():
 def Gmm.dl(key: U32, +ue: S.Ue, nas: B.Bytes()) -> N.Act:
   N.DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), nas}
 
-def Gmm.cancel(g: Maybe<&2, S.Guard>) -> List<&2, N.Act>:
-  match g:
-    case None{}:
-      []
-    case Some{guard}:
-      [N.TimerCancel{S.Guard.timer(guard)}]
-
 # Forgetting contexts
 # -------------------
 
@@ -117,7 +110,7 @@ def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
 
 # UE Context Release Command; the context waits, releasing, for the gNB.
 def Gmm.release(st: S.State, +key: U32, +ue: S.Ue, cause: G.Cause) -> N.GOut():
-  N.Out.prepend(N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.also(Gmm.place(st, key, S.Ue.with_phase(ue, S.Releasing{})), Gmm.cancel(S.Ue.guard(ue))))
+  N.Out.prepend(N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.also(Gmm.place(st, key, S.Ue.with_phase(ue, S.Releasing{})), N.Guard.cancel(S.Ue.guard(ue))))
 
 def Gmm.reject(st: S.State, +key: U32, +ue: S.Ue, cause: U32) -> N.GOut():
   N.Out.prepend(Gmm.dl(key, ue, Gmm.registration_reject(cause)), Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())))
@@ -158,7 +151,7 @@ def Gmm.challenge(+st: S.State, +key: U32, +ue: S.Ue, +sub: Au.Subscriber, snn: 
   +av = Au.Av.make(sub2, snn, List.take(&2, U32, entropy, 16n))
   +nas = Gmm.auth_request(0, av)
   +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, Au.Subscriber.supi(sub2)), S.Authenticating{S.Guard{timer, 0}, av, resynced}, nas)
-  N.Out.join(Gmm.place(st, key, ue2), (S.Both{S.Subs{Au.Subscribers.update(sub2, S.State.subs(st))}, S.BumpTimer{}}, List.append(&2, N.Act, Gmm.cancel(S.Ue.guard(ue)), [Gmm.dl(key, ue2, nas), N.TimerStart{timer, Gmm.guard_ms()}])))
+  N.Out.join(Gmm.place(st, key, ue2), (S.Both{S.Subs{Au.Subscribers.update(sub2, S.State.subs(st))}, S.BumpTimer{}}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.dl(key, ue2, nas), N.TimerStart{timer, Gmm.guard_ms()}])))
 
 def Gmm.by_sub(+st: S.State, key: U32, +ue: S.Ue, cfg: S.Cfg, m: Maybe<&2, Au.Subscriber>, entropy: B.Bytes()) -> N.GOut():
   match m:
@@ -274,7 +267,7 @@ def Gmm.secure(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ea: Sec.N
   +ctx : Sec.Nas.Ctx = Sec.Ctx{Sec.Keys{Kd.kdf.k_nas_int(k_amf, Sec.Nas.Ia.id(ia)), Kd.kdf.k_nas_enc(k_amf, Sec.Nas.Ea.id(ea)), ea, ia, 1}, Sec.Nas.Count.zero(), None{}}
   +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.IntegrityNew{}, Gmm.security_mode_command(U32.or(U32.shln(Sec.Nas.Ea.id(ea), 4n), Sec.Nas.Ia.id(ia)), S.Ue.ngksi(ue), caps))
   +ue2 = S.Ue.with_dl(ue, S.SecurityMode{S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p))
-  N.Out.join(Gmm.place(st, key, ue2), (S.BumpTimer{}, List.append(&2, N.Act, Gmm.cancel(S.Ue.guard(ue)), [Gmm.dl(key, ue2, Sec.Nas.Protected.msg(p)), N.TimerStart{timer, Gmm.guard_ms()}])))
+  N.Out.join(Gmm.place(st, key, ue2), (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.dl(key, ue2, Sec.Nas.Protected.msg(p)), N.TimerStart{timer, Gmm.guard_ms()}])))
 
 # No algorithm in common is a UE security capabilities mismatch (cause #23).
 def Gmm.algorithms(st: S.State, key: U32, ue: S.Ue, k_amf: B.Bytes(), caps: B.Bytes(), mea: Maybe<&2, Sec.Nas.Ea>, mia: Maybe<&2, Sec.Nas.Ia>) -> N.GOut():
@@ -456,23 +449,8 @@ def Gmm.mm(st: S.State, key: U32, +ue: S.Ue, entropy: B.Bytes(), nas: B.Bytes())
 # UE-associated NGAP
 # ------------------
 
-# The UE under that AMF-UE-NGAP-ID, if the association owns it under that RAN-UE-NGAP-ID.
-def Gmm.owner_if(ue: S.Ue, ok: Bool) -> Maybe<&2, S.Ue>:
-  match ok:
-    case True{}:
-      Some{ue}
-    case False{}:
-      None{}
-
-def Gmm.owner_of(m: Maybe<&2, S.Ue>, assoc: U32, ran: B.Bytes()) -> Maybe<&2, S.Ue>:
-  match m:
-    case None{}:
-      None{}
-    case Some{+ue}:
-      Gmm.owner_if(ue, Bool.and(U32.is_eq(S.Ue.assoc(ue), assoc), B.bytes_eq(S.Ue.ran_id(ue), ran)))
-
 def Gmm.owner(st: S.State, assoc: U32, key: U32, ran: B.Bytes()) -> Maybe<&2, S.Ue>:
-  Gmm.owner_of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran)
+  N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran)
 
 def Gmm.uplink_ue(st: S.State, assoc: U32, key: U32, nas: B.Bytes(), entropy: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:

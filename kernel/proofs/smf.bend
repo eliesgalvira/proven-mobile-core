@@ -315,7 +315,7 @@ def L.smf.epco.response_bounded(cfg, wanted):
 # Aborting a session deletes its row whatever the UE lookup finds, since the
 # UE's own transaction touches only the UE table.
 
-def Abort.ctx(+skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32, key: U32, ue: S.Ue, mctx: Maybe<&2, Sec.Nas.Ctx>, st: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, N.Out.join(Gsm.Gsm.to_ue_ctx(key, ue, S.Session.psi(s), Gsm.Gsm.reject(S.Session.psi(s), pti, cause), mctx), N.Out.also(Gsm.Gsm.forget([(skey, s)], seq), Gsm.Gsm.cancel(S.SPhase.guard(S.Session.phase(s))))))))) == None{} : Maybe<&2, S.Session>}:
+def Abort.ctx(+skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32, key: U32, ue: S.Ue, mctx: Maybe<&2, Sec.Nas.Ctx>, st: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(N.render_out(st, N.Out.join(Gsm.Gsm.to_ue_ctx(key, ue, S.Session.psi(s), Gsm.Gsm.reject(S.Session.psi(s), pti, cause), mctx), N.Out.also(Gsm.Gsm.forget([(skey, s)], seq), N.Guard.cancel(S.SPhase.guard(S.Session.phase(s))))))))) == None{} : Maybe<&2, S.Session>}:
   match mctx:
     case None{}:
       match st:

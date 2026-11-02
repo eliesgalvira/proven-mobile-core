@@ -295,6 +295,28 @@ def Out.join(a: GOut(), b: GOut()) -> GOut():
 def Out.warn(why: String) -> GOut():
   (S.Keep{}, [Note{F.Warn{}, why}])
 
+def Guard.cancel(g: Maybe<&2, S.Guard>) -> List<&2, Act>:
+  match g:
+    case None{}:
+      []
+    case Some{guard}:
+      [TimerCancel{S.Guard.timer(guard)}]
+
+# The UE under an AMF-UE-NGAP-ID, if the association owns it under that RAN-UE-NGAP-ID.
+def Owner.check(ue: S.Ue, ok: Bool) -> Maybe<&2, S.Ue>:
+  match ok:
+    case True{}:
+      Some{ue}
+    case False{}:
+      None{}
+
+def Owner.of(m: Maybe<&2, S.Ue>, assoc: U32, ran: B.Bytes()) -> Maybe<&2, S.Ue>:
+  match m:
+    case None{}:
+      None{}
+    case Some{+ue}:
+      Owner.check(ue, Bool.and(U32.is_eq(S.Ue.assoc(ue), assoc), B.bytes_eq(S.Ue.ran_id(ue), ran)))
+
 # A verified NAS message not acted on still moves the uplink COUNT on, so it
 # cannot be replayed; the context's phase keeps its shape.
 def Out.verified(key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, why: String) -> GOut():

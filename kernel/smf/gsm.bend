@@ -193,16 +193,9 @@ def Gsm.to_ue_m(key: U32, psi: U32, sm: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut
 def Gsm.to_ue(st: S.State, +key: U32, psi: U32, sm: B.Bytes()) -> N.GOut():
   Gsm.to_ue_m(key, psi, sm, Tb.Table.get(S.Ue, key, S.State.ues(st)))
 
-def Gsm.cancel(g: Maybe<&2, S.Guard>) -> List<&2, N.Act>:
-  match g:
-    case None{}:
-      []
-    case Some{guard}:
-      [N.TimerCancel{S.Guard.timer(guard)}]
-
 # A session given up: its UE told why, eUPF told, the row and guard gone.
 def Gsm.abort_m(+skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), Gsm.reject(S.Session.psi(s), pti, cause), m), N.Out.also(Gsm.forget([(skey, s)], seq), Gsm.cancel(S.SPhase.guard(S.Session.phase(s)))))
+  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), Gsm.reject(S.Session.psi(s), pti, cause), m), N.Out.also(Gsm.forget([(skey, s)], seq), N.Guard.cancel(S.SPhase.guard(S.Session.phase(s)))))
 
 def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32) -> N.GOut():
   Gsm.abort_m(skey, s, pti, cause, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
@@ -556,25 +549,11 @@ def Gsm.setup_response_ue(st: S.State, assoc: U32, key: U32, oks: G.PDUSessionRe
     case Some{ue}:
       Gsm.results(st, key, oks, fails)
 
-def Gsm.owner_if(ue: S.Ue, ok: Bool) -> Maybe<&2, S.Ue>:
-  match ok:
-    case True{}:
-      Some{ue}
-    case False{}:
-      None{}
-
-def Gsm.owner_of(m: Maybe<&2, S.Ue>, assoc: U32, ran: B.Bytes()) -> Maybe<&2, S.Ue>:
-  match m:
-    case None{}:
-      None{}
-    case Some{+ue}:
-      Gsm.owner_if(ue, Bool.and(U32.is_eq(S.Ue.assoc(ue), assoc), B.bytes_eq(S.Ue.ran_id(ue), ran)))
-
 def Gsm.setup_response(+st: S.State, +assoc: U32, v: V.PDUSessionResourceSetupResponse.View) -> N.GOut():
   match v:
     case V.PDUSessionResourceSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, oks, fails, diagnostics, uli}:
       +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Gsm.setup_response_ue(st, assoc, key, Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), Gsm.owner_of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran_ue_ngap_id))
+      Gsm.setup_response_ue(st, assoc, key, Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran_ue_ngap_id))
 
 def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err, V.PDUSessionResourceSetupResponse.View>) -> N.GOut():
   match r:
