@@ -5,6 +5,7 @@ import ../ngap/frame.bend as Fr
 import ../LAWS.bend as L
 import ./lib.bend as P
 import ./aper.bend as PA
+import ./canon.bend as PC
 
 # Writers prepend, so appending after the rest is appending after the value.
 def App.align(rem: Nat, +x: Ap.Bits(), +t: Ap.Bits()) -> {List.append(&2, Bool, Ap.Align.write(rem, x), t) == Ap.Align.write(rem, List.append(&2, Bool, x, t)) : Ap.Bits()}:
@@ -270,3 +271,115 @@ def Pdu.dv(rb: Ap.Rd(Bool), +p: Fr.Pdu, +e: {Fr.Pdu.r_ext(rb) == Done{p} : Resul
 
 def L.ngap.pdu.decode_valid(bs, p, e):
   Pdu.dv(Ap.Bit.read(Ap.Cur{0n, Ap.unpack(bs)}), p, e)
+
+# Canonical decoding (the suffix laws of the generated types rest on these)
+# -----------------------------------------------------------------------
+
+def Ie.sx.go(+rem: Nat, +bits: Ap.Bits(), +id: U32, +r1: Nat, +b1: Ap.Bits(), +crit: U32, +r2: Nat, +b2: Ap.Bits(), +value: B.Bytes(), +r3: Nat, +b3: Ap.Bits(), +ie: Fr.Ie, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(Fr.Ie{id, crit, value}, Ap.Cur{r3, b3})} == Done{(ie, Ap.Cur{rem2, bits2})} : Ap.Rd(Fr.Ie)}, sa: PC.Canon(bits, Ap.AInt.write(16n, id, rem, b1), r1, Ap.AInt.after(16n, rem)), sc: PC.Canon(b1, Ap.Int.write(2n, crit, r1, b2), r2, Ap.Int.after(2n, r1)), so: PC.Canon(b2, Ap.Open.write(value, r2, b3), r3, 0n)) -> PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)):
+  (a1, +a2) = sa
+  (c1e, c2e) = sc
+  (o1, o2) = so
+  ev = Equal.cong(Ap.Rd(Fr.Ie), Fr.Ie, x => PA.Rd.value(Fr.Ie, x, ie), Done{(Fr.Ie{id, crit, value}, Ap.Cur{r3, b3})}, Done{(ie, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(Fr.Ie), Ap.Cur, x => PA.Rd.cur(Fr.Ie, x, Ap.Cur{rem2, bits2}), Done{(Fr.Ie{id, crit, value}, Ap.Cur{r3, b3})}, Done{(ie, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PC.Canon(bits, Fr.Ie.write(_, rem, bits2), rem2, Fr.Ie.after(rem))
+  ((%a2 : {bits == Ap.AInt.write(16n, id, rem, Ap.Int.write(2n, crit, _, Ap.Open.write(value, Ap.Rem.add(2n, _), bits2))) : Ap.Bits()}; (%c2e : {bits == Ap.AInt.write(16n, id, rem, Ap.Int.write(2n, crit, r1, Ap.Open.write(value, _, bits2))) : Ap.Bits()}; (%eb : {bits == Ap.AInt.write(16n, id, rem, Ap.Int.write(2n, crit, r1, Ap.Open.write(value, r2, _))) : Ap.Bits()}; (%o1 : {bits == Ap.AInt.write(16n, id, rem, Ap.Int.write(2n, crit, r1, _)) : Ap.Bits()}; (%c1e : {bits == Ap.AInt.write(16n, id, rem, _) : Ap.Bits()}; a1))))), (%er : {_ == 0n : Nat}; o2))
+
+def Ie.sx.value(+rem: Nat, +bits: Ap.Bits(), +id: U32, +r1: Nat, +b1: Ap.Bits(), +crit: U32, +r2: Nat, +b2: Ap.Bits(), ro: Ap.Rd(B.Bytes()), +ero: {Ap.Open.read(Ap.Cur{r2, b2}) == ro : Ap.Rd(B.Bytes())}, +ie: Fr.Ie, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ie.r_value(id, crit, ro) == Done{(ie, Ap.Cur{rem2, bits2})} : Ap.Rd(Fr.Ie)}, sa: PC.Canon(bits, Ap.AInt.write(16n, id, rem, b1), r1, Ap.AInt.after(16n, rem)), sc: PC.Canon(b1, Ap.Int.write(2n, crit, r1, b2), r2, Ap.Int.after(2n, r1))) -> PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)):
+  match ro:
+    case Fail{err}:
+      PA.Rd.absurd(Fr.Ie, PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)), err, ie, Ap.Cur{rem2, bits2}, e)
+    case Done{(+value, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          Ie.sx.go(rem, bits, id, r1, b1, crit, r2, b2, value, r3, b3, ie, rem2, bits2, e, sa, sc, PC.Open.sx(r2, b2, value, r3, b3, ero))
+
+def Ie.sx.crit(+rem: Nat, +bits: Ap.Bits(), +id: U32, +r1: Nat, +b1: Ap.Bits(), rc: Ap.Rd(U32), +erc: {Fr.Criticality.read(Ap.Cur{r1, b1}) == rc : Ap.Rd(U32)}, +ie: Fr.Ie, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ie.r_crit(id, rc) == Done{(ie, Ap.Cur{rem2, bits2})} : Ap.Rd(Fr.Ie)}, sa: PC.Canon(bits, Ap.AInt.write(16n, id, rem, b1), r1, Ap.AInt.after(16n, rem))) -> PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)):
+  match rc:
+    case Fail{err}:
+      PA.Rd.absurd(Fr.Ie, PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)), err, ie, Ap.Cur{rem2, bits2}, e)
+    case Done{(+crit, c2)}:
+      match c2:
+        case Ap.Cur{+r2, +b2}:
+          Ie.sx.value(rem, bits, id, r1, b1, crit, r2, b2, Ap.Open.read(Ap.Cur{r2, b2}), {==}, ie, rem2, bits2, e, sa, PC.Int.sx(2n, 2, r1, b1, crit, r2, b2, erc, {==}))
+
+def Ie.sx.id(+rem: Nat, +bits: Ap.Bits(), ri: Ap.Rd(U32), +eri: {Ap.AInt.read(16n, 65535, Ap.Cur{rem, bits}) == ri : Ap.Rd(U32)}, +ie: Fr.Ie, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ie.r_id(ri) == Done{(ie, Ap.Cur{rem2, bits2})} : Ap.Rd(Fr.Ie)}) -> PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(Fr.Ie, PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)), err, ie, Ap.Cur{rem2, bits2}, e)
+    case Done{(+id, c1)}:
+      match c1:
+        case Ap.Cur{+r1, +b1}:
+          Ie.sx.crit(rem, bits, id, r1, b1, Fr.Criticality.read(Ap.Cur{r1, b1}), {==}, ie, rem2, bits2, e, PC.AInt.sx(16n, 65535, rem, bits, id, r1, b1, eri, {==}))
+
+def Ie.sx(+rem: Nat, +bits: Ap.Bits(), +ie: Fr.Ie, +rem2: Nat, +bits2: Ap.Bits(), e: {Fr.Ie.read(Ap.Cur{rem, bits}) == Done{(ie, Ap.Cur{rem2, bits2})} : Ap.Rd(Fr.Ie)}) -> PC.Canon(bits, Fr.Ie.write(ie, rem, bits2), rem2, Fr.Ie.after(rem)):
+  Ie.sx.id(rem, bits, Ap.AInt.read(16n, 65535, Ap.Cur{rem, bits}), {==}, ie, rem2, bits2, e)
+
+# The items of a container, read from an octet boundary.
+def Ies.Sx(bits: Ap.Bits(), ies: List<&2, Fr.Ie>, rem2: Nat, bits2: Ap.Bits(), k: Nat) -> Type:
+  PC.Canon(bits, Fr.Ies.items_write(ies, 0n, bits2), rem2, 0n) & {List.length(&2, Fr.Ie, ies) == k : Nat}
+
+def Ies.sx.finish(+p: Nat, +bits: Ap.Bits(), +ie: Fr.Ie, +b3: Ap.Bits(), +ies2: List<&2, Fr.Ie>, +r5: Nat, +b5: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), si: PC.Canon(bits, Fr.Ie.write(ie, 0n, b3), 0n, 0n), s: Ies.Sx(b3, ies2, r5, b5, p), eb: {b5 == bits2 : Ap.Bits()}, er: {r5 == rem2 : Nat}) -> Ies.Sx(bits, ie <> ies2, rem2, bits2, 1n+p):
+  (i1, i2) = si
+  (cn, len) = s
+  (h1, h2) = cn
+  (((%eb : {bits == Fr.Ie.write(ie, 0n, Fr.Ies.items_write(ies2, 0n, _)) : Ap.Bits()}; (%h1 : {bits == Fr.Ie.write(ie, 0n, _) : Ap.Bits()}; i1)), (%er : {_ == 0n : Nat}; h2)), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, Fr.Ie, ies2), p, len))
+
+def Ies.sx.cons(+p: Nat, +bits: Ap.Bits(), +ie: Fr.Ie, +r3: Nat, +b3: Ap.Bits(), rl: Ap.Rd(List<&2, Fr.Ie>), +erl: {Fr.Ies.items(p, Ap.Cur{r3, b3}) == rl : Ap.Rd(List<&2, Fr.Ie>)}, ih: @b4: Ap.Bits() -> @ies2: List<&2, Fr.Ie> -> @r5: Nat -> @b5: Ap.Bits() -> {Fr.Ies.items(p, Ap.Cur{0n, b4}) == Done{(ies2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, Fr.Ie>)} -> Ies.Sx(b4, ies2, r5, b5, p), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ies.cons(ie, rl) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}, si: PC.Canon(bits, Fr.Ie.write(ie, 0n, b3), r3, 0n)) -> Ies.Sx(bits, ies, rem2, bits2, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, Fr.Ie>, Ies.Sx(bits, ies, rem2, bits2, 1n+p), err, ies, Ap.Cur{rem2, bits2}, e)
+    case Done{(+ies2, c5)}:
+      match c5:
+        case Ap.Cur{+r5, +b5}:
+          (i1, +i2) = si
+          ev = Equal.cong(Ap.Rd(List<&2, Fr.Ie>), List<&2, Fr.Ie>, x => PA.Rd.value(List<&2, Fr.Ie>, x, ies), Done{(ie <> ies2, Ap.Cur{r5, b5})}, Done{(ies, Ap.Cur{rem2, bits2})}, e)
+          +ec = Equal.cong(Ap.Rd(List<&2, Fr.Ie>), Ap.Cur, x => PA.Rd.cur(List<&2, Fr.Ie>, x, Ap.Cur{rem2, bits2}), Done{(ie <> ies2, Ap.Cur{r5, b5})}, Done{(ies, Ap.Cur{rem2, bits2})}, e)
+          %ev : Ies.Sx(bits, _, rem2, bits2, 1n+p)
+          Ies.sx.finish(p, bits, ie, b3, ies2, r5, b5, rem2, bits2, (%i2 : PC.Canon(bits, Fr.Ie.write(ie, 0n, b3), _, 0n); si), ih(b3, ies2, r5, b5, (%i2 : {Fr.Ies.items(p, Ap.Cur{_, b3}) == Done{(ies2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, Fr.Ie>)}; erl)), Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec), Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec))
+
+def Ies.sx.step(+p: Nat, +bits: Ap.Bits(), ri: Ap.Rd(Fr.Ie), +eri: {Fr.Ie.read(Ap.Cur{0n, bits}) == ri : Ap.Rd(Fr.Ie)}, ih: @b4: Ap.Bits() -> @ies2: List<&2, Fr.Ie> -> @r5: Nat -> @b5: Ap.Bits() -> {Fr.Ies.items(p, Ap.Cur{0n, b4}) == Done{(ies2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, Fr.Ie>)} -> Ies.Sx(b4, ies2, r5, b5, p), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ies.next(ri, c4 => Fr.Ies.items(p, c4)) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}) -> Ies.Sx(bits, ies, rem2, bits2, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, Fr.Ie>, Ies.Sx(bits, ies, rem2, bits2, 1n+p), err, ies, Ap.Cur{rem2, bits2}, e)
+    case Done{(+ie, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          Ies.sx.cons(p, bits, ie, r3, b3, Fr.Ies.items(p, Ap.Cur{r3, b3}), {==}, ih, ies, rem2, bits2, e, Ie.sx(0n, bits, ie, r3, b3, eri))
+
+def Ies.sx.items(k: Nat, +bits: Ap.Bits(), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ies.items(k, Ap.Cur{0n, bits}) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}) -> Ies.Sx(bits, ies, rem2, bits2, k):
+  match k:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, Fr.Ie>), List<&2, Fr.Ie>, x => PA.Rd.value(List<&2, Fr.Ie>, x, ies), Done{([], Ap.Cur{0n, bits})}, Done{(ies, Ap.Cur{rem2, bits2})}, e)
+      +ec = Equal.cong(Ap.Rd(List<&2, Fr.Ie>), Ap.Cur, x => PA.Rd.cur(List<&2, Fr.Ie>, x, Ap.Cur{rem2, bits2}), Done{([], Ap.Cur{0n, bits})}, Done{(ies, Ap.Cur{rem2, bits2})}, e)
+      %ev : Ies.Sx(bits, _, rem2, bits2, 0n)
+      ((Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{0n, bits}, Ap.Cur{rem2, bits2}, ec), Equal.sym(Nat, 0n, rem2, Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{0n, bits}, Ap.Cur{rem2, bits2}, ec))), {==})
+    case 1n++p:
+      Ies.sx.step(p, bits, Fr.Ie.read(Ap.Cur{0n, bits}), {==}, b4 => ies2 => r5 => b5 => e2 => Ies.sx.items(p, b4, ies2, r5, b5, e2), ies, rem2, bits2, e)
+
+def Ies.sx.go(+lo: Nat, +rem: Nat, +bits: Ap.Bits(), +k: Nat, +r1: Nat, +b1: Ap.Bits(), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), ss: PC.Canon(bits, Ap.Size.write(True{}, 16n, lo, k, rem, b1), r1, Ap.Size.after(True{}, 16n, rem)), s: Ies.Sx(b1, ies, rem2, bits2, k)) -> PC.Canon(bits, Ap.Size.write(True{}, 16n, lo, List.length(&2, Fr.Ie, ies), rem, Fr.Ies.items_write(ies, Ap.Size.after(True{}, 16n, rem), bits2)), rem2, 0n):
+  (s1, s2) = ss
+  (cn, len) = s
+  (h1, h2) = cn
+  slen = Equal.sym(Nat, List.length(&2, Fr.Ie, ies), k, len)
+  ((%slen : {bits == Ap.Size.write(True{}, 16n, lo, _, rem, Fr.Ies.items_write(ies, Ap.Size.after(True{}, 16n, rem), bits2)) : Ap.Bits()}; (%h1 : {bits == Ap.Size.write(True{}, 16n, lo, k, rem, _) : Ap.Bits()}; s1)), h2)
+
+def Ies.sx.go.al(+lo: Nat, +diff: Nat, +rem: Nat, +bits: Ap.Bits(), +k: Nat, +r1: Nat, +b1: Ap.Bits(), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ies.items(k, Ap.Cur{r1, b1}) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}, ss: PC.Canon(bits, Ap.Size.write(True{}, 16n, lo, k, rem, b1), r1, Ap.Size.after(True{}, 16n, rem))) -> PC.Canon(bits, Ap.Size.write(True{}, 16n, lo, List.length(&2, Fr.Ie, ies), rem, Fr.Ies.items_write(ies, Ap.Size.after(True{}, 16n, rem), bits2)), rem2, 0n):
+  (s1, +s2) = ss
+  Ies.sx.go(lo, rem, bits, k, r1, b1, ies, rem2, bits2, (s1, s2), Ies.sx.items(k, b1, ies, rem2, bits2, (%s2 : {Fr.Ies.items(k, Ap.Cur{_, b1}) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}; e)))
+
+def Ies.sx.count(+lo: Nat, +diff: Nat, +rem: Nat, +bits: Ap.Bits(), rl: Ap.Rd(Nat), +erl: {Ap.Size.read(True{}, 16n, lo, diff, Ap.Cur{rem, bits}) == rl : Ap.Rd(Nat)}, +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), +e: {Fr.Ies.count(rl) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}) -> PC.Canon(bits, Ap.Size.write(True{}, 16n, lo, List.length(&2, Fr.Ie, ies), rem, Fr.Ies.items_write(ies, Ap.Size.after(True{}, 16n, rem), bits2)), rem2, 0n):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, Fr.Ie>, PC.Canon(bits, Ap.Size.write(True{}, 16n, lo, List.length(&2, Fr.Ie, ies), rem, Fr.Ies.items_write(ies, Ap.Size.after(True{}, 16n, rem), bits2)), rem2, 0n), err, ies, Ap.Cur{rem2, bits2}, e)
+    case Done{(+k, c1)}:
+      match c1:
+        case Ap.Cur{+r1, +b1}:
+          Ies.sx.go.al(lo, diff, rem, bits, k, r1, b1, ies, rem2, bits2, e, PC.Size.sx(True{}, 16n, lo, diff, rem, bits, k, r1, b1, erl))
+
+def Ies.sx(+rem: Nat, +bits: Ap.Bits(), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), e: {Fr.Ies.read(Ap.Cur{rem, bits}) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}) -> PC.Canon(bits, Fr.Ies.write(ies, rem, bits2), rem2, Fr.Ies.after(rem)):
+  Ies.sx.count(0n, 65535n, rem, bits, Ap.Size.read(True{}, 16n, 0n, 65535n, Ap.Cur{rem, bits}), {==}, ies, rem2, bits2, e)
+
+def Exts.sx(+rem: Nat, +bits: Ap.Bits(), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), e: {Fr.Exts.read(Ap.Cur{rem, bits}) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}) -> PC.Canon(bits, Fr.Exts.write(ies, rem, bits2), rem2, Fr.Exts.after(rem)):
+  Ies.sx.count(1n, 65534n, rem, bits, Ap.Size.read(True{}, 16n, 1n, 65534n, Ap.Cur{rem, bits}), {==}, ies, rem2, bits2, e)
