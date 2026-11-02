@@ -49,6 +49,17 @@ def find(name):
     raise KeyError(name)
 
 
+def procedures():
+    """(PDU kind index, procedure code) -> message type name, from NGAP-ELEMENTARY-PROCEDURES."""
+    val = GLOBAL.MOD["NGAP-PDU-Descriptions"]["NGAP-ELEMENTARY-PROCEDURES"]._val
+    out = {}
+    for row in list(val["root"]) + list(val["ext"] or []):
+        for kind, key in enumerate(("InitiatingMessage", "SuccessfulOutcome", "UnsuccessfulOutcome")):
+            if key in row:
+                out[(kind, row["procedureCode"])] = ref_name(row[key])
+    return out
+
+
 def ie_names():
     """ProtocolIE-ID value -> constant name, from NGAP-Constants."""
     names = {}

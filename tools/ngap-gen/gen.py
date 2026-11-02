@@ -89,6 +89,7 @@ class Gen:
         self.order = []
         self.lines = []
         self.messages = {}
+        self.procs = M.procedures()
 
     # -- model walking -------------------------------------------------------
 
@@ -717,7 +718,8 @@ class Gen:
         self.out()
 
     def emit_dispatch(self):
-        """Per-message IE check used by the tests: does the value of a known IE id roundtrip?"""
+        """Per-message IE check used by the tests: does the value of a known IE id roundtrip?
+        Ie.check picks the message from the PDU kind and procedure code."""
         names = M.ie_names()
         for msg, rows in sorted(self.messages.items()):
             b = self.types[msg].bend
@@ -734,15 +736,17 @@ class Gen:
             self.out("    case _:")
             self.out("      None{}")
             self.out()
-        self.out("def Ie.check(msg: String, id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:")
-        self.out("  match msg:")
-        for msg in sorted(self.messages):
-            self.out(f'    case "{msg}":')
-            self.out(f"      {self.types[msg].bend}.ie_check(id, value)")
-        self.out("    case _:")
-        self.out("      None{}")
+        self.lines += self.dispatch("Ie.check", "id: Nat, +value: B.Bytes()", "Maybe<&2, Bool>", lambda b: f"{b}.ie_check(id, value)", "None{}")
         self.out()
 
+    def dispatch(self, name, params, result, call, miss):
+        """`name(kind, code, ...)`: the per-message function of the PDU type that
+        NGAP-ELEMENTARY-PROCEDURES binds to (PDU kind, procedure code)."""
+        lines = [f"def {name}(kind: Nat, code: Nat, {params}) -> {result}:", "  match kind code:"]
+        for (kind, code), msg in sorted(self.procs.items()):
+            if msg in self.messages:
+                lines += [f"    case {kind}n {code}n:", f"      {call(self.types[msg].bend)}"]
+        return lines + ["    case _ _:", f"      {miss}"]
 
     # -- message views ----------------------------------------------------------
 
@@ -825,15 +829,8 @@ class Gen:
             o(f"def {mb}.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, {mb}.View>:")
             o(f"  {mb}.v_prelude(Fr.View.prelude({mb}.known(), ies))")
             o()
-        o("# Whether the named message's view accepts a container (for the tests).")
-        o("def View.check(msg: String, ies: List<&2, Fr.Ie>) -> Maybe<&2, Bool>:")
-        o("  match msg:")
-        for msg in sorted(self.messages):
-            mb = self.types[msg].bend
-            o(f'    case "{msg}":')
-            o(f"      Some{{Bool.not(Result.is_fail(&2, &2, B.Err, {mb}.View, {mb}.view(ies)))}}")
-        o("    case _:")
-        o("      None{}")
+        o("# Whether the view of the message a PDU kind and procedure code name accepts a container (for the tests).")
+        self.lines += self.dispatch("View.check", "ies: List<&2, Fr.Ie>", "Maybe<&2, Bool>", lambda b: f"Some{{Bool.not(Result.is_fail(&2, &2, B.Err, {b}.View, {b}.view(ies)))}}", "None{}")
         return "\n".join(self.lines).rstrip() + "\n"
 
     def gdata(self, tname, mandatory):

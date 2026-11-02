@@ -1206,40 +1206,38 @@ def UplinkNASTransport.v_prelude(r: Result<&2, &2, B.Err, List<&2, Fr.Ie>>) -> R
 def UplinkNASTransport.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, UplinkNASTransport.View>:
   UplinkNASTransport.v_prelude(Fr.View.prelude(UplinkNASTransport.known(), ies))
 
-# Whether the named message's view accepts a container (for the tests).
-def View.check(msg: String, ies: List<&2, Fr.Ie>) -> Maybe<&2, Bool>:
-  match msg:
-    case "DownlinkNASTransport":
+# Whether the view of the message a PDU kind and procedure code name accepts a container (for the tests).
+def View.check(kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> Maybe<&2, Bool>:
+  match kind code:
+    case 0n 4n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, DownlinkNASTransport.View, DownlinkNASTransport.view(ies)))}
-    case "ErrorIndication":
+    case 0n 9n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, ErrorIndication.View, ErrorIndication.view(ies)))}
-    case "InitialContextSetupFailure":
-      Some{Bool.not(Result.is_fail(&2, &2, B.Err, InitialContextSetupFailure.View, InitialContextSetupFailure.view(ies)))}
-    case "InitialContextSetupRequest":
+    case 0n 14n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, InitialContextSetupRequest.View, InitialContextSetupRequest.view(ies)))}
-    case "InitialContextSetupResponse":
-      Some{Bool.not(Result.is_fail(&2, &2, B.Err, InitialContextSetupResponse.View, InitialContextSetupResponse.view(ies)))}
-    case "InitialUEMessage":
+    case 0n 15n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, InitialUEMessage.View, InitialUEMessage.view(ies)))}
-    case "NGSetupFailure":
-      Some{Bool.not(Result.is_fail(&2, &2, B.Err, NGSetupFailure.View, NGSetupFailure.view(ies)))}
-    case "NGSetupRequest":
+    case 0n 21n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, NGSetupRequest.View, NGSetupRequest.view(ies)))}
-    case "NGSetupResponse":
-      Some{Bool.not(Result.is_fail(&2, &2, B.Err, NGSetupResponse.View, NGSetupResponse.view(ies)))}
-    case "PDUSessionResourceSetupRequest":
+    case 0n 29n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceSetupRequest.View, PDUSessionResourceSetupRequest.view(ies)))}
-    case "PDUSessionResourceSetupRequestTransfer":
-      Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceSetupRequestTransfer.View, PDUSessionResourceSetupRequestTransfer.view(ies)))}
-    case "PDUSessionResourceSetupResponse":
-      Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceSetupResponse.View, PDUSessionResourceSetupResponse.view(ies)))}
-    case "UEContextReleaseCommand":
+    case 0n 41n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, UEContextReleaseCommand.View, UEContextReleaseCommand.view(ies)))}
-    case "UEContextReleaseComplete":
-      Some{Bool.not(Result.is_fail(&2, &2, B.Err, UEContextReleaseComplete.View, UEContextReleaseComplete.view(ies)))}
-    case "UEContextReleaseRequest":
+    case 0n 42n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, UEContextReleaseRequest.View, UEContextReleaseRequest.view(ies)))}
-    case "UplinkNASTransport":
+    case 0n 46n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, UplinkNASTransport.View, UplinkNASTransport.view(ies)))}
-    case _:
+    case 1n 14n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, InitialContextSetupResponse.View, InitialContextSetupResponse.view(ies)))}
+    case 1n 21n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, NGSetupResponse.View, NGSetupResponse.view(ies)))}
+    case 1n 29n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceSetupResponse.View, PDUSessionResourceSetupResponse.view(ies)))}
+    case 1n 41n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, UEContextReleaseComplete.View, UEContextReleaseComplete.view(ies)))}
+    case 2n 14n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, InitialContextSetupFailure.View, InitialContextSetupFailure.view(ies)))}
+    case 2n 21n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, NGSetupFailure.View, NGSetupFailure.view(ies)))}
+    case _ _:
       None{}

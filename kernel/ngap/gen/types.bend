@@ -10351,39 +10351,37 @@ def UplinkNASTransport.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
     case _:
       None{}
 
-def Ie.check(msg: String, id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
-  match msg:
-    case "DownlinkNASTransport":
+def Ie.check(kind: Nat, code: Nat, id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
+  match kind code:
+    case 0n 4n:
       DownlinkNASTransport.ie_check(id, value)
-    case "ErrorIndication":
+    case 0n 9n:
       ErrorIndication.ie_check(id, value)
-    case "InitialContextSetupFailure":
-      InitialContextSetupFailure.ie_check(id, value)
-    case "InitialContextSetupRequest":
+    case 0n 14n:
       InitialContextSetupRequest.ie_check(id, value)
-    case "InitialContextSetupResponse":
-      InitialContextSetupResponse.ie_check(id, value)
-    case "InitialUEMessage":
+    case 0n 15n:
       InitialUEMessage.ie_check(id, value)
-    case "NGSetupFailure":
-      NGSetupFailure.ie_check(id, value)
-    case "NGSetupRequest":
+    case 0n 21n:
       NGSetupRequest.ie_check(id, value)
-    case "NGSetupResponse":
-      NGSetupResponse.ie_check(id, value)
-    case "PDUSessionResourceSetupRequest":
+    case 0n 29n:
       PDUSessionResourceSetupRequest.ie_check(id, value)
-    case "PDUSessionResourceSetupRequestTransfer":
-      PDUSessionResourceSetupRequestTransfer.ie_check(id, value)
-    case "PDUSessionResourceSetupResponse":
-      PDUSessionResourceSetupResponse.ie_check(id, value)
-    case "UEContextReleaseCommand":
+    case 0n 41n:
       UEContextReleaseCommand.ie_check(id, value)
-    case "UEContextReleaseComplete":
-      UEContextReleaseComplete.ie_check(id, value)
-    case "UEContextReleaseRequest":
+    case 0n 42n:
       UEContextReleaseRequest.ie_check(id, value)
-    case "UplinkNASTransport":
+    case 0n 46n:
       UplinkNASTransport.ie_check(id, value)
-    case _:
+    case 1n 14n:
+      InitialContextSetupResponse.ie_check(id, value)
+    case 1n 21n:
+      NGSetupResponse.ie_check(id, value)
+    case 1n 29n:
+      PDUSessionResourceSetupResponse.ie_check(id, value)
+    case 1n 41n:
+      UEContextReleaseComplete.ie_check(id, value)
+    case 2n 14n:
+      InitialContextSetupFailure.ie_check(id, value)
+    case 2n 21n:
+      NGSetupFailure.ie_check(id, value)
+    case _ _:
       None{}

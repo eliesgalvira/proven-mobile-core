@@ -9,27 +9,26 @@ import ../../kernel/tests/vectors/capture-vectors.bend as Capture
 # name, then the normal form of our decoding (PDU kind/code/criticality and
 # the message value), for tools/ngap-gen/oracle.py to compare with pycrate.
 
-def message(+name: String, r: Maybe<&2, String>) -> String:
+def message(r: Maybe<&2, String>) -> String:
   match r:
     case None{}:
-      "?" ++ name
+      "?"
     case Some{s}:
       s
 
-def pdu(+name: String, r: Result<&2, &2, B.Err, F.Pdu>) -> String:
+def pdu(r: Result<&2, &2, B.Err, F.Pdu>) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{p}:
       match p:
-        case F.Pdu{kind, code, crit, value}:
-          S.Dec(kind) ++ "/" ++ S.Dec(code) ++ "/" ++ S.Dec(crit) ++ "/" ++ message(name, S.Message.show(name, value))
+        case F.Pdu{+kind, +code, crit, value}:
+          S.Dec(kind) ++ "/" ++ S.Dec(code) ++ "/" ++ S.Dec(crit) ++ "/" ++ message(S.Message.show(U32.to_nat(kind), U32.to_nat(code), value))
 
 def one(+m: V.Vec, protocol: String) -> IO(Unit):
   match protocol:
     case "NGAP":
-      +name = V.Vec.text(V.Vec.field(m, "message"))
-      IO.print(name ++ ": " ++ pdu(name, F.Pdu.read(V.Vec.bytes(V.Vec.field(m, "hex")))))
+      IO.print(V.Vec.text(V.Vec.field(m, "message")) ++ ": " ++ pdu(F.Pdu.read(V.Vec.bytes(V.Vec.field(m, "hex")))))
     case _:
       IO.pure(Unit, Unit{})
 

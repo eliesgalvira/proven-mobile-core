@@ -27,12 +27,12 @@ def step(t: Tally, r: Maybe<&2, Bool>) -> Tally:
             case False{}:
               Tally{known, unknown, 1n+failed}
 
-def tally(+msg: String, ies: List<&2, F.Ie>, t: Tally) -> Tally:
+def tally(+kind: Nat, +code: Nat, ies: List<&2, F.Ie>, t: Tally) -> Tally:
   match ies:
     case Nil{}:
       t
     case +ie <> more:
-      tally(msg, more, step(t, G.Ie.check(msg, U32.to_nat(F.Ie.id(ie)), F.Ie.value(ie))))
+      tally(kind, code, more, step(t, G.Ie.check(kind, code, U32.to_nat(F.Ie.id(ie)), F.Ie.value(ie))))
 
 def report(+name: String, t: Tally) -> IO(Unit):
   match t:
@@ -40,19 +40,19 @@ def report(+name: String, t: Tally) -> IO(Unit):
       do IO<Unit>:
         C.Check.report(name ++ ": " ++ Nat.show(known) ++ " known IEs decode, validate and re-encode (" ++ Nat.show(unknown) ++ " outside tiers M+R)", Bool.and(Nat.is_eq(failed, 0n), Nat.is_lt(0n, known)))
 
-def container(+name: String, r: A.Rd(List<&2, F.Ie>)) -> IO(Unit):
+def container(+name: String, kind: Nat, code: Nat, r: A.Rd(List<&2, F.Ie>)) -> IO(Unit):
   match r:
     case Fail{e}:
       C.Check.report(name ++ ": IE container decodes", False{})
     case Done{(ies, c)}:
-      report(name, tally(name, ies, Tally{0n, 0n, 0n}))
+      report(name, tally(kind, code, ies, Tally{0n, 0n, 0n}))
 
 def pdu(+name: String, r: Result<&2, &2, B.Err, F.Pdu>) -> IO(Unit):
   match r:
     case Fail{e}:
       C.Check.report(name ++ ": PDU decodes", False{})
-    case Done{p}:
-      container(name, F.Ies.read(A.Cur{7n, List.drop(&2, Bool, A.unpack(F.Pdu.value(p)), 1n)}))
+    case Done{+p}:
+      container(name, U32.to_nat(F.Pdu.kind(p)), U32.to_nat(F.Pdu.code(p)), F.Ies.read(A.Cur{7n, List.drop(&2, Bool, A.unpack(F.Pdu.value(p)), 1n)}))
 
 def one(+m: V.Vec, protocol: String) -> IO(Unit):
   match protocol:

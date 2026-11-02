@@ -256,12 +256,5 @@ class Show:
         self.out()
 
     def emit_messages(self):
-        self.out("# The normal form of a named message's value octets (the open type after the PDU header).")
-        self.out("def Message.show(msg: String, +value: B.Bytes()) -> Maybe<&2, String>:")
-        self.out("  match msg:")
-        for msg in sorted(self.g.messages):
-            b = self.g.types[msg].bend
-            self.out(f'    case "{msg}":')
-            self.out(f"      Some{{{b}.show_rd(G.{b}.read(Ap.Cur{{0n, Ap.unpack(value)}}))}}")
-        self.out("    case _:")
-        self.out("      None{}")
+        self.out("# The normal form of a PDU's value octets, for the message its kind and procedure code name.")
+        self.lines += self.g.dispatch("Message.show", "+value: B.Bytes()", "Maybe<&2, String>", lambda b: f"Some{{{b}.show_rd(G.{b}.read(Ap.Cur{{0n, Ap.unpack(value)}}))}}", "None{}")

@@ -23,19 +23,19 @@ def accepted(+name: String, r: Maybe<&2, Bool>) -> IO(Unit):
     case Some{ok}:
       C.Check.report(name ++ ": passes its view", ok)
 
-def container(+name: String, r: A.Rd(List<&2, F.Ie>)) -> IO(Unit):
+def container(+name: String, kind: Nat, code: Nat, r: A.Rd(List<&2, F.Ie>)) -> IO(Unit):
   match r:
     case Fail{e}:
       C.Check.report(name ++ ": IE container decodes", False{})
     case Done{(ies, c)}:
-      accepted(name, W.View.check(name, ies))
+      accepted(name, W.View.check(kind, code, ies))
 
 def pdu(+name: String, r: Result<&2, &2, B.Err, F.Pdu>) -> IO(Unit):
   match r:
     case Fail{e}:
       C.Check.report(name ++ ": PDU decodes", False{})
-    case Done{p}:
-      container(name, ies_of(p))
+    case Done{+p}:
+      container(name, U32.to_nat(F.Pdu.kind(p)), U32.to_nat(F.Pdu.code(p)), ies_of(p))
 
 def one(+m: V.Vec, protocol: String) -> IO(Unit):
   match protocol:

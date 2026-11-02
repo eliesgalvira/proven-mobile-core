@@ -3873,40 +3873,38 @@ def ErrorIndication.show_rd(r: Ap.Rd(G.ErrorIndication())) -> String:
         case Ap.Cur{rem, bits}:
           ErrorIndication.show_end(v, Ap.Tail.zero(bits))
 
-# The normal form of a named message's value octets (the open type after the PDU header).
-def Message.show(msg: String, +value: B.Bytes()) -> Maybe<&2, String>:
-  match msg:
-    case "DownlinkNASTransport":
+# The normal form of a PDU's value octets, for the message its kind and procedure code name.
+def Message.show(kind: Nat, code: Nat, +value: B.Bytes()) -> Maybe<&2, String>:
+  match kind code:
+    case 0n 4n:
       Some{DownlinkNASTransport.show_rd(G.DownlinkNASTransport.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "ErrorIndication":
+    case 0n 9n:
       Some{ErrorIndication.show_rd(G.ErrorIndication.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "InitialContextSetupFailure":
-      Some{InitialContextSetupFailure.show_rd(G.InitialContextSetupFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "InitialContextSetupRequest":
+    case 0n 14n:
       Some{InitialContextSetupRequest.show_rd(G.InitialContextSetupRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "InitialContextSetupResponse":
-      Some{InitialContextSetupResponse.show_rd(G.InitialContextSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "InitialUEMessage":
+    case 0n 15n:
       Some{InitialUEMessage.show_rd(G.InitialUEMessage.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "NGSetupFailure":
-      Some{NGSetupFailure.show_rd(G.NGSetupFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "NGSetupRequest":
+    case 0n 21n:
       Some{NGSetupRequest.show_rd(G.NGSetupRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "NGSetupResponse":
-      Some{NGSetupResponse.show_rd(G.NGSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "PDUSessionResourceSetupRequest":
+    case 0n 29n:
       Some{PDUSessionResourceSetupRequest.show_rd(G.PDUSessionResourceSetupRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "PDUSessionResourceSetupRequestTransfer":
-      Some{PDUSessionResourceSetupRequestTransfer.show_rd(G.PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "PDUSessionResourceSetupResponse":
-      Some{PDUSessionResourceSetupResponse.show_rd(G.PDUSessionResourceSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "UEContextReleaseCommand":
+    case 0n 41n:
       Some{UEContextReleaseCommand.show_rd(G.UEContextReleaseCommand.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "UEContextReleaseComplete":
-      Some{UEContextReleaseComplete.show_rd(G.UEContextReleaseComplete.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "UEContextReleaseRequest":
+    case 0n 42n:
       Some{UEContextReleaseRequest.show_rd(G.UEContextReleaseRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case "UplinkNASTransport":
+    case 0n 46n:
       Some{UplinkNASTransport.show_rd(G.UplinkNASTransport.read(Ap.Cur{0n, Ap.unpack(value)}))}
-    case _:
+    case 1n 14n:
+      Some{InitialContextSetupResponse.show_rd(G.InitialContextSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 1n 21n:
+      Some{NGSetupResponse.show_rd(G.NGSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 1n 29n:
+      Some{PDUSessionResourceSetupResponse.show_rd(G.PDUSessionResourceSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 1n 41n:
+      Some{UEContextReleaseComplete.show_rd(G.UEContextReleaseComplete.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 2n 14n:
+      Some{InitialContextSetupFailure.show_rd(G.InitialContextSetupFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 2n 21n:
+      Some{NGSetupFailure.show_rd(G.NGSetupFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case _ _:
       None{}
