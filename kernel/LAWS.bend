@@ -18,13 +18,16 @@ import ./nas/sm.bend as Sm
 import ./nas/sm_ies.bend as Q
 import ./aper.bend as Ap
 import ./ngap/frame.bend as Fr
+import ./ngap/gen/types.bend as G
 import ./ngap/gen/views.bend as GV
 import ./pfcp.bend as Pf
 import ./tlv.bend as T
 import ./frame.bend as F
+import ./table.bend as Tb
 import ./state.bend as St
 import ./step.bend as Ke
 import ./amf/ngap.bend as Ng
+import ./amf/gmm.bend as Gm
 import ./ausf.bend as Au
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
@@ -1066,7 +1069,7 @@ law kernel.bad_pdu.only_error_indication:
   for +bytes: B.Bytes()
   for +err: B.Err
   for +e: {Fr.Pdu.read(bytes) == Fail{err} : Result<&2, &2, B.Err, Fr.Pdu>}
-  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.bad_pdu(assoc)) : St.Out()}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Acts.render(Ng.Ngap.bad_pdu(assoc))) : St.Out()}
 
 # amf (ticket 17)
 # ---------------
@@ -1089,7 +1092,7 @@ law amf.initial_ue.reject_leaves_state:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 15, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.InitialUEMessage.view(ies) == Fail{err} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}
-  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Acts.render(Ng.Ngap.bad_view_acts(assoc))) : St.Out()}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Acts.render(Ng.Ngap.bad_view(assoc))) : St.Out()}
 
 # GHSA-r9rw-hx33-745g (5G analogue): authentication succeeds only when RES* is
 # sixteen octets, HRES* equals HXRES* over all of them and RES* equals XRES*
@@ -1100,9 +1103,114 @@ law ausf.res_star.full_length:
   for +e: {Au.Ausf.verify(av, res) == True{} : Bool}
   {Nat.is_eq(List.length(&2, U32, res), 16n) == True{} : Bool} & ({B.bytes_eq(K.kdf.hres_star(Au.Av.rand(av), res), Au.Av.hxres_star(av)) == True{} : Bool} & {B.bytes_eq(res, Au.Av.xres_star(av)) == True{} : Bool})
 
-# Every UE context that is not registered holds exactly one guard timer or is
-# being released, in every state a step reaches.
+# Every UE context in authentication holds a guard timer, in every state a step
+# reaches: the special case of amf.registration.completes_or_releases.
 law amf.auth.guarded:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  {St.Ues.guarded(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
+
+# amf (ticket 18)
+# ---------------
+# Security mode, acceptance and release.
+
+# GHSA-mg8r-2cvv-xq9j: a UE Context Release Request or Complete naming a UE that
+# another association owns changes no state.
+law amf.ue_context_release.owner_only:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +pdus: Maybe<&2, G.PDUSessionResourceListCxtRelReq()>
+  for +cause: G.Cause
+  for +uli: Maybe<&2, G.UserLocationInformation>
+  for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
+  for +ue: St.Ue
+  for +eu: {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
+  for +ea: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 42, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseRequest.view(ies) == Done{GV.UEContextReleaseRequest.View{amf, ran, pdus, cause}} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+
+# GHSA-88pq-hpwv-2vjw: after the owner's UE Context Release Complete, no UE
+# context and no session carries the UE's AMF-UE-NGAP-ID. Timers live in the
+# context and a later message for the id finds no owner, so no action can
+# mention it.
+law amf.release.forgets_ue:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +uli: Maybe<&2, G.UserLocationInformation>
+  for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
+  for +ue: St.Ue
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}
+  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
+  {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Ue>}
+  & {St.Sessions.of_ue(Ng.Ngap.of_big(amf), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == [] : List<&2, St.Session>}
+
+# GHSA-7g3v-g4gp-p624: the indexes are the contexts themselves, so every entry
+# is a context and every context is indexed; what remains is that no two
+# contexts share a key, a SUPI, a 5G-TMSI or a RAN-UE-NGAP-ID on an association,
+# in the initial state and after every step.
+law amf.indexes.unique:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +e: {St.Ues.unique(St.State.ues(st)) == True{} : Bool}
+  {St.Ues.unique(St.State.ues(St.State.initial())) == True{} : Bool}
+  & {St.Ues.unique(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
+
+# With a NAS security context in force, an uplink message that fails to verify
+# under it changes no state.
+law amf.nas.plaintext_after_security:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +nas: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +ue: St.Ue
+  for +ctx: N.Nas.Ctx
+  for +err: B.Err
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, uli}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}
+  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
+  for +ef: {N.Nas.unprotect(ctx, nas) == Fail{err} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
+  {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}
+
+# Every UE context is registered, holds a guard timer, or is being released, in
+# every state a step reaches: no context is left hanging.
+law amf.registration.completes_or_releases:
   for +st: St.State
   for +ev: F.Evt
   for +entropy: B.Bytes()

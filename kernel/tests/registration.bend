@@ -8,7 +8,9 @@ import ../ngap/gen/views.bend as W
 import ../nas/mm.bend as Mm
 import ../nas/ie.bend as I
 import ../crypto/milenage.bend as Mil
+import ../nas/security.bend as Sec
 import ../frame.bend as F
+import ../table.bend as Tb
 import ../state.bend as S
 import ../step.bend as K
 import ../amf/ngap.bend as N
@@ -16,10 +18,13 @@ import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
 
-# Replays the captured registration up to authentication: with the captured
-# RAND as entropy and the subscriber's SQN one step before the captured one,
-# the Authentication Request is the captured one byte for byte and the
-# captured Authentication Response verifies. Then the failure paths.
+# Replays the captured registration: with the captured RAND as entropy and the
+# subscriber's SQN one step before the captured one, the Authentication Request
+# and the Security Mode Command are the captured ones byte for byte, the
+# captured Authentication Response, Security Mode Complete, Initial Context
+# Setup Response and Registration Complete are accepted, and the Initial
+# Context Setup Request carries the captured key. Then release, takeover,
+# deregistration and the failure paths.
 
 def entropy() -> B.Bytes():
   [45, 202, 228, 29, 52, 210, 168, 148, 210, 151, 160, 24, 229, 85, 66, 153, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -39,8 +44,21 @@ def subscriber(sqn: B.Bytes()) -> B.Bytes():
 def key32() -> B.Bytes():
   [88, 47, 147, 31, 207, 143, 43, 127, 145, 29, 235, 182, 34, 79, 113, 231, 43, 157, 74, 98, 238, 211, 141, 18, 159, 253, 119, 140, 48, 22, 211, 106]
 
+def config_nia(nia: B.Bytes(), subs: List<&2, T.Tlv>) -> List<&2, T.Tlv>:
+  List.append(&2, T.Tlv, [T.Tlv.make(1, [0, 241, 16]), T.Tlv.make(2, [2]), T.Tlv.make(3, [0, 1]), T.Tlv.make(4, [0]), T.Tlv.make(5, [0, 0, 1]), T.Tlv.make(6, [115, 112, 101, 99, 107, 45, 97, 109, 102, 48]), T.Tlv.make(7, [1]), T.Tlv.make(8, [105, 110, 116, 101, 114, 110, 101, 116]), T.Tlv.make(9, [10, 45, 0, 0]), T.Tlv.make(10, [16]), T.Tlv.make(11, [8, 8, 8, 8]), T.Tlv.make(12, [10, 33, 0, 12]), T.Tlv.make(13, [10, 33, 0, 20]), T.Tlv.make(14, [10, 33, 0, 20]), T.Tlv.make(15, key32()), T.Tlv.make(16, [1]), T.Tlv.make(17, [0]), T.Tlv.make(18, nia)], subs)
+
 def config(subs: List<&2, T.Tlv>) -> List<&2, T.Tlv>:
-  List.append(&2, T.Tlv, [T.Tlv.make(1, [0, 241, 16]), T.Tlv.make(2, [2]), T.Tlv.make(3, [0, 1]), T.Tlv.make(4, [0]), T.Tlv.make(5, [0, 0, 1]), T.Tlv.make(6, [115, 112, 101, 99, 107, 45, 97, 109, 102, 48]), T.Tlv.make(7, [1]), T.Tlv.make(8, [105, 110, 116, 101, 114, 110, 101, 116]), T.Tlv.make(9, [10, 45, 0, 0]), T.Tlv.make(10, [16]), T.Tlv.make(11, [8, 8, 8, 8]), T.Tlv.make(12, [10, 33, 0, 12]), T.Tlv.make(13, [10, 33, 0, 20]), T.Tlv.make(14, [10, 33, 0, 20]), T.Tlv.make(15, key32()), T.Tlv.make(16, [1]), T.Tlv.make(17, [0]), T.Tlv.make(18, [2])], subs)
+  config_nia([2], subs)
+
+# The NAS keys the capture derived (vectors.json § secrets), for messages the UE would protect.
+def k_nas_int() -> B.Bytes():
+  [30, 181, 142, 160, 186, 204, 48, 183, 70, 200, 96, 117, 204, 30, 215, 58]
+
+def k_nas_enc() -> B.Bytes():
+  [160, 149, 110, 6, 153, 86, 201, 196, 101, 124, 194, 7, 42, 69, 81, 175]
+
+def ue_protect(sqn: U32, plain: B.Bytes()) -> B.Bytes():
+  Sec.Nas.seal(Sec.Keys{k_nas_int(), k_nas_enc(), Sec.Nea0{}, Sec.Nia2{}, 1}, Sec.Ciphered{}, Sec.Nas.uplink(), Sec.Count{0, sqn}, plain)
 
 # The capture
 # -----------
@@ -86,6 +104,15 @@ def timer_starts(actions: List<&2, F.Action>) -> Nat:
       1n+timer_starts(more)
     case a <> more:
       timer_starts(more)
+
+def timer_cancels(actions: List<&2, F.Action>) -> Nat:
+  match actions:
+    case Nil{}:
+      0n
+    case F.TimerCancel{timer} <> more:
+      1n+timer_cancels(more)
+    case a <> more:
+      timer_cancels(more)
 
 def first_bytes(ss: List<&2, F.Action>) -> B.Bytes():
   match ss:
@@ -133,6 +160,35 @@ def dl_nas(r: Result<&2, &2, B.Err, W.DownlinkNASTransport.View>) -> B.Bytes():
 def nas_of(bytes: B.Bytes()) -> B.Bytes():
   dl_nas(W.DownlinkNASTransport.view(ies_of(Fr.Pdu.read(bytes))))
 
+def ics_nas(r: Result<&2, &2, B.Err, W.InitialContextSetupRequest.View>) -> B.Bytes():
+  match r:
+    case Done{W.InitialContextSetupRequest.View{amf, ran, old, guami, nssai, caps, key, Some{nas}}}:
+      nas
+    case _:
+      []
+
+def ie_or_empty(m: Maybe<&2, B.Bytes()>) -> B.Bytes():
+  match m:
+    case None{}:
+      []
+    case Some{v}:
+      v
+
+# The same IE value in two NGAP PDUs.
+def same_ie(+id: U32, +a: B.Bytes(), +b: B.Bytes()) -> Bool:
+  B.bytes_eq(ie_or_empty(Fr.Ies.lookup(id, ies_of(Fr.Pdu.read(a)))), ie_or_empty(Fr.Ies.lookup(id, ies_of(Fr.Pdu.read(b)))))
+
+# UEContextReleaseRequest and Complete for our UE 1 with the captured RAN id.
+def release_request(ran: B.Bytes()) -> B.Bytes():
+  N.Ngap.pdu(Fr.Pdu.initiating(), 42, Fr.Criticality.ignore(), [N.Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(15, Fr.Criticality.ignore(), G.Cause.write(N.Ngap.radio_cause(G.CauseRadioNetwork.user_inactivity()), 0n, []))])
+
+def release_complete(ran: B.Bytes()) -> B.Bytes():
+  N.Ngap.pdu(Fr.Pdu.successful(), 41, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, []))])
+
+# Deregistration Request (TS 24.501 §8.2.12): type in the low nibble, our 5G-GUTI.
+def deregistration(kind: U32) -> B.Bytes():
+  [126, 0, 69, kind, 0, 11, 242, 0, 241, 16, 2, 0, 64, 0, 0, 0, 0]
+
 def uli_of(r: Result<&2, &2, B.Err, W.InitialUEMessage.View>) -> Maybe<&2, G.UserLocationInformation>:
   match r:
     case Done{W.InitialUEMessage.View{ran, nas, uli, cause, a, b, c, d, e, f, g}}:
@@ -161,6 +217,9 @@ def uplink(ran: B.Bytes(), uli: Maybe<&2, G.UserLocationInformation>, nas: B.Byt
 def data(stream: U32, +bytes: B.Bytes()) -> F.Evt:
   F.NgapData{1, stream, U32.from_nat(List.length(&2, U32, bytes)), bytes}
 
+def data_on(assoc: U32, +bytes: B.Bytes()) -> F.Evt:
+  F.NgapData{assoc, 1, U32.from_nat(List.length(&2, U32, bytes)), bytes}
+
 def Tb_get(t: List<&2, Sigma<&2, &2, U32, _ => S.Ue>>) -> Maybe<&2, S.Ue>:
   match t:
     case (1, u) <> more:
@@ -177,8 +236,12 @@ def phase_of(p: S.Phase) -> String:
       "identifying"
     case S.Authenticating{g, av, r}:
       "authenticating"
-    case S.Authenticated{g, kamf}:
-      "authenticated"
+    case S.SecurityMode{g, ctx, kamf}:
+      "security_mode"
+    case S.ContextSetup{g, ctx, response, complete}:
+      "context_setup"
+    case S.Registered{ctx}:
+      "registered"
     case S.Releasing{}:
       "releasing"
 
@@ -191,7 +254,7 @@ def phase_name(m: Maybe<&2, S.Ue>) -> String:
 
 def k_amf_phase(p: S.Phase) -> B.Bytes():
   match p:
-    case S.Authenticated{g, kamf}:
+    case S.SecurityMode{g, ctx, kamf}:
       kamf
     case _:
       []
@@ -275,8 +338,43 @@ def main() -> IO(Unit):
     C.Check.report("Authentication Request: the captured one, byte for byte", B.bytes_eq(nas_of(first_bytes(sends(a1))), auth_req))
     +o2 : S.Out() = K.Kernel.step(st1, data(1, uplink(ran, uli, auth_resp)), entropy())
     +st2 : S.State = K.Kernel.state(o2)
-    C.Check.report("Authentication Response: the captured RES* verifies", phase_is(st2, "authenticated"))
+    C.Check.report("Authentication Response: the captured RES* verifies, Security Mode follows", phase_is(st2, "security_mode"))
     C.Check.report("Authentication Response: KAMF is the captured one", B.bytes_eq(k_amf_of(ue1(st2)), [93, 194, 173, 250, 24, 107, 233, 224, 236, 148, 189, 209, 44, 197, 234, 73, 132, 137, 104, 192, 200, 252, 106, 232, 87, 136, 168, 246, 148, 7, 4, 117]))
+    C.Check.report("Security Mode Command: the captured one, byte for byte, MAC included", B.bytes_eq(nas_of(first_bytes(sends(K.Kernel.actions(o2)))), hex_of(entry(21n, msgs), "outer_hex")))
+    +o3 : S.Out() = K.Kernel.step(st2, data(1, hex_of(entry(22n, msgs), "hex")), entropy())
+    +st3 : S.State = K.Kernel.state(o3)
+    +ics : B.Bytes() = first_bytes(sends(K.Kernel.actions(o3)))
+    +ics_cap : B.Bytes() = hex_of(entry(25n, msgs), "hex")
+    C.Check.report("Security Mode Complete: the captured one verifies; Initial Context Setup Request follows", Bool.and(phase_is(st3, "context_setup"), Bool.and(pdu_is(Fr.Pdu.read(ics), Fr.Pdu.initiating(), 14), Nat.is_eq(timer_starts(K.Kernel.actions(o3)), 1n))))
+    C.Check.report("Initial Context Setup Request: the captured KgNB, GUAMI, Allowed NSSAI and UE security capabilities", Bool.and(same_ie(94, ics, ics_cap), Bool.and(same_ie(28, ics, ics_cap), Bool.and(same_ie(0, ics, ics_cap), same_ie(119, ics, ics_cap)))))
+    C.Check.report("Registration Accept: ciphered, with the 5G-GUTI from entropy, the TAI, the slice and T3512", B.bytes_eq(List.drop(&2, U32, ics_nas(W.InitialContextSetupRequest.view(ies_of(Fr.Pdu.read(ics)))), 7n), [126, 0, 66, 1, 1, 119, 0, 11, 242, 0, 241, 16, 2, 0, 64, 0, 0, 0, 0, 84, 7, 0, 0, 241, 16, 0, 0, 1, 21, 2, 1, 1, 94, 1, 5]))
+    +o_replay : S.Out() = K.Kernel.step(st3, data(1, hex_of(entry(22n, msgs), "hex")), entropy())
+    C.Check.report("Security Mode Complete replayed: ignored", Bool.and(phase_is(K.Kernel.state(o_replay), "context_setup"), Nat.is_eq(List.length(&2, F.Action, sends(K.Kernel.actions(o_replay))), 0n)))
+    +o_plain : S.Out() = K.Kernel.step(st2, data(1, uplink(ran, uli, auth_resp)), entropy())
+    C.Check.report("plaintext after security: a plain message is ignored", Bool.and(phase_is(K.Kernel.state(o_plain), "security_mode"), Nat.is_eq(List.length(&2, F.Action, sends(K.Kernel.actions(o_plain))), 0n)))
+    +o4 : S.Out() = K.Kernel.step(st3, data(1, hex_of(entry(27n, msgs), "hex")), entropy())
+    +o5 : S.Out() = K.Kernel.step(K.Kernel.state(o4), data(1, hex_of(entry(28n, msgs), "hex")), entropy())
+    +st5 : S.State = K.Kernel.state(o5)
+    C.Check.report("Initial Context Setup Response, then the captured Registration Complete: registered, T3550 stopped", Bool.and(phase_is(K.Kernel.state(o4), "context_setup"), Bool.and(phase_is(st5, "registered"), Nat.is_eq(timer_cancels(K.Kernel.actions(o5)), 1n))))
+    +o5b : S.Out() = K.Kernel.step(K.Kernel.state(K.Kernel.step(st3, data(1, hex_of(entry(28n, msgs), "hex")), entropy())), data(1, hex_of(entry(27n, msgs), "hex")), entropy())
+    C.Check.report("Registration Complete, then Initial Context Setup Response: registered", phase_is(K.Kernel.state(o5b), "registered"))
+    +o_rel2 : S.Out() = K.Kernel.step(st5, data_on(2, release_request(ran)), entropy())
+    C.Check.report("UE Context Release Request from another association: Error Indication, state unchanged", Bool.and(phase_is(K.Kernel.state(o_rel2), "registered"), pdu_is(Fr.Pdu.read(first_bytes(sends(K.Kernel.actions(o_rel2)))), Fr.Pdu.initiating(), 7)))
+    +o_rel : S.Out() = K.Kernel.step(st5, data(1, release_request(ran)), entropy())
+    C.Check.report("UE Context Release Request from the owner: Release Command", Bool.and(phase_is(K.Kernel.state(o_rel), "releasing"), pdu_is(Fr.Pdu.read(first_bytes(sends(K.Kernel.actions(o_rel)))), Fr.Pdu.initiating(), 41)))
+    +o_cpl2 : S.Out() = K.Kernel.step(K.Kernel.state(o_rel), data_on(2, release_complete(ran)), entropy())
+    C.Check.report("UE Context Release Complete from another association: Error Indication, context kept", Bool.and(Nat.is_eq(ue_count(K.Kernel.state(o_cpl2)), 1n), pdu_is(Fr.Pdu.read(first_bytes(sends(K.Kernel.actions(o_cpl2)))), Fr.Pdu.initiating(), 7)))
+    +o_cpl : S.Out() = K.Kernel.step(K.Kernel.state(o_rel), data(1, release_complete(ran)), entropy())
+    C.Check.report("UE Context Release Complete from the owner: the context is forgotten", Nat.is_eq(ue_count(K.Kernel.state(o_cpl)), 0n))
+    +o_take : S.Out() = K.Kernel.step(st5, data(1, initial), entropy())
+    C.Check.report("a second registration with the same SUPI: the old context is released, the new one authenticated", Bool.and(Nat.is_eq(ue_count(K.Kernel.state(o_take)), 1n), Bool.and(Bool.not(Tb.Table.has(S.Ue, 1, S.State.ues(K.Kernel.state(o_take)))), Bool.and(pdu_is(Fr.Pdu.read(first_bytes(sends(K.Kernel.actions(o_take)))), Fr.Pdu.initiating(), 41), U32.is_eq(nas_type(nas_of(first_bytes(List.drop(&2, F.Action, sends(K.Kernel.actions(o_take)), 1n)))), 86)))))
+    +o_dereg : S.Out() = K.Kernel.step(st5, data(1, uplink(ran, uli, ue_protect(2, deregistration(1)))), entropy())
+    C.Check.report("Deregistration Request: Deregistration Accept, then Release Command", Bool.and(phase_is(K.Kernel.state(o_dereg), "releasing"), Bool.and(B.bytes_eq(List.drop(&2, U32, nas_of(first_bytes(sends(K.Kernel.actions(o_dereg)))), 7n), [126, 0, 70]), pdu_is(Fr.Pdu.read(first_bytes(List.drop(&2, F.Action, sends(K.Kernel.actions(o_dereg)), 1n))), Fr.Pdu.initiating(), 41))))
+    +o_off : S.Out() = K.Kernel.step(st5, data(1, uplink(ran, uli, ue_protect(2, deregistration(9)))), entropy())
+    C.Check.report("Deregistration Request, switch off: Release Command only", Bool.and(phase_is(K.Kernel.state(o_off), "releasing"), Bool.and(Nat.is_eq(List.length(&2, F.Action, sends(K.Kernel.actions(o_off))), 1n), pdu_is(Fr.Pdu.read(first_bytes(sends(K.Kernel.actions(o_off)))), Fr.Pdu.initiating(), 41))))
+    +st_nia1 : S.State = K.Kernel.state(K.Kernel.step(K.Kernel.state(K.Kernel.step(K.Kernel.state(K.Kernel.step(S.State.initial(), F.Evt.config_make(config_nia([1], [T.Tlv.make(32, subscriber([0, 0, 0, 0, 0, 32]))])), entropy())), F.NgapAssocUp{1}, entropy())), data(1, initial), entropy()))
+    +o_nia1 : S.Out() = K.Kernel.step(st_nia1, data(1, uplink(ran, uli, auth_resp)), entropy())
+    C.Check.report("no integrity algorithm in common: Registration Reject #23, then release", Bool.and(phase_is(K.Kernel.state(o_nia1), "releasing"), B.bytes_eq(nas_of(first_bytes(sends(K.Kernel.actions(o_nia1)))), [126, 0, 68, 23])))
     +o_bad : S.Out() = K.Kernel.step(st1, data(1, uplink(ran, uli, flip_last(auth_resp))), entropy())
     C.Check.report("a wrong RES*: Authentication Reject, then UE Context Release Command", Bool.and(phase_is(K.Kernel.state(o_bad), "releasing"), Bool.and(U32.is_eq(nas_type(nas_of(first_bytes(sends(K.Kernel.actions(o_bad))))), 88), pdu_is(Fr.Pdu.read(first_bytes(List.drop(&2, F.Action, sends(K.Kernel.actions(o_bad)), 1n))), Fr.Pdu.initiating(), 41))))
     +o_other : S.Out() = K.Kernel.step(st1, F.NgapData{2, 1, U32.from_nat(List.length(&2, U32, uplink(ran, uli, auth_resp))), uplink(ran, uli, auth_resp)}, entropy())
