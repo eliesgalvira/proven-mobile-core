@@ -35,15 +35,6 @@ def Ngap.misc(index: U32) -> G.Cause:
   G.Cause_misc{Ap.Root{index}}
 
 # An undecodable PDU: Error Indication and a log line, nothing else.
-def Ngap.bad_pdu(assoc: U32) -> List<&2, F.Action>:
-  [Ngap.error_indication(assoc, Ngap.protocol(G.CauseProtocol.transfer_syntax_error())), F.Action.log_make(F.Warn{}, "NGAP: PDU rejected, transfer syntax error")]
-
-def Ngap.bad_view(assoc: U32) -> List<&2, F.Action>:
-  [Ngap.error_indication(assoc, Ngap.protocol(G.CauseProtocol.abstract_syntax_error_reject())), F.Action.log_make(F.Warn{}, "NGAP: message rejected, abstract syntax error")]
-
-def Ngap.unhandled(assoc: U32) -> List<&2, F.Action>:
-  [Ngap.error_indication(assoc, Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), F.Action.log_make(F.Warn{}, "NGAP: message not handled")]
-
 # NG Setup (§8.7.1)
 # -----------------
 
@@ -90,13 +81,6 @@ def NgSetup.reply(config: Maybe<&2, S.Cfg>, v: V.NGSetupRequest.View) -> B.Bytes
       match v:
         case V.NGSetupRequest.View{globalrannodeid, supportedtalist, defaultpagingdrx}:
           NgSetup.answer(cfg, Ta.supported(S.Cfg.plmn(cfg), S.Cfg.tac(cfg), supportedtalist))
-
-def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> S.Out():
-  match r:
-    case Fail{e}:
-      (st, Ngap.bad_view(assoc))
-    case Done{v}:
-      (st, [Ngap.send(assoc, 0, NgSetup.reply(S.State.config(st), v))])
 
 def Ngap.is_procedure(kind: Nat, code: Nat, k: Nat, c: Nat) -> Bool:
   Bool.and(Nat.is_eq(kind, k), Nat.is_eq(code, c))
@@ -204,26 +188,55 @@ def Ngap.dl_nas_transport(key: U32, ran_id: B.Bytes(), nas: B.Bytes()) -> B.Byte
 def Ngap.release_command(key: U32, ran_id: B.Bytes(), cause: G.Cause) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), 41, Fr.Criticality.reject(), [Ngap.ie(114, Fr.Criticality.reject(), G.UE_NGAP_IDs.write(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, 0n, [])), Ngap.ie(15, Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))])
 
+# The UE security capability IE (TS 24.501 §9.11.3.54: 5G EA, 5G IA, EPS EEA,
+# EPS EIA octets, the first bit algorithm 0) as NGAP bit strings, whose first
+# bit is algorithm 1 (TS 38.413 §9.3.1.86).
+def Ngap.head0(bs: B.Bytes()) -> U32:
+  match bs:
+    case Nil{}:
+      0
+    case b <> rest:
+      b
+
+def Ngap.cap_byte(caps: B.Bytes(), n: Nat) -> U32:
+  Ngap.head0(List.drop(&2, U32, caps, n))
+
+def Ngap.alg_bits(b: U32) -> Ap.Bits():
+  Ap.unpack([U32.and(224, U32.shln(b, 1n)), 0])
+
+def Ngap.ue_caps(+caps: B.Bytes()) -> G.UESecurityCapabilities:
+  G.UESecurityCapabilities{Ngap.alg_bits(Ngap.cap_byte(caps, 0n)), Ngap.alg_bits(Ngap.cap_byte(caps, 1n)), Ngap.alg_bits(Ngap.cap_byte(caps, 2n)), Ngap.alg_bits(Ngap.cap_byte(caps, 3n)), None{}}
+
+def Ngap.ics_request(key: U32, ran_id: B.Bytes(), +cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.initiating(), 14, Fr.Criticality.reject(), [Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(28, Fr.Criticality.reject(), G.GUAMI.write(NgSetup.guami(cfg), 0n, [])), Ngap.ie(0, Fr.Criticality.reject(), G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{S.Cfg.sst(cfg), None{}, None{}}, None{}}], 0n, [])), Ngap.ie(119, Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(94, Fr.Criticality.reject(), G.SecurityKey.write(Ap.unpack(k_gnb), 0n, [])), Ngap.ie(38, Fr.Criticality.ignore(), G.NAS_PDU.write(nas, 0n, []))])
+
 # What a UE procedure asks for, rendered to frame actions at the boundary.
 type Act is Data:
   DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
+  Ics{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()}
   Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
   ErrInd{assoc: U32, cause: G.Cause}
+  Pfcp{bytes: B.Bytes()}
   Note{level: F.Level, text: String}
   TimerStart{timer: U32, ms: U32}
   TimerCancel{timer: U32}
 
+# A procedure answers with a transaction on the state and its actions.
 def GOut() -> Data:
-  Sigma<&2, &2, S.State, _ => List<&2, Act>>
+  Sigma<&2, &2, S.Tx, _ => List<&2, Act>>
 
 def Act.render(a: Act) -> F.Action:
   match a:
     case DlNas{assoc, stream, key, ran_id, nas}:
       Ngap.send(assoc, stream, Ngap.dl_nas_transport(key, ran_id, nas))
+    case Ics{assoc, stream, key, ran_id, cfg, caps, k_gnb, nas}:
+      Ngap.send(assoc, stream, Ngap.ics_request(key, ran_id, cfg, caps, k_gnb, nas))
     case Release{assoc, stream, key, ran_id, cause}:
       Ngap.send(assoc, stream, Ngap.release_command(key, ran_id, cause))
     case ErrInd{assoc, cause}:
       Ngap.error_indication(assoc, cause)
+    case Pfcp{bytes}:
+      F.Action.pfcp_make(bytes)
     case Note{level, text}:
       F.Action.log_make(level, text)
     case TimerStart{timer, ms}:
@@ -238,16 +251,29 @@ def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
     case a <> more:
       Act.render(a) <> Acts.render(more)
 
-def render_out(o: GOut()) -> S.Out():
+def render_out(st: S.State, o: GOut()) -> S.Out():
   match o:
-    case (st, acts):
-      (st, Acts.render(acts))
+    case (tx, acts):
+      (S.Tx.apply(tx, st), Acts.render(acts))
+
+def Ngap.bad_pdu(assoc: U32) -> List<&2, Act>:
+  [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.transfer_syntax_error())}, Note{F.Warn{}, "NGAP: PDU rejected, transfer syntax error"}]
+
+def Ngap.bad_view(assoc: U32) -> List<&2, Act>:
+  [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.abstract_syntax_error_reject())}, Note{F.Warn{}, "NGAP: message rejected, abstract syntax error"}]
+
+def Ngap.unhandled(assoc: U32) -> List<&2, Act>:
+  [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())}, Note{F.Warn{}, "NGAP: message not handled"}]
 
 def Ngap.bad_nas(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.semantic_error())}, Note{F.Warn{}, "NGAP: NAS message not understood, no context created"}]
 
-def Ngap.bad_view_acts(assoc: U32) -> List<&2, Act>:
-  [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.abstract_syntax_error_reject())}, Note{F.Warn{}, "NGAP: message rejected, abstract syntax error"}]
-
 def Ngap.unknown_ue(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID())}, Note{F.Warn{}, "NGAP: UE-associated message for a UE this association does not own"}]
+
+def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> S.Out():
+  match r:
+    case Fail{e}:
+      (st, Acts.render(Ngap.bad_view(assoc)))
+    case Done{v}:
+      (st, [Ngap.send(assoc, 0, NgSetup.reply(S.State.config(st), v))])

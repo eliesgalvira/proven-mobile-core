@@ -15,6 +15,41 @@ type Nas.Ea is Data:
 type Nas.Ia is Data:
   Nia2{}
 
+# Algorithm identifiers (TS 24.501 §9.11.3.34), and the identifiers the kernel implements.
+def Nas.Ea.id(ea: Nas.Ea) -> U32:
+  match ea:
+    case Nea0{}:
+      0
+    case Nea2{}:
+      2
+
+def Nas.Ia.id(ia: Nas.Ia) -> U32:
+  match ia:
+    case Nia2{}:
+      2
+
+def Nas.Ea.of_nat(n: Nat) -> Maybe<&2, Nas.Ea>:
+  match n:
+    case 0n:
+      Some{Nea0{}}
+    case 2n:
+      Some{Nea2{}}
+    case other:
+      None{}
+
+def Nas.Ia.of_nat(n: Nat) -> Maybe<&2, Nas.Ia>:
+  match n:
+    case 2n:
+      Some{Nia2{}}
+    case other:
+      None{}
+
+def Nas.Ea.of(id: U32) -> Maybe<&2, Nas.Ea>:
+  Nas.Ea.of_nat(U32.to_nat(id))
+
+def Nas.Ia.of(id: U32) -> Maybe<&2, Nas.Ia>:
+  Nas.Ia.of_nat(U32.to_nat(id))
+
 # NAS COUNT: a 16-bit overflow counter and an 8-bit sequence number.
 type Nas.Count is Data:
   Count{overflow: U32, sqn: U32}

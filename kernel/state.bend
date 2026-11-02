@@ -4,6 +4,7 @@ import ./tlv.bend as T
 import ./frame.bend as F
 import ./table.bend as Tb
 import ./ausf.bend as Au
+import ./nas/security.bend as N
 
 # The kernel state (docs/spec/milestone-1.md § The step function): one record.
 # Each UE context is owned by one row keyed by AMF-UE-NGAP-ID; everything else
@@ -78,6 +79,16 @@ def Cfg.subscribers(c: Cfg) -> List<&2, B.Bytes()>:
     case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
       subscribers
 
+def Cfg.nea(c: Cfg) -> B.Bytes():
+  match c:
+    case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
+      nea
+
+def Cfg.nia(c: Cfg) -> B.Bytes():
+  match c:
+    case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
+      nia
+
 def Cfg.smf_n4(c: Cfg) -> B.Bytes():
   match c:
     case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
@@ -97,13 +108,16 @@ def Guard.retries(g: Guard) -> U32:
     case Guard{timer, retries}:
       retries
 
-# Where a UE is in registration. Every phase before registration carries the
-# guard timer that bounds it (T3570 identifying, T3560 authenticating), so a
-# context is never left waiting without one; Releasing waits for the gNB.
+# Where a UE is in registration. Every phase before Registered carries the
+# guard timer that bounds it (T3570 identifying, T3560 authenticating and in
+# security mode, T3550 setting up the context), so a context is never left
+# waiting without one; Releasing waits for the gNB's Release Complete.
 type Phase is Data:
   Identifying{guard: Guard}
   Authenticating{guard: Guard, av: Au.Av, resynced: Bool}
-  Authenticated{guard: Guard, k_amf: B.Bytes()}
+  SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
+  ContextSetup{guard: Guard, ctx: N.Nas.Ctx, response: Bool, complete: Bool}
+  Registered{ctx: N.Nas.Ctx}
   Releasing{}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
@@ -112,8 +126,12 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       Some{guard}
     case Authenticating{guard, av, resynced}:
       Some{guard}
-    case Authenticated{guard, k_amf}:
+    case SecurityMode{guard, ctx, k_amf}:
       Some{guard}
+    case ContextSetup{guard, ctx, response, complete}:
+      Some{guard}
+    case Registered{ctx}:
+      None{}
     case Releasing{}:
       None{}
 
@@ -123,10 +141,37 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       Identifying{g}
     case Authenticating{guard, av, resynced}:
       Authenticating{g, av, resynced}
-    case Authenticated{guard, k_amf}:
-      Authenticated{g, k_amf}
+    case SecurityMode{guard, ctx, k_amf}:
+      SecurityMode{g, ctx, k_amf}
+    case ContextSetup{guard, ctx, response, complete}:
+      ContextSetup{g, ctx, response, complete}
+    case Registered{ctx}:
+      Registered{ctx}
     case Releasing{}:
       Releasing{}
+
+# The NAS security context in force, once there is one.
+def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
+  match p:
+    case SecurityMode{guard, ctx, k_amf}:
+      Some{ctx}
+    case ContextSetup{guard, ctx, response, complete}:
+      Some{ctx}
+    case Registered{ctx}:
+      Some{ctx}
+    case _:
+      None{}
+
+def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
+  match p:
+    case SecurityMode{guard, ctx, k_amf}:
+      SecurityMode{guard, c, k_amf}
+    case ContextSetup{guard, ctx, response, complete}:
+      ContextSetup{guard, c, response, complete}
+    case Registered{ctx}:
+      Registered{c}
+    case other:
+      other
 
 def Phase.releasing(p: Phase) -> Bool:
   match p:
@@ -135,41 +180,63 @@ def Phase.releasing(p: Phase) -> Bool:
     case _:
       False{}
 
+def Phase.registered(p: Phase) -> Bool:
+  match p:
+    case Registered{ctx}:
+      True{}
+    case _:
+      False{}
+
 # A UE context: the NGAP association that owns it, its RAN-UE-NGAP-ID there,
-# the stream its InitialUEMessage arrived on, its SUPI once known, the plain
-# Registration Request, the ngKSI in use, its phase and the last downlink NAS
-# message (retransmitted when the guard fires).
+# the stream its InitialUEMessage arrived on, its SUPI and 5G-TMSI once given,
+# the plain Registration Request, the ngKSI in use, its phase and the last
+# downlink NAS message (retransmitted when the guard fires).
 type Ue is Data:
-  Ue{assoc: U32, ran_id: B.Bytes(), stream: U32, supi: Maybe<&2, B.Digits()>, reg: B.Bytes(), ngksi: U32, phase: Phase, last_dl: B.Bytes()}
+  Ue{assoc: U32, ran_id: B.Bytes(), stream: U32, supi: Maybe<&2, B.Digits()>, tmsi: Maybe<&2, U32>, reg: B.Bytes(), ngksi: U32, phase: Phase, last_dl: B.Bytes()}
 
 def Ue.assoc(u: Ue) -> U32:
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       assoc
 
 def Ue.ran_id(u: Ue) -> B.Bytes():
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       ran_id
 
 def Ue.stream(u: Ue) -> U32:
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       stream
 
 def Ue.supi(u: Ue) -> Maybe<&2, B.Digits()>:
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       supi
+
+def Ue.tmsi(u: Ue) -> Maybe<&2, U32>:
+  match u:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      tmsi
+
+def Ue.reg(u: Ue) -> B.Bytes():
+  match u:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      reg
+
+def Ue.ngksi(u: Ue) -> U32:
+  match u:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      ngksi
 
 def Ue.phase(u: Ue) -> Phase:
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       phase
 
 def Ue.last_dl(u: Ue) -> B.Bytes():
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       last_dl
 
 def Ue.guard(u: Ue) -> Maybe<&2, Guard>:
@@ -177,18 +244,28 @@ def Ue.guard(u: Ue) -> Maybe<&2, Guard>:
 
 def Ue.with_phase(u: Ue, p: Phase) -> Ue:
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
-      Ue{assoc, ran_id, stream, supi, reg, ngksi, p, last_dl}
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, p, last_dl}
 
 def Ue.with_dl(u: Ue, p: Phase, dl: B.Bytes()) -> Ue:
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
-      Ue{assoc, ran_id, stream, supi, reg, ngksi, p, dl}
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, p, dl}
 
 def Ue.with_supi(u: Ue, s: B.Digits()) -> Ue:
   match u:
-    case Ue{assoc, ran_id, stream, supi, reg, ngksi, phase, last_dl}:
-      Ue{assoc, ran_id, stream, Some{s}, reg, ngksi, phase, last_dl}
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      Ue{assoc, ran_id, stream, Some{s}, tmsi, reg, ngksi, phase, last_dl}
+
+def Ue.with_tmsi(u: Ue, t: U32) -> Ue:
+  match u:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      Ue{assoc, ran_id, stream, supi, Some{t}, reg, ngksi, phase, last_dl}
+
+def Ue.with_reg(u: Ue, r: B.Bytes()) -> Ue:
+  match u:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      Ue{assoc, ran_id, stream, supi, tmsi, r, ngksi, phase, last_dl}
 
 # A PDU session, keyed by its local SEID: its UE and the UP function's SEID.
 type Session is Data:
@@ -240,31 +317,20 @@ def State.pfcp_seq(st: State) -> U32:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
       pfcp_seq
 
+def State.next_ue(st: State) -> U32:
+  match st:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+      next_ue
+
+def State.next_timer(st: State) -> U32:
+  match st:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+      next_timer
+
 def State.recovery(st: State) -> B.Bytes():
   match st:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
       recovery
-
-def State.put_ue(st: State, key: U32, u: Ue) -> State:
-  match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      State{config, subs, assocs, Tb.Table.set(Ue, key, u, ues), sessions, pfcp_seq, next_ue, next_timer, recovery}
-
-def State.put_subs(st: State, new: List<&2, Au.Subscriber>) -> State:
-  match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      State{config, new, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}
-
-# A fresh timer id, and a fresh AMF-UE-NGAP-ID.
-def State.fresh_timer(st: State) -> Sigma<&2, &2, U32, _ => State>:
-  match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, +next_timer, recovery}:
-      (next_timer, State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, U32.add(next_timer, 1), recovery})
-
-def State.fresh_ue(st: State) -> Sigma<&2, &2, U32, _ => State>:
-  match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, +next_ue, next_timer, recovery}:
-      (next_ue, State{config, subs, assocs, ues, sessions, pfcp_seq, U32.add(next_ue, 1), next_timer, recovery})
 
 # What one step answers: the next state and the actions to perform.
 def Out() -> Data:
@@ -306,21 +372,6 @@ def Assocs.drop(+a: U32, as: List<&2, U32>) -> List<&2, U32>:
 
 # UE contexts of an association
 # -----------------------------
-
-def Ues.keep_row(key: U32, u: Ue, rest: Tb.Table(Ue), other: Bool) -> Tb.Table(Ue):
-  match other:
-    case True{}:
-      (key, u) <> rest
-    case False{}:
-      rest
-
-# The contexts not owned by association a.
-def Ues.drop_assoc(+a: U32, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
-  match ues:
-    case Nil{}:
-      []
-    case (key, +u) <> more:
-      Ues.keep_row(key, u, Ues.drop_assoc(a, more), Bool.not(U32.is_eq(Ue.assoc(u), a)))
 
 # No context is owned by association a.
 def Ues.none_assoc(+a: U32, ues: Tb.Table(Ue)) -> Bool:
@@ -377,9 +428,11 @@ def Ues.by_timer(+timer: U32, ues: Tb.Table(Ue)) -> Maybe<&2, Sigma<&2, &2, U32,
     case (key, +u) <> more:
       Ues.pick_timer(key, u, Ues.by_timer(timer, more), Ues.timer_is(Ue.guard(u), timer))
 
-# A context that is not registered is bounded by a guard timer or is being released.
+# A context is registered, bounded by a guard timer, or being released: never left hanging.
 def Phase.guarded(p: Phase) -> Bool:
   match p:
+    case Registered{ctx}:
+      True{}
     case Releasing{}:
       True{}
     case other:
@@ -394,3 +447,155 @@ def Ues.guarded(ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (key, u) <> more:
       Bool.and(Ue.guarded(u), Ues.guarded(more))
+
+# Indexes
+# -------
+# The secondary indexes (SUPI, 5G-TMSI, RAN-UE-NGAP-ID per association) are
+# the contexts themselves, searched; two rows conflict when they share a key
+# or an identity. A sieve names the rows to keep.
+
+def Maybe.same_bytes(a: Maybe<&2, B.Bytes()>, b: Maybe<&2, B.Bytes()>) -> Bool:
+  match a b:
+    case Some{x} Some{y}:
+      B.bytes_eq(x, y)
+    case _ _:
+      False{}
+
+def Maybe.same_u32(a: Maybe<&2, U32>, b: Maybe<&2, U32>) -> Bool:
+  match a b:
+    case Some{x} Some{y}:
+      U32.is_eq(x, y)
+    case _ _:
+      False{}
+
+def Ue.conflicts(+u: Ue, +v: Ue) -> Bool:
+  Bool.or(Maybe.same_bytes(Ue.supi(u), Ue.supi(v)), Bool.or(Maybe.same_u32(Ue.tmsi(u), Ue.tmsi(v)), Bool.and(U32.is_eq(Ue.assoc(u), Ue.assoc(v)), B.bytes_eq(Ue.ran_id(u), Ue.ran_id(v)))))
+
+def Row.conflicts(key: U32, u: Ue, k: U32, v: Ue) -> Bool:
+  Bool.or(U32.is_eq(k, key), Ue.conflicts(u, v))
+
+def Ues.clear(+key: U32, +u: Ue, ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (k, v) <> more:
+      Bool.and(Bool.not(Row.conflicts(key, u, k, v)), Ues.clear(key, u, more))
+
+# No two rows share a key or an index.
+def Ues.unique(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (+key, +u) <> +more:
+      Bool.and(Ues.clear(key, u, more), Ues.unique(more))
+
+type Sieve is Data:
+  Others{assoc: U32}
+  Clear{key: U32, u: Ue}
+  Victims{key: U32, u: Ue}
+  Except{key: U32}
+
+def Sieve.keeps(s: Sieve, k: U32, v: Ue) -> Bool:
+  match s:
+    case Others{a}:
+      Bool.not(U32.is_eq(Ue.assoc(v), a))
+    case Clear{key, u}:
+      Bool.not(Row.conflicts(key, u, k, v))
+    case Victims{key, u}:
+      Bool.and(Bool.not(U32.is_eq(k, key)), Ue.conflicts(u, v))
+    case Except{key}:
+      Bool.not(U32.is_eq(k, key))
+
+def Ues.sift(+s: Sieve, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
+  match ues:
+    case Nil{}:
+      []
+    case (+k, +v) <> more:
+      Tb.Table.keep(Ue, k, v, Ues.sift(s, more), Sieve.keeps(s, k, v))
+
+# The contexts not owned by association a.
+def Ues.drop_assoc(a: U32, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
+  Ues.sift(Others{a}, ues)
+
+# The context takes the place of its key and of every context it conflicts with.
+def Ues.put(+key: U32, +u: Ue, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
+  (key, u) <> Ues.sift(Clear{key, u}, ues)
+
+# The rows under other keys that a context would take the place of.
+def Ues.evicted(key: U32, u: Ue, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
+  Ues.sift(Victims{key, u}, ues)
+
+def Ues.del(key: U32, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
+  Ues.sift(Except{key}, ues)
+
+# Sessions of a UE
+# ----------------
+
+def Sessions.drop_ue(+ue: U32, sessions: Tb.Table(Session)) -> Tb.Table(Session):
+  match sessions:
+    case Nil{}:
+      []
+    case (key, +s) <> more:
+      Tb.Table.keep(Session, key, s, Sessions.drop_ue(ue, more), Bool.not(U32.is_eq(Session.ue(s), ue)))
+
+def Sessions.pick_ue(s: Session, rest: List<&2, Session>, hit: Bool) -> List<&2, Session>:
+  match hit:
+    case True{}:
+      s <> rest
+    case False{}:
+      rest
+
+def Sessions.of_ue(+ue: U32, sessions: Tb.Table(Session)) -> List<&2, Session>:
+  match sessions:
+    case Nil{}:
+      []
+    case (key, +s) <> more:
+      Sessions.pick_ue(s, Sessions.of_ue(ue, more), U32.is_eq(Session.ue(s), ue))
+
+# Transactions
+# ------------
+# A UE procedure answers with what to change, applied by one interpreter:
+# a context put (evicting the contexts it conflicts with), a context and its
+# sessions forgotten, the subscribers replaced, fresh ids consumed, PFCP
+# sequence numbers consumed.
+
+type Tx is Data:
+  Keep{}
+  Put{key: U32, ue: Ue}
+  Del{key: U32}
+  Subs{subs: List<&2, Au.Subscriber>}
+  BumpUe{}
+  BumpTimer{}
+  BumpSeq{n: U32}
+  Both{first: Tx, second: Tx}
+
+def Tx.apply(tx: Tx, st: State) -> State:
+  match tx:
+    case Keep{}:
+      st
+    case Put{key, ue}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+          State{config, subs, assocs, Ues.put(key, ue, ues), sessions, pfcp_seq, next_ue, next_timer, recovery}
+    case Del{+key}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+          State{config, subs, assocs, Ues.del(key, ues), Sessions.drop_ue(key, sessions), pfcp_seq, next_ue, next_timer, recovery}
+    case Subs{new}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+          State{config, new, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}
+    case BumpUe{}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, U32.add(next_ue, 1), next_timer, recovery}
+    case BumpTimer{}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, U32.add(next_timer, 1), recovery}
+    case BumpSeq{n}:
+      match st:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+          State{config, subs, assocs, ues, sessions, U32.add(pfcp_seq, n), next_ue, next_timer, recovery}
+    case Both{first, second}:
+      Tx.apply(second, Tx.apply(first, st))

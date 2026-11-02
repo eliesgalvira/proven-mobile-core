@@ -44,16 +44,10 @@ def Table.set(-V: Data, +k: U32, +v: V, t: Table(V)) -> Table(V):
     case (+key, w) <> +more:
       Table.set_row(V, k, v, key, w, more, Table.set(V, k, v, more), U32.is_eq(key, k))
 
-def Table.del_row(-V: Data, key: U32, w: V, rest: Table(V), hit: Bool) -> Table(V):
-  match hit:
+# The row, kept or dropped, in front of the rest.
+def Table.keep(-V: Data, key: U32, v: V, rest: Table(V), keep: Bool) -> Table(V):
+  match keep:
     case True{}:
-      rest
+      (key, v) <> rest
     case False{}:
-      (key, w) <> rest
-
-def Table.del(-V: Data, +k: U32, t: Table(V)) -> Table(V):
-  match t:
-    case Nil{}:
-      []
-    case (+key, w) <> more:
-      Table.del_row(V, key, w, Table.del(V, k, more), U32.is_eq(key, k))
+      rest
