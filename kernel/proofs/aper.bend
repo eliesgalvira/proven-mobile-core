@@ -1429,3 +1429,50 @@ def XStr.dv(+al: Bool, +n: Nat, +lo: Nat, +diff: Nat, rb: Ap.Rd(Bool), +s: B.Byt
 
 def L.aper.xstr.decode_valid(al, n, lo, diff, c, s, c2, e):
   XStr.dv(al, n, lo, diff, Ap.Bit.read(c), s, c2, e)
+
+# Padding
+# -------
+
+def L.aper.pack.padding(bits):
+  match bits:
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> +rest:
+      sih = Equal.sym(Ap.Bits(), Ap.unpack(Ap.pack(rest)), List.append(&2, Bool, rest, Ap.padding(rest)), L.aper.pack.padding(rest))
+      %sih : {b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> _ == b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> List.append(&2, Bool, rest, Ap.padding(rest)) : Ap.Bits()}
+      {==}
+    case Nil{}:
+      {==}
+    case b7 <> Nil{}:
+      {==}
+    case b7 <> b6 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> b3 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> Nil{}:
+      {==}
+
+def L.aper.padding.zero(bits):
+  match bits:
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> rest:
+      L.aper.padding.zero(rest)
+    case Nil{}:
+      {==}
+    case b7 <> Nil{}:
+      {==}
+    case b7 <> b6 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> b3 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> Nil{}:
+      {==}
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> Nil{}:
+      {==}

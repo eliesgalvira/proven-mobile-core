@@ -10,3 +10,4 @@ import ./proofs/mobile_id.bend as PI
 import ./proofs/sm.bend as PSM
 import ./proofs/sm_ies.bend as PQ
 import ./proofs/aper.bend as PA
+import ./proofs/ngap_frame.bend as PF

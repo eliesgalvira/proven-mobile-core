@@ -17,6 +17,7 @@ import ./nas/mobile_id.bend as Mi
 import ./nas/sm.bend as Sm
 import ./nas/sm_ies.bend as Q
 import ./aper.bend as Ap
+import ./ngap/frame.bend as Fr
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -826,3 +827,71 @@ law aper.xstr.decode_valid:
   for +c2: Ap.Cur
   for +e: {Ap.XStr.read(al, n, lo, diff, c) == Done{(s, c2)} : Ap.Rd(B.Bytes())}
   {Ap.XStr.valid(lo, diff, s) == True{} : Bool}
+
+# A complete encoding is padded to an octet with zero bits (§11.1.3), and
+# only such a tail may follow one.
+law aper.pack.padding:
+  for +bits: Ap.Bits()
+  {Ap.unpack(Ap.pack(bits)) == List.append(&2, Bool, bits, Ap.padding(bits)) : Ap.Bits()}
+
+law aper.padding.zero:
+  for +bits: Ap.Bits()
+  {Ap.Tail.zero(Ap.padding(bits)) == True{} : Bool}
+
+# ngap framing (ticket 13)
+# ------------------------
+
+law ngap.ie.roundtrip:
+  for +ie: Fr.Ie
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Fr.Ie.valid(ie) == True{} : Bool}
+  {Fr.Ie.read(Ap.Cur{rem, Fr.Ie.write(ie, rem, rest)}) == Done{(ie, Ap.Cur{Fr.Ie.after(rem), rest})} : Ap.Rd(Fr.Ie)}
+
+law ngap.ie.decode_valid:
+  for +c: Ap.Cur
+  for +ie: Fr.Ie
+  for +c2: Ap.Cur
+  for +e: {Fr.Ie.read(c) == Done{(ie, c2)} : Ap.Rd(Fr.Ie)}
+  {Fr.Ie.valid(ie) == True{} : Bool}
+
+law ngap.ies.roundtrip:
+  for +ies: List<&2, Fr.Ie>
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Fr.Ies.valid(ies) == True{} : Bool}
+  {Fr.Ies.read(Ap.Cur{rem, Fr.Ies.write(ies, rem, rest)}) == Done{(ies, Ap.Cur{Fr.Ies.after(rem), rest})} : Ap.Rd(List<&2, Fr.Ie>)}
+
+law ngap.ies.decode_valid:
+  for +c: Ap.Cur
+  for +ies: List<&2, Fr.Ie>
+  for +c2: Ap.Cur
+  for +e: {Fr.Ies.read(c) == Done{(ies, c2)} : Ap.Rd(List<&2, Fr.Ie>)}
+  {Fr.Ies.valid(ies) == True{} : Bool}
+
+law ngap.exts.roundtrip:
+  for +ies: List<&2, Fr.Ie>
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Fr.Exts.valid(ies) == True{} : Bool}
+  {Fr.Exts.read(Ap.Cur{rem, Fr.Exts.write(ies, rem, rest)}) == Done{(ies, Ap.Cur{Fr.Exts.after(rem), rest})} : Ap.Rd(List<&2, Fr.Ie>)}
+
+law ngap.exts.decode_valid:
+  for +c: Ap.Cur
+  for +ies: List<&2, Fr.Ie>
+  for +c2: Ap.Cur
+  for +e: {Fr.Exts.read(c) == Done{(ies, c2)} : Ap.Rd(List<&2, Fr.Ie>)}
+  {Fr.Exts.valid(ies) == True{} : Bool}
+
+# The PDU codec works on bytes: a valid PDU reads back from its own bytes,
+# and whatever reads is valid.
+law ngap.pdu.roundtrip:
+  for +p: Fr.Pdu
+  for +v: {Fr.Pdu.valid(p) == True{} : Bool}
+  {Fr.Pdu.read(Fr.Pdu.write(p)) == Done{p} : Result<&2, &2, B.Err, Fr.Pdu>}
+
+law ngap.pdu.decode_valid:
+  for +bs: B.Bytes()
+  for +p: Fr.Pdu
+  for +e: {Fr.Pdu.read(bs) == Done{p} : Result<&2, &2, B.Err, Fr.Pdu>}
+  {Fr.Pdu.valid(p) == True{} : Bool}

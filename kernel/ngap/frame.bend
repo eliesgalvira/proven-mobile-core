@@ -247,10 +247,10 @@ def Pdu.r_ext(r: Ap.Rd(Bool)) -> Result<&2, &2, B.Err, Pdu>:
 def Pdu.read(bs: B.Bytes()) -> Result<&2, &2, B.Err, Pdu>:
   Pdu.r_ext(Ap.Bit.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
-def Pdu.bits(p: Pdu) -> Ap.Bits():
+def Pdu.bits(p: Pdu, rest: Ap.Bits()) -> Ap.Bits():
   match p:
     case Pdu{kind, code, crit, value}:
-      Ap.Bit.write(False{}, 0n, Ap.Int.write(2n, kind, 7n, Ap.AInt.write(8n, code, 5n, Criticality.write(crit, 0n, Ap.Open.write(value, 6n, [])))))
+      Ap.Bit.write(False{}, 0n, Ap.Int.write(2n, kind, 7n, Ap.AInt.write(8n, code, 5n, Criticality.write(crit, 0n, Ap.Open.write(value, 6n, rest)))))
 
 def Pdu.write(p: Pdu) -> B.Bytes():
-  Ap.pack(Pdu.bits(p))
+  Ap.pack(Pdu.bits(p, []))
