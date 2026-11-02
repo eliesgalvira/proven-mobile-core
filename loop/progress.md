@@ -21,7 +21,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 15 | frames | done | 02 | f0cdd2c: edge/kernel frame codec (envelope, six event kinds with Config TLVs and subscribers, six action kinds with a typed log level); TLV codec and proofs shared with PFCP via kernel/tlv.bend; 31 checks; 6 laws proven (max_length, event roundtrip/decode_valid/suffix, actions roundtrip, config repeat_replaces) |
 | 16 | state-ng-setup | done | 13, 15 | 64897b7: State record with U32-keyed tables, Kernel.step over Config (typed Cfg, PFCP Association Setup Request), NGAP associations up/down (releasing UEs and sessions), NG Setup Response matching the capture byte for byte or Failure, Error Indication for undecodable PDUs; 16 checks; 3 laws proven |
 | 17 | registration-auth | done | 08, 09, 10, 16 | 9563e69: InitialUEMessage creates a guarded UE context, SUCI deconcealment and subscriber lookup, Identity Request for an unknown 5G-GUTI, AUSF/UDM vector with SQN+32 and AUTS re-synchronisation, Authentication Request/Response/Failure over DL/UL NAS Transport, T3560 retransmission and release; the Authentication Request and KAMF match the capture; 16 checks; 3 laws proven |
-| 18 | registration-complete | in-progress | 17 | |
+| 18 | registration-complete | done | 17 | b869175: NAS security mode (SMC byte for byte, algorithm choice, SM Complete with RINMR), Initial Context Setup with the captured KgNB, Registration Accept with 5G-GUTI from entropy, Complete, deregistration, UE context release, identity takeover; UE procedures as transactions, UE table as one sieve; 32 checks; 5 laws proven |
 | 19 | pdu-session | todo | 11, 14, 18 | |
 | 20 | kernel-main | todo | 15, 19 | |
 | 21 | edge | todo | 15 | |
