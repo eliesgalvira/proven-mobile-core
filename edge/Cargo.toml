@@ -1,0 +1,15 @@
+[package]
+name = "edge"
+version = "0.1.0"
+edition = "2021"
+license = "0BSD"
+description = "The thin layer around the 5G kernel: sockets, clock and randomness"
+
+[dependencies]
+getrandom = "0.3"
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+[dev-dependencies]
+serde_json = "1"
