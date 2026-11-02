@@ -20,6 +20,7 @@ import ./aper.bend as Ap
 import ./ngap/frame.bend as Fr
 import ./ngap/gen/views.bend as GV
 import ./pfcp.bend as Pf
+import ./frame.bend as F
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -975,3 +976,53 @@ law pfcp.header.length_consistent:
   for +rest: B.Bytes()
   for +e: {Pf.Msg.read(bs) == Done{(m, rest)} : B.Read(Pf.Msg)}
   {List.length(&2, U32, bs) == Nat.add(4n, Nat.add(U32.to_nat(Pf.Msg.len(m)), List.length(&2, U32, rest))) : Nat}
+
+# frame (ticket 15)
+# -----------------
+# The edge ⇄ kernel frame protocol (milestone-1.md § The frame protocol): a
+# length-prefixed body holding one event or one list of actions.
+
+# A body longer than 262144 octets is refused on its length word alone.
+law frame.max_length:
+  for +b3: U32
+  for +b2: U32
+  for +b1: U32
+  for +b0: U32
+  for +rest: B.Bytes()
+  for +e: {Nat.is_lt(262144n, U32.to_nat(B.cat8(b0, B.cat8(b1, B.cat8(b2, b3))))) == True{} : Bool}
+  {F.Frame.read(b3 <> b2 <> b1 <> b0 <> rest) == Fail{B.Invalid{B.cat8(b0, B.cat8(b1, B.cat8(b2, b3)))}} : B.Read(B.Bytes())}
+
+law frame.event.roundtrip:
+  for +i: F.Input
+  for +rest: B.Bytes()
+  for +v: {F.Input.valid(i) == True{} : Bool}
+  {F.Input.read(F.Input.write(i, rest)) == Done{(i, rest)} : B.Read(F.Input)}
+
+law frame.event.decode_valid:
+  for +bs: B.Bytes()
+  for +i: F.Input
+  for +rest: B.Bytes()
+  for +e: {F.Input.read(bs) == Done{(i, rest)} : B.Read(F.Input)}
+  {F.Input.valid(i) == True{} : Bool}
+
+law frame.event.suffix:
+  for +bs: B.Bytes()
+  for +i: F.Input
+  for +rest: B.Bytes()
+  for +e: {F.Input.read(bs) == Done{(i, rest)} : B.Read(F.Input)}
+  for +ab: {B.all_bytes(bs) == True{} : Bool}
+  {F.Input.write(i, rest) == bs : B.Bytes()}
+
+law frame.actions.roundtrip:
+  for +as: F.Actions
+  for +rest: B.Bytes()
+  for +v: {F.Actions.valid(as) == True{} : Bool}
+  {F.Actions.read(F.Actions.write(as, rest)) == Done{(as, rest)} : B.Read(F.Actions)}
+
+# A repeated Config tag yields the later value.
+law frame.config.repeat_replaces:
+  for +tl: List<&2, F.Tlv>
+  for +tag: U32
+  for +len: U32
+  for +v: B.Bytes()
+  {F.Config.get(tag, List.append(&2, F.Tlv, tl, [F.Tlv{tag, len, v}])) == Some{v} : Maybe<&2, B.Bytes()>}
