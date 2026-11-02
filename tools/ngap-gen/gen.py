@@ -606,14 +606,14 @@ class Gen:
         self.out(f"    case {count}n+p:")
         self.out("      Fail{B.Invalid{0}}")
         self.out()
-        self.out(f"def {b}.r_idx(r: Ap.Rd(U32)) -> Ap.Rd({b}):")
+        self.out(f"def {b}.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd({b}):")
         self.out("  match r:")
         self.out("    case Fail{e}:")
         self.out("      Fail{e}")
         self.out("    case Done{(i, c)}:")
-        self.out(f"      {b}.alt(U32.to_nat(i), c)")
+        self.out(f"      {b}.alt(i, c)")
         self.out()
-        body = f"{b}.r_idx(Ap.Int.read({n}n, {diff}, c))"
+        body = f"{b}.r_idx(Ap.Size.read(False{{}}, {n}n, 0n, {diff}n, c))"
         if t.ext:
             self.out(f"def {b}.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd({b}):")
             self.out("  match r:")
@@ -631,11 +631,12 @@ class Gen:
         self.out(f"  {body}")
         self.out()
         r0 = "Ap.Bit.after(rem)" if t.ext else "rem"
+        r1 = f"Ap.Size.after(False{{}}, {n}n, {r0})"
         self.out(f"def {b}.write(x: {b}, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():")
         self.out("  match x:")
         for j, (an, at) in enumerate(alts):
             self.out(f"    case {b}_{an}{{+v}}:")
-            inner = f"Ap.Int.write({n}n, {j}, {r0}, {self.write(at, 'v', f'Ap.Int.after({n}n, {r0})', 'rest')})"
+            inner = f"Ap.Size.write(False{{}}, {n}n, 0n, {j}n, {r0}, {self.write(at, 'v', r1, 'rest')})"
             if t.ext:
                 inner = f"Ap.Bit.write(False{{}}, rem, {inner})"
             self.out(f"      {inner}")
@@ -644,7 +645,7 @@ class Gen:
         self.out("  match x:")
         for an, at in alts:
             self.out(f"    case {b}_{an}{{v}}:")
-            self.out(f"      {self.after(at, 'v', f'Ap.Int.after({n}n, {r0})')}")
+            self.out(f"      {self.after(at, 'v', r1)}")
         self.out()
 
     def emit_list(self, t):

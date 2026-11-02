@@ -994,29 +994,29 @@ def GNB_ID.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(GNB_ID):
     case 2n+p:
       Fail{B.Invalid{0}}
 
-def GNB_ID.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(GNB_ID):
+def GNB_ID.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(GNB_ID):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      GNB_ID.alt(U32.to_nat(i), c)
+      GNB_ID.alt(i, c)
 
 def GNB_ID.read(c: Ap.Cur) -> Ap.Rd(GNB_ID):
-  GNB_ID.r_idx(Ap.Int.read(1n, 1, c))
+  GNB_ID.r_idx(Ap.Size.read(False{}, 1n, 0n, 1n, c))
 
 def GNB_ID.write(x: GNB_ID, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case GNB_ID_gNB_ID{+v}:
-      Ap.Int.write(1n, 0, rem, GNB_ID_gNB_ID.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 0n, rem, GNB_ID_gNB_ID.write(v, Ap.Size.after(False{}, 1n, rem), rest))
     case GNB_ID_choice_Extensions{+v}:
-      Ap.Int.write(1n, 1, rem, Fr.Ie.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 1n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 1n, rem), rest))
 
 def GNB_ID.after(x: GNB_ID, +rem: Nat) -> Nat:
   match x:
     case GNB_ID_gNB_ID{v}:
-      GNB_ID_gNB_ID.after(v, Ap.Int.after(1n, rem))
+      GNB_ID_gNB_ID.after(v, Ap.Size.after(False{}, 1n, rem))
     case GNB_ID_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(1n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
 
 def GNB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GNB_ID)) -> Bool:
   match r:
@@ -1292,37 +1292,37 @@ def NgENB_ID.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(NgENB_ID):
     case 4n+p:
       Fail{B.Invalid{0}}
 
-def NgENB_ID.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(NgENB_ID):
+def NgENB_ID.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(NgENB_ID):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      NgENB_ID.alt(U32.to_nat(i), c)
+      NgENB_ID.alt(i, c)
 
 def NgENB_ID.read(c: Ap.Cur) -> Ap.Rd(NgENB_ID):
-  NgENB_ID.r_idx(Ap.Int.read(2n, 3, c))
+  NgENB_ID.r_idx(Ap.Size.read(False{}, 2n, 0n, 3n, c))
 
 def NgENB_ID.write(x: NgENB_ID, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case NgENB_ID_macroNgENB_ID{+v}:
-      Ap.Int.write(2n, 0, rem, NgENB_ID_macroNgENB_ID.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 0n, rem, NgENB_ID_macroNgENB_ID.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case NgENB_ID_shortMacroNgENB_ID{+v}:
-      Ap.Int.write(2n, 1, rem, NgENB_ID_shortMacroNgENB_ID.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 1n, rem, NgENB_ID_shortMacroNgENB_ID.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case NgENB_ID_longMacroNgENB_ID{+v}:
-      Ap.Int.write(2n, 2, rem, NgENB_ID_longMacroNgENB_ID.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 2n, rem, NgENB_ID_longMacroNgENB_ID.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case NgENB_ID_choice_Extensions{+v}:
-      Ap.Int.write(2n, 3, rem, Fr.Ie.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 3n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 2n, rem), rest))
 
 def NgENB_ID.after(x: NgENB_ID, +rem: Nat) -> Nat:
   match x:
     case NgENB_ID_macroNgENB_ID{v}:
-      NgENB_ID_macroNgENB_ID.after(v, Ap.Int.after(2n, rem))
+      NgENB_ID_macroNgENB_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case NgENB_ID_shortMacroNgENB_ID{v}:
-      NgENB_ID_shortMacroNgENB_ID.after(v, Ap.Int.after(2n, rem))
+      NgENB_ID_shortMacroNgENB_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case NgENB_ID_longMacroNgENB_ID{v}:
-      NgENB_ID_longMacroNgENB_ID.after(v, Ap.Int.after(2n, rem))
+      NgENB_ID_longMacroNgENB_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case NgENB_ID_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(2n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
 def NgENB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NgENB_ID)) -> Bool:
   match r:
@@ -1518,29 +1518,29 @@ def N3IWF_ID.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(N3IWF_ID):
     case 2n+p:
       Fail{B.Invalid{0}}
 
-def N3IWF_ID.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(N3IWF_ID):
+def N3IWF_ID.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(N3IWF_ID):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      N3IWF_ID.alt(U32.to_nat(i), c)
+      N3IWF_ID.alt(i, c)
 
 def N3IWF_ID.read(c: Ap.Cur) -> Ap.Rd(N3IWF_ID):
-  N3IWF_ID.r_idx(Ap.Int.read(1n, 1, c))
+  N3IWF_ID.r_idx(Ap.Size.read(False{}, 1n, 0n, 1n, c))
 
 def N3IWF_ID.write(x: N3IWF_ID, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case N3IWF_ID_n3IWF_ID{+v}:
-      Ap.Int.write(1n, 0, rem, N3IWF_ID_n3IWF_ID.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 0n, rem, N3IWF_ID_n3IWF_ID.write(v, Ap.Size.after(False{}, 1n, rem), rest))
     case N3IWF_ID_choice_Extensions{+v}:
-      Ap.Int.write(1n, 1, rem, Fr.Ie.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 1n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 1n, rem), rest))
 
 def N3IWF_ID.after(x: N3IWF_ID, +rem: Nat) -> Nat:
   match x:
     case N3IWF_ID_n3IWF_ID{v}:
-      N3IWF_ID_n3IWF_ID.after(v, Ap.Int.after(1n, rem))
+      N3IWF_ID_n3IWF_ID.after(v, Ap.Size.after(False{}, 1n, rem))
     case N3IWF_ID_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(1n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
 
 def N3IWF_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(N3IWF_ID)) -> Bool:
   match r:
@@ -1732,37 +1732,37 @@ def GlobalRANNodeID.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(GlobalRANNodeID):
     case 4n+p:
       Fail{B.Invalid{0}}
 
-def GlobalRANNodeID.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(GlobalRANNodeID):
+def GlobalRANNodeID.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(GlobalRANNodeID):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      GlobalRANNodeID.alt(U32.to_nat(i), c)
+      GlobalRANNodeID.alt(i, c)
 
 def GlobalRANNodeID.read(c: Ap.Cur) -> Ap.Rd(GlobalRANNodeID):
-  GlobalRANNodeID.r_idx(Ap.Int.read(2n, 3, c))
+  GlobalRANNodeID.r_idx(Ap.Size.read(False{}, 2n, 0n, 3n, c))
 
 def GlobalRANNodeID.write(x: GlobalRANNodeID, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case GlobalRANNodeID_globalGNB_ID{+v}:
-      Ap.Int.write(2n, 0, rem, GlobalGNB_ID.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 0n, rem, GlobalGNB_ID.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case GlobalRANNodeID_globalNgENB_ID{+v}:
-      Ap.Int.write(2n, 1, rem, GlobalNgENB_ID.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 1n, rem, GlobalNgENB_ID.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case GlobalRANNodeID_globalN3IWF_ID{+v}:
-      Ap.Int.write(2n, 2, rem, GlobalN3IWF_ID.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 2n, rem, GlobalN3IWF_ID.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case GlobalRANNodeID_choice_Extensions{+v}:
-      Ap.Int.write(2n, 3, rem, Fr.Ie.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 3n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 2n, rem), rest))
 
 def GlobalRANNodeID.after(x: GlobalRANNodeID, +rem: Nat) -> Nat:
   match x:
     case GlobalRANNodeID_globalGNB_ID{v}:
-      GlobalGNB_ID.after(v, Ap.Int.after(2n, rem))
+      GlobalGNB_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case GlobalRANNodeID_globalNgENB_ID{v}:
-      GlobalNgENB_ID.after(v, Ap.Int.after(2n, rem))
+      GlobalNgENB_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case GlobalRANNodeID_globalN3IWF_ID{v}:
-      GlobalN3IWF_ID.after(v, Ap.Int.after(2n, rem))
+      GlobalN3IWF_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case GlobalRANNodeID_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(2n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
 def GlobalRANNodeID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GlobalRANNodeID)) -> Bool:
   match r:
@@ -3012,45 +3012,45 @@ def Cause.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(Cause):
     case 6n+p:
       Fail{B.Invalid{0}}
 
-def Cause.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(Cause):
+def Cause.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(Cause):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      Cause.alt(U32.to_nat(i), c)
+      Cause.alt(i, c)
 
 def Cause.read(c: Ap.Cur) -> Ap.Rd(Cause):
-  Cause.r_idx(Ap.Int.read(3n, 5, c))
+  Cause.r_idx(Ap.Size.read(False{}, 3n, 0n, 5n, c))
 
 def Cause.write(x: Cause, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case Cause_radioNetwork{+v}:
-      Ap.Int.write(3n, 0, rem, CauseRadioNetwork.write(v, Ap.Int.after(3n, rem), rest))
+      Ap.Size.write(False{}, 3n, 0n, 0n, rem, CauseRadioNetwork.write(v, Ap.Size.after(False{}, 3n, rem), rest))
     case Cause_transport{+v}:
-      Ap.Int.write(3n, 1, rem, CauseTransport.write(v, Ap.Int.after(3n, rem), rest))
+      Ap.Size.write(False{}, 3n, 0n, 1n, rem, CauseTransport.write(v, Ap.Size.after(False{}, 3n, rem), rest))
     case Cause_nas{+v}:
-      Ap.Int.write(3n, 2, rem, CauseNas.write(v, Ap.Int.after(3n, rem), rest))
+      Ap.Size.write(False{}, 3n, 0n, 2n, rem, CauseNas.write(v, Ap.Size.after(False{}, 3n, rem), rest))
     case Cause_protocol{+v}:
-      Ap.Int.write(3n, 3, rem, CauseProtocol.write(v, Ap.Int.after(3n, rem), rest))
+      Ap.Size.write(False{}, 3n, 0n, 3n, rem, CauseProtocol.write(v, Ap.Size.after(False{}, 3n, rem), rest))
     case Cause_misc{+v}:
-      Ap.Int.write(3n, 4, rem, CauseMisc.write(v, Ap.Int.after(3n, rem), rest))
+      Ap.Size.write(False{}, 3n, 0n, 4n, rem, CauseMisc.write(v, Ap.Size.after(False{}, 3n, rem), rest))
     case Cause_choice_Extensions{+v}:
-      Ap.Int.write(3n, 5, rem, Fr.Ie.write(v, Ap.Int.after(3n, rem), rest))
+      Ap.Size.write(False{}, 3n, 0n, 5n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 3n, rem), rest))
 
 def Cause.after(x: Cause, +rem: Nat) -> Nat:
   match x:
     case Cause_radioNetwork{v}:
-      CauseRadioNetwork.after(v, Ap.Int.after(3n, rem))
+      CauseRadioNetwork.after(v, Ap.Size.after(False{}, 3n, rem))
     case Cause_transport{v}:
-      CauseTransport.after(v, Ap.Int.after(3n, rem))
+      CauseTransport.after(v, Ap.Size.after(False{}, 3n, rem))
     case Cause_nas{v}:
-      CauseNas.after(v, Ap.Int.after(3n, rem))
+      CauseNas.after(v, Ap.Size.after(False{}, 3n, rem))
     case Cause_protocol{v}:
-      CauseProtocol.after(v, Ap.Int.after(3n, rem))
+      CauseProtocol.after(v, Ap.Size.after(False{}, 3n, rem))
     case Cause_misc{v}:
-      CauseMisc.after(v, Ap.Int.after(3n, rem))
+      CauseMisc.after(v, Ap.Size.after(False{}, 3n, rem))
     case Cause_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(3n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 3n, rem))
 
 def Cause.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Cause)) -> Bool:
   match r:
@@ -3243,29 +3243,29 @@ def NPN_AccessInformation.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(NPN_AccessInformation)
     case 2n+p:
       Fail{B.Invalid{0}}
 
-def NPN_AccessInformation.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(NPN_AccessInformation):
+def NPN_AccessInformation.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(NPN_AccessInformation):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      NPN_AccessInformation.alt(U32.to_nat(i), c)
+      NPN_AccessInformation.alt(i, c)
 
 def NPN_AccessInformation.read(c: Ap.Cur) -> Ap.Rd(NPN_AccessInformation):
-  NPN_AccessInformation.r_idx(Ap.Int.read(1n, 1, c))
+  NPN_AccessInformation.r_idx(Ap.Size.read(False{}, 1n, 0n, 1n, c))
 
 def NPN_AccessInformation.write(x: NPN_AccessInformation, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case NPN_AccessInformation_pNI_NPN_Access_Information{+v}:
-      Ap.Int.write(1n, 0, rem, CellCAGList.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 0n, rem, CellCAGList.write(v, Ap.Size.after(False{}, 1n, rem), rest))
     case NPN_AccessInformation_choice_Extensions{+v}:
-      Ap.Int.write(1n, 1, rem, Fr.Ie.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 1n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 1n, rem), rest))
 
 def NPN_AccessInformation.after(x: NPN_AccessInformation, +rem: Nat) -> Nat:
   match x:
     case NPN_AccessInformation_pNI_NPN_Access_Information{v}:
-      CellCAGList.after(v, Ap.Int.after(1n, rem))
+      CellCAGList.after(v, Ap.Size.after(False{}, 1n, rem))
     case NPN_AccessInformation_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(1n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
 
 def NPN_AccessInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NPN_AccessInformation)) -> Bool:
   match r:
@@ -4749,37 +4749,37 @@ def UserLocationInformation.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(UserLocationInformat
     case 4n+p:
       Fail{B.Invalid{0}}
 
-def UserLocationInformation.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(UserLocationInformation):
+def UserLocationInformation.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(UserLocationInformation):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      UserLocationInformation.alt(U32.to_nat(i), c)
+      UserLocationInformation.alt(i, c)
 
 def UserLocationInformation.read(c: Ap.Cur) -> Ap.Rd(UserLocationInformation):
-  UserLocationInformation.r_idx(Ap.Int.read(2n, 3, c))
+  UserLocationInformation.r_idx(Ap.Size.read(False{}, 2n, 0n, 3n, c))
 
 def UserLocationInformation.write(x: UserLocationInformation, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case UserLocationInformation_userLocationInformationEUTRA{+v}:
-      Ap.Int.write(2n, 0, rem, UserLocationInformationEUTRA.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 0n, rem, UserLocationInformationEUTRA.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case UserLocationInformation_userLocationInformationNR{+v}:
-      Ap.Int.write(2n, 1, rem, UserLocationInformationNR.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 1n, rem, UserLocationInformationNR.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case UserLocationInformation_userLocationInformationN3IWF_with_PortNumber{+v}:
-      Ap.Int.write(2n, 2, rem, UserLocationInformationN3IWF_with_PortNumber.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 2n, rem, UserLocationInformationN3IWF_with_PortNumber.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case UserLocationInformation_choice_Extensions{+v}:
-      Ap.Int.write(2n, 3, rem, Fr.Ie.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 3n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 2n, rem), rest))
 
 def UserLocationInformation.after(x: UserLocationInformation, +rem: Nat) -> Nat:
   match x:
     case UserLocationInformation_userLocationInformationEUTRA{v}:
-      UserLocationInformationEUTRA.after(v, Ap.Int.after(2n, rem))
+      UserLocationInformationEUTRA.after(v, Ap.Size.after(False{}, 2n, rem))
     case UserLocationInformation_userLocationInformationNR{v}:
-      UserLocationInformationNR.after(v, Ap.Int.after(2n, rem))
+      UserLocationInformationNR.after(v, Ap.Size.after(False{}, 2n, rem))
     case UserLocationInformation_userLocationInformationN3IWF_with_PortNumber{v}:
-      UserLocationInformationN3IWF_with_PortNumber.after(v, Ap.Int.after(2n, rem))
+      UserLocationInformationN3IWF_with_PortNumber.after(v, Ap.Size.after(False{}, 2n, rem))
     case UserLocationInformation_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(2n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
 def UserLocationInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UserLocationInformation)) -> Bool:
   match r:
@@ -5808,33 +5808,33 @@ def UE_NGAP_IDs.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(UE_NGAP_IDs):
     case 3n+p:
       Fail{B.Invalid{0}}
 
-def UE_NGAP_IDs.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(UE_NGAP_IDs):
+def UE_NGAP_IDs.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(UE_NGAP_IDs):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      UE_NGAP_IDs.alt(U32.to_nat(i), c)
+      UE_NGAP_IDs.alt(i, c)
 
 def UE_NGAP_IDs.read(c: Ap.Cur) -> Ap.Rd(UE_NGAP_IDs):
-  UE_NGAP_IDs.r_idx(Ap.Int.read(2n, 2, c))
+  UE_NGAP_IDs.r_idx(Ap.Size.read(False{}, 2n, 0n, 2n, c))
 
 def UE_NGAP_IDs.write(x: UE_NGAP_IDs, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case UE_NGAP_IDs_uE_NGAP_ID_pair{+v}:
-      Ap.Int.write(2n, 0, rem, UE_NGAP_ID_pair.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 0n, rem, UE_NGAP_ID_pair.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case UE_NGAP_IDs_aMF_UE_NGAP_ID{+v}:
-      Ap.Int.write(2n, 1, rem, AMF_UE_NGAP_ID.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 1n, rem, AMF_UE_NGAP_ID.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case UE_NGAP_IDs_choice_Extensions{+v}:
-      Ap.Int.write(2n, 2, rem, Fr.Ie.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 2n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 2n, rem), rest))
 
 def UE_NGAP_IDs.after(x: UE_NGAP_IDs, +rem: Nat) -> Nat:
   match x:
     case UE_NGAP_IDs_uE_NGAP_ID_pair{v}:
-      UE_NGAP_ID_pair.after(v, Ap.Int.after(2n, rem))
+      UE_NGAP_ID_pair.after(v, Ap.Size.after(False{}, 2n, rem))
     case UE_NGAP_IDs_aMF_UE_NGAP_ID{v}:
-      AMF_UE_NGAP_ID.after(v, Ap.Int.after(2n, rem))
+      AMF_UE_NGAP_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case UE_NGAP_IDs_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(2n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
 def UE_NGAP_IDs.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UE_NGAP_IDs)) -> Bool:
   match r:
@@ -7399,33 +7399,33 @@ def QosCharacteristics.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(QosCharacteristics):
     case 3n+p:
       Fail{B.Invalid{0}}
 
-def QosCharacteristics.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(QosCharacteristics):
+def QosCharacteristics.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(QosCharacteristics):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      QosCharacteristics.alt(U32.to_nat(i), c)
+      QosCharacteristics.alt(i, c)
 
 def QosCharacteristics.read(c: Ap.Cur) -> Ap.Rd(QosCharacteristics):
-  QosCharacteristics.r_idx(Ap.Int.read(2n, 2, c))
+  QosCharacteristics.r_idx(Ap.Size.read(False{}, 2n, 0n, 2n, c))
 
 def QosCharacteristics.write(x: QosCharacteristics, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case QosCharacteristics_nonDynamic5QI{+v}:
-      Ap.Int.write(2n, 0, rem, NonDynamic5QIDescriptor.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 0n, rem, NonDynamic5QIDescriptor.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case QosCharacteristics_dynamic5QI{+v}:
-      Ap.Int.write(2n, 1, rem, Dynamic5QIDescriptor.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 1n, rem, Dynamic5QIDescriptor.write(v, Ap.Size.after(False{}, 2n, rem), rest))
     case QosCharacteristics_choice_Extensions{+v}:
-      Ap.Int.write(2n, 2, rem, Fr.Ie.write(v, Ap.Int.after(2n, rem), rest))
+      Ap.Size.write(False{}, 2n, 0n, 2n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 2n, rem), rest))
 
 def QosCharacteristics.after(x: QosCharacteristics, +rem: Nat) -> Nat:
   match x:
     case QosCharacteristics_nonDynamic5QI{v}:
-      NonDynamic5QIDescriptor.after(v, Ap.Int.after(2n, rem))
+      NonDynamic5QIDescriptor.after(v, Ap.Size.after(False{}, 2n, rem))
     case QosCharacteristics_dynamic5QI{v}:
-      Dynamic5QIDescriptor.after(v, Ap.Int.after(2n, rem))
+      Dynamic5QIDescriptor.after(v, Ap.Size.after(False{}, 2n, rem))
     case QosCharacteristics_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(2n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
 def QosCharacteristics.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosCharacteristics)) -> Bool:
   match r:
@@ -8829,29 +8829,29 @@ def UPTransportLayerInformation.alt(i: Nat, c: Ap.Cur) -> Ap.Rd(UPTransportLayer
     case 2n+p:
       Fail{B.Invalid{0}}
 
-def UPTransportLayerInformation.r_idx(r: Ap.Rd(U32)) -> Ap.Rd(UPTransportLayerInformation):
+def UPTransportLayerInformation.r_idx(r: Ap.Rd(Nat)) -> Ap.Rd(UPTransportLayerInformation):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(i, c)}:
-      UPTransportLayerInformation.alt(U32.to_nat(i), c)
+      UPTransportLayerInformation.alt(i, c)
 
 def UPTransportLayerInformation.read(c: Ap.Cur) -> Ap.Rd(UPTransportLayerInformation):
-  UPTransportLayerInformation.r_idx(Ap.Int.read(1n, 1, c))
+  UPTransportLayerInformation.r_idx(Ap.Size.read(False{}, 1n, 0n, 1n, c))
 
 def UPTransportLayerInformation.write(x: UPTransportLayerInformation, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
   match x:
     case UPTransportLayerInformation_gTPTunnel{+v}:
-      Ap.Int.write(1n, 0, rem, GTPTunnel.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 0n, rem, GTPTunnel.write(v, Ap.Size.after(False{}, 1n, rem), rest))
     case UPTransportLayerInformation_choice_Extensions{+v}:
-      Ap.Int.write(1n, 1, rem, Fr.Ie.write(v, Ap.Int.after(1n, rem), rest))
+      Ap.Size.write(False{}, 1n, 0n, 1n, rem, Fr.Ie.write(v, Ap.Size.after(False{}, 1n, rem), rest))
 
 def UPTransportLayerInformation.after(x: UPTransportLayerInformation, +rem: Nat) -> Nat:
   match x:
     case UPTransportLayerInformation_gTPTunnel{v}:
-      GTPTunnel.after(v, Ap.Int.after(1n, rem))
+      GTPTunnel.after(v, Ap.Size.after(False{}, 1n, rem))
     case UPTransportLayerInformation_choice_Extensions{v}:
-      Fr.Ie.after(Ap.Int.after(1n, rem))
+      Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
 
 def UPTransportLayerInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UPTransportLayerInformation)) -> Bool:
   match r:
