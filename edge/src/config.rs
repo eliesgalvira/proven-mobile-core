@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(get(0x0006), [b"speck-amf0".to_vec()]);
         assert_eq!(get(0x0009), [vec![10, 45, 0, 0]]);
         assert_eq!(get(0x000A), [vec![16]]);
-        assert_eq!(get(0x0011), [vec![0, 2]]);
+        assert_eq!(get(0x0011), [vec![2]]);
         assert_eq!(get(0x000F)[0].len(), 32);
         let sub = &get(0x0020)[0];
         assert_eq!(sub.len(), 1 + 15 + 16 + 16 + 2 + 6);

@@ -33,7 +33,7 @@ private_key = "582f931fcf8f2b7f911debb6224f71e72b9d4a62eed38d129ffd778c3016d36a"
 key_id = 1
 
 [nas]
-ciphering = [0, 2]      # NEA ids in order of preference
+ciphering = [2]         # NEA ids in order of preference; NEA0 would allow a downgrade
 integrity = [2]         # NIA ids in order of preference
 
 [[subscriber]]
