@@ -446,12 +446,71 @@ def Octets.after(rem: Nat) -> Nat:
 def unpack(bs: B.Bytes()) -> Bits():
   Octets.write(bs, 0n, [])
 
+# Bytes from bits; a trailing partial octet is padded with zero bits (§11.1.3).
 def pack(bits: Bits()) -> B.Bytes():
   match bits:
     case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> rest:
       U32.of_bits([b7, b6, b5, b4, b3, b2, b1, b0]) <> pack(rest)
-    case _:
+    case Nil{}:
       []
+    case b7 <> Nil{}:
+      [U32.of_bits([b7, False{}, False{}, False{}, False{}, False{}, False{}, False{}])]
+    case b7 <> b6 <> Nil{}:
+      [U32.of_bits([b7, b6, False{}, False{}, False{}, False{}, False{}, False{}])]
+    case b7 <> b6 <> b5 <> Nil{}:
+      [U32.of_bits([b7, b6, b5, False{}, False{}, False{}, False{}, False{}])]
+    case b7 <> b6 <> b5 <> b4 <> Nil{}:
+      [U32.of_bits([b7, b6, b5, b4, False{}, False{}, False{}, False{}])]
+    case b7 <> b6 <> b5 <> b4 <> b3 <> Nil{}:
+      [U32.of_bits([b7, b6, b5, b4, b3, False{}, False{}, False{}])]
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> Nil{}:
+      [U32.of_bits([b7, b6, b5, b4, b3, b2, False{}, False{}])]
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> Nil{}:
+      [U32.of_bits([b7, b6, b5, b4, b3, b2, b1, False{}])]
+
+# The zero bits pack adds after the last partial octet.
+def padding(bits: Bits()) -> Bits():
+  match bits:
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> rest:
+      padding(rest)
+    case Nil{}:
+      []
+    case b7 <> Nil{}:
+      [False{}, False{}, False{}, False{}, False{}, False{}, False{}]
+    case b7 <> b6 <> Nil{}:
+      [False{}, False{}, False{}, False{}, False{}, False{}]
+    case b7 <> b6 <> b5 <> Nil{}:
+      [False{}, False{}, False{}, False{}, False{}]
+    case b7 <> b6 <> b5 <> b4 <> Nil{}:
+      [False{}, False{}, False{}, False{}]
+    case b7 <> b6 <> b5 <> b4 <> b3 <> Nil{}:
+      [False{}, False{}, False{}]
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> Nil{}:
+      [False{}, False{}]
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> Nil{}:
+      [False{}]
+
+# What may follow a complete encoding: fewer than eight bits, all zero.
+def Tail.zero(bits: Bits()) -> Bool:
+  match bits:
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> b0 <> rest:
+      False{}
+    case Nil{}:
+      True{}
+    case b7 <> Nil{}:
+      Bool.and(Bool.not(b7), True{})
+    case b7 <> b6 <> Nil{}:
+      Bool.and(Bool.not(b7), Bool.and(Bool.not(b6), True{}))
+    case b7 <> b6 <> b5 <> Nil{}:
+      Bool.and(Bool.not(b7), Bool.and(Bool.not(b6), Bool.and(Bool.not(b5), True{})))
+    case b7 <> b6 <> b5 <> b4 <> Nil{}:
+      Bool.and(Bool.not(b7), Bool.and(Bool.not(b6), Bool.and(Bool.not(b5), Bool.and(Bool.not(b4), True{}))))
+    case b7 <> b6 <> b5 <> b4 <> b3 <> Nil{}:
+      Bool.and(Bool.not(b7), Bool.and(Bool.not(b6), Bool.and(Bool.not(b5), Bool.and(Bool.not(b4), Bool.and(Bool.not(b3), True{})))))
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> Nil{}:
+      Bool.and(Bool.not(b7), Bool.and(Bool.not(b6), Bool.and(Bool.not(b5), Bool.and(Bool.not(b4), Bool.and(Bool.not(b3), Bool.and(Bool.not(b2), True{}))))))
+    case b7 <> b6 <> b5 <> b4 <> b3 <> b2 <> b1 <> Nil{}:
+      Bool.and(Bool.not(b7), Bool.and(Bool.not(b6), Bool.and(Bool.not(b5), Bool.and(Bool.not(b4), Bool.and(Bool.not(b3), Bool.and(Bool.not(b2), Bool.and(Bool.not(b1), True{})))))))
 
 # Fixed-size strings that are octet-aligned (§16.10, §17.6).
 def AOctets.aligned(n: Nat, r: Rd(Unit)) -> Rd(B.Bytes()):
