@@ -7,34 +7,8 @@ use std::mem;
 use std::net::Ipv4Addr;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 
-const SOL_SCTP: libc::c_int = 132;
-const SCTP_RECVRCVINFO: libc::c_int = 32;
-const SCTP_SNDINFO: libc::c_int = 2;
-const SCTP_RCVINFO: libc::c_int = 3;
-const MSG_NOTIFICATION: libc::c_int = 0x8000;
 pub const NGAP_PPID: u32 = 60;
 const CHUNK: usize = 65_536;
-
-#[repr(C)]
-struct SndInfo {
-    sid: u16,
-    flags: u16,
-    ppid: u32,
-    context: u32,
-    assoc_id: u32,
-}
-
-#[repr(C)]
-struct RcvInfo {
-    sid: u16,
-    ssn: u16,
-    flags: u16,
-    ppid: u32,
-    tsn: u32,
-    cumtsn: u32,
-    context: u32,
-    assoc_id: u32,
-}
 
 fn check(r: libc::c_int) -> io::Result<libc::c_int> {
     if r < 0 {
@@ -112,7 +86,7 @@ pub struct Assoc {
 
 impl Assoc {
     fn adopt(fd: OwnedFd) -> io::Result<Assoc> {
-        set_int(fd.as_raw_fd(), SOL_SCTP, SCTP_RECVRCVINFO, 1)?;
+        set_int(fd.as_raw_fd(), libc::IPPROTO_SCTP, libc::SCTP_RECVRCVINFO, 1)?;
         Ok(Assoc { fd })
     }
 
@@ -142,7 +116,7 @@ impl Assoc {
             if n == 0 {
                 return Ok(None);
             }
-            if hdr.msg_flags & MSG_NOTIFICATION != 0 {
+            if hdr.msg_flags & libc::MSG_NOTIFICATION != 0 {
                 continue;
             }
             if let Some(sid) = stream_of(&hdr) {
@@ -156,8 +130,8 @@ impl Assoc {
     }
 
     pub fn send(&self, stream: u16, bytes: &[u8]) -> io::Result<()> {
-        let info = SndInfo { sid: stream, flags: 0, ppid: NGAP_PPID.to_be(), context: 0, assoc_id: 0 };
-        let info_len = mem::size_of::<SndInfo>() as libc::c_uint;
+        let info = libc::sctp_sndinfo { snd_sid: stream, snd_flags: 0, snd_ppid: NGAP_PPID.to_be(), snd_context: 0, snd_assoc_id: 0 };
+        let info_len = mem::size_of::<libc::sctp_sndinfo>() as libc::c_uint;
         let mut control = vec![0u8; unsafe { libc::CMSG_SPACE(info_len) } as usize];
         let mut iov = libc::iovec { iov_base: bytes.as_ptr() as *mut libc::c_void, iov_len: bytes.len() };
         let mut hdr: libc::msghdr = unsafe { mem::zeroed() };
@@ -168,9 +142,9 @@ impl Assoc {
         unsafe {
             let cmsg = libc::CMSG_FIRSTHDR(&hdr);
             (*cmsg).cmsg_level = libc::IPPROTO_SCTP;
-            (*cmsg).cmsg_type = SCTP_SNDINFO;
+            (*cmsg).cmsg_type = libc::SCTP_SNDINFO;
             (*cmsg).cmsg_len = libc::CMSG_LEN(info_len) as _;
-            std::ptr::copy_nonoverlapping(&info as *const SndInfo as *const u8, libc::CMSG_DATA(cmsg), info_len as usize);
+            std::ptr::copy_nonoverlapping(&info as *const libc::sctp_sndinfo as *const u8, libc::CMSG_DATA(cmsg), info_len as usize);
         }
         let sent = check_len(unsafe { libc::sendmsg(self.fd.as_raw_fd(), &hdr, libc::MSG_NOSIGNAL) })?;
         if sent != bytes.len() {
@@ -189,10 +163,10 @@ fn stream_of(hdr: &libc::msghdr) -> Option<u16> {
     let mut cmsg = unsafe { libc::CMSG_FIRSTHDR(hdr) };
     while !cmsg.is_null() {
         let (level, kind) = unsafe { ((*cmsg).cmsg_level, (*cmsg).cmsg_type) };
-        if level == libc::IPPROTO_SCTP && kind == SCTP_RCVINFO {
-            let mut info: RcvInfo = unsafe { mem::zeroed() };
-            unsafe { std::ptr::copy_nonoverlapping(libc::CMSG_DATA(cmsg), &mut info as *mut RcvInfo as *mut u8, mem::size_of::<RcvInfo>()) };
-            return Some(info.sid);
+        if level == libc::IPPROTO_SCTP && kind == libc::SCTP_RCVINFO {
+            let mut info: libc::sctp_rcvinfo = unsafe { mem::zeroed() };
+            unsafe { std::ptr::copy_nonoverlapping(libc::CMSG_DATA(cmsg), &mut info as *mut libc::sctp_rcvinfo as *mut u8, mem::size_of::<libc::sctp_rcvinfo>()) };
+            return Some(info.rcv_sid);
         }
         cmsg = unsafe { libc::CMSG_NXTHDR(hdr, cmsg) };
     }
