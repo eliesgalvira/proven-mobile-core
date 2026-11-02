@@ -30,7 +30,7 @@ def Bool.or_false(a: Bool, e: {Bool.or(a, False{}) == True{} : Bool}) -> {a == T
 def Bool.not_true(a: Bool, e: {Bool.not(a) == True{} : Bool}) -> {a == False{} : Bool}:
   match a:
     case True{}:
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.true_false(e))
+      Empty.absurd({True{} == False{} : Bool}, P.Refute.bool(e))
     case False{}:
       {==}
 
@@ -47,7 +47,7 @@ def L.kernel.bad_pdu.only_error_indication(st, entropy, assoc, stream, len, byte
 # A row kept by a sieve is a row of the table, so what holds of every row of a
 # table holds of every row of its sifting.
 
-def Ues.none_keep(+a: U32, k: U32, +v: S.Ue, rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(U32.is_eq(S.Ue.assoc(v), a)) == b : Bool}, ih: {S.Ues.none_assoc(a, rest) == True{} : Bool}) -> {S.Ues.none_assoc(a, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
+def Ues.none_keep(+a: U32, k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(U32.is_eq(S.Ue.assoc(v), a)) == b : Bool}, ih: {S.Ues.none_assoc(a, rest) == True{} : Bool}) -> {S.Ues.none_assoc(a, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
   match b:
     case True{}:
       P.Bool.and_intro(Bool.not(U32.is_eq(S.Ue.assoc(v), a)), S.Ues.none_assoc(a, rest), eb, ih)
@@ -61,28 +61,28 @@ def Ues.drop_none(+a: U32, ues: Tb.Table(S.Ue)) -> {S.Ues.none_assoc(a, S.Ues.dr
     case (k, +v) <> +more:
       Ues.none_keep(a, k, v, S.Ues.drop_assoc(a, more), Bool.not(U32.is_eq(S.Ue.assoc(v), a)), {==}, Ues.drop_none(a, more))
 
-def Clear.keep(+key: U32, +u: S.Ue, +k: U32, +v: S.Ue, rest: Tb.Table(S.Ue), b: Bool, e1: {Bool.not(S.Row.conflicts(key, u, k, v)) == True{} : Bool}, ih: {S.Ues.clear(key, u, rest) == True{} : Bool}) -> {S.Ues.clear(key, u, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
+def Clear.keep(+key: U32, +u: S.Ue, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, e1: {Bool.not(S.Row.conflicts(key, u, k, v)) == True{} : Bool}, ih: {S.Ues.clear(key, u, rest) == True{} : Bool}) -> {S.Ues.clear(key, u, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
   match b:
     case True{}:
       P.Bool.and_intro(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, rest), e1, ih)
     case False{}:
       ih
 
-def Clear.sift(+key: U32, +u: S.Ue, +s: S.Sieve, ues: Tb.Table(S.Ue), e: {S.Ues.clear(key, u, ues) == True{} : Bool}) -> {S.Ues.clear(key, u, S.Ues.sift(s, ues)) == True{} : Bool}:
+def Clear.sift(+key: U32, +u: S.Ue, +s: S.Sieve, ues: Tb.Table(S.Ue), +e: {S.Ues.clear(key, u, ues) == True{} : Bool}) -> {S.Ues.clear(key, u, S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
       Clear.keep(key, u, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), P.Bool.and_true_l(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more), e), Clear.sift(key, u, s, more, P.Bool.and_true_r(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more), e)))
 
-def Unique.keep(+key: U32, +u: S.Ue, rest: Tb.Table(S.Ue), b: Bool, ec: {S.Ues.clear(key, u, rest) == True{} : Bool}, eu: {S.Ues.unique(rest) == True{} : Bool}) -> {S.Ues.unique(Tb.Table.keep(S.Ue, key, u, rest, b)) == True{} : Bool}:
+def Unique.keep(+key: U32, +u: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, ec: {S.Ues.clear(key, u, rest) == True{} : Bool}, eu: {S.Ues.unique(rest) == True{} : Bool}) -> {S.Ues.unique(Tb.Table.keep(S.Ue, key, u, rest, b)) == True{} : Bool}:
   match b:
     case True{}:
       P.Bool.and_intro(S.Ues.clear(key, u, rest), S.Ues.unique(rest), ec, eu)
     case False{}:
       eu
 
-def Unique.sift(+s: S.Sieve, ues: Tb.Table(S.Ue), e: {S.Ues.unique(ues) == True{} : Bool}) -> {S.Ues.unique(S.Ues.sift(s, ues)) == True{} : Bool}:
+def Unique.sift(+s: S.Sieve, ues: Tb.Table(S.Ue), +e: {S.Ues.unique(ues) == True{} : Bool}) -> {S.Ues.unique(S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
@@ -90,7 +90,7 @@ def Unique.sift(+s: S.Sieve, ues: Tb.Table(S.Ue), e: {S.Ues.unique(ues) == True{
       Unique.keep(key, u, S.Ues.sift(s, more), S.Sieve.keeps(s, key, u), Clear.sift(key, u, s, more, P.Bool.and_true_l(S.Ues.clear(key, u, more), S.Ues.unique(more), e)), Unique.sift(s, more, P.Bool.and_true_r(S.Ues.clear(key, u, more), S.Ues.unique(more), e)))
 
 # The rows the Clear sieve keeps are, by its definition, clear of the context.
-def Clear.own_keep(+key: U32, +u: S.Ue, +k: U32, +v: S.Ue, rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(S.Row.conflicts(key, u, k, v)) == b : Bool}, ih: {S.Ues.clear(key, u, rest) == True{} : Bool}) -> {S.Ues.clear(key, u, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
+def Clear.own_keep(+key: U32, +u: S.Ue, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(S.Row.conflicts(key, u, k, v)) == b : Bool}, ih: {S.Ues.clear(key, u, rest) == True{} : Bool}) -> {S.Ues.clear(key, u, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
   match b:
     case True{}:
       P.Bool.and_intro(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, rest), eb, ih)
@@ -105,10 +105,10 @@ def Clear.own(+key: U32, +u: S.Ue, ues: Tb.Table(S.Ue)) -> {S.Ues.clear(key, u, 
       Clear.own_keep(key, u, k, v, S.Ues.sift(S.Clear{key, u}, more), S.Sieve.keeps(S.Clear{key, u}, k, v), {==}, Clear.own(key, u, more))
 
 # The Except sieve leaves no row under its key.
-def Del.keep(+key: U32, +k: U32, v: S.Ue, rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(U32.is_eq(k, key)) == b : Bool}, ih: {Tb.Table.get(S.Ue, key, rest) == None{} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, key, Tb.Table.keep(S.Ue, k, v, rest, b)) == None{} : Maybe<&2, S.Ue>}:
+def Del.keep(+key: U32, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(U32.is_eq(k, key)) == b : Bool}, ih: {Tb.Table.get(S.Ue, key, rest) == None{} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, key, Tb.Table.keep(S.Ue, k, v, rest, b)) == None{} : Maybe<&2, S.Ue>}:
   match b:
     case True{}:
-      ne = Bool.not_true(U32.is_eq(k, key), eb)
+      ne = Equal.sym(Bool, U32.is_eq(k, key), False{}, Bool.not_true(U32.is_eq(k, key), eb))
       %ne : {Tb.Table.hit(S.Ue, v, Tb.Table.get(S.Ue, key, rest), _) == None{} : Maybe<&2, S.Ue>}
       ih
     case False{}:
@@ -121,10 +121,10 @@ def Del.get(+key: U32, ues: Tb.Table(S.Ue)) -> {Tb.Table.get(S.Ue, key, S.Ues.de
     case (+k, +v) <> +more:
       Del.keep(key, k, v, S.Ues.sift(S.Except{key}, more), S.Sieve.keeps(S.Except{key}, k, v), {==}, Del.get(key, more))
 
-def Sessions.drop_keep(+ue: U32, k: U32, +s: S.Session, rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(U32.is_eq(S.Session.ue(s), ue)) == b : Bool}, ih: {S.Sessions.of_ue(ue, rest) == [] : List<&2, S.Session>}) -> {S.Sessions.of_ue(ue, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : List<&2, S.Session>}:
+def Sessions.drop_keep(+ue: U32, k: U32, +s: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(U32.is_eq(S.Session.ue(s), ue)) == b : Bool}, ih: {S.Sessions.of_ue(ue, rest) == [] : List<&2, S.Session>}) -> {S.Sessions.of_ue(ue, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : List<&2, S.Session>}:
   match b:
     case True{}:
-      ne = Bool.not_true(U32.is_eq(S.Session.ue(s), ue), eb)
+      ne = Equal.sym(Bool, U32.is_eq(S.Session.ue(s), ue), False{}, Bool.not_true(U32.is_eq(S.Session.ue(s), ue), eb))
       %ne : {S.Sessions.pick_ue(s, S.Sessions.of_ue(ue, rest), _) == [] : List<&2, S.Session>}
       ih
     case False{}:
@@ -354,7 +354,7 @@ def L.amf.release.forgets_ue(st, entropy, assoc, stream, len, bytes, crit, value
 # keeps the table unique: a Put is a clear row in front of a sifting, a Del a
 # sifting, the rest leave the table alone.
 
-def Tx.unique(tx: S.Tx, st: S.State, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(S.Tx.apply(tx, st))) == True{} : Bool}:
+def Tx.unique(tx: S.Tx, +st: S.State, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(S.Tx.apply(tx, st))) == True{} : Bool}:
   match tx:
     case S.Keep{}:
       e
@@ -382,7 +382,7 @@ def Tx.unique(tx: S.Tx, st: S.State, e: {S.Ues.unique(S.State.ues(st)) == True{}
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
           e
-    case S.Both{first, second}:
+    case S.Both{+first, second}:
       Tx.unique(second, S.Tx.apply(first, st), Tx.unique(first, st, e))
 
 def Render.unique(st: S.State, o: N.GOut(), e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(N.render_out(st, o)))) == True{} : Bool}:
@@ -427,6 +427,11 @@ def Config.unique(complete: Bool, st: S.State, tlvs: List<&2, T.Tlv>, entropy: B
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
           e
 
+def Up.unique(st: S.State, assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_up(st, assoc)))) == True{} : Bool}:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+      e
+
 def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
@@ -440,9 +445,7 @@ def Step.unique(+st: S.State, ev: F.Evt, +entropy: B.Bytes(), e: {S.Ues.unique(S
     case F.Config{len, +tlvs}:
       Config.unique(S.Cfg.complete(tlvs), st, tlvs, entropy, e)
     case F.NgapAssocUp{assoc}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-          e
+      Up.unique(st, assoc, e)
     case F.NgapAssocDown{assoc}:
       Down.unique(st, assoc, e)
     case F.NgapData{assoc, stream, len, bytes}:
