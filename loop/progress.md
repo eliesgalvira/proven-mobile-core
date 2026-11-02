@@ -20,7 +20,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 14 | pfcp | done | 02, 03 | d65bfef: TS 29.244 header and IE codec with typed views (Node ID, F-SEID, F-TEID, UE IP, OHC, MBR, Cause and other one-octet IEs); all 20 captured PFCP messages decode, validate and re-encode (90 checks); 7 laws proven incl. the three advisory laws |
 | 15 | frames | done | 02 | f0cdd2c: edge/kernel frame codec (envelope, six event kinds with Config TLVs and subscribers, six action kinds with a typed log level); TLV codec and proofs shared with PFCP via kernel/tlv.bend; 31 checks; 6 laws proven (max_length, event roundtrip/decode_valid/suffix, actions roundtrip, config repeat_replaces) |
 | 16 | state-ng-setup | done | 13, 15 | 64897b7: State record with U32-keyed tables, Kernel.step over Config (typed Cfg, PFCP Association Setup Request), NGAP associations up/down (releasing UEs and sessions), NG Setup Response matching the capture byte for byte or Failure, Error Indication for undecodable PDUs; 16 checks; 3 laws proven |
-| 17 | registration-auth | todo | 08, 09, 10, 16 | |
+| 17 | registration-auth | in-progress | 08, 09, 10, 16 | |
 | 18 | registration-complete | todo | 17 | |
 | 19 | pdu-session | todo | 11, 14, 18 | |
 | 20 | kernel-main | todo | 15, 19 | |
