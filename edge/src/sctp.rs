@@ -9,8 +9,8 @@ use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 
 const SOL_SCTP: libc::c_int = 132;
 const SCTP_RECVRCVINFO: libc::c_int = 32;
-const SCTP_RCVINFO: libc::c_int = 2;
-const SCTP_SNDINFO: libc::c_int = 3;
+const SCTP_SNDINFO: libc::c_int = 2;
+const SCTP_RCVINFO: libc::c_int = 3;
 const MSG_NOTIFICATION: libc::c_int = 0x8000;
 pub const NGAP_PPID: u32 = 60;
 const CHUNK: usize = 65_536;
