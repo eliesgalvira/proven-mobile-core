@@ -1,6 +1,7 @@
 import Base
 import ../bytes.bend as B
 import ../pfcp.bend as Pf
+import ../tlv.bend as T
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
@@ -10,8 +11,8 @@ import ./vectors/capture-vectors.bend as Capture
 # the typed views decode the IEs of the association and the session; short,
 # truncated and malformed inputs fail.
 
-def ies_count(ies: List<&2, Pf.Ie>) -> Nat:
-  List.length(&2, Pf.Ie, ies)
+def ies_count(ies: List<&2, T.Tlv>) -> Nat:
+  List.length(&2, T.Tlv, ies)
 
 def check_msg(+name: String, +bs: B.Bytes(), +kind: Nat, +seq: Nat, +count: Nat, r: B.Read(Pf.Msg)) -> IO(Unit):
   match r:
@@ -63,64 +64,64 @@ def first_of(+kind: Nat, msgs: List<&2, V.Vec>) -> Maybe<&2, B.Bytes()>:
     case +m <> rest:
       first_pick(m, kind, V.Vec.text(V.Vec.field(m, "protocol")), V.Vec.nat(V.Vec.field(m, "message_type")), first_of(kind, rest))
 
-def ies_read(r: B.Read(Pf.Msg)) -> List<&2, Pf.Ie>:
+def ies_read(r: B.Read(Pf.Msg)) -> List<&2, T.Tlv>:
   match r:
     case Fail{e}:
       []
     case Done{(m, rest)}:
       Pf.Msg.ies(m)
 
-def ies_of(bs: Maybe<&2, B.Bytes()>) -> List<&2, Pf.Ie>:
+def ies_of(bs: Maybe<&2, B.Bytes()>) -> List<&2, T.Tlv>:
   match bs:
     case None{}:
       []
     case Some{b}:
       ies_read(Pf.Msg.read(b))
 
-def body_or(found: Maybe<&2, Pf.Ie>) -> B.Bytes():
+def body_or(found: Maybe<&2, T.Tlv>) -> B.Bytes():
   match found:
     case None{}:
       []
     case Some{ie}:
-      Pf.Ie.body(ie)
+      T.Tlv.body(ie)
 
-def body_of(+kind: U32, ies: List<&2, Pf.Ie>) -> B.Bytes():
-  body_or(Pf.Ies.find(kind, ies))
+def body_of(+kind: U32, ies: List<&2, T.Tlv>) -> B.Bytes():
+  body_or(T.Tlvs.find(kind, ies))
 
-def group_read(r: Result<&2, &2, B.Err, List<&2, Pf.Ie>>) -> List<&2, Pf.Ie>:
+def group_read(r: Result<&2, &2, B.Err, List<&2, T.Tlv>>) -> List<&2, T.Tlv>:
   match r:
     case Fail{e}:
       []
     case Done{ies}:
       ies
 
-def grouped(+kind: U32, ies: List<&2, Pf.Ie>) -> List<&2, Pf.Ie>:
-  group_read(Pf.Ies.decode(body_of(kind, ies)))
+def grouped(+kind: U32, ies: List<&2, T.Tlv>) -> List<&2, T.Tlv>:
+  group_read(T.Tlvs.decode(body_of(kind, ies)))
 
-def keep_ie(ie: Pf.Ie, rest: List<&2, Pf.Ie>, hit: Bool) -> List<&2, Pf.Ie>:
+def keep_ie(ie: T.Tlv, rest: List<&2, T.Tlv>, hit: Bool) -> List<&2, T.Tlv>:
   match hit:
     case True{}:
       ie <> rest
     case False{}:
       rest
 
-def same_kind(+kind: U32, ies: List<&2, Pf.Ie>) -> List<&2, Pf.Ie>:
+def same_kind(+kind: U32, ies: List<&2, T.Tlv>) -> List<&2, T.Tlv>:
   match ies:
     case Nil{}:
       []
     case +ie <> more:
-      keep_ie(ie, same_kind(kind, more), U32.is_eq(Pf.Ie.kind(ie), kind))
+      keep_ie(ie, same_kind(kind, more), U32.is_eq(T.Tlv.kind(ie), kind))
 
-def nth_body(ies: List<&2, Pf.Ie>) -> B.Bytes():
+def nth_body(ies: List<&2, T.Tlv>) -> B.Bytes():
   match ies:
     case Nil{}:
       []
     case ie <> more:
-      Pf.Ie.body(ie)
+      T.Tlv.body(ie)
 
 # The IEs inside the n-th IE of a kind (zero-based).
-def nth_of(+kind: U32, n: Nat, ies: List<&2, Pf.Ie>) -> List<&2, Pf.Ie>:
-  group_read(Pf.Ies.decode(nth_body(List.drop(&2, Pf.Ie, same_kind(kind, ies), n))))
+def nth_of(+kind: U32, n: Nat, ies: List<&2, T.Tlv>) -> List<&2, T.Tlv>:
+  group_read(T.Tlvs.decode(nth_body(List.drop(&2, T.Tlv, same_kind(kind, ies), n))))
 
 def bytes_or(mb: Maybe<&2, B.Bytes()>) -> B.Bytes():
   match mb:
@@ -225,11 +226,11 @@ def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
     run(msgs)
-    +assoc : List<&2, Pf.Ie> = ies_of(first_of(5n, msgs))
-    +resp : List<&2, Pf.Ie> = ies_of(first_of(51n, msgs))
-    +sess : List<&2, Pf.Ie> = ies_of(first_of(50n, msgs))
-    +pdr : List<&2, Pf.Ie> = grouped(1, sess)
-    +pdi : List<&2, Pf.Ie> = grouped(2, pdr)
+    +assoc : List<&2, T.Tlv> = ies_of(first_of(5n, msgs))
+    +resp : List<&2, T.Tlv> = ies_of(first_of(51n, msgs))
+    +sess : List<&2, T.Tlv> = ies_of(first_of(50n, msgs))
+    +pdr : List<&2, T.Tlv> = grouped(1, sess)
+    +pdi : List<&2, T.Tlv> = grouped(2, pdr)
     C.Check.report("Association Setup Request: Node ID is the SMF's IPv4 address", node_v4(Pf.NodeId.read(body_of(60, assoc))))
     C.Check.report("Association Setup Request: Recovery Time Stamp decodes", word_is(Pf.Word.read(body_of(96, assoc)), 4002546532))
     C.Check.report("Session Establishment Response: Cause is accepted", word_is(Pf.Byte.read(body_of(19, resp)), 1))
@@ -241,7 +242,7 @@ def main() -> IO(Unit):
     C.Check.report("Session Establishment Request: the uplink PDI's F-TEID has a TEID and an IPv4 address", fteid_fixed(Pf.Fteid.read(body_of(21, grouped(2, nth_of(1, 1n, sess))))))
     C.Check.report("Session Establishment Request: the downlink FAR's Outer Header Creation is GTP-U/UDP/IPv4", ohc_gtp_v4(Pf.Ohc.read(body_of(84, grouped(4, nth_of(3, 2n, sess))))))
     C.Check.report("Session Establishment Request: the QER's MBR decodes", mbr_ok(Pf.Mbr.read(body_of(26, grouped(7, sess)))))
-    C.Check.report("an IE header of three octets is Short", Bool.and(read_fails(Pf.Ie, Pf.Ie.read([0, 1, 0])), read_fails(Pf.Ie, Pf.Ie.read([0, 1, 0, 5, 1, 2]))))
+    C.Check.report("an IE header of three octets is Short", Bool.and(read_fails(T.Tlv, T.Tlv.read([0, 1, 0])), read_fails(T.Tlv, T.Tlv.read([0, 1, 0, 5, 1, 2]))))
     C.Check.report("a truncated message fails", read_fails(Pf.Msg, Pf.Msg.read(drop_last(bytes_or(first_of(5n, msgs))))))
     C.Check.report("version 0 is unsupported", read_fails(Pf.Msg, Pf.Msg.read([0, 1, 0, 12, 0, 0, 2, 0, 0, 96, 0, 4, 238, 146, 3, 94])))
     C.Check.report("an F-TEID with CH and an IPv4 request decodes without a TEID", fteid_choose(Pf.Fteid.read([5])))

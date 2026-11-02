@@ -1,6 +1,7 @@
 import Base
 import ../bytes.bend as B
 import ../frame.bend as F
+import ../tlv.bend as T
 import ./lib/check.bend as C
 
 # Hand-made frames of every kind read back and are valid; a truncated frame,
@@ -51,7 +52,7 @@ def timer_is(e: Maybe<&2, F.Evt>, n: U32) -> Bool:
     case _:
       False{}
 
-def tlvs_of(e: Maybe<&2, F.Evt>) -> List<&2, F.Tlv>:
+def tlvs_of(e: Maybe<&2, F.Evt>) -> List<&2, T.Tlv>:
   match e:
     case Some{F.Config{len, tlvs}}:
       tlvs
@@ -88,8 +89,8 @@ def sixteen() -> B.Bytes():
 def subscriber() -> B.Bytes():
   F.Sub.write(F.Sub{[48, 48, 49, 48, 49], sixteen(), sixteen(), [128, 0], [0, 0, 0, 0, 0, 33]})
 
-def config() -> List<&2, F.Tlv>:
-  [F.Tlv.make(1, [2, 241, 16]), F.Tlv.make(5, [0, 0, 1]), F.Tlv.make(8, [105, 110, 116, 101, 114, 110, 101, 116]), F.Tlv.make(255, [1, 2, 3]), F.Tlv.make(5, [0, 0, 7]), F.Tlv.make(32, subscriber())]
+def config() -> List<&2, T.Tlv>:
+  [T.Tlv.make(1, [2, 241, 16]), T.Tlv.make(5, [0, 0, 1]), T.Tlv.make(8, [105, 110, 116, 101, 114, 110, 101, 116]), T.Tlv.make(255, [1, 2, 3]), T.Tlv.make(5, [0, 0, 7]), T.Tlv.make(32, subscriber())]
 
 def timer_frame() -> B.Bytes():
   F.Frame.write(F.Input.write(F.Input{entropy(), F.TimerFired{7}}, []), [])
@@ -116,14 +117,14 @@ def main() -> IO(Unit):
     C.Check.report("NgapData short of its bytes is Short", fails(B.ReadValue(F.Input), F.Input.read(cat([4], cat(entropy(), [0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 1, 2])))))
     C.Check.report("Config: the PLMN is read", get_is(F.Config.get(1, tlvs_of(decoded)), [2, 241, 16]))
     C.Check.report("Config: a repeated TAC yields the later value", get_is(F.Config.get(5, tlvs_of(decoded)), [0, 0, 7]))
-    C.Check.report("Config: an unknown tag is carried and never asked for", Bool.and(Nat.is_eq(List.length(&2, F.Tlv, tlvs_of(decoded)), 6n), get_is(F.Config.get(255, tlvs_of(decoded)), [1, 2, 3])))
+    C.Check.report("Config: an unknown tag is carried and never asked for", Bool.and(Nat.is_eq(List.length(&2, T.Tlv, tlvs_of(decoded)), 6n), get_is(F.Config.get(255, tlvs_of(decoded)), [1, 2, 3])))
     C.Check.report("Config: an absent tag is None", Bool.not(get_is(F.Config.get(2, tlvs_of(decoded)), [])))
     C.Check.report("Config: the subscriber decodes", sub_ok(F.Sub.read(subscriber())))
     C.Check.report("Config: one subscriber is listed", Nat.is_eq(List.length(&2, B.Bytes(), F.Config.subscribers(tlvs_of(decoded))), 1n))
-    C.Check.report("Config: a PLMN of two octets is rejected", fails(B.ReadValue(F.Tlv), F.Tlv.read([0, 1, 0, 2, 2, 241])))
-    C.Check.report("Config: a subscriber with a non-digit SUPI is rejected", fails(B.ReadValue(F.Tlv), F.Tlv.read(cat([0, 32, 0, 42, 1, 65], cat(sixteen(), cat(sixteen(), [128, 0, 0, 0, 0, 0, 0, 33]))))))
-    C.Check.report("Config: a TLV short of its value is Short", fails(B.ReadValue(F.Tlv), F.Tlv.read([0, 1, 0, 3, 2, 241])))
-    C.Check.report("Config: a TLV list with a trailing byte is Invalid", fails(List<&2, F.Tlv>, F.Tlvs.decode([0, 2, 0, 1, 5, 9])))
+    C.Check.report("Config: a PLMN of two octets is rejected", fails(B.ReadValue(F.Input), F.Input.read(F.Input.write(F.Input{entropy(), F.Evt.config_make([T.Tlv.make(1, [2, 241])])}, []))))
+    C.Check.report("Config: a subscriber with a non-digit SUPI is rejected", fails(B.ReadValue(F.Input), F.Input.read(F.Input.write(F.Input{entropy(), F.Evt.config_make([T.Tlv.make(32, cat([1, 65], cat(sixteen(), cat(sixteen(), [128, 0, 0, 0, 0, 0, 0, 33]))))])}, []))))
+    C.Check.report("Config: a TLV short of its value is Short", fails(B.ReadValue(T.Tlv), T.Tlv.read([0, 1, 0, 3, 2, 241])))
+    C.Check.report("Config: a TLV list with a trailing byte is Invalid", fails(List<&2, T.Tlv>, T.Tlvs.decode([0, 2, 0, 1, 5, 9])))
     C.Check.report("Actions: every kind reads back", actions_back(F.Actions.make([F.NgapSend{3, 1, 4, [0, 21, 0, 61]}, F.NgapClose{3}, F.PfcpSend{2, [32, 1]}, F.TimerStart{5, 3000}, F.TimerCancel{5}, F.Log{1, 2, [104, 105]}])))
     C.Check.report("Actions: an empty list is 0x80 0000", B.bytes_eq(F.Actions.write(F.Actions.make([]), []), [128, 0, 0]))
     C.Check.report("Actions: a wrong body kind is Unsupported", fails(B.ReadValue(F.Actions), F.Actions.read([1, 0, 0])))

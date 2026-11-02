@@ -1,159 +1,12 @@
 import Base
 import ./bytes.bend as B
+import ./tlv.bend as T
 
 # PFCP (TS 29.244), the subset the milestone's SMF speaks to eUPF: the message
-# header and TLV information elements, bytes in and bytes out. An IE keeps its
-# type, its length word and its body as read; a grouped IE's body is a list of
-# IEs; the typed views at the end decode the IEs the SMF sends and receives,
-# each over the whole body of its IE. Anything else stays raw.
-
-# Information elements
-# --------------------
-
-type Ie is Data:
-  Ie{kind: U32, len: U32, body: B.Bytes()}
-
-def Ie.kind(ie: Ie) -> U32:
-  match ie:
-    case Ie{kind, len, body}:
-      kind
-
-def Ie.len(ie: Ie) -> U32:
-  match ie:
-    case Ie{kind, len, body}:
-      len
-
-def Ie.body(ie: Ie) -> B.Bytes():
-  match ie:
-    case Ie{kind, len, body}:
-      body
-
-def Ie.valid(ie: Ie) -> Bool:
-  match ie:
-    case Ie{+kind, +len, body}:
-      Bool.and(B.fits16(kind), Bool.and(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body))))
-
-type Hdr is Data:
-  Hdr{kind: U32, len: U32}
-
-def Ie.hdr_len(kind: U32, r: B.Read(U32)) -> B.Read(Hdr):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(len, rest)}:
-      Done{(Hdr{kind, len}, rest)}
-
-def Ie.hdr_type(r: B.Read(U32)) -> B.Read(Hdr):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(kind, rest)}:
-      Ie.hdr_len(kind, B.u16(rest))
-
-# The four header octets: type, then length.
-def Ie.header(bs: B.Bytes()) -> B.Read(Hdr):
-  Ie.hdr_type(B.u16(bs))
-
-def Ie.of_body(kind: U32, len: U32, r: B.Read(B.Bytes())) -> B.Read(Ie):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(body, rest)}:
-      Done{(Ie{kind, len, body}, rest)}
-
-def Ie.checked(kind: U32, +len: U32, rest: B.Bytes(), ok: Bool) -> B.Read(Ie):
-  match ok:
-    case True{}:
-      Ie.of_body(kind, len, B.take(U32.to_nat(len), rest))
-    case False{}:
-      Fail{B.Invalid{len}}
-
-def Ie.of_hdr(h: Hdr, rest: B.Bytes()) -> B.Read(Ie):
-  match h:
-    case Hdr{+kind, +len}:
-      Ie.checked(kind, len, rest, Bool.and(B.fits16(kind), B.fits16(len)))
-
-def Ie.of_header(r: B.Read(Hdr)) -> B.Read(Ie):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(h, rest)}:
-      Ie.of_hdr(h, rest)
-
-def Ie.read(bs: B.Bytes()) -> B.Read(Ie):
-  Ie.of_header(Ie.header(bs))
-
-def Ie.write(ie: Ie, rest: B.Bytes()) -> B.Bytes():
-  match ie:
-    case Ie{kind, len, body}:
-      B.write_u16(kind, B.write_u16(len, List.append(&2, U32, body, rest)))
-
-# An IE over a body, with the length word it needs.
-def Ie.make(kind: U32, +body: B.Bytes()) -> Ie:
-  Ie{kind, U32.from_nat(List.length(&2, U32, body)), body}
-
-def Ies.valid(ies: List<&2, Ie>) -> Bool:
-  match ies:
-    case Nil{}:
-      True{}
-    case ie <> more:
-      Bool.and(Ie.valid(ie), Ies.valid(more))
-
-def Ies.cons(ie: Ie, r: Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{ies}:
-      Done{ie <> ies}
-
-def Ies.next(r: B.Read(Ie), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(ie, rest)}:
-      Ies.cons(ie, more(rest))
-
-# Every IE up to the end of the bytes; each takes at least four, so the byte count is fuel enough.
-def Ies.read(fuel: Nat, bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, Ie>>:
-  match fuel bs:
-    case _ Nil{}:
-      Done{[]}
-    case 0n b <> rest:
-      Fail{B.Invalid{b}}
-    case 1n+f b <> rest:
-      Ies.next(Ie.read(b <> rest), left => Ies.read(f, left))
-
-def Ies.decode(+bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, Ie>>:
-  Ies.read(List.length(&2, U32, bs), bs)
-
-def Ies.write(ies: List<&2, Ie>, rest: B.Bytes()) -> B.Bytes():
-  match ies:
-    case Nil{}:
-      rest
-    case ie <> more:
-      Ie.write(ie, Ies.write(more, rest))
-
-def Ies.size(ies: List<&2, Ie>) -> Nat:
-  match ies:
-    case Nil{}:
-      0n
-    case ie <> more:
-      Nat.add(4n, Nat.add(List.length(&2, U32, Ie.body(ie)), Ies.size(more)))
-
-def Ies.pick(ie: Ie, more: Maybe<&2, Ie>, hit: Bool) -> Maybe<&2, Ie>:
-  match hit:
-    case True{}:
-      Some{ie}
-    case False{}:
-      more
-
-# The first IE of a type.
-def Ies.find(+kind: U32, ies: List<&2, Ie>) -> Maybe<&2, Ie>:
-  match ies:
-    case Nil{}:
-      None{}
-    case +ie <> more:
-      Ies.pick(ie, Ies.find(kind, more), U32.is_eq(Ie.kind(ie), kind))
+# header over TLV information elements (`tlv.bend`), bytes in and bytes out. A
+# grouped IE's body is a list of IEs; the typed views at the end decode the IEs
+# the SMF sends and receives, each over the whole body of its IE. Anything else
+# stays raw.
 
 # Messages
 # --------
@@ -162,7 +15,7 @@ def Ies.find(+kind: U32, ies: List<&2, Ie>) -> Maybe<&2, Ie>:
 # follows the length field, the SEID when S is set, a 24-bit sequence number
 # and a spare octet (the message priority is not used).
 type Msg is Data:
-  Msg{kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, seq: U32, ies: List<&2, Ie>}
+  Msg{kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, seq: U32, ies: List<&2, T.Tlv>}
 
 def Msg.kind(m: Msg) -> U32:
   match m:
@@ -184,7 +37,7 @@ def Msg.seq(m: Msg) -> U32:
     case Msg{kind, len, seid, seq, ies}:
       seq
 
-def Msg.ies(m: Msg) -> List<&2, Ie>:
+def Msg.ies(m: Msg) -> List<&2, T.Tlv>:
   match m:
     case Msg{kind, len, seid, seq, ies}:
       ies
@@ -221,15 +74,15 @@ def Seid.write(seid: Maybe<&2, B.Bytes()>, rest: B.Bytes()) -> B.Bytes():
       List.append(&2, U32, bs, rest)
 
 # The octets the length field counts: SEID, sequence number, spare, IEs.
-def Msg.body_size(seid: Maybe<&2, B.Bytes()>, ies: List<&2, Ie>) -> Nat:
-  Nat.add(Seid.size(seid), Nat.add(4n, Ies.size(ies)))
+def Msg.body_size(seid: Maybe<&2, B.Bytes()>, ies: List<&2, T.Tlv>) -> Nat:
+  Nat.add(Seid.size(seid), Nat.add(4n, T.Tlvs.size(ies)))
 
 def Msg.valid(m: Msg) -> Bool:
   match m:
     case Msg{kind, +len, +seid, seq, +ies}:
-      Bool.and(B.fits8(kind), Bool.and(B.fits16(len), Bool.and(Seid.valid(seid), Bool.and(fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(len), Msg.body_size(seid, ies)), Ies.valid(ies))))))
+      Bool.and(B.fits8(kind), Bool.and(B.fits16(len), Bool.and(Seid.valid(seid), Bool.and(fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(len), Msg.body_size(seid, ies)), T.Tlvs.valid(ies))))))
 
-def Msg.of_ies(kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, seq: U32, r: Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, Msg>:
+def Msg.of_ies(kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, seq: U32, r: Result<&2, &2, B.Err, List<&2, T.Tlv>>) -> Result<&2, &2, B.Err, Msg>:
   match r:
     case Fail{e}:
       Fail{e}
@@ -239,7 +92,7 @@ def Msg.of_ies(kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, seq: U32, r: Res
 def Msg.spare_ok(kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, seq: U32, +sp: U32, rest: B.Bytes(), ok: Bool) -> Result<&2, &2, B.Err, Msg>:
   match ok:
     case True{}:
-      Msg.of_ies(kind, len, seid, seq, Ies.decode(rest))
+      Msg.of_ies(kind, len, seid, seq, T.Tlvs.decode(rest))
     case False{}:
       Fail{B.Invalid{sp}}
 
@@ -346,10 +199,10 @@ def Msg.read(bs: B.Bytes()) -> B.Read(Msg):
 def Msg.write(m: Msg, rest: B.Bytes()) -> B.Bytes():
   match m:
     case Msg{kind, len, +seid, seq, ies}:
-      B.write_u8(Seid.flags(seid), B.write_u8(kind, B.write_u16(len, Seid.write(seid, B.write_u24(seq, B.write_u8(0, Ies.write(ies, rest)))))))
+      B.write_u8(Seid.flags(seid), B.write_u8(kind, B.write_u16(len, Seid.write(seid, B.write_u24(seq, B.write_u8(0, T.Tlvs.write(ies, rest)))))))
 
 # A message over its content, with the length word it needs.
-def Msg.make(kind: U32, +seid: Maybe<&2, B.Bytes()>, seq: U32, +ies: List<&2, Ie>) -> Msg:
+def Msg.make(kind: U32, +seid: Maybe<&2, B.Bytes()>, seq: U32, +ies: List<&2, T.Tlv>) -> Msg:
   Msg{kind, U32.from_nat(Msg.body_size(seid, ies)), seid, seq, ies}
 
 # Typed views of IE bodies

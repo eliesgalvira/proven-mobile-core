@@ -20,6 +20,7 @@ import ./aper.bend as Ap
 import ./ngap/frame.bend as Fr
 import ./ngap/gen/views.bend as GV
 import ./pfcp.bend as Pf
+import ./tlv.bend as T
 import ./frame.bend as F
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
@@ -951,15 +952,15 @@ law pfcp.suffix:
 law pfcp.ie_header.short_input_fails:
   for +bs: B.Bytes()
   for +e: {Nat.is_lt(List.length(&2, U32, bs), 4n) == True{} : Bool}
-  {Pf.Ie.read(bs) == Fail{B.Short{}} : B.Read(Pf.Ie)}
+  {T.Tlv.read(bs) == Fail{B.Short{}} : B.Read(T.Tlv)}
 
 # GHSA-37c3-hv4f-688p: every IE, known or not, consumes exactly its four
 # header octets plus the length it declares, and fails as Short when fewer
 # octets remain.
 law pfcp.ie.suffix:
   for +bs: B.Bytes()
-  (@ie: Pf.Ie -> @rest: B.Bytes() -> {Pf.Ie.read(bs) == Done{(ie, rest)} : B.Read(Pf.Ie)} -> {List.drop(&2, U32, bs, Nat.add(4n, U32.to_nat(Pf.Ie.len(ie)))) == rest : B.Bytes()} & {List.length(&2, U32, Pf.Ie.body(ie)) == U32.to_nat(Pf.Ie.len(ie)) : Nat})
-  & (@kind: U32 -> @len: U32 -> @tail: B.Bytes() -> {Pf.Ie.header(bs) == Done{(Pf.Hdr{kind, len}, tail)} : B.Read(Pf.Hdr)} -> {B.all_bytes(bs) == True{} : Bool} -> {Nat.is_lt(List.length(&2, U32, tail), U32.to_nat(len)) == True{} : Bool} -> {Pf.Ie.read(bs) == Fail{B.Short{}} : B.Read(Pf.Ie)})
+  (@ie: T.Tlv -> @rest: B.Bytes() -> {T.Tlv.read(bs) == Done{(ie, rest)} : B.Read(T.Tlv)} -> {List.drop(&2, U32, bs, Nat.add(4n, U32.to_nat(T.Tlv.len(ie)))) == rest : B.Bytes()} & {List.length(&2, U32, T.Tlv.body(ie)) == U32.to_nat(T.Tlv.len(ie)) : Nat})
+  & (@kind: U32 -> @len: U32 -> @tail: B.Bytes() -> {T.Tlv.header(bs) == Done{(T.Hdr{kind, len}, tail)} : B.Read(T.Hdr)} -> {B.all_bytes(bs) == True{} : Bool} -> {Nat.is_lt(List.length(&2, U32, tail), U32.to_nat(len)) == True{} : Bool} -> {T.Tlv.read(bs) == Fail{B.Short{}} : B.Read(T.Tlv)})
 
 # GHSA-3mxx-vq7h-x8ff: an F-TEID decodes only when its body is exactly what
 # its flags call for, and the CH form carries no TEID and no address at all.
@@ -1021,8 +1022,8 @@ law frame.actions.roundtrip:
 
 # A repeated Config tag yields the later value.
 law frame.config.repeat_replaces:
-  for +tl: List<&2, F.Tlv>
+  for +tl: List<&2, T.Tlv>
   for +tag: U32
   for +len: U32
   for +v: B.Bytes()
-  {F.Config.get(tag, List.append(&2, F.Tlv, tl, [F.Tlv{tag, len, v}])) == Some{v} : Maybe<&2, B.Bytes()>}
+  {F.Config.get(tag, List.append(&2, T.Tlv, tl, [T.Tlv{tag, len, v}])) == Some{v} : Maybe<&2, B.Bytes()>}

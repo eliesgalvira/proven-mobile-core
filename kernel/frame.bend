@@ -1,5 +1,6 @@
 import Base
 import ./bytes.bend as B
+import ./tlv.bend as T
 
 # The edge ⇄ kernel frame protocol (docs/spec/milestone-1.md § The frame
 # protocol): `length: u32be` then `length` octets holding one event or one
@@ -38,9 +39,6 @@ def Frame.write(+body: B.Bytes(), rest: B.Bytes()) -> B.Bytes():
 # `tag: u16`, `len: u16`, value. Kept in wire order; a getter answers the last
 # occurrence of a tag, so a repeated tag replaces the earlier one, and unknown
 # tags are carried but never asked for.
-
-type Tlv is Data:
-  Tlv{tag: U32, len: U32, value: B.Bytes()}
 
 # A subscriber (tag 0x0020): SUPI digits with their count, K, OPc, AMF, SQN.
 type Sub is Data:
@@ -169,97 +167,12 @@ def Tag.valid(tag: Nat, value: B.Bytes()) -> Bool:
     case _:
       True{}
 
-def Tlv.valid(t: Tlv) -> Bool:
-  match t:
-    case Tlv{+tag, +len, +value}:
-      Bool.and(B.fits16(tag), Bool.and(B.fits16(len), Bool.and(Nat.is_eq(U32.to_nat(len), List.length(&2, U32, value)), Tag.valid(U32.to_nat(tag), value))))
-
-def Tlv.checked(+tag: U32, +len: U32, +value: B.Bytes(), rest: B.Bytes(), ok: Bool) -> B.Read(Tlv):
-  match ok:
-    case True{}:
-      Done{(Tlv{tag, len, value}, rest)}
-    case False{}:
-      Fail{B.Invalid{tag}}
-
-def Tlv.of_value(+tag: U32, +len: U32, r: B.Read(B.Bytes())) -> B.Read(Tlv):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(+value, rest)}:
-      Tlv.checked(tag, len, value, rest, Tag.valid(U32.to_nat(tag), value))
-
-def Tlv.of_len(+tag: U32, r: B.Read(U32)) -> B.Read(Tlv):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(+len, rest)}:
-      Tlv.of_value(tag, len, B.take(U32.to_nat(len), rest))
-
-def Tlv.of_tag(r: B.Read(U32)) -> B.Read(Tlv):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(tag, rest)}:
-      Tlv.of_len(tag, B.u16(rest))
-
-def Tlv.read(bs: B.Bytes()) -> B.Read(Tlv):
-  Tlv.of_tag(B.u16(bs))
-
-def Tlv.write(t: Tlv, rest: B.Bytes()) -> B.Bytes():
-  match t:
-    case Tlv{tag, len, value}:
-      B.write_u16(tag, B.write_u16(len, List.append(&2, U32, value, rest)))
-
-def Tlv.make(tag: U32, +value: B.Bytes()) -> Tlv:
-  Tlv{tag, U32.from_nat(List.length(&2, U32, value)), value}
-
-def Tlvs.valid(tl: List<&2, Tlv>) -> Bool:
+def Tags.valid(tl: List<&2, T.Tlv>) -> Bool:
   match tl:
     case Nil{}:
       True{}
-    case t <> more:
-      Bool.and(Tlv.valid(t), Tlvs.valid(more))
-
-def Tlvs.cons(t: Tlv, r: Result<&2, &2, B.Err, List<&2, Tlv>>) -> Result<&2, &2, B.Err, List<&2, Tlv>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{tl}:
-      Done{t <> tl}
-
-def Tlvs.next(r: B.Read(Tlv), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Tlv>>) -> Result<&2, &2, B.Err, List<&2, Tlv>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(t, rest)}:
-      Tlvs.cons(t, more(rest))
-
-# Every TLV up to the end of the bytes; each takes at least four, so the byte count is fuel enough.
-def Tlvs.read(fuel: Nat, bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, Tlv>>:
-  match fuel bs:
-    case _ Nil{}:
-      Done{[]}
-    case 0n b <> rest:
-      Fail{B.Invalid{b}}
-    case 1n+f b <> rest:
-      Tlvs.next(Tlv.read(b <> rest), left => Tlvs.read(f, left))
-
-def Tlvs.decode(+bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, Tlv>>:
-  Tlvs.read(List.length(&2, U32, bs), bs)
-
-def Tlvs.write(tl: List<&2, Tlv>, rest: B.Bytes()) -> B.Bytes():
-  match tl:
-    case Nil{}:
-      rest
-    case t <> more:
-      Tlv.write(t, Tlvs.write(more, rest))
-
-def Tlvs.size(tl: List<&2, Tlv>) -> Nat:
-  match tl:
-    case Nil{}:
-      0n
-    case Tlv{tag, len, value} <> more:
-      Nat.add(4n, Nat.add(List.length(&2, U32, value), Tlvs.size(more)))
+    case T.Tlv{+kind, len, +body} <> more:
+      Bool.and(Tag.valid(U32.to_nat(kind), body), Tags.valid(more))
 
 def Config.pick(v: B.Bytes(), later: Maybe<&2, B.Bytes()>, hit: Bool) -> Maybe<&2, B.Bytes()>:
   match later:
@@ -273,12 +186,12 @@ def Config.pick(v: B.Bytes(), later: Maybe<&2, B.Bytes()>, hit: Bool) -> Maybe<&
           None{}
 
 # The last value given for a tag.
-def Config.get(+tag: U32, tl: List<&2, Tlv>) -> Maybe<&2, B.Bytes()>:
+def Config.get(+tag: U32, tl: List<&2, T.Tlv>) -> Maybe<&2, B.Bytes()>:
   match tl:
     case Nil{}:
       None{}
-    case Tlv{t, len, v} <> more:
-      Config.pick(v, Config.get(tag, more), U32.is_eq(t, tag))
+    case T.Tlv{kind, len, body} <> more:
+      Config.pick(body, Config.get(tag, more), U32.is_eq(kind, tag))
 
 def Config.keep(v: B.Bytes(), more: List<&2, B.Bytes()>, hit: Bool) -> List<&2, B.Bytes()>:
   match hit:
@@ -288,18 +201,18 @@ def Config.keep(v: B.Bytes(), more: List<&2, B.Bytes()>, hit: Bool) -> List<&2, 
       more
 
 # Every subscriber, in order.
-def Config.subscribers(tl: List<&2, Tlv>) -> List<&2, B.Bytes()>:
+def Config.subscribers(tl: List<&2, T.Tlv>) -> List<&2, B.Bytes()>:
   match tl:
     case Nil{}:
       []
-    case Tlv{t, len, v} <> more:
-      Config.keep(v, Config.subscribers(more), U32.is_eq(t, 32))
+    case T.Tlv{kind, len, body} <> more:
+      Config.keep(body, Config.subscribers(more), U32.is_eq(kind, 32))
 
 # Events
 # ------
 
 type Evt is Data:
-  Config{len: U32, tlvs: List<&2, Tlv>}
+  Config{len: U32, tlvs: List<&2, T.Tlv>}
   NgapAssocUp{assoc: U32}
   NgapAssocDown{assoc: U32}
   NgapData{assoc: U32, stream: U32, len: U32, bytes: B.Bytes()}
@@ -338,7 +251,7 @@ def Evt.kind(e: Evt) -> U32:
 def Evt.valid(e: Evt) -> Bool:
   match e:
     case Config{+len, +tlvs}:
-      Bool.and(Nat.is_eq(U32.to_nat(len), Tlvs.size(tlvs)), Tlvs.valid(tlvs))
+      Bool.and(Nat.is_eq(U32.to_nat(len), T.Tlvs.size(tlvs)), Bool.and(T.Tlvs.valid(tlvs), Tags.valid(tlvs)))
     case NgapAssocUp{assoc}:
       True{}
     case NgapAssocDown{assoc}:
@@ -358,19 +271,26 @@ def Input.valid(i: Input) -> Bool:
 def Evt.Res() -> Data:
   B.Read(Evt)
 
-def Evt.config_of_tlvs(+len: U32, rest: B.Bytes(), r: Result<&2, &2, B.Err, List<&2, Tlv>>) -> Evt.Res():
+def Evt.config_tags(+len: U32, rest: B.Bytes(), tlvs: List<&2, T.Tlv>, ok: Bool) -> Evt.Res():
+  match ok:
+    case True{}:
+      Done{(Config{len, tlvs}, rest)}
+    case False{}:
+      Fail{B.Invalid{1}}
+
+def Evt.config_of_tlvs(+len: U32, rest: B.Bytes(), r: Result<&2, &2, B.Err, List<&2, T.Tlv>>) -> Evt.Res():
   match r:
     case Fail{e}:
       Fail{e}
-    case Done{tlvs}:
-      Done{(Config{len, tlvs}, rest)}
+    case Done{+tlvs}:
+      Evt.config_tags(len, rest, tlvs, Tags.valid(tlvs))
 
 def Evt.config_of_body(+len: U32, r: B.Read(B.Bytes())) -> Evt.Res():
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(+body, rest)}:
-      Evt.config_of_tlvs(len, rest, Tlvs.decode(body))
+      Evt.config_of_tlvs(len, rest, T.Tlvs.decode(body))
 
 def Evt.config(r: B.Read(U32)) -> Evt.Res():
   match r:
@@ -462,7 +382,7 @@ def Evt.payload(kind: Nat, +raw: U32, bs: B.Bytes()) -> Evt.Res():
 def Evt.write(e: Evt, rest: B.Bytes()) -> B.Bytes():
   match e:
     case Config{len, tlvs}:
-      B.write_u32(len, Tlvs.write(tlvs, rest))
+      B.write_u32(len, T.Tlvs.write(tlvs, rest))
     case NgapAssocUp{assoc}:
       B.write_u32(assoc, rest)
     case NgapAssocDown{assoc}:
@@ -503,8 +423,8 @@ def Input.write(i: Input, rest: B.Bytes()) -> B.Bytes():
     case Input{entropy, +event}:
       B.write_u8(Evt.kind(event), List.append(&2, U32, entropy, Evt.write(event, rest)))
 
-def Evt.config_make(+tlvs: List<&2, Tlv>) -> Evt:
-  Config{U32.from_nat(Tlvs.size(tlvs)), tlvs}
+def Evt.config_make(+tlvs: List<&2, T.Tlv>) -> Evt:
+  Config{U32.from_nat(T.Tlvs.size(tlvs)), tlvs}
 
 def Evt.data_make(assoc: U32, stream: U32, +bytes: B.Bytes()) -> Evt:
   NgapData{assoc, stream, U32.from_nat(List.length(&2, U32, bytes)), bytes}
