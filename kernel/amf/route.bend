@@ -6,24 +6,32 @@ import ../ngap/gen/views.bend as V
 import ../state.bend as S
 import ./ngap.bend as N
 import ./gmm.bend as Gmm
+import ../smf/gsm.bend as Gsm
 
 # Incoming NGAP PDUs: decode, then tell the procedures apart by comparing the
 # PDU kind and procedure code in turn, so that a proof can follow each branch.
 # Every UE procedure answers with a transaction; NG Setup alone answers directly.
 
-def Route.d6(st: S.State, +assoc: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+def Route.d7(st: S.State, +assoc: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+  match ok:
+    case True{}:
+      Gsm.Gsm.setup_response_of_view(st, assoc, V.PDUSessionResourceSetupResponse.view(ies))
+    case False{}:
+      (S.Keep{}, N.Ngap.unhandled(assoc))
+
+def Route.d6(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.release_complete_of_view(st, assoc, V.UEContextReleaseComplete.view(ies))
     case False{}:
-      (S.Keep{}, N.Ngap.unhandled(assoc))
+      Route.d7(st, assoc, ies, N.Ngap.is_procedure(kind, code, 1n, 29n))
 
 def Route.d5(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.release_request_of_view(st, assoc, V.UEContextReleaseRequest.view(ies))
     case False{}:
-      Route.d6(st, assoc, ies, N.Ngap.is_procedure(kind, code, 1n, 41n))
+      Route.d6(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 1n, 41n))
 
 def Route.d4(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:

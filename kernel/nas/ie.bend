@@ -356,3 +356,66 @@ def Opts.read(fuel: Nat, +table: List<&2, Rule>, bs: B.Bytes()) -> Result<&2, &2
       Fail{B.Invalid{b}}
     case 1n+f +iei <> rest:
       Opts.iei(table, iei, rest, left => Opts.read(f, table, left), B.fits8(iei))
+
+# Reading a decoded message
+# -------------------------
+# The first byte field; the body of the first field, or of the second, when
+# it is LV-E; the byte field and the LV-E body of a transport message.
+
+def Fields.byte1(fields: List<&2, Field>) -> U32:
+  match fields:
+    case FByte{v} <> rest:
+      v
+    case _:
+      0
+
+def Fields.lve1(fields: List<&2, Field>) -> B.Bytes():
+  match fields:
+    case FLvE{LenBody{len, body}} <> rest:
+      body
+    case _:
+      []
+
+def Fields.lve2(fields: List<&2, Field>) -> B.Bytes():
+  match fields:
+    case f1 <> FLvE{LenBody{len, body}} <> rest:
+      body
+    case _:
+      []
+
+def Opts.hit(body: B.Bytes(), later: Maybe<&2, B.Bytes()>, hit: Bool) -> Maybe<&2, B.Bytes()>:
+  match hit:
+    case True{}:
+      Some{body}
+    case False{}:
+      later
+
+# The body of the optional IE with that IEI, if present.
+def Opts.find(+iei: U32, opts: List<&2, Ie>) -> Maybe<&2, B.Bytes()>:
+  match opts:
+    case Nil{}:
+      None{}
+    case Ie{id, fmt, len, +body} <> more:
+      Opts.hit(body, Opts.find(iei, more), U32.is_eq(id, iei))
+
+def Opts.hit1(id: U32, later: Maybe<&2, U32>, hit: Bool) -> Maybe<&2, U32>:
+  match hit:
+    case True{}:
+      Some{U32.and(15, id)}
+    case False{}:
+      later
+
+# The value of the one-octet IE whose IEI is that high nibble, if present.
+def Opts.t1(+nibble: U32, opts: List<&2, Ie>) -> Maybe<&2, U32>:
+  match opts:
+    case Nil{}:
+      None{}
+    case Ie{+id, fmt, len, body} <> more:
+      Opts.hit1(id, Opts.t1(nibble, more), U32.is_eq(U32.shrn(id, 4n), nibble))
+
+def Bytes.or(m: Maybe<&2, B.Bytes()>, d: B.Bytes()) -> B.Bytes():
+  match m:
+    case None{}:
+      d
+    case Some{v}:
+      v

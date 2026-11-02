@@ -5,6 +5,7 @@ import ../ngap/frame.bend as Fr
 import ../ngap/gen/types.bend as G
 import ../ngap/gen/views.bend as V
 import ../frame.bend as F
+import ../nas/security.bend as Sec
 import ../state.bend as S
 import ../table.bend as Tb
 
@@ -210,10 +211,22 @@ def Ngap.ue_caps(+caps: B.Bytes()) -> G.UESecurityCapabilities:
 def Ngap.ics_request(key: U32, ran_id: B.Bytes(), +cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), 14, Fr.Criticality.reject(), [Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(28, Fr.Criticality.reject(), G.GUAMI.write(NgSetup.guami(cfg), 0n, [])), Ngap.ie(0, Fr.Criticality.reject(), G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{S.Cfg.sst(cfg), None{}, None{}}, None{}}], 0n, [])), Ngap.ie(119, Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(94, Fr.Criticality.reject(), G.SecurityKey.write(Ap.unpack(k_gnb), 0n, [])), Ngap.ie(38, Fr.Criticality.ignore(), G.NAS_PDU.write(nas, 0n, []))])
 
+# 1 Gbit/s, the aggregate maximum bit rate of a UE and of its one session.
+def Ngap.gbps() -> G.BitRate():
+  Ap.BRoot{[59, 154, 202, 0]}
+
+def Ngap.ue_ambr() -> Ap.Bits():
+  G.UEAggregateMaximumBitRate.write(G.UEAggregateMaximumBitRate{Ngap.gbps(), Ngap.gbps(), None{}}, 0n, [])
+
+# PDU Session Resource Setup Request: one session, its NAS-PDU and transfer, the UE's AMBR.
+def Ngap.pdu_setup(key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.initiating(), 29, Fr.Criticality.reject(), [Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(74, Fr.Criticality.reject(), G.PDUSessionResourceSetupListSUReq.write([G.PDUSessionResourceSetupItemSUReq{psi, Some{nas}, G.S_NSSAI{sst, None{}, None{}}, transfer, None{}}], 0n, [])), Ngap.ie(110, Fr.Criticality.ignore(), Ngap.ue_ambr())])
+
 # What a UE procedure asks for, rendered to frame actions at the boundary.
 type Act is Data:
   DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
   Ics{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()}
+  PduSetup{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()}
   Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
   ErrInd{assoc: U32, cause: G.Cause}
   Pfcp{bytes: B.Bytes()}
@@ -231,6 +244,8 @@ def Act.render(a: Act) -> F.Action:
       Ngap.send(assoc, stream, Ngap.dl_nas_transport(key, ran_id, nas))
     case Ics{assoc, stream, key, ran_id, cfg, caps, k_gnb, nas}:
       Ngap.send(assoc, stream, Ngap.ics_request(key, ran_id, cfg, caps, k_gnb, nas))
+    case PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
+      Ngap.send(assoc, stream, Ngap.pdu_setup(key, ran_id, psi, sst, nas, transfer))
     case Release{assoc, stream, key, ran_id, cause}:
       Ngap.send(assoc, stream, Ngap.release_command(key, ran_id, cause))
     case ErrInd{assoc, cause}:
@@ -255,6 +270,40 @@ def render_out(st: S.State, o: GOut()) -> S.Out():
   match o:
     case (tx, acts):
       (S.Tx.apply(tx, st), Acts.render(acts))
+
+# Combining outcomes: an action in front, actions after, two outcomes in order, a note alone.
+def Out.prepend(a: Act, o: GOut()) -> GOut():
+  match o:
+    case (tx, acts):
+      (tx, a <> acts)
+
+def Out.also(o: GOut(), more: List<&2, Act>) -> GOut():
+  match o:
+    case (tx, acts):
+      (tx, List.append(&2, Act, acts, more))
+
+def Out.join_go(ta: S.Tx, aa: List<&2, Act>, b: GOut()) -> GOut():
+  match b:
+    case (tb, ab):
+      (S.Both{ta, tb}, List.append(&2, Act, aa, ab))
+
+def Out.join(a: GOut(), b: GOut()) -> GOut():
+  match a:
+    case (ta, aa):
+      Out.join_go(ta, aa, b)
+
+def Out.warn(why: String) -> GOut():
+  (S.Keep{}, [Note{F.Warn{}, why}])
+
+# A verified NAS message not acted on still moves the uplink COUNT on, so it
+# cannot be replayed; the context's phase keeps its shape.
+def Out.verified(key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, why: String) -> GOut():
+  (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, [Note{F.Warn{}, why}])
+
+# A protected downlink NAS message to a UE, its context moved on.
+def Out.dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> GOut():
+  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, plain)
+  (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p)}])
 
 def Ngap.bad_pdu(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.transfer_syntax_error())}, Note{F.Warn{}, "NGAP: PDU rejected, transfer syntax error"}]

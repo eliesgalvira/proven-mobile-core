@@ -4,7 +4,8 @@ import ./tlv.bend as T
 import ./table.bend as Tb
 import ./frame.bend as F
 import ./state.bend as S
-import ./smf.bend as Smf
+import ./smf/n4.bend as Up
+import ./smf/gsm.bend as Gsm
 import ./ausf.bend as Au
 import ./amf/ngap.bend as N
 import ./amf/gmm.bend as Gmm
@@ -30,27 +31,48 @@ def Kernel.config(complete: Bool, st: S.State, +tlvs: List<&2, T.Tlv>, +entropy:
       (st, [F.Action.log_make(F.Error{}, "Config: a required tag is missing; configuration unchanged")])
     case True{}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, +pfcp_seq, next_ue, next_timer, recovery}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
           +cfg = S.Cfg.of(tlvs)
-          +stamp = List.take(&2, U32, entropy, 4n)
-          (S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, U32.add(pfcp_seq, 1), next_ue, next_timer, stamp}, [F.Action.pfcp_make(Smf.Assoc.setup_request(cfg, stamp, pfcp_seq)), F.Action.log_make(F.Info{}, "Config: loaded; PFCP association requested")])
+          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, next_timer, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
+          N.render_out(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]))
 
 def Kernel.assoc_up(st: S.State, assoc: U32) -> S.Out():
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      (S.State{config, subs, S.Assocs.add(assoc, assocs), ues, sessions, pfcp_seq, next_ue, next_timer, recovery}, [])
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+      (S.State{config, subs, S.Assocs.add(assoc, assocs), ues, sessions, pfcp_seq, next_ue, next_timer, n4}, [])
 
-# An association going down releases every UE it owned, sessions included.
-def Kernel.released(config: Maybe<&2, S.Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, ues: Tb.Table(S.Ue), next_ue: U32, next_timer: U32, recovery: B.Bytes(), split: Sigma<&2, &2, Tb.Table(S.Session), _ => List<&2, S.Session>>, +seq: U32) -> S.Out():
-  match split:
-    case (kept, +gone):
-      (S.State{config, subs, assocs, ues, kept, U32.add(seq, U32.from_nat(List.length(&2, S.Session, gone))), next_ue, next_timer, recovery}, List.append(&2, F.Action, N.Acts.render(Gmm.Gmm.deletions(gone, seq)), [F.Action.log_make(F.Info{}, "NGAP: association down; its UE contexts and sessions released")]))
-
+# An association going down releases every UE it owned, their sessions at eUPF included.
 def Kernel.assoc_down(st: S.State, +assoc: U32) -> S.Out():
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}:
+    case S.State{config, subs, assocs, ues, +sessions, +pfcp_seq, next_ue, next_timer, n4}:
       +left = S.Ues.drop_assoc(assoc, ues)
-      Kernel.released(config, subs, S.Assocs.drop(assoc, assocs), left, next_ue, next_timer, recovery, S.Sessions.partition(left, sessions), pfcp_seq)
+      +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
+      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, S.Sessions.sift(S.SOwned{left}, sessions), U32.add(pfcp_seq, Up.N4.deletion_count(gone)), next_ue, next_timer, n4}, List.append(&2, F.Action, N.Acts.render(Up.N4.deletions(gone, pfcp_seq)), [F.Action.log_make(F.Info{}, "NGAP: association down; its UE contexts and sessions released")]))
+
+# A guard timer fired: a UE's, a session's, or the N4 association's (timer 0).
+def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
+  match ok:
+    case True{}:
+      Up.N4.fired(st)
+    case False{}:
+      (S.Keep{}, [])
+
+def Kernel.fired_session(+st: S.State, +timer: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
+  match m:
+    case None{}:
+      Kernel.node_timer(st, U32.is_eq(timer, Up.N4.timer()))
+    case Some{(skey, +s)}:
+      Gsm.Gsm.expired(st, skey, s, S.Session.phase(s))
+
+def Kernel.fired_ue(+st: S.State, +timer: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Ue>>) -> N.GOut():
+  match m:
+    case None{}:
+      Kernel.fired_session(st, timer, S.Sessions.by_timer(timer, S.State.sessions(st)))
+    case Some{(key, +ue)}:
+      Gmm.Gmm.expired(st, key, ue, S.Ue.phase(ue))
+
+def Kernel.fired(+st: S.State, +timer: U32) -> N.GOut():
+  Kernel.fired_ue(st, timer, S.Ues.by_timer(timer, S.State.ues(st)))
 
 def Kernel.step(+st: S.State, ev: F.Evt, +entropy: B.Bytes()) -> S.Out():
   match ev:
@@ -63,6 +85,6 @@ def Kernel.step(+st: S.State, ev: F.Evt, +entropy: B.Bytes()) -> S.Out():
     case F.NgapData{assoc, stream, len, bytes}:
       R.Route.data(st, assoc, stream, bytes, entropy)
     case F.PfcpData{len, bytes}:
-      (st, [])
+      N.render_out(st, Gsm.Gsm.pfcp_data(st, bytes))
     case F.TimerFired{timer}:
-      N.render_out(st, Gmm.Gmm.timer(st, timer))
+      N.render_out(st, Kernel.fired(st, timer))
