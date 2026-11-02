@@ -160,24 +160,24 @@ def Field.rt(lay: I.Lay, f: I.Field, +W: B.Bytes(), +v: {I.Field.valid(lay, f) =
   match lay f:
     case I.V1{} I.FByte{+x}:
       mx = Equal.sym(U32, U32.and(255, x), x, P.U32.eq_of_is_eq(U32.and(255, x), x, v))
-      %mx : {I.Field.byte_ok(_, W, I.fits8(_)) == Done{(I.FByte{x}, W)} : B.Read(I.Field)}
-      sv = Equal.sym(Bool, I.fits8(x), True{}, v)
+      %mx : {I.Field.byte_ok(_, W, B.fits8(_)) == Done{(I.FByte{x}, W)} : B.Read(I.Field)}
+      sv = Equal.sym(Bool, B.fits8(x), True{}, v)
       %sv : {I.Field.byte_ok(x, W, _) == Done{(I.FByte{x}, W)} : B.Read(I.Field)}
       {==}
     case I.Lv{} I.FLv{I.LenBody{+len, +body}}:
-      +fl = P.Bool.and_true_l(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v)
-      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v))
+      +fl = P.Bool.and_true_l(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v)
+      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v))
       ml = Equal.sym(U32, U32.and(255, len), len, P.U32.eq_of_is_eq(U32.and(255, len), len, fl))
-      %ml : {I.Field.of_lv(I.Len.take(_, List.append(&2, U32, body, W), I.fits8(_))) == Done{(I.FLv{I.LenBody{len, body}}, W)} : B.Read(I.Field)}
-      lr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, W), I.fits8(len)), Done{(I.LenBody{len, body}, W)}, Len.rt(len, body, W, I.fits8(len), fl, tn))
+      %ml : {I.Field.of_lv(I.Len.take(_, List.append(&2, U32, body, W), B.fits8(_))) == Done{(I.FLv{I.LenBody{len, body}}, W)} : B.Read(I.Field)}
+      lr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, W), B.fits8(len)), Done{(I.LenBody{len, body}, W)}, Len.rt(len, body, W, B.fits8(len), fl, tn))
       %lr : {I.Field.of_lv(_) == Done{(I.FLv{I.LenBody{len, body}}, W)} : B.Read(I.Field)}
       {==}
     case I.LvE{} I.FLvE{I.LenBody{+len, +body}}:
-      +fl = P.Bool.and_true_l(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v)
-      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v))
+      +fl = P.Bool.and_true_l(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v)
+      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v))
       ru = Equal.sym(B.Read(U32), B.u16(B.write_u16(len, List.append(&2, U32, body, W))), Done{(len, List.append(&2, U32, body, W))}, L.bytes.u16.roundtrip(len, List.append(&2, U32, body, W), P.U32.eq_of_is_eq(U32.and(65535, len), len, fl)))
       %ru : {I.Field.of_lve(I.Lve.body(_)) == Done{(I.FLvE{I.LenBody{len, body}}, W)} : B.Read(I.Field)}
-      lr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, W), I.fits16(len)), Done{(I.LenBody{len, body}, W)}, Len.rt(len, body, W, I.fits16(len), fl, tn))
+      lr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, W), B.fits16(len)), Done{(I.LenBody{len, body}, W)}, Len.rt(len, body, W, B.fits16(len), fl, tn))
       %lr : {I.Field.of_lve(_) == Done{(I.FLvE{I.LenBody{len, body}}, W)} : B.Read(I.Field)}
       {==}
     case I.V1{} I.FLv{lb}:
@@ -233,17 +233,17 @@ def Opts.step_tv(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +n: Nat, +len: U32, +
       %l0 : {I.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, _, body}, I.Opts.read(f, t, R)) == I.Opts.cons(I.Ie{iei, I.Tv{List.length(&2, U32, body)}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       {==}
 
-def Opts.step_tlv(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.Tlv{} == I.Opts.format(t, iei) : I.Fmt}, lr: {I.Len.take(len, List.append(&2, U32, body, R), I.fits8(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {I.Opts.iei(t, iei, len <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
+def Opts.step_tlv(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.Tlv{} == I.Opts.format(t, iei) : I.Fmt}, lr: {I.Len.take(len, List.append(&2, U32, body, R), B.fits8(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {I.Opts.iei(t, iei, len <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match ok:
     case False{}:
       Empty.absurd({I.Opts.iei(t, iei, len <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), False{}) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
     case True{}:
       %fe : {I.Opts.next(I.Ie.read_body(iei, _, len <> List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
-      slr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, R), I.fits8(len)), Done{(I.LenBody{len, body}, R)}, lr)
+      slr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, R), B.fits8(len)), Done{(I.LenBody{len, body}, R)}, lr)
       %slr : {I.Opts.next(I.Ie.of_len(iei, I.Tlv{}, _), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       {==}
 
-def Opts.step_tlve(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.TlvE{} == I.Opts.format(t, iei) : I.Fmt}, ru: {B.u16(B.write_u16(len, List.append(&2, U32, body, R))) == Done{(len, List.append(&2, U32, body, R))} : B.Read(U32)}, lr: {I.Len.take(len, List.append(&2, U32, body, R), I.fits16(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {I.Opts.iei(t, iei, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
+def Opts.step_tlve(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B.Bytes(), +R: B.Bytes(), ok: Bool, eok: {ok == True{} : Bool}, fe: {I.TlvE{} == I.Opts.format(t, iei) : I.Fmt}, ru: {B.u16(B.write_u16(len, List.append(&2, U32, body, R))) == Done{(len, List.append(&2, U32, body, R))} : B.Read(U32)}, lr: {I.Len.take(len, List.append(&2, U32, body, R), B.fits16(len)) == Done{(I.LenBody{len, body}, R)} : B.Read(I.LenBody)}) -> {I.Opts.iei(t, iei, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), ok) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match ok:
     case False{}:
       Empty.absurd({I.Opts.iei(t, iei, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), False{}) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}, P.Refute.bool(eok))
@@ -251,7 +251,7 @@ def Opts.step_tlve(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B
       %fe : {I.Opts.next(I.Ie.read_body(iei, _, B.write_u16(len, List.append(&2, U32, body, R))), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       sru = Equal.sym(B.Read(U32), B.u16(B.write_u16(len, List.append(&2, U32, body, R))), Done{(len, List.append(&2, U32, body, R))}, ru)
       %sru : {I.Opts.next(I.Ie.of_len(iei, I.TlvE{}, I.Lve.body(_)), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
-      slr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, R), I.fits16(len)), Done{(I.LenBody{len, body}, R)}, lr)
+      slr = Equal.sym(B.Read(I.LenBody), I.Len.take(len, List.append(&2, U32, body, R), B.fits16(len)), Done{(I.LenBody{len, body}, R)}, lr)
       %slr : {I.Opts.next(I.Ie.of_len(iei, I.TlvE{}, _), left => I.Opts.read(f, t, left)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
       {==}
 
@@ -259,47 +259,47 @@ def Opts.step_tlve(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, +len: U32, +body: B
 def Opts.step(+f: Nat, +t: List<&2, I.Rule>, +iei: U32, fmt: I.Fmt, +len: U32, +body: B.Bytes(), +R: B.Bytes(), +v: {I.Ie.valid(I.Opts.format(t, iei), I.Ie{iei, fmt, len, body}) == True{} : Bool}) -> {I.Opts.read(1n+f, t, I.Ie.write(I.Ie{iei, fmt, len, body}, R)) == I.Opts.cons(I.Ie{iei, fmt, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}:
   match fmt:
     case I.T1{}:
-      fe = Fmt.eq_of_is_eq(I.T1{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.T1{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.T1{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v)
-      +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body), r1)
-      +rr = P.Bool.and_true_r(U32.is_ge(iei, 128), Bool.and(List.is_empty(&2, U32, body), U32.is_eq(len, 0)), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body), r1))
+      fe = Fmt.eq_of_is_eq(I.T1{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.T1{}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.T1{}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body)), v)
+      +f8 = P.Bool.and_true_l(B.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body), r1)
+      +rr = P.Bool.and_true_r(U32.is_ge(iei, 128), Bool.and(List.is_empty(&2, U32, body), U32.is_eq(len, 0)), P.Bool.and_true_r(B.fits8(iei), I.Ie.valid_body(I.T1{}, iei, len, body), r1))
       b0 = List.nil_of_is_empty(body, P.Bool.and_true_l(List.is_empty(&2, U32, body), U32.is_eq(len, 0), rr))
       l0 = P.U32.eq_of_is_eq(len, 0, P.Bool.and_true_r(List.is_empty(&2, U32, body), U32.is_eq(len, 0), rr))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
-      %mi : {I.Opts.iei(t, _, R, left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
-      Opts.step_t1(f, t, iei, len, body, R, I.fits8(iei), f8, fe, l0, b0)
+      %mi : {I.Opts.iei(t, _, R, left => I.Opts.read(f, t, left), B.fits8(_)) == I.Opts.cons(I.Ie{iei, I.T1{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      Opts.step_t1(f, t, iei, len, body, R, B.fits8(iei), f8, fe, l0, b0)
     case I.Tv{+n}:
-      fe = Fmt.eq_of_is_eq(I.Tv{n}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tv{n}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tv{n}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v)
-      +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body), r1)
-      +rr = P.Bool.and_true_r(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), U32.is_eq(len, 0)), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body), r1))
+      fe = Fmt.eq_of_is_eq(I.Tv{n}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tv{n}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tv{n}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body)), v)
+      +f8 = P.Bool.and_true_l(B.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body), r1)
+      +rr = P.Bool.and_true_r(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), U32.is_eq(len, 0)), P.Bool.and_true_r(B.fits8(iei), I.Ie.valid_body(I.Tv{n}, iei, len, body), r1))
       ln = P.Nat.eq_of_is_eq(List.length(&2, U32, body), n, P.Bool.and_true_l(Nat.is_eq(List.length(&2, U32, body), n), U32.is_eq(len, 0), rr))
       l0 = P.U32.eq_of_is_eq(len, 0, P.Bool.and_true_r(Nat.is_eq(List.length(&2, U32, body), n), U32.is_eq(len, 0), rr))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
-      %mi : {I.Opts.iei(t, _, List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
-      Opts.step_tv(f, t, iei, n, len, body, R, I.fits8(iei), f8, fe, ln, l0)
+      %mi : {I.Opts.iei(t, _, List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), B.fits8(_)) == I.Opts.cons(I.Ie{iei, I.Tv{n}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      Opts.step_tv(f, t, iei, n, len, body, R, B.fits8(iei), f8, fe, ln, l0)
     case I.Tlv{}:
-      fe = Fmt.eq_of_is_eq(I.Tlv{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tlv{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tlv{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v)
-      +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body), r1)
-      +v8 = P.Bool.and_true_r(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body}), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body), r1))
-      +fl = P.Bool.and_true_l(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8)
-      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8))
+      fe = Fmt.eq_of_is_eq(I.Tlv{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.Tlv{}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.Tlv{}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body)), v)
+      +f8 = P.Bool.and_true_l(B.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body), r1)
+      +v8 = P.Bool.and_true_r(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body}), P.Bool.and_true_r(B.fits8(iei), I.Ie.valid_body(I.Tlv{}, iei, len, body), r1))
+      +fl = P.Bool.and_true_l(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8)
+      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
       ml = Equal.sym(U32, U32.and(255, len), len, P.U32.eq_of_is_eq(U32.and(255, len), len, fl))
-      %mi : {I.Opts.iei(t, _, U32.and(255, len) <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
-      %ml : {I.Opts.iei(t, iei, _ <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), I.fits8(iei)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
-      Opts.step_tlv(f, t, iei, len, body, R, I.fits8(iei), f8, fe, Len.rt(len, body, R, I.fits8(len), fl, tn))
+      %mi : {I.Opts.iei(t, _, U32.and(255, len) <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), B.fits8(_)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      %ml : {I.Opts.iei(t, iei, _ <> List.append(&2, U32, body, R), left => I.Opts.read(f, t, left), B.fits8(iei)) == I.Opts.cons(I.Ie{iei, I.Tlv{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      Opts.step_tlv(f, t, iei, len, body, R, B.fits8(iei), f8, fe, Len.rt(len, body, R, B.fits8(len), fl, tn))
     case I.TlvE{}:
-      fe = Fmt.eq_of_is_eq(I.TlvE{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.TlvE{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v))
-      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.TlvE{}, I.Opts.format(t, iei)), Bool.and(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v)
-      +f8 = P.Bool.and_true_l(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body), r1)
-      +v16 = P.Bool.and_true_r(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body}), P.Bool.and_true_r(I.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body), r1))
-      +fl = P.Bool.and_true_l(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v16)
-      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v16))
+      fe = Fmt.eq_of_is_eq(I.TlvE{}, I.Opts.format(t, iei), P.Bool.and_true_l(I.Fmt.eq(I.TlvE{}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v))
+      +r1 = P.Bool.and_true_r(I.Fmt.eq(I.TlvE{}, I.Opts.format(t, iei)), Bool.and(B.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body)), v)
+      +f8 = P.Bool.and_true_l(B.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body), r1)
+      +v16 = P.Bool.and_true_r(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body}), P.Bool.and_true_r(B.fits8(iei), I.Ie.valid_body(I.TlvE{}, iei, len, body), r1))
+      +fl = P.Bool.and_true_l(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v16)
+      tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v16))
       mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
-      %mi : {I.Opts.iei(t, _, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), I.fits8(_)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
-      Opts.step_tlve(f, t, iei, len, body, R, I.fits8(iei), f8, fe, L.bytes.u16.roundtrip(len, List.append(&2, U32, body, R), P.U32.eq_of_is_eq(U32.and(65535, len), len, fl)), Len.rt(len, body, R, I.fits16(len), fl, tn))
+      %mi : {I.Opts.iei(t, _, B.write_u16(len, List.append(&2, U32, body, R)), left => I.Opts.read(f, t, left), B.fits8(_)) == I.Opts.cons(I.Ie{iei, I.TlvE{}, len, body}, I.Opts.read(f, t, R)) : Opts.Res()}
+      Opts.step_tlve(f, t, iei, len, body, R, B.fits8(iei), f8, fe, L.bytes.u16.roundtrip(len, List.append(&2, U32, body, R), P.U32.eq_of_is_eq(U32.and(65535, len), len, fl)), Len.rt(len, body, R, B.fits16(len), fl, tn))
 
 # Every IE takes at least one byte.
 def Ie.write_pos(ie: I.Ie, +W: B.Bytes(), e: {Nat.is_le(List.length(&2, U32, I.Ie.write(ie, W)), 0n) == True{} : Bool}) -> Empty:
@@ -432,32 +432,32 @@ def Take.len_eq2.go(+n: Nat, +body: B.Bytes(), +r: B.Bytes(), +rest: B.Bytes(), 
 def Take.len_eq2(+n: Nat, +r: B.Bytes(), +body: B.Bytes(), +rest: B.Bytes(), e: {B.take(n, r) == Done{(body, rest)} : B.Read(B.Bytes())}) -> {Nat.is_eq(n, List.length(&2, U32, body)) == True{} : Bool}:
   Take.len_eq2.go(n, body, r, rest, L.bytes.take.length(n, r, body, rest, e))
 
-def Len.dv8_join(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), +rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(len), r) == rt : B.Read(B.Bytes())}, e: {I.Len.join(len, rt) == Done{(lb, rest)} : B.Read(I.LenBody)}, fl: {I.fits8(len) == True{} : Bool}) -> {I.LenBody.valid8(lb) == True{} : Bool}:
+def Len.dv8_join(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), +rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(len), r) == rt : B.Read(B.Bytes())}, e: {I.Len.join(len, rt) == Done{(lb, rest)} : B.Read(I.LenBody)}, fl: {B.fits8(len) == True{} : Bool}) -> {I.LenBody.valid8(lb) == True{} : Bool}:
   match rt:
     case Fail{err}:
       Empty.absurd({I.LenBody.valid8(lb) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), err, (lb, rest), e))
     case Done{(+body, rest2)}:
       el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{len, body}, rest2)}, Done{(lb, rest)}, e)
       %el : {I.LenBody.valid8(_) == True{} : Bool}
-      P.Bool.and_intro(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
+      P.Bool.and_intro(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
 
-def Len.dv8(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), ok: Bool, ev: {I.fits8(len) == ok : Bool}, e: {I.Len.take(len, r, ok) == Done{(lb, rest)} : B.Read(I.LenBody)}) -> {I.LenBody.valid8(lb) == True{} : Bool}:
+def Len.dv8(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), ok: Bool, ev: {B.fits8(len) == ok : Bool}, e: {I.Len.take(len, r, ok) == Done{(lb, rest)} : B.Read(I.LenBody)}) -> {I.LenBody.valid8(lb) == True{} : Bool}:
   match ok:
     case False{}:
       Empty.absurd({I.LenBody.valid8(lb) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Invalid{len}, (lb, rest), e))
     case True{}:
       Len.dv8_join(len, r, lb, rest, B.take(U32.to_nat(len), r), {==}, e, ev)
 
-def Len.dv16_join(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), +rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(len), r) == rt : B.Read(B.Bytes())}, e: {I.Len.join(len, rt) == Done{(lb, rest)} : B.Read(I.LenBody)}, fl: {I.fits16(len) == True{} : Bool}) -> {I.LenBody.valid16(lb) == True{} : Bool}:
+def Len.dv16_join(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), +rt: B.Read(B.Bytes()), ert: {B.take(U32.to_nat(len), r) == rt : B.Read(B.Bytes())}, e: {I.Len.join(len, rt) == Done{(lb, rest)} : B.Read(I.LenBody)}, fl: {B.fits16(len) == True{} : Bool}) -> {I.LenBody.valid16(lb) == True{} : Bool}:
   match rt:
     case Fail{err}:
       Empty.absurd({I.LenBody.valid16(lb) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), err, (lb, rest), e))
     case Done{(+body, rest2)}:
       el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{len, body}, rest2)}, Done{(lb, rest)}, e)
       %el : {I.LenBody.valid16(_) == True{} : Bool}
-      P.Bool.and_intro(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
+      P.Bool.and_intro(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), fl, Take.len_eq2(U32.to_nat(len), r, body, rest2, ert))
 
-def Len.dv16(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), ok: Bool, ev: {I.fits16(len) == ok : Bool}, e: {I.Len.take(len, r, ok) == Done{(lb, rest)} : B.Read(I.LenBody)}) -> {I.LenBody.valid16(lb) == True{} : Bool}:
+def Len.dv16(+len: U32, +r: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), ok: Bool, ev: {B.fits16(len) == ok : Bool}, e: {I.Len.take(len, r, ok) == Done{(lb, rest)} : B.Read(I.LenBody)}) -> {I.LenBody.valid16(lb) == True{} : Bool}:
   match ok:
     case False{}:
       Empty.absurd({I.LenBody.valid16(lb) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Invalid{len}, (lb, rest), e))
@@ -469,7 +469,7 @@ def Lv.dv(+bs: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), e: {I.lv(bs) == Done
     case Nil{}:
       Empty.absurd({I.LenBody.valid8(lb) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Short{}, (lb, rest), e))
     case +len <> r:
-      Len.dv8(len, r, lb, rest, I.fits8(len), {==}, e)
+      Len.dv8(len, r, lb, rest, B.fits8(len), {==}, e)
 
 def Lve.dv(+bs: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), e: {I.lve(bs) == Done{(lb, rest)} : B.Read(I.LenBody)}) -> {I.LenBody.valid16(lb) == True{} : Bool}:
   match bs:
@@ -478,9 +478,9 @@ def Lve.dv(+bs: B.Bytes(), +lb: I.LenBody, +rest: B.Bytes(), e: {I.lve(bs) == Do
     case b <> Nil{}:
       Empty.absurd({I.LenBody.valid16(lb) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Short{}, (lb, rest), e))
     case +b1 <> +b0 <> r:
-      Len.dv16(B.cat8(b0, b1), r, lb, rest, I.fits16(B.cat8(b0, b1)), {==}, e)
+      Len.dv16(B.cat8(b0, b1), r, lb, rest, B.fits16(B.cat8(b0, b1)), {==}, e)
 
-def Field.dv_byte(+b: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), ok: Bool, ev: {I.fits8(b) == ok : Bool}, e: {I.Field.byte_ok(b, r, ok) == Done{(f, rest)} : B.Read(I.Field)}) -> {I.Field.valid(I.V1{}, f) == True{} : Bool}:
+def Field.dv_byte(+b: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), ok: Bool, ev: {B.fits8(b) == ok : Bool}, e: {I.Field.byte_ok(b, r, ok) == Done{(f, rest)} : B.Read(I.Field)}) -> {I.Field.valid(I.V1{}, f) == True{} : Bool}:
   match ok:
     case False{}:
       Empty.absurd({I.Field.valid(I.V1{}, f) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Invalid{b}, (f, rest), e))
@@ -514,7 +514,7 @@ def Field.dv(lay: I.Lay, +bs: B.Bytes(), +f: I.Field, +rest: B.Bytes(), e: {I.Fi
         case Nil{}:
           Empty.absurd({I.Field.valid(I.V1{}, f) == True{} : Bool}, P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
         case +b <> r:
-          Field.dv_byte(b, r, f, rest, I.fits8(b), {==}, e)
+          Field.dv_byte(b, r, f, rest, B.fits8(b), {==}, e)
     case I.Lv{}:
       Field.dv_lv(I.lv(bs), f, rest, e, lb => r => e2 => Lv.dv(bs, lb, r, e2))
     case I.LvE{}:
@@ -549,14 +549,14 @@ def Fields.dv(+lays: List<&2, I.Lay>, +bs: B.Bytes(), +fs: List<&2, I.Field>, +r
 def Ie.Valid(+t: List<&2, I.Rule>, +ie: I.Ie) -> Type:
   {I.Ie.valid(I.Opts.format(t, I.Ie.iei(ie)), ie) == True{} : Bool}
 
-def Ie.dv_t1(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.T1{} : I.Fmt}, e: {Done{(I.Ie{iei, I.T1{}, 0, []}, r)} == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_t1(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.T1{} : I.Fmt}, e: {Done{(I.Ie{iei, I.T1{}, 0, []}, r)} == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   ei = Equal.cong(B.Read(I.Ie), I.Ie, x => P.Read.value(I.Ie, x, ie), Done{(I.Ie{iei, I.T1{}, 0, []}, r)}, Done{(ie, rest)}, e)
   %ei : Ie.Valid(t, _)
   shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.T1{}, hx)
   %shx : {I.Ie.valid(_, I.Ie{iei, I.T1{}, 0, []}) == True{} : Bool}
-  P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_ge(iei, 128), True{}), f8, P.Bool.and_intro(U32.is_ge(iei, 128), True{}, Format.t1(t, iei, hx), {==}))
+  P.Bool.and_intro(B.fits8(iei), Bool.and(U32.is_ge(iei, 128), True{}), f8, P.Bool.and_intro(U32.is_ge(iei, 128), True{}, Format.t1(t, iei, hx), {==}))
 
-def Ie.dv_tv(+t: List<&2, I.Rule>, +iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.Tv{n} : I.Fmt}, +rt: B.Read(B.Bytes()), ert: {B.take(n, r) == rt : B.Read(B.Bytes())}, e: {I.Ie.of_tv(iei, n, rt) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_tv(+t: List<&2, I.Rule>, +iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.Tv{n} : I.Fmt}, +rt: B.Read(B.Bytes()), ert: {B.take(n, r) == rt : B.Read(B.Bytes())}, e: {I.Ie.of_tv(iei, n, rt) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match rt:
     case Fail{err}:
       Empty.absurd(Ie.Valid(t, ie), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, rest), e))
@@ -565,9 +565,9 @@ def Ie.dv_tv(+t: List<&2, I.Rule>, +iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie,
       %ei : Ie.Valid(t, _)
       shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.Tv{n}, hx)
       %shx : {I.Ie.valid(_, I.Ie{iei, I.Tv{n}, 0, body}) == True{} : Bool}
-      P.Bool.and_intro(Nat.is_eq(n, n), Bool.and(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}))), P.Nat.is_eq_refl(n), P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}), Format.low(t, iei, I.Tv{n}, hx, Unit{}), P.Bool.and_intro(Nat.is_eq(List.length(&2, U32, body), n), True{}, Take.len_eq(n, r, body, rest2, ert), {==}))))
+      P.Bool.and_intro(Nat.is_eq(n, n), Bool.and(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}))), P.Nat.is_eq_refl(n), P.Bool.and_intro(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), Bool.and(Nat.is_eq(List.length(&2, U32, body), n), True{}), Format.low(t, iei, I.Tv{n}, hx, Unit{}), P.Bool.and_intro(Nat.is_eq(List.length(&2, U32, body), n), True{}, Take.len_eq(n, r, body, rest2, ert), {==}))))
 
-def Ie.dv_tlv(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.Tlv{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lv(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_tlv(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.Tlv{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lv(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match rl:
     case Fail{err}:
       Empty.absurd(Ie.Valid(t, ie), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, rest), e))
@@ -576,9 +576,9 @@ def Ie.dv_tlv(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: 
       %ei : Ie.Valid(t, _)
       shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.Tlv{}, hx)
       %shx : {I.Ie.valid(_, I.Ie{iei, I.Tlv{}, len, body}) == True{} : Bool}
-      P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body}), Format.low(t, iei, I.Tlv{}, hx, Unit{}), Lv.dv(r, I.LenBody{len, body}, rest2, erl)))
+      P.Bool.and_intro(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), I.LenBody.valid8(I.LenBody{len, body}), Format.low(t, iei, I.Tlv{}, hx, Unit{}), Lv.dv(r, I.LenBody{len, body}, rest2, erl)))
 
-def Ie.dv_tlve(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.TlvE{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lve(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.TlvE{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv_tlve(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +hx: {I.Opts.format(t, iei) == I.TlvE{} : I.Fmt}, +rl: B.Read(I.LenBody), erl: {I.lve(r) == rl : B.Read(I.LenBody)}, e: {I.Ie.of_len(iei, I.TlvE{}, rl) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match rl:
     case Fail{err}:
       Empty.absurd(Ie.Valid(t, ie), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, rest), e))
@@ -587,9 +587,9 @@ def Ie.dv_tlve(+t: List<&2, I.Rule>, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +rest:
       %ei : Ie.Valid(t, _)
       shx = Equal.sym(I.Fmt, I.Opts.format(t, iei), I.TlvE{}, hx)
       %shx : {I.Ie.valid(_, I.Ie{iei, I.TlvE{}, len, body}) == True{} : Bool}
-      P.Bool.and_intro(I.fits8(iei), Bool.and(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body}), Format.low(t, iei, I.TlvE{}, hx, Unit{}), Lve.dv(r, I.LenBody{len, body}, rest2, erl)))
+      P.Bool.and_intro(B.fits8(iei), Bool.and(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body})), f8, P.Bool.and_intro(U32.is_lt(iei, 128), I.LenBody.valid16(I.LenBody{len, body}), Format.low(t, iei, I.TlvE{}, hx, Unit{}), Lve.dv(r, I.LenBody{len, body}, rest2, erl)))
 
-def Ie.dv(+t: List<&2, I.Rule>, +iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, hx: {I.Opts.format(t, iei) == x : I.Fmt}, e: {I.Ie.read_body(iei, x, r) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
+def Ie.dv(+t: List<&2, I.Rule>, +iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +rest: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, hx: {I.Opts.format(t, iei) == x : I.Fmt}, e: {I.Ie.read_body(iei, x, r) == Done{(ie, rest)} : B.Read(I.Ie)}) -> Ie.Valid(t, ie):
   match x:
     case I.T1{}:
       Ie.dv_t1(t, iei, r, ie, rest, f8, hx, e)
@@ -616,7 +616,7 @@ def Opts.dv_next(+t: List<&2, I.Rule>, +f: Nat, +rb: B.Read(I.Ie), +opts: List<&
     case Done{(+ie, +r)}:
       Opts.dv_cons(t, ie, I.Opts.read(f, t, r), opts, e, hb(ie, r, {==}), opts2 => e2 => ih(r, opts2, e2))
 
-def Opts.dv_iei(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, ev: {I.fits8(iei) == ok : Bool}, e: {I.Opts.iei(t, iei, r, left => I.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {I.Opts.valid(t, opts2) == True{} : Bool}) -> {I.Opts.valid(t, opts) == True{} : Bool}:
+def Opts.dv_iei(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, ev: {B.fits8(iei) == ok : Bool}, e: {I.Opts.iei(t, iei, r, left => I.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {I.Opts.valid(t, opts2) == True{} : Bool}) -> {I.Opts.valid(t, opts) == True{} : Bool}:
   match ok:
     case False{}:
       Empty.absurd({I.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{iei}, opts, e))
@@ -636,7 +636,7 @@ def Opts.dv(+t: List<&2, I.Rule>, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.
     case 0n b <> r:
       Empty.absurd({I.Opts.valid(t, opts) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{b}, opts, e))
     case 1n++f +iei <> +r:
-      Opts.dv_iei(t, f, iei, r, opts, I.fits8(iei), {==}, e, left => opts2 => e2 => Opts.dv(t, f, left, opts2, e2))
+      Opts.dv_iei(t, f, iei, r, opts, B.fits8(iei), {==}, e, left => opts2 => e2 => Opts.dv(t, f, left, opts2, e2))
 
 def Msg.dv_opts(+mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +ro: Opts.Res(), +m: Mm.Mm, e: {Mm.Mm.r_opts(mt, fields, ro) == Done{m} : Msg.Res()}, hf: {I.Fields.valid(Mm.Mm.layout(mt), fields) == True{} : Bool}, ho: @opts: List<&2, I.Ie> -> {ro == Done{opts} : Opts.Res()} -> {I.Opts.valid(Mm.Mm.table(mt), opts) == True{} : Bool}) -> {Mm.Mm.valid(m) == True{} : Bool}:
   match ro:
@@ -732,7 +732,7 @@ def Len.sx(-G: Type, +len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), 
 def Field.Sx(+f: I.Field, +rest: B.Bytes(), +bs: B.Bytes()) -> Type:
   {I.Field.write(f, rest) == bs : B.Bytes()} & {B.all_bytes(rest) == True{} : Bool}
 
-def Field.sx_byte(+b: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), ok: Bool, +ev: {I.fits8(b) == ok : Bool}, +e: {I.Field.byte_ok(b, r, ok) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(b <> r) == True{} : Bool}) -> Field.Sx(f, rest, b <> r):
+def Field.sx_byte(+b: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), ok: Bool, +ev: {B.fits8(b) == ok : Bool}, +e: {I.Field.byte_ok(b, r, ok) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(b <> r) == True{} : Bool}) -> Field.Sx(f, rest, b <> r):
   match ok:
     case False{}:
       Empty.absurd(Field.Sx(f, rest, b <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Invalid{b}, (f, rest), e))
@@ -745,7 +745,7 @@ def Field.sx_byte(+b: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), ok: Boo
       %mb : {_ <> r == b <> r : B.Bytes()} & {B.all_bytes(r) == True{} : Bool}
       ({==}, P.Bool.and_true_r(B.is_byte(b), B.all_bytes(r), ab))
 
-def Field.sx_lv_fin(+len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), f8: {I.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Field.Sx(I.FLv{lb}, r2, len0 <> r):
+def Field.sx_lv_fin(+len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), f8: {B.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Field.Sx(I.FLv{lb}, r2, len0 <> r):
   el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{len0, body}, r3)}, Done{(lb, r2)}, e2)
   er = Equal.cong(B.Read(I.LenBody), B.Bytes(), x => P.Read.rest(I.LenBody, x, r2), Done{(I.LenBody{len0, body}, r3)}, Done{(lb, r2)}, e2)
   %el : Field.Sx(I.FLv{_}, r2, len0 <> r)
@@ -756,7 +756,7 @@ def Field.sx_lv_fin(+len0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +
   %sap : {len0 <> _ == len0 <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
   ({==}, al)
 
-def Field.sx_lv(+len0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +rl: B.Read(I.LenBody), erl: {I.Len.take(len0, r, I.fits8(len0)) == rl : B.Read(I.LenBody)}, +e: {I.Field.of_lv(rl) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(len0 <> r) == True{} : Bool}) -> Field.Sx(f, rest, len0 <> r):
+def Field.sx_lv(+len0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +rl: B.Read(I.LenBody), erl: {I.Len.take(len0, r, B.fits8(len0)) == rl : B.Read(I.LenBody)}, +e: {I.Field.of_lv(rl) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(len0 <> r) == True{} : Bool}) -> Field.Sx(f, rest, len0 <> r):
   match rl:
     case Fail{err}:
       Empty.absurd(Field.Sx(f, rest, len0 <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), err, (f, rest), e))
@@ -765,7 +765,7 @@ def Field.sx_lv(+len0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +rl: B
       er = Equal.cong(B.Read(I.Field), B.Bytes(), x => P.Read.rest(I.Field, x, rest), Done{(I.FLv{lb}, r2)}, Done{(f, rest)}, e)
       %ef : Field.Sx(_, rest, len0 <> r)
       %er : Field.Sx(I.FLv{lb}, _, len0 <> r)
-      Len.sx(Field.Sx(I.FLv{lb}, r2, len0 <> r), len0, r, lb, r2, I.fits8(len0), I.fits8(len0), {==}, erl, P.Bool.and_true_r(B.is_byte(len0), B.all_bytes(r), ab), f8 => body => r3 => e2 => ap => al => Field.sx_lv_fin(len0, r, lb, r2, body, r3, f8, e2, ap, al))
+      Len.sx(Field.Sx(I.FLv{lb}, r2, len0 <> r), len0, r, lb, r2, B.fits8(len0), B.fits8(len0), {==}, erl, P.Bool.and_true_r(B.is_byte(len0), B.all_bytes(r), ab), f8 => body => r3 => e2 => ap => al => Field.sx_lv_fin(len0, r, lb, r2, body, r3, f8, e2, ap, al))
 
 def Field.sx_lve_fin(+b1: U32, +b0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), +e2: {Done{(I.LenBody{B.cat8(b0, b1), body}, r3)} == Done{(lb, r2)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}, m1: {U32.and(255, b1) == b1 : U32}, m0: {U32.and(255, b0) == b0 : U32}) -> Field.Sx(I.FLvE{lb}, r2, b1 <> b0 <> r):
   el = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, lb), Done{(I.LenBody{B.cat8(b0, b1), body}, r3)}, Done{(lb, r2)}, e2)
@@ -780,7 +780,7 @@ def Field.sx_lve_fin(+b1: U32, +b0: U32, +r: B.Bytes(), +lb: I.LenBody, +r2: B.B
   %sap : {b1 <> b0 <> _ == b1 <> b0 <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
   ({==}, al)
 
-def Field.sx_lve(+b1: U32, +b0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(b0, b1), r, I.fits16(B.cat8(b0, b1))) == rl : B.Read(I.LenBody)}, +e: {I.Field.of_lve(rl) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(b1 <> b0 <> r) == True{} : Bool}) -> Field.Sx(f, rest, b1 <> b0 <> r):
+def Field.sx_lve(+b1: U32, +b0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(b0, b1), r, B.fits16(B.cat8(b0, b1))) == rl : B.Read(I.LenBody)}, +e: {I.Field.of_lve(rl) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(b1 <> b0 <> r) == True{} : Bool}) -> Field.Sx(f, rest, b1 <> b0 <> r):
   match rl:
     case Fail{err}:
       Empty.absurd(Field.Sx(f, rest, b1 <> b0 <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), err, (f, rest), e))
@@ -790,7 +790,7 @@ def Field.sx_lve(+b1: U32, +b0: U32, +r: B.Bytes(), +f: I.Field, +rest: B.Bytes(
       %ef : Field.Sx(_, rest, b1 <> b0 <> r)
       %er : Field.Sx(I.FLvE{lb}, _, b1 <> b0 <> r)
       +ab0 = P.Bool.and_true_r(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r)), ab)
-      Len.sx(Field.Sx(I.FLvE{lb}, r2, b1 <> b0 <> r), B.cat8(b0, b1), r, lb, r2, I.fits16(B.cat8(b0, b1)), I.fits16(B.cat8(b0, b1)), {==}, erl, P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r), ab0), f16 => body => r3 => e2 => ap => al => Field.sx_lve_fin(b1, b0, r, lb, r2, body, r3, e2, ap, al, P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r)), ab)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(r), ab0))))
+      Len.sx(Field.Sx(I.FLvE{lb}, r2, b1 <> b0 <> r), B.cat8(b0, b1), r, lb, r2, B.fits16(B.cat8(b0, b1)), B.fits16(B.cat8(b0, b1)), {==}, erl, P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r), ab0), f16 => body => r3 => e2 => ap => al => Field.sx_lve_fin(b1, b0, r, lb, r2, body, r3, e2, ap, al, P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r)), ab)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(r), ab0))))
 
 def Field.sx(+lay: I.Lay, +bs: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +e: {I.Field.read(lay, bs) == Done{(f, rest)} : B.Read(I.Field)}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> Field.Sx(f, rest, bs):
   match lay:
@@ -799,13 +799,13 @@ def Field.sx(+lay: I.Lay, +bs: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +e: {I.
         case Nil{}:
           Empty.absurd(Field.Sx(f, rest, []), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
         case +b <> +r:
-          Field.sx_byte(b, r, f, rest, I.fits8(b), {==}, e, ab)
+          Field.sx_byte(b, r, f, rest, B.fits8(b), {==}, e, ab)
     case I.Lv{}:
       match bs:
         case Nil{}:
           Empty.absurd(Field.Sx(f, rest, []), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
         case +len0 <> +r:
-          Field.sx_lv(len0, r, f, rest, I.Len.take(len0, r, I.fits8(len0)), {==}, e, ab)
+          Field.sx_lv(len0, r, f, rest, I.Len.take(len0, r, B.fits8(len0)), {==}, e, ab)
     case I.LvE{}:
       match bs:
         case Nil{}:
@@ -813,7 +813,7 @@ def Field.sx(+lay: I.Lay, +bs: B.Bytes(), +f: I.Field, +rest: B.Bytes(), +e: {I.
         case b <> Nil{}:
           Empty.absurd(Field.Sx(f, rest, [b]), P.Refute.fail_done(B.Err, B.ReadValue(I.Field), B.Short{}, (f, rest), e))
         case +b1 <> +b0 <> +r:
-          Field.sx_lve(b1, b0, r, f, rest, I.Len.take(B.cat8(b0, b1), r, I.fits16(B.cat8(b0, b1))), {==}, e, ab)
+          Field.sx_lve(b1, b0, r, f, rest, I.Len.take(B.cat8(b0, b1), r, B.fits16(B.cat8(b0, b1))), {==}, e, ab)
 
 def Fields.Sx(+fs: List<&2, I.Field>, +rest: B.Bytes(), +bs: B.Bytes()) -> Type:
   {I.Fields.write(fs, rest) == bs : B.Bytes()} & {B.all_bytes(rest) == True{} : Bool}
@@ -857,14 +857,14 @@ def Fields.sx(+lays: List<&2, I.Lay>, +bs: B.Bytes(), +fs: List<&2, I.Field>, +r
 def Ie.Sx(+ie: I.Ie, +rest: B.Bytes(), +bs: B.Bytes()) -> Type:
   {I.Ie.write(ie, rest) == bs : B.Bytes()} & {B.all_bytes(rest) == True{} : Bool}
 
-def Ie.sx_tv_fin(+iei: U32, +n: Nat, +r: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, r3, iei <> r):
+def Ie.sx_tv_fin(+iei: U32, +n: Nat, +r: B.Bytes(), +body: B.Bytes(), +r3: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, ap: {List.append(&2, U32, body, r3) == r : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, r3, iei <> r):
   mi = Equal.sym(U32, U32.and(255, iei), iei, P.U32.eq_of_is_eq(U32.and(255, iei), iei, f8))
   %mi : {_ <> List.append(&2, U32, body, r3) == iei <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
   sap = Equal.sym(B.Bytes(), List.append(&2, U32, body, r3), r, ap)
   %sap : {iei <> _ == iei <> r : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
   ({==}, al)
 
-def Ie.sx_tv(+iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +rt: B.Read(B.Bytes()), ert: {B.take(n, r) == rt : B.Read(B.Bytes())}, +e: {I.Ie.of_tv(iei, n, rt) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(r) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> r):
+def Ie.sx_tv(+iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +rt: B.Read(B.Bytes()), ert: {B.take(n, r) == rt : B.Read(B.Bytes())}, +e: {I.Ie.of_tv(iei, n, rt) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(r) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> r):
   match rt:
     case Fail{err}:
       Empty.absurd(Ie.Sx(ie, r2, iei <> r), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, r2), e))
@@ -875,7 +875,7 @@ def Ie.sx_tv(+iei: U32, +n: Nat, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {
       %er : Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, _, iei <> r)
       Take.sx(Ie.Sx(I.Ie{iei, I.Tv{n}, 0, body}, r3, iei <> r), n, r, body, r3, ert, ab, ap => al => Ie.sx_tv_fin(iei, n, r, body, r3, f8, ap, al))
 
-def Ie.sx_tlv_fin(+iei: U32, +len0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, fl: {I.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1):
+def Ie.sx_tlv_fin(+iei: U32, +len0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, fl: {B.fits8(len0) == True{} : Bool}, +e2: {Done{(I.LenBody{len0, body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}) -> Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1):
   +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len1, body}), Done{(I.LenBody{len0, body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
   el = Equal.cong(I.LenBody, U32, x => P.Lb.len(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
   eb = Equal.cong(I.LenBody, B.Bytes(), x => P.Lb.body(x), I.LenBody{len0, body2}, I.LenBody{len1, body}, elb)
@@ -891,7 +891,7 @@ def Ie.sx_tlv_fin(+iei: U32, +len0: U32, +r1: B.Bytes(), +len1: U32, +body: B.By
   %sap : {iei <> len0 <> _ == iei <> len0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
   ({==}, al)
 
-def Ie.sx_tlv(+iei: U32, +len0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +rl: B.Read(I.LenBody), erl: {I.Len.take(len0, r1, I.fits8(len0)) == rl : B.Read(I.LenBody)}, +e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(len0 <> r1) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> len0 <> r1):
+def Ie.sx_tlv(+iei: U32, +len0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +rl: B.Read(I.LenBody), erl: {I.Len.take(len0, r1, B.fits8(len0)) == rl : B.Read(I.LenBody)}, +e: {I.Ie.of_len(iei, I.Tlv{}, rl) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(len0 <> r1) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> len0 <> r1):
   match rl:
     case Fail{err}:
       Empty.absurd(Ie.Sx(ie, r2, iei <> len0 <> r1), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, r2), e))
@@ -900,9 +900,9 @@ def Ie.sx_tlv(+iei: U32, +len0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), 
       er = Equal.cong(B.Read(I.Ie), B.Bytes(), x => P.Read.rest(I.Ie, x, r2), Done{(I.Ie{iei, I.Tlv{}, len1, body}, r3)}, Done{(ie, r2)}, e)
       %ei : Ie.Sx(_, r2, iei <> len0 <> r1)
       %er : Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, _, iei <> len0 <> r1)
-      Len.sx(Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1), len0, r1, I.LenBody{len1, body}, r3, I.fits8(len0), I.fits8(len0), {==}, erl, P.Bool.and_true_r(B.is_byte(len0), B.all_bytes(r1), ab), fl => body2 => r4 => e2 => ap => al => Ie.sx_tlv_fin(iei, len0, r1, len1, body, r3, body2, r4, f8, fl, e2, ap, al))
+      Len.sx(Ie.Sx(I.Ie{iei, I.Tlv{}, len1, body}, r3, iei <> len0 <> r1), len0, r1, I.LenBody{len1, body}, r3, B.fits8(len0), B.fits8(len0), {==}, erl, P.Bool.and_true_r(B.is_byte(len0), B.all_bytes(r1), ab), fl => body2 => r4 => e2 => ap => al => Ie.sx_tlv_fin(iei, len0, r1, len1, body, r3, body2, r4, f8, fl, e2, ap, al))
 
-def Ie.sx_tlve_fin(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +e2: {Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}, m1: {U32.and(255, b1) == b1 : U32}, m0: {U32.and(255, b0) == b0 : U32}) -> Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, r3, iei <> b1 <> b0 <> r1):
+def Ie.sx_tlve_fin(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +len1: U32, +body: B.Bytes(), +r3: B.Bytes(), +body2: B.Bytes(), +r4: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +e2: {Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)} == Done{(I.LenBody{len1, body}, r3)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r4) == r1 : B.Bytes()}, al: {B.all_bytes(r4) == True{} : Bool}, m1: {U32.and(255, b1) == b1 : U32}, m0: {U32.and(255, b0) == b0 : U32}) -> Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, r3, iei <> b1 <> b0 <> r1):
   +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len1, body}), Done{(I.LenBody{B.cat8(b0, b1), body2}, r4)}, Done{(I.LenBody{len1, body}, r3)}, e2)
   el = Equal.cong(I.LenBody, U32, x => P.Lb.len(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
   eb = Equal.cong(I.LenBody, B.Bytes(), x => P.Lb.body(x), I.LenBody{B.cat8(b0, b1), body2}, I.LenBody{len1, body}, elb)
@@ -920,7 +920,7 @@ def Ie.sx_tlve_fin(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +len1: U32, +b
   %sap : {iei <> b1 <> b0 <> _ == iei <> b1 <> b0 <> r1 : B.Bytes()} & {B.all_bytes(r4) == True{} : Bool}
   ({==}, al)
 
-def Ie.sx_tlve(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(b0, b1), r1, I.fits16(B.cat8(b0, b1))) == rl : B.Read(I.LenBody)}, +e: {I.Ie.of_len(iei, I.TlvE{}, rl) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(b1 <> b0 <> r1) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> b1 <> b0 <> r1):
+def Ie.sx_tlve(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(b0, b1), r1, B.fits16(B.cat8(b0, b1))) == rl : B.Read(I.LenBody)}, +e: {I.Ie.of_len(iei, I.TlvE{}, rl) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(b1 <> b0 <> r1) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> b1 <> b0 <> r1):
   match rl:
     case Fail{err}:
       Empty.absurd(Ie.Sx(ie, r2, iei <> b1 <> b0 <> r1), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), err, (ie, r2), e))
@@ -930,9 +930,9 @@ def Ie.sx_tlve(+iei: U32, +b1: U32, +b0: U32, +r1: B.Bytes(), +ie: I.Ie, +r2: B.
       %ei : Ie.Sx(_, r2, iei <> b1 <> b0 <> r1)
       %er : Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, _, iei <> b1 <> b0 <> r1)
       +ab0 = P.Bool.and_true_r(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r1)), ab)
-      Len.sx(Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, r3, iei <> b1 <> b0 <> r1), B.cat8(b0, b1), r1, I.LenBody{len1, body}, r3, I.fits16(B.cat8(b0, b1)), I.fits16(B.cat8(b0, b1)), {==}, erl, P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r1), ab0), f16 => body2 => r4 => e2 => ap => al => Ie.sx_tlve_fin(iei, b1, b0, r1, len1, body, r3, body2, r4, f8, e2, ap, al, P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r1)), ab)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(r1), ab0))))
+      Len.sx(Ie.Sx(I.Ie{iei, I.TlvE{}, len1, body}, r3, iei <> b1 <> b0 <> r1), B.cat8(b0, b1), r1, I.LenBody{len1, body}, r3, B.fits16(B.cat8(b0, b1)), B.fits16(B.cat8(b0, b1)), {==}, erl, P.Bool.and_true_r(B.is_byte(b0), B.all_bytes(r1), ab0), f16 => body2 => r4 => e2 => ap => al => Ie.sx_tlve_fin(iei, b1, b0, r1, len1, body, r3, body2, r4, f8, e2, ap, al, P.U32.lt256_mask8(b1, P.Bool.and_true_l(B.is_byte(b1), Bool.and(B.is_byte(b0), B.all_bytes(r1)), ab)), P.U32.lt256_mask8(b0, P.Bool.and_true_l(B.is_byte(b0), B.all_bytes(r1), ab0))))
 
-def Ie.sx(+iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I.fits8(iei) == True{} : Bool}, +e: {I.Ie.read_body(iei, x, r) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(r) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> r):
+def Ie.sx(+iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {B.fits8(iei) == True{} : Bool}, +e: {I.Ie.read_body(iei, x, r) == Done{(ie, r2)} : B.Read(I.Ie)}, +ab: {B.all_bytes(r) == True{} : Bool}) -> Ie.Sx(ie, r2, iei <> r):
   match x:
     case I.T1{}:
       ei = Equal.cong(B.Read(I.Ie), I.Ie, y => P.Read.value(I.Ie, y, ie), Done{(I.Ie{iei, I.T1{}, 0, []}, r)}, Done{(ie, r2)}, e)
@@ -949,7 +949,7 @@ def Ie.sx(+iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I
         case Nil{}:
           Empty.absurd(Ie.Sx(ie, r2, [iei]), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), B.Short{}, (ie, r2), e))
         case +len0 <> +r1:
-          Ie.sx_tlv(iei, len0, r1, ie, r2, f8, I.Len.take(len0, r1, I.fits8(len0)), {==}, e, ab)
+          Ie.sx_tlv(iei, len0, r1, ie, r2, f8, I.Len.take(len0, r1, B.fits8(len0)), {==}, e, ab)
     case I.TlvE{}:
       match r:
         case Nil{}:
@@ -957,7 +957,7 @@ def Ie.sx(+iei: U32, +x: I.Fmt, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), f8: {I
         case b <> Nil{}:
           Empty.absurd(Ie.Sx(ie, r2, [iei, b]), P.Refute.fail_done(B.Err, B.ReadValue(I.Ie), B.Short{}, (ie, r2), e))
         case +b1 <> +b0 <> +r1:
-          Ie.sx_tlve(iei, b1, b0, r1, ie, r2, f8, I.Len.take(B.cat8(b0, b1), r1, I.fits16(B.cat8(b0, b1))), {==}, e, ab)
+          Ie.sx_tlve(iei, b1, b0, r1, ie, r2, f8, I.Len.take(B.cat8(b0, b1), r1, B.fits16(B.cat8(b0, b1))), {==}, e, ab)
 
 def Opts.sx_cons(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +ie: I.Ie, +r2: B.Bytes(), +ro: Opts.Res(), ero: {I.Opts.read(f, t, r2) == ro : Opts.Res()}, +opts: List<&2, I.Ie>, +e: {I.Opts.cons(ie, ro) == Done{opts} : Opts.Res()}, s: Ie.Sx(ie, r2, iei <> r), ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
   match ro:
@@ -971,14 +971,14 @@ def Opts.sx_cons(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +ie: I
       %sw : {I.Ie.write(ie, _) == iei <> r : B.Bytes()}
       w
 
-def Opts.sx_next(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +rb: B.Read(I.Ie), erb: {I.Ie.read_body(iei, I.Opts.format(t, iei), r) == rb : B.Read(I.Ie)}, +opts: List<&2, I.Ie>, +e: {I.Opts.next(rb, left => I.Opts.read(f, t, left)) == Done{opts} : Opts.Res()}, f8: {I.fits8(iei) == True{} : Bool}, +ab: {B.all_bytes(r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+def Opts.sx_next(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +rb: B.Read(I.Ie), erb: {I.Ie.read_body(iei, I.Opts.format(t, iei), r) == rb : B.Read(I.Ie)}, +opts: List<&2, I.Ie>, +e: {I.Opts.next(rb, left => I.Opts.read(f, t, left)) == Done{opts} : Opts.Res()}, f8: {B.fits8(iei) == True{} : Bool}, +ab: {B.all_bytes(r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
   match rb:
     case Fail{err}:
       Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, err, opts, e))
     case Done{(+ie, +r2)}:
       Opts.sx_cons(t, f, iei, r, ie, r2, I.Opts.read(f, t, r2), {==}, opts, e, Ie.sx(iei, I.Opts.format(t, iei), r, ie, r2, f8, erb, ab), ih)
 
-def Opts.sx_iei(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, +ev: {I.fits8(iei) == ok : Bool}, +e: {I.Opts.iei(t, iei, r, left => I.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(iei <> r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
+def Opts.sx_iei(+t: List<&2, I.Rule>, +f: Nat, +iei: U32, +r: B.Bytes(), +opts: List<&2, I.Ie>, ok: Bool, +ev: {B.fits8(iei) == ok : Bool}, +e: {I.Opts.iei(t, iei, r, left => I.Opts.read(f, t, left), ok) == Done{opts} : Opts.Res()}, +ab: {B.all_bytes(iei <> r) == True{} : Bool}, ih: @left: B.Bytes() -> @opts2: List<&2, I.Ie> -> {I.Opts.read(f, t, left) == Done{opts2} : Opts.Res()} -> {B.all_bytes(left) == True{} : Bool} -> {I.Ies.write(opts2, []) == left : B.Bytes()}) -> {I.Ies.write(opts, []) == iei <> r : B.Bytes()}:
   match ok:
     case False{}:
       Empty.absurd({I.Ies.write(opts, []) == iei <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{iei}, opts, e))
@@ -998,7 +998,7 @@ def Opts.sx(+t: List<&2, I.Rule>, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.
     case 0n b <> r:
       Empty.absurd({I.Ies.write(opts, []) == b <> r : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, I.Ie>, B.Invalid{b}, opts, e))
     case 1n++f +iei <> +r:
-      Opts.sx_iei(t, f, iei, r, opts, I.fits8(iei), {==}, e, ab, left => opts2 => e2 => ab2 => Opts.sx(t, f, left, opts2, e2, ab2))
+      Opts.sx_iei(t, f, iei, r, opts, B.fits8(iei), {==}, e, ab, left => opts2 => e2 => ab2 => Opts.sx(t, f, left, opts2, e2, ab2))
 
 # The type table inverts: a recognised code is the type's code.
 def Type.inv18(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 104) == hit : Bool}, +e: {Mm.Mm.Type.of18.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:

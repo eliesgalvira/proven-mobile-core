@@ -299,7 +299,7 @@ def Lv.len(r2: B.Bytes(), +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +e: {I.lv
     case Nil{}:
       Empty.absurd({List.length(&2, U32, []) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, P.Refute.fail_done(B.Err, B.ReadValue(I.LenBody), B.Short{}, (I.LenBody{len, body}, r3), e))
     case +l <> +tail:
-      Lv.len_ok(l, tail, len, body, r3, I.fits8(l), e)
+      Lv.len_ok(l, tail, len, body, r3, B.fits8(l), e)
 
 # What the container loop establishes: a count within the budget, valid
 # containers, and a size equal to the bytes read.
@@ -309,16 +309,16 @@ def Cont.Inv(budget: Nat, bs: B.Bytes(), cs: List<&2, Q.Container>) -> Type:
 def Cont.absurd(+budget: Nat, +bs: B.Bytes(), +cs: List<&2, Q.Container>, err: B.Err, e: {Fail{err} == Done{cs} : Cont.Res()}) -> Cont.Inv(budget, bs, cs):
   Empty.absurd(Cont.Inv(budget, bs, cs), P.Refute.fail_done(B.Err, List<&2, Q.Container>, err, cs, e))
 
-def Cont.dv_step(+k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs2: List<&2, Q.Container>, f16: {I.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, Q.Container{id, I.LenBody{len, body}} <> cs2):
+def Cont.dv_step(+k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs2: List<&2, Q.Container>, f16: {B.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, Q.Container{id, I.LenBody{len, body}} <> cs2):
   (le, rest) = ih
   (va, sz) = rest
   ssz = Equal.sym(Nat, Q.Containers.size(cs2), List.length(&2, U32, r3), sz)
-  %ssz : {Nat.is_le(1n+List.length(&2, Q.Container, cs2), 1n+k) == True{} : Bool} & ({Bool.and(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2)) == True{} : Bool} & {Nat.add(3n, Nat.add(List.length(&2, U32, body), _)) == List.length(&2, U32, b <> b0 <> r2) : Nat})
+  %ssz : {Nat.is_le(1n+List.length(&2, Q.Container, cs2), 1n+k) == True{} : Bool} & ({Bool.and(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2)) == True{} : Bool} & {Nat.add(3n, Nat.add(List.length(&2, U32, body), _)) == List.length(&2, U32, b <> b0 <> r2) : Nat})
   sll = Equal.sym(Nat, List.length(&2, U32, r2), 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)), ll)
-  %sll : {Nat.is_le(1n+List.length(&2, Q.Container, cs2), 1n+k) == True{} : Bool} & ({Bool.and(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2)) == True{} : Bool} & {Nat.add(3n, Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3))) == 1n+1n+_ : Nat})
-  (le, (P.Bool.and_intro(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2), P.Bool.and_intro(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), f16, v8), va), {==}))
+  %sll : {Nat.is_le(1n+List.length(&2, Q.Container, cs2), 1n+k) == True{} : Bool} & ({Bool.and(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2)) == True{} : Bool} & {Nat.add(3n, Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3))) == 1n+1n+_ : Nat})
+  (le, (P.Bool.and_intro(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2), P.Bool.and_intro(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), f16, v8), va), {==}))
 
-def Cont.dv_more(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs: List<&2, Q.Container>, ro: Cont.Res(), ero: {Q.Containers.go(f, k, r3) == ro : Cont.Res()}, +e: {Q.Containers.cons(Q.Container{id, I.LenBody{len, body}}, ro) == Done{cs} : Cont.Res()}, f16: {I.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: @cs2: List<&2, Q.Container> -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
+def Cont.dv_more(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs: List<&2, Q.Container>, ro: Cont.Res(), ero: {Q.Containers.go(f, k, r3) == ro : Cont.Res()}, +e: {Q.Containers.cons(Q.Container{id, I.LenBody{len, body}}, ro) == Done{cs} : Cont.Res()}, f16: {B.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: @cs2: List<&2, Q.Container> -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
   match ro:
     case Fail{err}:
       Cont.absurd(1n+k, b <> b0 <> r2, cs, err, e)
@@ -327,14 +327,14 @@ def Cont.dv_more(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, 
       %ec : Cont.Inv(1n+k, b <> b0 <> r2, _)
       Cont.dv_step(k, b, b0, r2, id, len, body, r3, cs2, f16, v8, ll, ih(cs2, ero))
 
-def Cont.dv_body(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +cs: List<&2, Q.Container>, rl: B.Read(I.LenBody), +erl: {I.lv(r2) == rl : B.Read(I.LenBody)}, +e: {Q.Container.body(id, rl, left => Q.Containers.go(f, k, left)) == Done{cs} : Cont.Res()}, f16: {I.fits16(id) == True{} : Bool}, ih: @cs2: List<&2, Q.Container> -> @r3: B.Bytes() -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
+def Cont.dv_body(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +cs: List<&2, Q.Container>, rl: B.Read(I.LenBody), +erl: {I.lv(r2) == rl : B.Read(I.LenBody)}, +e: {Q.Container.body(id, rl, left => Q.Containers.go(f, k, left)) == Done{cs} : Cont.Res()}, f16: {B.fits16(id) == True{} : Bool}, ih: @cs2: List<&2, Q.Container> -> @r3: B.Bytes() -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
   match rl:
     case Fail{err}:
       Cont.absurd(1n+k, b <> b0 <> r2, cs, err, e)
     case Done{(I.LenBody{+len, +body}, +r3)}:
       Cont.dv_more(f, k, b, b0, r2, id, len, body, r3, cs, Q.Containers.go(f, k, r3), {==}, e, f16, PM.Lv.dv(r2, I.LenBody{len, body}, r3, erl), Lv.len(r2, len, body, r3, erl), cs2 => e2 => ih(cs2, r3, e2))
 
-def Cont.dv_ok(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +cs: List<&2, Q.Container>, ok: Bool, ev: {I.fits16(B.cat8(b0, b)) == ok : Bool}, +e: {Q.Container.id_ok(B.cat8(b0, b), r2, left => Q.Containers.go(f, k, left), ok) == Done{cs} : Cont.Res()}, ih: @cs2: List<&2, Q.Container> -> @r3: B.Bytes() -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
+def Cont.dv_ok(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +cs: List<&2, Q.Container>, ok: Bool, ev: {B.fits16(B.cat8(b0, b)) == ok : Bool}, +e: {Q.Container.id_ok(B.cat8(b0, b), r2, left => Q.Containers.go(f, k, left), ok) == Done{cs} : Cont.Res()}, ih: @cs2: List<&2, Q.Container> -> @r3: B.Bytes() -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
   match ok:
     case False{}:
       Cont.absurd(1n+k, b <> b0 <> r2, cs, B.Invalid{B.cat8(b0, b)}, e)
@@ -368,7 +368,7 @@ def Cont.dv(fuel: Nat, budget: Nat, bs: B.Bytes(), +cs: List<&2, Q.Container>, +
     case 1n++f 1n++k +b <> Nil{}:
       Cont.absurd(1n+k, [b], cs, B.Short{}, e)
     case 1n++f 1n++k +b <> +b0 <> +r2:
-      Cont.dv_ok(f, k, b, b0, r2, cs, I.fits16(B.cat8(b0, b)), {==}, e, cs2 => r3 => e2 => Cont.dv(f, k, r3, cs2, e2))
+      Cont.dv_ok(f, k, b, b0, r2, cs, B.fits16(B.cat8(b0, b)), {==}, e, cs2 => r3 => e2 => Cont.dv(f, k, r3, cs2, e2))
 
 def Epco.Goal(bs: B.Bytes(), e: Q.Epco) -> Type:
   {Nat.is_le(List.length(&2, Q.Container, Q.Epco.containers(e)), 255n) == True{} : Bool} & ({Q.Epco.valid(e) == True{} : Bool} & {Q.Epco.size(e) == List.length(&2, U32, bs) : Nat})
@@ -422,11 +422,11 @@ def Cont.write_len(cs: List<&2, Q.Container>) -> {List.length(&2, U32, Q.Contain
       {==}
 
 def Lv.rt(+len: U32, +body: B.Bytes(), +W: B.Bytes(), +v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}) -> {I.lv(I.write_lv(I.LenBody{len, body}, W)) == Done{(I.LenBody{len, body}, W)} : B.Read(I.LenBody)}:
-  +fl = P.Bool.and_true_l(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8)
-  tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(I.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8))
+  +fl = P.Bool.and_true_l(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8)
+  tn = P.Nat.eq_of_is_eq(U32.to_nat(len), List.length(&2, U32, body), P.Bool.and_true_r(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)), v8))
   ml = Equal.sym(U32, U32.and(255, len), len, P.U32.eq_of_is_eq(U32.and(255, len), len, fl))
-  %ml : {I.Len.take(_, List.append(&2, U32, body, W), I.fits8(_)) == Done{(I.LenBody{len, body}, W)} : B.Read(I.LenBody)}
-  PM.Len.rt(len, body, W, I.fits8(len), fl, tn)
+  %ml : {I.Len.take(_, List.append(&2, U32, body, W), B.fits8(_)) == Done{(I.LenBody{len, body}, W)} : B.Read(I.LenBody)}
+  PM.Len.rt(len, body, W, B.fits8(len), fl, tn)
 
 def Cont.rt(cs: List<&2, Q.Container>, fuel: Nat, budget: Nat, +v: {Q.Containers.valid(cs) == True{} : Bool}, +bound: {Nat.is_le(List.length(&2, U32, Q.Containers.write(cs)), fuel) == True{} : Bool}, +cnt: {Nat.is_le(List.length(&2, Q.Container, cs), budget) == True{} : Bool}) -> {Q.Containers.go(fuel, budget, Q.Containers.write(cs)) == Done{cs} : Cont.Res()}:
   match cs fuel budget:
@@ -446,15 +446,15 @@ def Cont.rt(cs: List<&2, Q.Container>, fuel: Nat, budget: Nat, +v: {Q.Containers
       Empty.absurd({Q.Containers.go(1n+f, 0n, Q.Containers.write(Q.Container{id, I.LenBody{len, body}} <> more)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}, P.Refute.bool(cnt))
     case Q.Container{+id, I.LenBody{+len, +body}} <> +more 1n++f 1n++k:
       +W = Q.Containers.write(more)
-      +cv = P.Bool.and_true_l(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(more), v)
-      +f16 = P.Bool.and_true_l(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), cv)
+      +cv = P.Bool.and_true_l(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(more), v)
+      +f16 = P.Bool.and_true_l(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), cv)
       ru = Equal.sym(B.Read(U32), B.u16(B.write_u16(id, I.write_lv(I.LenBody{len, body}, W))), Done{(id, I.write_lv(I.LenBody{len, body}, W))}, L.bytes.u16.roundtrip(id, I.write_lv(I.LenBody{len, body}, W), P.U32.eq_of_is_eq(U32.and(65535, id), id, f16)))
       %ru : {Q.Container.id(_, left => Q.Containers.go(f, k, left)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
-      sf = Equal.sym(Bool, I.fits16(id), True{}, f16)
+      sf = Equal.sym(Bool, B.fits16(id), True{}, f16)
       %sf : {Q.Container.id_ok(id, I.write_lv(I.LenBody{len, body}, W), left => Q.Containers.go(f, k, left), _) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
-      lr = Equal.sym(B.Read(I.LenBody), I.lv(I.write_lv(I.LenBody{len, body}, W)), Done{(I.LenBody{len, body}, W)}, Lv.rt(len, body, W, P.Bool.and_true_r(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), cv)))
+      lr = Equal.sym(B.Read(I.LenBody), I.lv(I.write_lv(I.LenBody{len, body}, W)), Done{(I.LenBody{len, body}, W)}, Lv.rt(len, body, W, P.Bool.and_true_r(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), cv)))
       %lr : {Q.Container.body(id, _, left => Q.Containers.go(f, k, left)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
-      ih = Equal.sym(Cont.Res(), Q.Containers.go(f, k, W), Done{more}, Cont.rt(more, f, k, P.Bool.and_true_r(Bool.and(I.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(more), v), P.Nat.le_of_append(body, W, 2n, f, bound), cnt))
+      ih = Equal.sym(Cont.Res(), Q.Containers.go(f, k, W), Done{more}, Cont.rt(more, f, k, P.Bool.and_true_r(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(more), v), P.Nat.le_of_append(body, W, 2n, f, bound), cnt))
       %ih : {Q.Containers.cons(Q.Container{id, I.LenBody{len, body}}, _) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
       {==}
 
@@ -748,7 +748,7 @@ def Filter.Sx(f: Q.Filter, r: B.Bytes(), bs: B.Bytes()) -> Type:
 def Filter.absurd(+f: Q.Filter, +r: B.Bytes(), +bs: B.Bytes(), err: B.Err, e: {Fail{err} == Done{(f, r)} : B.Read(Q.Filter)}) -> Filter.Sx(f, r, bs):
   Empty.absurd(Filter.Sx(f, r, bs), P.Refute.fail_done(B.Err, B.ReadValue(Q.Filter), err, (f, r), e))
 
-def Filter.sx_fin(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), +len: U32, +body: B.Bytes(), +comps: List<&2, Q.Comp>, +r2: B.Bytes(), ef: {Q.Filter{hdr, len, comps} == f : Q.Filter}, er: {r2 == r : B.Bytes()}, wc: {Q.Comps.write(comps, []) == body : B.Bytes()}, f8: {I.fits8(l) == True{} : Bool}, +body2: B.Bytes(), +r3: B.Bytes(), +e2: {Done{(I.LenBody{l, body2}, r3)} == Done{(I.LenBody{len, body}, r2)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r3) == tail : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Filter.Sx(f, r, hdr <> l <> tail):
+def Filter.sx_fin(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), +len: U32, +body: B.Bytes(), +comps: List<&2, Q.Comp>, +r2: B.Bytes(), ef: {Q.Filter{hdr, len, comps} == f : Q.Filter}, er: {r2 == r : B.Bytes()}, wc: {Q.Comps.write(comps, []) == body : B.Bytes()}, f8: {B.fits8(l) == True{} : Bool}, +body2: B.Bytes(), +r3: B.Bytes(), +e2: {Done{(I.LenBody{l, body2}, r3)} == Done{(I.LenBody{len, body}, r2)} : B.Read(I.LenBody)}, ap: {List.append(&2, U32, body2, r3) == tail : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}) -> Filter.Sx(f, r, hdr <> l <> tail):
   %ef : Filter.Sx(_, r, hdr <> l <> tail)
   %er : Filter.Sx(Q.Filter{hdr, len, comps}, _, hdr <> l <> tail)
   +elb = Equal.cong(B.Read(I.LenBody), I.LenBody, x => P.Read.value(I.LenBody, x, I.LenBody{len, body}), Done{(I.LenBody{l, body2}, r3)}, Done{(I.LenBody{len, body}, r2)}, e2)
@@ -766,7 +766,7 @@ def Filter.sx_fin(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.Byte
   %ml : {hdr <> _ <> tail == hdr <> l <> tail : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
   ({==}, al)
 
-def Filter.sx_comps(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), +len: U32, +body: B.Bytes(), +r2: B.Bytes(), +body2: B.Bytes(), +r3: B.Bytes(), rc: Comps.Res(), erc: {Q.Comps.read(body) == rc : Comps.Res()}, +e: {Q.Filter.of(hdr, len, rc, r2) == Done{(f, r)} : B.Read(Q.Filter)}, f8: {I.fits8(l) == True{} : Bool}, +e2: {Done{(I.LenBody{l, body2}, r3)} == Done{(I.LenBody{len, body}, r2)} : B.Read(I.LenBody)}, +ap: {List.append(&2, U32, body2, r3) == tail : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}, abt: {B.all_bytes(tail) == True{} : Bool}) -> Filter.Sx(f, r, hdr <> l <> tail):
+def Filter.sx_comps(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), +len: U32, +body: B.Bytes(), +r2: B.Bytes(), +body2: B.Bytes(), +r3: B.Bytes(), rc: Comps.Res(), erc: {Q.Comps.read(body) == rc : Comps.Res()}, +e: {Q.Filter.of(hdr, len, rc, r2) == Done{(f, r)} : B.Read(Q.Filter)}, f8: {B.fits8(l) == True{} : Bool}, +e2: {Done{(I.LenBody{l, body2}, r3)} == Done{(I.LenBody{len, body}, r2)} : B.Read(I.LenBody)}, +ap: {List.append(&2, U32, body2, r3) == tail : B.Bytes()}, al: {B.all_bytes(r3) == True{} : Bool}, abt: {B.all_bytes(tail) == True{} : Bool}) -> Filter.Sx(f, r, hdr <> l <> tail):
   match rc:
     case Fail{err}:
       Filter.absurd(f, r, hdr <> l <> tail, err, e)
@@ -776,12 +776,12 @@ def Filter.sx_comps(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.By
       +abb : {B.all_bytes(body) == True{} : Bool} = (%eb : {B.all_bytes(_) == True{} : Bool}; Bytes.all_prefix(body2, r3, (%sap : {B.all_bytes(_) == True{} : Bool}; abt)))
       Filter.sx_fin(hdr, l, tail, f, r, len, body, comps, r2, Equal.cong(B.Read(Q.Filter), Q.Filter, x => P.Read.value(Q.Filter, x, f), Done{(Q.Filter{hdr, len, comps}, r2)}, Done{(f, r)}, e), Equal.cong(B.Read(Q.Filter), B.Bytes(), x => P.Read.rest(Q.Filter, x, r), Done{(Q.Filter{hdr, len, comps}, r2)}, Done{(f, r)}, e), Comps.sx(List.length(&2, U32, body), body, comps, erc, abb), f8, body2, r3, e2, ap, al)
 
-def Filter.sx_lv(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), rl: B.Read(I.LenBody), erl: {I.Len.take(l, tail, I.fits8(l)) == rl : B.Read(I.LenBody)}, +e: {Q.Filter.body(hdr, rl) == Done{(f, r)} : B.Read(Q.Filter)}, +abt: {B.all_bytes(tail) == True{} : Bool}) -> Filter.Sx(f, r, hdr <> l <> tail):
+def Filter.sx_lv(+hdr: U32, +l: U32, +tail: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), rl: B.Read(I.LenBody), erl: {I.Len.take(l, tail, B.fits8(l)) == rl : B.Read(I.LenBody)}, +e: {Q.Filter.body(hdr, rl) == Done{(f, r)} : B.Read(Q.Filter)}, +abt: {B.all_bytes(tail) == True{} : Bool}) -> Filter.Sx(f, r, hdr <> l <> tail):
   match rl:
     case Fail{err}:
       Filter.absurd(f, r, hdr <> l <> tail, err, e)
     case Done{(I.LenBody{+len, +body}, +r2)}:
-      PM.Len.sx(Filter.Sx(f, r, hdr <> l <> tail), l, tail, I.LenBody{len, body}, r2, I.fits8(l), I.fits8(l), {==}, erl, abt, f8 => body2 => r3 => e2 => ap => al => Filter.sx_comps(hdr, l, tail, f, r, len, body, r2, body2, r3, Q.Comps.read(body), {==}, e, f8, e2, ap, al, abt))
+      PM.Len.sx(Filter.Sx(f, r, hdr <> l <> tail), l, tail, I.LenBody{len, body}, r2, B.fits8(l), B.fits8(l), {==}, erl, abt, f8 => body2 => r3 => e2 => ap => al => Filter.sx_comps(hdr, l, tail, f, r, len, body, r2, body2, r3, Q.Comps.read(body), {==}, e, f8, e2, ap, al, abt))
 
 def Filter.sx_ok(ok: Bool, +hdr: U32, rest: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), +e: {Q.Filter.hdr_ok(hdr, rest, ok) == Done{(f, r)} : B.Read(Q.Filter)}, +ab: {B.all_bytes(rest) == True{} : Bool}) -> Filter.Sx(f, r, hdr <> rest):
   match ok:
@@ -792,14 +792,14 @@ def Filter.sx_ok(ok: Bool, +hdr: U32, rest: B.Bytes(), +f: Q.Filter, +r: B.Bytes
         case Nil{}:
           Filter.absurd(f, r, [hdr], B.Short{}, e)
         case +l <> +tail:
-          Filter.sx_lv(hdr, l, tail, f, r, I.Len.take(l, tail, I.fits8(l)), {==}, e, P.Bool.and_true_r(B.is_byte(l), B.all_bytes(tail), ab))
+          Filter.sx_lv(hdr, l, tail, f, r, I.Len.take(l, tail, B.fits8(l)), {==}, e, P.Bool.and_true_r(B.is_byte(l), B.all_bytes(tail), ab))
 
 def Filter.sx(bs: B.Bytes(), +f: Q.Filter, +r: B.Bytes(), +e: {Q.Filter.read(bs) == Done{(f, r)} : B.Read(Q.Filter)}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> Filter.Sx(f, r, bs):
   match bs:
     case Nil{}:
       Filter.absurd(f, r, [], B.Short{}, e)
     case +hdr <> +rest:
-      Filter.sx_ok(Bool.and(I.fits8(hdr), U32.is_eq(U32.and(192, hdr), 0)), hdr, rest, f, r, e, P.Bool.and_true_r(B.is_byte(hdr), B.all_bytes(rest), ab))
+      Filter.sx_ok(Bool.and(B.fits8(hdr), U32.is_eq(U32.and(192, hdr), 0)), hdr, rest, f, r, e, P.Bool.and_true_r(B.is_byte(hdr), B.all_bytes(rest), ab))
 
 def Filters.Sx(fs: List<&2, Q.Filter>, r: B.Bytes(), bs: B.Bytes()) -> Type:
   {Q.Filters.write(fs, r) == bs : B.Bytes()} & {B.all_bytes(r) == True{} : Bool}
@@ -968,12 +968,12 @@ def Rule.sx_body(+qri: U32, +l1: U32, +l0: U32, +tail: B.Bytes(), +rule: Q.Rule,
       +abb : {B.all_bytes(body) == True{} : Bool} = (%eb : {B.all_bytes(_) == True{} : Bool}; Bytes.all_prefix(body2, r3, (%sap : {B.all_bytes(_) == True{} : Bool}; abt)))
       Rule.body_sx(Rule.Sx(rule, r, qri <> l1 <> l0 <> tail), qri, len, body, rule2, erb, abb, op => fs => t => eq => bw => Rule.sx_fin(qri, l1, l0, tail, rule, r, len, body, r1, rule2, op, fs, t, body2, r3, Equal.cong(B.Read(Q.Rule), Q.Rule, x => P.Read.value(Q.Rule, x, rule), Done{(rule2, r1)}, Done{(rule, r)}, e), eq, Equal.cong(B.Read(Q.Rule), B.Bytes(), x => P.Read.rest(Q.Rule, x, r), Done{(rule2, r1)}, Done{(rule, r)}, e), bw, e2, ap, al, m1, m0))
 
-def Rule.sx_lve(+qri: U32, +l1: U32, +l0: U32, +tail: B.Bytes(), +rule: Q.Rule, +r: B.Bytes(), rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(l0, l1), tail, I.fits16(B.cat8(l0, l1))) == rl : B.Read(I.LenBody)}, +e: {Q.Rule.len(qri, rl) == Done{(rule, r)} : B.Read(Q.Rule)}, m1: {U32.and(255, l1) == l1 : U32}, m0: {U32.and(255, l0) == l0 : U32}, +abt: {B.all_bytes(tail) == True{} : Bool}) -> Rule.Sx(rule, r, qri <> l1 <> l0 <> tail):
+def Rule.sx_lve(+qri: U32, +l1: U32, +l0: U32, +tail: B.Bytes(), +rule: Q.Rule, +r: B.Bytes(), rl: B.Read(I.LenBody), erl: {I.Len.take(B.cat8(l0, l1), tail, B.fits16(B.cat8(l0, l1))) == rl : B.Read(I.LenBody)}, +e: {Q.Rule.len(qri, rl) == Done{(rule, r)} : B.Read(Q.Rule)}, m1: {U32.and(255, l1) == l1 : U32}, m0: {U32.and(255, l0) == l0 : U32}, +abt: {B.all_bytes(tail) == True{} : Bool}) -> Rule.Sx(rule, r, qri <> l1 <> l0 <> tail):
   match rl:
     case Fail{err}:
       Rule.absurd(rule, r, qri <> l1 <> l0 <> tail, err, e)
     case Done{(I.LenBody{+len, +body}, +r1)}:
-      PM.Len.sx(Rule.Sx(rule, r, qri <> l1 <> l0 <> tail), B.cat8(l0, l1), tail, I.LenBody{len, body}, r1, I.fits16(B.cat8(l0, l1)), I.fits16(B.cat8(l0, l1)), {==}, erl, abt, f16 => body2 => r3 => e2 => ap => al => Rule.sx_body(qri, l1, l0, tail, rule, r, len, body, r1, Q.Rule.body(qri, len, body), {==}, e, body2, r3, e2, ap, al, m1, m0, abt))
+      PM.Len.sx(Rule.Sx(rule, r, qri <> l1 <> l0 <> tail), B.cat8(l0, l1), tail, I.LenBody{len, body}, r1, B.fits16(B.cat8(l0, l1)), B.fits16(B.cat8(l0, l1)), {==}, erl, abt, f16 => body2 => r3 => e2 => ap => al => Rule.sx_body(qri, l1, l0, tail, rule, r, len, body, r1, Q.Rule.body(qri, len, body), {==}, e, body2, r3, e2, ap, al, m1, m0, abt))
 
 def Rule.sx(bs: B.Bytes(), +rule: Q.Rule, +r: B.Bytes(), +e: {Q.Rule.read(bs) == Done{(rule, r)} : B.Read(Q.Rule)}, +ab: {B.all_bytes(bs) == True{} : Bool}) -> Rule.Sx(rule, r, bs):
   match bs:
@@ -986,7 +986,7 @@ def Rule.sx(bs: B.Bytes(), +rule: Q.Rule, +r: B.Bytes(), +e: {Q.Rule.read(bs) ==
     case +qri <> +l1 <> +l0 <> +tail:
       +ab1 = P.Bool.and_true_r(B.is_byte(qri), B.all_bytes(l1 <> l0 <> tail), ab)
       +ab0 = P.Bool.and_true_r(B.is_byte(l1), B.all_bytes(l0 <> tail), ab1)
-      Rule.sx_lve(qri, l1, l0, tail, rule, r, I.Len.take(B.cat8(l0, l1), tail, I.fits16(B.cat8(l0, l1))), {==}, e, P.U32.lt256_mask8(l1, P.Bool.and_true_l(B.is_byte(l1), B.all_bytes(l0 <> tail), ab1)), P.U32.lt256_mask8(l0, P.Bool.and_true_l(B.is_byte(l0), B.all_bytes(tail), ab0)), P.Bool.and_true_r(B.is_byte(l0), B.all_bytes(tail), ab0))
+      Rule.sx_lve(qri, l1, l0, tail, rule, r, I.Len.take(B.cat8(l0, l1), tail, B.fits16(B.cat8(l0, l1))), {==}, e, P.U32.lt256_mask8(l1, P.Bool.and_true_l(B.is_byte(l1), B.all_bytes(l0 <> tail), ab1)), P.U32.lt256_mask8(l0, P.Bool.and_true_l(B.is_byte(l0), B.all_bytes(tail), ab0)), P.Bool.and_true_r(B.is_byte(l0), B.all_bytes(tail), ab0))
 
 def Rules.Res() -> Data:
   Result<&2, &2, B.Err, List<&2, Q.Rule>>

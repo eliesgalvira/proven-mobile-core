@@ -6,12 +6,6 @@ import ../bytes.bend as B
 # reproduces the input byte for byte. Typed views of the content are
 # separate functions (kernel/nas/mm.bend).
 
-def fits8(+x: U32) -> Bool:
-  U32.is_eq(U32.and(255, x), x)
-
-def fits16(+x: U32) -> Bool:
-  U32.is_eq(U32.and(65535, x), x)
-
 # A length prefix and the bytes it covers.
 type LenBody is Data:
   LenBody{len: U32, body: B.Bytes()}
@@ -19,12 +13,12 @@ type LenBody is Data:
 def LenBody.valid8(lb: LenBody) -> Bool:
   match lb:
     case LenBody{+len, body}:
-      Bool.and(fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)))
+      Bool.and(B.fits8(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)))
 
 def LenBody.valid16(lb: LenBody) -> Bool:
   match lb:
     case LenBody{+len, body}:
-      Bool.and(fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)))
+      Bool.and(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, body)))
 
 def Len.join(len: U32, r: B.Read(B.Bytes())) -> B.Read(LenBody):
   match r:
@@ -45,14 +39,14 @@ def Lv.body(r: B.Read(U32)) -> B.Read(LenBody):
     case Fail{e}:
       Fail{e}
     case Done{(+len, rest)}:
-      Len.take(len, rest, fits8(len))
+      Len.take(len, rest, B.fits8(len))
 
 def Lve.body(r: B.Read(U32)) -> B.Read(LenBody):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(+len, rest)}:
-      Len.take(len, rest, fits16(len))
+      Len.take(len, rest, B.fits16(len))
 
 # LV: one length byte, then that many bytes.
 def lv(bs: B.Bytes()) -> B.Read(LenBody):
@@ -88,7 +82,7 @@ type Field is Data:
 def Field.valid(lay: Lay, f: Field) -> Bool:
   match lay f:
     case V1{} FByte{+v}:
-      fits8(v)
+      B.fits8(v)
     case Lv{} FLv{lb}:
       LenBody.valid8(lb)
     case LvE{} FLvE{lb}:
@@ -133,7 +127,7 @@ def Field.byte(r: B.Read(U32)) -> B.Read(Field):
     case Fail{e}:
       Fail{e}
     case Done{(+v, rest)}:
-      Field.byte_ok(v, rest, fits8(v))
+      Field.byte_ok(v, rest, B.fits8(v))
 
 def Field.of_lv(r: B.Read(LenBody)) -> B.Read(Field):
   match r:
@@ -246,7 +240,7 @@ def Ie.valid_body(fmt: Fmt, iei: U32, len: U32, body: B.Bytes()) -> Bool:
 def Ie.valid(expected: Fmt, ie: Ie) -> Bool:
   match ie:
     case Ie{+iei, +fmt, +len, +body}:
-      Bool.and(Fmt.eq(fmt, expected), Bool.and(fits8(iei), Ie.valid_body(fmt, iei, len, body)))
+      Bool.and(Fmt.eq(fmt, expected), Bool.and(B.fits8(iei), Ie.valid_body(fmt, iei, len, body)))
 
 def Ie.write(ie: Ie, rest: B.Bytes()) -> B.Bytes():
   match ie:
@@ -361,4 +355,4 @@ def Opts.read(fuel: Nat, +table: List<&2, Rule>, bs: B.Bytes()) -> Result<&2, &2
     case 0n b <> rest:
       Fail{B.Invalid{b}}
     case 1n+f +iei <> rest:
-      Opts.iei(table, iei, rest, left => Opts.read(f, table, left), fits8(iei))
+      Opts.iei(table, iei, rest, left => Opts.read(f, table, left), B.fits8(iei))

@@ -144,17 +144,17 @@ def SmType.of_inv(+b: U32, +mt: Sm.Sm.Type, e: {Sm.Sm.Type.of(b) == Some{mt} : M
 def SmMsg.rt(+psi: U32, +pti: U32, +mt: Sm.Sm.Type, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +v: {Sm.Sm.valid(Sm.Sm{psi, pti, mt, fields, opts}) == True{} : Bool}) -> {Sm.Sm.read(Sm.Sm.write(Sm.Sm{psi, pti, mt, fields, opts})) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}:
   +W = I.Ies.write(opts, [])
   +F = I.Fields.write(fields, W)
-  +fp = P.Bool.and_true_l(I.fits8(psi), Bool.and(I.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts))), v)
-  +r1 = P.Bool.and_true_r(I.fits8(psi), Bool.and(I.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts))), v)
-  +ft = P.Bool.and_true_l(I.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts)), r1)
-  +r2 = P.Bool.and_true_r(I.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts)), r1)
+  +fp = P.Bool.and_true_l(B.fits8(psi), Bool.and(B.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts))), v)
+  +r1 = P.Bool.and_true_r(B.fits8(psi), Bool.and(B.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts))), v)
+  +ft = P.Bool.and_true_l(B.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts)), r1)
+  +r2 = P.Bool.and_true_r(B.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts)), r1)
   mp = Equal.sym(U32, U32.and(255, psi), psi, P.U32.eq_of_is_eq(U32.and(255, psi), psi, fp))
-  %mp : {Sm.Sm.r_psi_ok(_, U32.and(255, pti) <> U32.and(255, Sm.Sm.Type.code(mt)) <> F, I.fits8(_)) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}
-  sp = Equal.sym(Bool, I.fits8(psi), True{}, fp)
+  %mp : {Sm.Sm.r_psi_ok(_, U32.and(255, pti) <> U32.and(255, Sm.Sm.Type.code(mt)) <> F, B.fits8(_)) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}
+  sp = Equal.sym(Bool, B.fits8(psi), True{}, fp)
   %sp : {Sm.Sm.r_psi_ok(psi, U32.and(255, pti) <> U32.and(255, Sm.Sm.Type.code(mt)) <> F, _) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}
   mq = Equal.sym(U32, U32.and(255, pti), pti, P.U32.eq_of_is_eq(U32.and(255, pti), pti, ft))
-  %mq : {Sm.Sm.r_pti_ok(psi, _, U32.and(255, Sm.Sm.Type.code(mt)) <> F, I.fits8(_)) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}
-  sq = Equal.sym(Bool, I.fits8(pti), True{}, ft)
+  %mq : {Sm.Sm.r_pti_ok(psi, _, U32.and(255, Sm.Sm.Type.code(mt)) <> F, B.fits8(_)) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}
+  sq = Equal.sym(Bool, B.fits8(pti), True{}, ft)
   %sq : {Sm.Sm.r_pti_ok(psi, pti, U32.and(255, Sm.Sm.Type.code(mt)) <> F, _) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}
   sc = Equal.sym(U32, U32.and(255, Sm.Sm.Type.code(mt)), Sm.Sm.Type.code(mt), SmType.code8(mt))
   %sc : {Sm.Sm.r_type(psi, pti, _, F, Sm.Sm.Type.of(_)) == Done{Sm.Sm{psi, pti, mt, fields, opts}} : SmMsg.Res()}
@@ -174,30 +174,30 @@ def L.nas.sm.roundtrip(m, v):
 # Decoding gives valid messages
 # -----------------------------
 
-def SmMsg.dv_opts(+psi: U32, +pti: U32, +mt: Sm.Sm.Type, +fields: List<&2, I.Field>, ro: PM.Opts.Res(), +m: Sm.Sm, +e: {Sm.Sm.r_opts(psi, pti, mt, fields, ro) == Done{m} : SmMsg.Res()}, fp: {I.fits8(psi) == True{} : Bool}, ft: {I.fits8(pti) == True{} : Bool}, hf: {I.Fields.valid(Sm.Sm.layout(mt), fields) == True{} : Bool}, ho: @opts: List<&2, I.Ie> -> {ro == Done{opts} : PM.Opts.Res()} -> {I.Opts.valid(Sm.Sm.table(mt), opts) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
+def SmMsg.dv_opts(+psi: U32, +pti: U32, +mt: Sm.Sm.Type, +fields: List<&2, I.Field>, ro: PM.Opts.Res(), +m: Sm.Sm, +e: {Sm.Sm.r_opts(psi, pti, mt, fields, ro) == Done{m} : SmMsg.Res()}, fp: {B.fits8(psi) == True{} : Bool}, ft: {B.fits8(pti) == True{} : Bool}, hf: {I.Fields.valid(Sm.Sm.layout(mt), fields) == True{} : Bool}, ho: @opts: List<&2, I.Ie> -> {ro == Done{opts} : PM.Opts.Res()} -> {I.Opts.valid(Sm.Sm.table(mt), opts) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
   match ro:
     case Fail{err}:
       Empty.absurd({Sm.Sm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Sm.Sm, err, m, e))
     case Done{+opts}:
       em = Equal.cong(SmMsg.Res(), Sm.Sm, x => P.Res.value(B.Err, Sm.Sm, x, m), Done{Sm.Sm{psi, pti, mt, fields, opts}}, Done{m}, e)
       %em : {Sm.Sm.valid(_) == True{} : Bool}
-      P.Bool.and_intro(I.fits8(psi), Bool.and(I.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts))), fp, P.Bool.and_intro(I.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts)), ft, P.Bool.and_intro(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts), hf, ho(opts, {==}))))
+      P.Bool.and_intro(B.fits8(psi), Bool.and(B.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts))), fp, P.Bool.and_intro(B.fits8(pti), Bool.and(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts)), ft, P.Bool.and_intro(I.Fields.valid(Sm.Sm.layout(mt), fields), I.Opts.valid(Sm.Sm.table(mt), opts), hf, ho(opts, {==}))))
 
-def SmMsg.dv_fields(+psi: U32, +pti: U32, +mt: Sm.Sm.Type, rf: B.Read(List<&2, I.Field>), +m: Sm.Sm, +e: {Sm.Sm.r_fields(psi, pti, mt, rf) == Done{m} : SmMsg.Res()}, fp: {I.fits8(psi) == True{} : Bool}, ft: {I.fits8(pti) == True{} : Bool}, hf: @fs: List<&2, I.Field> -> @r: B.Bytes() -> {rf == Done{(fs, r)} : B.Read(List<&2, I.Field>)} -> {I.Fields.valid(Sm.Sm.layout(mt), fs) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
+def SmMsg.dv_fields(+psi: U32, +pti: U32, +mt: Sm.Sm.Type, rf: B.Read(List<&2, I.Field>), +m: Sm.Sm, +e: {Sm.Sm.r_fields(psi, pti, mt, rf) == Done{m} : SmMsg.Res()}, fp: {B.fits8(psi) == True{} : Bool}, ft: {B.fits8(pti) == True{} : Bool}, hf: @fs: List<&2, I.Field> -> @r: B.Bytes() -> {rf == Done{(fs, r)} : B.Read(List<&2, I.Field>)} -> {I.Fields.valid(Sm.Sm.layout(mt), fs) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
   match rf:
     case Fail{err}:
       Empty.absurd({Sm.Sm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Sm.Sm, err, m, e))
     case Done{(+fields, +rest)}:
       SmMsg.dv_opts(psi, pti, mt, fields, I.Opts.read(List.length(&2, U32, rest), Sm.Sm.table(mt), rest), m, e, fp, ft, hf(fields, rest, {==}), opts => e2 => PM.Opts.dv(Sm.Sm.table(mt), List.length(&2, U32, rest), rest, opts, e2))
 
-def SmMsg.dv_type(+psi: U32, +pti: U32, +code: U32, +r: B.Bytes(), +m: Sm.Sm, tm: Maybe<&2, Sm.Sm.Type>, +e: {Sm.Sm.r_type(psi, pti, code, r, tm) == Done{m} : SmMsg.Res()}, fp: {I.fits8(psi) == True{} : Bool}, ft: {I.fits8(pti) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
+def SmMsg.dv_type(+psi: U32, +pti: U32, +code: U32, +r: B.Bytes(), +m: Sm.Sm, tm: Maybe<&2, Sm.Sm.Type>, +e: {Sm.Sm.r_type(psi, pti, code, r, tm) == Done{m} : SmMsg.Res()}, fp: {B.fits8(psi) == True{} : Bool}, ft: {B.fits8(pti) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
   match tm:
     case None{}:
       Empty.absurd({Sm.Sm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Sm.Sm, B.Unsupported{code}, m, e))
     case Some{+mt}:
       SmMsg.dv_fields(psi, pti, mt, I.Fields.read(Sm.Sm.layout(mt), r), m, e, fp, ft, fs => r2 => e2 => PM.Fields.dv(Sm.Sm.layout(mt), r, fs, r2, e2))
 
-def SmMsg.dv_pti_ok(ok: Bool, +psi: U32, +pti: U32, +r: B.Bytes(), +m: Sm.Sm, ev: {I.fits8(pti) == ok : Bool}, +e: {Sm.Sm.r_pti_ok(psi, pti, r, ok) == Done{m} : SmMsg.Res()}, fp: {I.fits8(psi) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
+def SmMsg.dv_pti_ok(ok: Bool, +psi: U32, +pti: U32, +r: B.Bytes(), +m: Sm.Sm, ev: {B.fits8(pti) == ok : Bool}, +e: {Sm.Sm.r_pti_ok(psi, pti, r, ok) == Done{m} : SmMsg.Res()}, fp: {B.fits8(psi) == True{} : Bool}) -> {Sm.Sm.valid(m) == True{} : Bool}:
   match ok:
     case False{}:
       Empty.absurd({Sm.Sm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Sm.Sm, B.Invalid{pti}, m, e))
@@ -208,7 +208,7 @@ def SmMsg.dv_pti_ok(ok: Bool, +psi: U32, +pti: U32, +r: B.Bytes(), +m: Sm.Sm, ev
         case +code <> +r2:
           SmMsg.dv_type(psi, pti, code, r2, m, Sm.Sm.Type.of(code), e, fp, ev)
 
-def SmMsg.dv_psi_ok(ok: Bool, +psi: U32, +r: B.Bytes(), +m: Sm.Sm, ev: {I.fits8(psi) == ok : Bool}, +e: {Sm.Sm.r_psi_ok(psi, r, ok) == Done{m} : SmMsg.Res()}) -> {Sm.Sm.valid(m) == True{} : Bool}:
+def SmMsg.dv_psi_ok(ok: Bool, +psi: U32, +r: B.Bytes(), +m: Sm.Sm, ev: {B.fits8(psi) == ok : Bool}, +e: {Sm.Sm.r_psi_ok(psi, r, ok) == Done{m} : SmMsg.Res()}) -> {Sm.Sm.valid(m) == True{} : Bool}:
   match ok:
     case False{}:
       Empty.absurd({Sm.Sm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Sm.Sm, B.Invalid{psi}, m, e))
@@ -217,7 +217,7 @@ def SmMsg.dv_psi_ok(ok: Bool, +psi: U32, +r: B.Bytes(), +m: Sm.Sm, ev: {I.fits8(
         case Nil{}:
           Empty.absurd({Sm.Sm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Sm.Sm, B.Short{}, m, e))
         case +pti <> +r2:
-          SmMsg.dv_pti_ok(I.fits8(pti), psi, pti, r2, m, {==}, e, ev)
+          SmMsg.dv_pti_ok(B.fits8(pti), psi, pti, r2, m, {==}, e, ev)
 
 def SmMsg.dv_epd(ok: Bool, +r: B.Bytes(), +epd: U32, +m: Sm.Sm, +e: {Sm.Sm.r_epd(r, epd, ok) == Done{m} : SmMsg.Res()}) -> {Sm.Sm.valid(m) == True{} : Bool}:
   match ok:
@@ -228,7 +228,7 @@ def SmMsg.dv_epd(ok: Bool, +r: B.Bytes(), +epd: U32, +m: Sm.Sm, +e: {Sm.Sm.r_epd
         case Nil{}:
           Empty.absurd({Sm.Sm.valid(m) == True{} : Bool}, P.Refute.fail_done(B.Err, Sm.Sm, B.Short{}, m, e))
         case +psi <> +r2:
-          SmMsg.dv_psi_ok(I.fits8(psi), psi, r2, m, {==}, e)
+          SmMsg.dv_psi_ok(B.fits8(psi), psi, r2, m, {==}, e)
 
 def SmMsg.dv(bs: B.Bytes(), +m: Sm.Sm, +e: {Sm.Sm.read(bs) == Done{m} : SmMsg.Res()}) -> {Sm.Sm.valid(m) == True{} : Bool}:
   match bs:
@@ -282,7 +282,7 @@ def SmMsg.sx_type(tm: Maybe<&2, Sm.Sm.Type>, +epd: U32, +psi: U32, +pti: U32, +c
     case Some{+mt}:
       SmMsg.sx_fields(I.Fields.read(Sm.Sm.layout(mt), r), epd, psi, pti, code, r, mt, m, e46, mp, mq, SmType.of_inv(code, mt, etm), {==}, e, P.Bool.and_true_r(B.is_byte(code), B.all_bytes(r), ab))
 
-def SmMsg.sx_pti_ok(ok: Bool, +epd: U32, +psi: U32, +pti: U32, +r: B.Bytes(), +m: Sm.Sm, e46: {epd == 46 : U32}, mp: {U32.and(255, psi) == psi : U32}, ev: {I.fits8(pti) == ok : Bool}, +e: {Sm.Sm.r_pti_ok(psi, pti, r, ok) == Done{m} : SmMsg.Res()}, ab: {B.all_bytes(pti <> r) == True{} : Bool}) -> {Sm.Sm.write(m) == epd <> psi <> pti <> r : B.Bytes()}:
+def SmMsg.sx_pti_ok(ok: Bool, +epd: U32, +psi: U32, +pti: U32, +r: B.Bytes(), +m: Sm.Sm, e46: {epd == 46 : U32}, mp: {U32.and(255, psi) == psi : U32}, ev: {B.fits8(pti) == ok : Bool}, +e: {Sm.Sm.r_pti_ok(psi, pti, r, ok) == Done{m} : SmMsg.Res()}, ab: {B.all_bytes(pti <> r) == True{} : Bool}) -> {Sm.Sm.write(m) == epd <> psi <> pti <> r : B.Bytes()}:
   match ok:
     case False{}:
       Empty.absurd({Sm.Sm.write(m) == epd <> psi <> pti <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Sm.Sm, B.Invalid{pti}, m, e))
@@ -293,7 +293,7 @@ def SmMsg.sx_pti_ok(ok: Bool, +epd: U32, +psi: U32, +pti: U32, +r: B.Bytes(), +m
         case +code <> +r2:
           SmMsg.sx_type(Sm.Sm.Type.of(code), epd, psi, pti, code, r2, m, e46, mp, P.U32.eq_of_is_eq(U32.and(255, pti), pti, ev), {==}, e, P.Bool.and_true_r(B.is_byte(pti), B.all_bytes(code <> r2), ab))
 
-def SmMsg.sx_psi_ok(ok: Bool, +epd: U32, +psi: U32, +r: B.Bytes(), +m: Sm.Sm, e46: {epd == 46 : U32}, ev: {I.fits8(psi) == ok : Bool}, +e: {Sm.Sm.r_psi_ok(psi, r, ok) == Done{m} : SmMsg.Res()}, ab: {B.all_bytes(psi <> r) == True{} : Bool}) -> {Sm.Sm.write(m) == epd <> psi <> r : B.Bytes()}:
+def SmMsg.sx_psi_ok(ok: Bool, +epd: U32, +psi: U32, +r: B.Bytes(), +m: Sm.Sm, e46: {epd == 46 : U32}, ev: {B.fits8(psi) == ok : Bool}, +e: {Sm.Sm.r_psi_ok(psi, r, ok) == Done{m} : SmMsg.Res()}, ab: {B.all_bytes(psi <> r) == True{} : Bool}) -> {Sm.Sm.write(m) == epd <> psi <> r : B.Bytes()}:
   match ok:
     case False{}:
       Empty.absurd({Sm.Sm.write(m) == epd <> psi <> r : B.Bytes()}, P.Refute.fail_done(B.Err, Sm.Sm, B.Invalid{psi}, m, e))
@@ -302,7 +302,7 @@ def SmMsg.sx_psi_ok(ok: Bool, +epd: U32, +psi: U32, +r: B.Bytes(), +m: Sm.Sm, e4
         case Nil{}:
           Empty.absurd({Sm.Sm.write(m) == epd <> psi <> [] : B.Bytes()}, P.Refute.fail_done(B.Err, Sm.Sm, B.Short{}, m, e))
         case +pti <> +r2:
-          SmMsg.sx_pti_ok(I.fits8(pti), epd, psi, pti, r2, m, e46, P.U32.eq_of_is_eq(U32.and(255, psi), psi, ev), {==}, e, P.Bool.and_true_r(B.is_byte(psi), B.all_bytes(pti <> r2), ab))
+          SmMsg.sx_pti_ok(B.fits8(pti), epd, psi, pti, r2, m, e46, P.U32.eq_of_is_eq(U32.and(255, psi), psi, ev), {==}, e, P.Bool.and_true_r(B.is_byte(psi), B.all_bytes(pti <> r2), ab))
 
 def SmMsg.sx_epd(ok: Bool, +epd: U32, +r: B.Bytes(), +m: Sm.Sm, ev: {U32.is_eq(epd, 46) == ok : Bool}, +e: {Sm.Sm.r_epd(r, epd, ok) == Done{m} : SmMsg.Res()}, ab: {B.all_bytes(epd <> r) == True{} : Bool}) -> {Sm.Sm.write(m) == epd <> r : B.Bytes()}:
   match ok:
@@ -313,7 +313,7 @@ def SmMsg.sx_epd(ok: Bool, +epd: U32, +r: B.Bytes(), +m: Sm.Sm, ev: {U32.is_eq(e
         case Nil{}:
           Empty.absurd({Sm.Sm.write(m) == [epd] : B.Bytes()}, P.Refute.fail_done(B.Err, Sm.Sm, B.Short{}, m, e))
         case +psi <> +r2:
-          SmMsg.sx_psi_ok(I.fits8(psi), epd, psi, r2, m, P.U32.eq_of_is_eq(epd, 46, ev), {==}, e, P.Bool.and_true_r(B.is_byte(epd), B.all_bytes(psi <> r2), ab))
+          SmMsg.sx_psi_ok(B.fits8(psi), epd, psi, r2, m, P.U32.eq_of_is_eq(epd, 46, ev), {==}, e, P.Bool.and_true_r(B.is_byte(epd), B.all_bytes(psi <> r2), ab))
 
 def SmMsg.sx(bs: B.Bytes(), +m: Sm.Sm, +e: {Sm.Sm.read(bs) == Done{m} : SmMsg.Res()}, ab: {B.all_bytes(bs) == True{} : Bool}) -> {Sm.Sm.write(m) == bs : B.Bytes()}:
   match bs:

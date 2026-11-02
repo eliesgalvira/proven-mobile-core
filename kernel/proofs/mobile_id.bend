@@ -421,7 +421,7 @@ def Id.sx_guti_amf(+h: U32, +rest: B.Bytes(), +id: Mi.MobileId, +plmn: PL.Plmn, 
     case x <> Nil{}:
       Empty.absurd(Id.Sx(id, h <> rest), P.Refute.fail_done(B.Err, Mi.MobileId, B.Short{}, id, e))
     case +a1 <> +a0 <> +r3:
-      Id.sx_guti_amf_ok(h, rest, id, plmn, region, a1, a0, r3, I.fits16(B.cat8(a0, a1)), e, eh, wp, ab1)
+      Id.sx_guti_amf_ok(h, rest, id, plmn, region, a1, a0, r3, B.fits16(B.cat8(a0, a1)), e, eh, wp, ab1)
 
 def Id.sx_guti_region_ok(+h: U32, +rest: B.Bytes(), +id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +r2: B.Bytes(), ok: Bool, +e: {Mi.MobileId.guti_region_ok(plmn, region, r2, ok) == Done{id} : Id.Res()}, eh: {h == 242 : U32}, wp: {PL.Plmn.write(plmn, region <> r2) == rest : B.Bytes()}, +ab1: {B.all_bytes(region <> r2) == True{} : Bool}) -> Id.Sx(id, h <> rest):
   match ok:
@@ -435,7 +435,7 @@ def Id.sx_guti_region(+h: U32, +rest: B.Bytes(), +id: Mi.MobileId, +plmn: PL.Plm
     case Nil{}:
       Empty.absurd(Id.Sx(id, h <> rest), P.Refute.fail_done(B.Err, Mi.MobileId, B.Short{}, id, e))
     case +region <> +r2:
-      Id.sx_guti_region_ok(h, rest, id, plmn, region, r2, I.fits8(region), e, eh, wp, ab1)
+      Id.sx_guti_region_ok(h, rest, id, plmn, region, r2, B.fits8(region), e, eh, wp, ab1)
 
 def Id.sx_guti(+h: U32, +rest: B.Bytes(), +id: Mi.MobileId, rp: B.Read(PL.Plmn), erp: {PL.Plmn.read(rest) == rp : B.Read(PL.Plmn)}, +e: {Mi.MobileId.guti_plmn(rp) == Done{id} : Id.Res()}, eh: {h == 242 : U32}, +ab: {B.all_bytes(rest) == True{} : Bool}) -> Id.Sx(id, h <> rest):
   match rp:
@@ -494,7 +494,7 @@ def Id.sx_stmsi(+h: U32, +id: Mi.MobileId, rest: B.Bytes(), +e: {Mi.MobileId.s_t
     case x <> Nil{}:
       Empty.absurd(Id.Sx(id, h <> [x]), P.Refute.fail_done(B.Err, Mi.MobileId, B.Short{}, id, e))
     case +a1 <> +a0 <> +r3:
-      Id.sx_stmsi_ok(h, id, a1, a0, r3, I.fits16(B.cat8(a0, a1)), e, eh, abr)
+      Id.sx_stmsi_ok(h, id, a1, a0, r3, B.fits16(B.cat8(a0, a1)), e, eh, abr)
 
 def Id.sx_noid(+h: U32, rest: B.Bytes(), +id: Mi.MobileId, +e: {Mi.MobileId.end(Mi.NoId{}, rest) == Done{id} : Id.Res()}, eh: {h == 0 : U32}) -> Id.Sx(id, h <> rest):
   match rest:
@@ -593,39 +593,39 @@ def Id.dv_imei(+h: U32, +rest: B.Bytes(), +id: Mi.MobileId, r: Tbcd.Res(), er: {
     case Done{+ds}:
       Id.ok_inv(Id.Dv(id), h, Mi.Imei{U32.and(15, U32.shrn(h, 4n)) <> ds}, id, Bool.and(B.Tbcd.is_digit(U32.and(15, U32.shrn(h, 4n))), Nat.is_eq(List.length(&2, U32, ds), 14n)), e, ei => ok => Id.dv_imei_fin(h, id, ds, ei, ok, Tbcd.all_of(ds, rest, PB.Tbcd.decode_len(rest, ds, er))))
 
-def Id.dv_guti_fin(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, +tmsi: U32, ei: {Mi.Guti{plmn, region, amf, tmsi} == id : Mi.MobileId}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {I.fits8(region) == True{} : Bool}, f16: {I.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_guti_fin(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, +tmsi: U32, ei: {Mi.Guti{plmn, region, amf, tmsi} == id : Mi.MobileId}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {B.fits8(region) == True{} : Bool}, f16: {B.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
   %ei : Id.Dv(_)
-  P.Bool.and_intro(PL.Plmn.valid(plmn), Bool.and(I.fits8(region), I.fits16(amf)), pv, P.Bool.and_intro(I.fits8(region), I.fits16(amf), f8, f16))
+  P.Bool.and_intro(PL.Plmn.valid(plmn), Bool.and(B.fits8(region), B.fits16(amf)), pv, P.Bool.and_intro(B.fits8(region), B.fits16(amf), f8, f16))
 
-def Id.dv_guti_end(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, +tmsi: U32, r4: B.Bytes(), +e: {Mi.MobileId.end(Mi.Guti{plmn, region, amf, tmsi}, r4) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {I.fits8(region) == True{} : Bool}, f16: {I.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_guti_end(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, +tmsi: U32, r4: B.Bytes(), +e: {Mi.MobileId.end(Mi.Guti{plmn, region, amf, tmsi}, r4) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {B.fits8(region) == True{} : Bool}, f16: {B.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
   match r4:
     case x <> more:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, B.Invalid{x}, id, e))
     case Nil{}:
       Id.dv_guti_fin(id, plmn, region, amf, tmsi, Equal.cong(Id.Res(), Mi.MobileId, x => P.Res.value(B.Err, Mi.MobileId, x, id), Done{Mi.Guti{plmn, region, amf, tmsi}}, Done{id}, e), pv, f8, f16)
 
-def Id.dv_guti_tmsi(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, rt: B.Read(U32), +e: {Mi.MobileId.guti_tmsi(plmn, region, amf, rt) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {I.fits8(region) == True{} : Bool}, f16: {I.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_guti_tmsi(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, rt: B.Read(U32), +e: {Mi.MobileId.guti_tmsi(plmn, region, amf, rt) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {B.fits8(region) == True{} : Bool}, f16: {B.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
   match rt:
     case Fail{x}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, x, id, e))
     case Done{(+tmsi, +r4)}:
       Id.dv_guti_end(id, plmn, region, amf, tmsi, r4, e, pv, f8, f16)
 
-def Id.dv_guti_amf_ok(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, +r3: B.Bytes(), ok: Bool, ev: {I.fits16(amf) == ok : Bool}, +e: {Mi.MobileId.guti_amf_ok(plmn, region, amf, r3, ok) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {I.fits8(region) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_guti_amf_ok(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +amf: U32, +r3: B.Bytes(), ok: Bool, ev: {B.fits16(amf) == ok : Bool}, +e: {Mi.MobileId.guti_amf_ok(plmn, region, amf, r3, ok) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {B.fits8(region) == True{} : Bool}) -> Id.Dv(id):
   match ok:
     case False{}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, B.Invalid{amf}, id, e))
     case True{}:
       Id.dv_guti_tmsi(id, plmn, region, amf, B.u32(r3), e, pv, f8, ev)
 
-def Id.dv_guti_amf(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, ra: B.Read(U32), +e: {Mi.MobileId.guti_amf(plmn, region, ra) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {I.fits8(region) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_guti_amf(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, ra: B.Read(U32), +e: {Mi.MobileId.guti_amf(plmn, region, ra) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}, f8: {B.fits8(region) == True{} : Bool}) -> Id.Dv(id):
   match ra:
     case Fail{x}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, x, id, e))
     case Done{(+amf, +r3)}:
-      Id.dv_guti_amf_ok(id, plmn, region, amf, r3, I.fits16(amf), {==}, e, pv, f8)
+      Id.dv_guti_amf_ok(id, plmn, region, amf, r3, B.fits16(amf), {==}, e, pv, f8)
 
-def Id.dv_guti_region_ok(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +r2: B.Bytes(), ok: Bool, ev: {I.fits8(region) == ok : Bool}, +e: {Mi.MobileId.guti_region_ok(plmn, region, r2, ok) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_guti_region_ok(+id: Mi.MobileId, +plmn: PL.Plmn, +region: U32, +r2: B.Bytes(), ok: Bool, ev: {B.fits8(region) == ok : Bool}, +e: {Mi.MobileId.guti_region_ok(plmn, region, r2, ok) == Done{id} : Id.Res()}, pv: {PL.Plmn.valid(plmn) == True{} : Bool}) -> Id.Dv(id):
   match ok:
     case False{}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, B.Invalid{region}, id, e))
@@ -637,7 +637,7 @@ def Id.dv_guti_region(+id: Mi.MobileId, +plmn: PL.Plmn, rr: B.Read(U32), +e: {Mi
     case Fail{x}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, x, id, e))
     case Done{(+region, +r2)}:
-      Id.dv_guti_region_ok(id, plmn, region, r2, I.fits8(region), {==}, e, pv)
+      Id.dv_guti_region_ok(id, plmn, region, r2, B.fits8(region), {==}, e, pv)
 
 def Id.dv_guti(+rest: B.Bytes(), +id: Mi.MobileId, rp: B.Read(PL.Plmn), erp: {PL.Plmn.read(rest) == rp : B.Read(PL.Plmn)}, +e: {Mi.MobileId.guti_plmn(rp) == Done{id} : Id.Res()}) -> Id.Dv(id):
   match rp:
@@ -646,25 +646,25 @@ def Id.dv_guti(+rest: B.Bytes(), +id: Mi.MobileId, rp: B.Read(PL.Plmn), erp: {PL
     case Done{(+plmn, +r1)}:
       Id.dv_guti_region(id, plmn, B.u8(r1), e, L.plmn.decode_valid(rest, plmn, r1, erp))
 
-def Id.dv_stmsi_fin(+id: Mi.MobileId, +amf: U32, +tmsi: U32, ei: {Mi.STmsi{amf, tmsi} == id : Mi.MobileId}, f16: {I.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_stmsi_fin(+id: Mi.MobileId, +amf: U32, +tmsi: U32, ei: {Mi.STmsi{amf, tmsi} == id : Mi.MobileId}, f16: {B.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
   %ei : Id.Dv(_)
   f16
 
-def Id.dv_stmsi_end(+id: Mi.MobileId, +amf: U32, +tmsi: U32, r4: B.Bytes(), +e: {Mi.MobileId.end(Mi.STmsi{amf, tmsi}, r4) == Done{id} : Id.Res()}, f16: {I.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_stmsi_end(+id: Mi.MobileId, +amf: U32, +tmsi: U32, r4: B.Bytes(), +e: {Mi.MobileId.end(Mi.STmsi{amf, tmsi}, r4) == Done{id} : Id.Res()}, f16: {B.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
   match r4:
     case x <> more:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, B.Invalid{x}, id, e))
     case Nil{}:
       Id.dv_stmsi_fin(id, amf, tmsi, Equal.cong(Id.Res(), Mi.MobileId, x => P.Res.value(B.Err, Mi.MobileId, x, id), Done{Mi.STmsi{amf, tmsi}}, Done{id}, e), f16)
 
-def Id.dv_stmsi_tmsi(+id: Mi.MobileId, +amf: U32, rt: B.Read(U32), +e: {Mi.MobileId.s_tmsi_tmsi(amf, rt) == Done{id} : Id.Res()}, f16: {I.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
+def Id.dv_stmsi_tmsi(+id: Mi.MobileId, +amf: U32, rt: B.Read(U32), +e: {Mi.MobileId.s_tmsi_tmsi(amf, rt) == Done{id} : Id.Res()}, f16: {B.fits16(amf) == True{} : Bool}) -> Id.Dv(id):
   match rt:
     case Fail{x}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, x, id, e))
     case Done{(+tmsi, +r4)}:
       Id.dv_stmsi_end(id, amf, tmsi, r4, e, f16)
 
-def Id.dv_stmsi_ok(+id: Mi.MobileId, +amf: U32, +r3: B.Bytes(), ok: Bool, ev: {I.fits16(amf) == ok : Bool}, +e: {Mi.MobileId.s_tmsi_ok(amf, r3, ok) == Done{id} : Id.Res()}) -> Id.Dv(id):
+def Id.dv_stmsi_ok(+id: Mi.MobileId, +amf: U32, +r3: B.Bytes(), ok: Bool, ev: {B.fits16(amf) == ok : Bool}, +e: {Mi.MobileId.s_tmsi_ok(amf, r3, ok) == Done{id} : Id.Res()}) -> Id.Dv(id):
   match ok:
     case False{}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, B.Invalid{amf}, id, e))
@@ -676,7 +676,7 @@ def Id.dv_stmsi(+id: Mi.MobileId, ra: B.Read(U32), +e: {Mi.MobileId.s_tmsi_amf(r
     case Fail{x}:
       Empty.absurd(Id.Dv(id), P.Refute.fail_done(B.Err, Mi.MobileId, x, id, e))
     case Done{(+amf, +r3)}:
-      Id.dv_stmsi_ok(id, amf, r3, I.fits16(amf), {==}, e)
+      Id.dv_stmsi_ok(id, amf, r3, B.fits16(amf), {==}, e)
 
 def Id.dv_noid(rest: B.Bytes(), +id: Mi.MobileId, +e: {Mi.MobileId.end(Mi.NoId{}, rest) == Done{id} : Id.Res()}) -> Id.Dv(id):
   match rest:
@@ -861,4 +861,4 @@ def L.nas.payload_container.suffix(bs, len, body, rest, e):
     case +b1 <> +b0 <> +tail:
       sd = Equal.sym(B.Bytes(), List.drop(&2, U32, tail, 0n), tail, P.List.drop0(tail))
       %sd : {List.length(&2, U32, body) == U32.to_nat(len) : Nat} & {_ == List.append(&2, U32, body, rest) : B.Bytes()}
-      Lve.sx_take(B.cat8(b0, b1), tail, len, body, rest, I.fits16(B.cat8(b0, b1)), e)
+      Lve.sx_take(B.cat8(b0, b1), tail, len, body, rest, B.fits16(B.cat8(b0, b1)), e)

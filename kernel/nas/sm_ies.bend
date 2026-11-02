@@ -350,7 +350,7 @@ def Filter.id(f: Filter) -> U32:
 def Filter.valid(f: Filter) -> Bool:
   match f:
     case Filter{+hdr, +len, +comps}:
-      Bool.and(Bool.and(I.fits8(hdr), U32.is_eq(U32.and(192, hdr), 0)), Bool.and(I.fits8(len), Bool.and(Nat.is_eq(U32.to_nat(len), List.length(&2, U32, Comps.write(comps, []))), Comps.valid(comps))))
+      Bool.and(Bool.and(B.fits8(hdr), U32.is_eq(U32.and(192, hdr), 0)), Bool.and(B.fits8(len), Bool.and(Nat.is_eq(U32.to_nat(len), List.length(&2, U32, Comps.write(comps, []))), Comps.valid(comps))))
 
 def Filter.write(f: Filter, rest: B.Bytes()) -> B.Bytes():
   match f:
@@ -383,7 +383,7 @@ def Filter.read(bs: B.Bytes()) -> B.Read(Filter):
     case Nil{}:
       Fail{B.Short{}}
     case +hdr <> rest:
-      Filter.hdr_ok(hdr, rest, Bool.and(I.fits8(hdr), U32.is_eq(U32.and(192, hdr), 0)))
+      Filter.hdr_ok(hdr, rest, Bool.and(B.fits8(hdr), U32.is_eq(U32.and(192, hdr), 0)))
 
 def Filters.cons(f: Filter, r: B.Read(List<&2, Filter>)) -> B.Read(List<&2, Filter>):
   match r:
@@ -502,7 +502,7 @@ def RuleFilters.valid(fs: RuleFilters) -> Bool:
 def RuleTail.valid(t: RuleTail) -> Bool:
   match t:
     case Tail{precedence, qfi}:
-      Bool.and(I.fits8(precedence), I.fits8(qfi))
+      Bool.and(B.fits8(precedence), B.fits8(qfi))
     case NoTail{}:
       True{}
 
@@ -527,7 +527,7 @@ def Rule.shape_ok(code: Nat, fs: RuleFilters, t: RuleTail) -> Bool:
 def Rule.valid(r: Rule) -> Bool:
   match r:
     case Rule{+qri, +len, +op, +fs, +t}:
-      Bool.and(Bool.and(I.fits8(qri), I.fits8(op)), Bool.and(Bool.and(I.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, Rule.body_write(op, fs, t)))), Bool.and(Bool.and(Rule.shape_ok(Rule.code(op), fs, t), Nat.is_eq(Rule.count(op), RuleFilters.count(fs))), Bool.and(RuleFilters.valid(fs), RuleTail.valid(t)))))
+      Bool.and(Bool.and(B.fits8(qri), B.fits8(op)), Bool.and(Bool.and(B.fits16(len), Nat.is_eq(U32.to_nat(len), List.length(&2, U32, Rule.body_write(op, fs, t)))), Bool.and(Bool.and(Rule.shape_ok(Rule.code(op), fs, t), Nat.is_eq(Rule.count(op), RuleFilters.count(fs))), Bool.and(RuleFilters.valid(fs), RuleTail.valid(t)))))
 
 def Rules.valid(rs: List<&2, Rule>) -> Bool:
   match rs:
@@ -841,7 +841,7 @@ def Epco.limit() -> Nat:
 def Container.valid(c: Container) -> Bool:
   match c:
     case Container{id, lb}:
-      Bool.and(I.fits16(id), I.LenBody.valid8(lb))
+      Bool.and(B.fits16(id), I.LenBody.valid8(lb))
 
 def Containers.valid(cs: List<&2, Container>) -> Bool:
   match cs:
@@ -906,7 +906,7 @@ def Container.id(r: B.Read(U32), more: B.Bytes() -> Res(List<&2, Container>)) ->
     case Fail{e}:
       Fail{e}
     case Done{(+id, rest)}:
-      Container.id_ok(id, rest, more, I.fits16(id))
+      Container.id_ok(id, rest, more, B.fits16(id))
 
 # Containers to the end of the content, at most `budget` of them.
 def Containers.go(fuel: Nat, budget: Nat, bs: B.Bytes()) -> Res(List<&2, Container>):

@@ -45,13 +45,13 @@ def MobileId.valid(id: MobileId) -> Bool:
     case Suci{S.Suci{plmn, routing, scheme, key_id, output}}:
       Bool.and(P.Plmn.valid(plmn), S.Routing.valid(routing))
     case Guti{plmn, region, amf, tmsi}:
-      Bool.and(P.Plmn.valid(plmn), Bool.and(I.fits8(region), I.fits16(amf)))
+      Bool.and(P.Plmn.valid(plmn), Bool.and(B.fits8(region), B.fits16(amf)))
     case Imei{+ds}:
       Bool.and(B.Tbcd.all_digits(ds), Nat.is_eq(List.length(&2, U32, ds), 15n))
     case Imeisv{+ds}:
       Bool.and(B.Tbcd.all_digits(ds), Nat.is_eq(List.length(&2, U32, ds), 16n))
     case STmsi{amf, tmsi}:
-      I.fits16(amf)
+      B.fits16(amf)
 
 # Encoding
 # --------
@@ -147,7 +147,7 @@ def MobileId.s_tmsi_amf(r: B.Read(U32)) -> MobileId.Res():
     case Fail{e}:
       Fail{e}
     case Done{(+amf, rest)}:
-      MobileId.s_tmsi_ok(amf, rest, I.fits16(amf))
+      MobileId.s_tmsi_ok(amf, rest, B.fits16(amf))
 
 def MobileId.r4(+h: U32, rest: B.Bytes(), hit: Bool) -> MobileId.Res():
   match hit:
@@ -175,7 +175,7 @@ def MobileId.guti_amf(plmn: P.Plmn, region: U32, r: B.Read(U32)) -> MobileId.Res
     case Fail{e}:
       Fail{e}
     case Done{(+amf, rest)}:
-      MobileId.guti_amf_ok(plmn, region, amf, rest, I.fits16(amf))
+      MobileId.guti_amf_ok(plmn, region, amf, rest, B.fits16(amf))
 
 def MobileId.guti_region_ok(plmn: P.Plmn, region: U32, rest: B.Bytes(), ok: Bool) -> MobileId.Res():
   match ok:
@@ -189,7 +189,7 @@ def MobileId.guti_region(plmn: P.Plmn, r: B.Read(U32)) -> MobileId.Res():
     case Fail{e}:
       Fail{e}
     case Done{(+region, rest)}:
-      MobileId.guti_region_ok(plmn, region, rest, I.fits8(region))
+      MobileId.guti_region_ok(plmn, region, rest, B.fits8(region))
 
 def MobileId.guti_plmn(r: B.Read(P.Plmn)) -> MobileId.Res():
   match r:

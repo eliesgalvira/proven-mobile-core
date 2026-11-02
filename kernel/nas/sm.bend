@@ -211,7 +211,7 @@ def Sm.opts(m: Sm) -> List<&2, I.Ie>:
 def Sm.valid(m: Sm) -> Bool:
   match m:
     case Sm{psi, pti, +mt, fields, opts}:
-      Bool.and(I.fits8(psi), Bool.and(I.fits8(pti), Bool.and(I.Fields.valid(Sm.layout(mt), fields), I.Opts.valid(Sm.table(mt), opts))))
+      Bool.and(B.fits8(psi), Bool.and(B.fits8(pti), Bool.and(I.Fields.valid(Sm.layout(mt), fields), I.Opts.valid(Sm.table(mt), opts))))
 
 def Sm.write(m: Sm) -> B.Bytes():
   match m:
@@ -258,7 +258,7 @@ def Sm.r_pti(psi: U32, r: B.Read(U32)) -> Result<&2, &2, B.Err, Sm>:
     case Fail{e}:
       Fail{e}
     case Done{(+pti, rest)}:
-      Sm.r_pti_ok(psi, pti, rest, I.fits8(pti))
+      Sm.r_pti_ok(psi, pti, rest, B.fits8(pti))
 
 def Sm.r_psi_ok(psi: U32, rest: B.Bytes(), ok: Bool) -> Result<&2, &2, B.Err, Sm>:
   match ok:
@@ -272,7 +272,7 @@ def Sm.r_psi(r: B.Read(U32)) -> Result<&2, &2, B.Err, Sm>:
     case Fail{e}:
       Fail{e}
     case Done{(+psi, rest)}:
-      Sm.r_psi_ok(psi, rest, I.fits8(psi))
+      Sm.r_psi_ok(psi, rest, B.fits8(psi))
 
 def Sm.r_epd(rest: B.Bytes(), epd: U32, ok: Bool) -> Result<&2, &2, B.Err, Sm>:
   match ok:

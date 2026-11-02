@@ -28,6 +28,13 @@ def Read(-A: Data) -> Data:
 def is_byte(x: U32) -> Bool:
   U32.is_lt(x, 256)
 
+# A value that is already a byte, or already two bytes: its wire form reproduces it.
+def fits8(+x: U32) -> Bool:
+  U32.is_eq(U32.and(255, x), x)
+
+def fits16(+x: U32) -> Bool:
+  U32.is_eq(U32.and(65535, x), x)
+
 def all_bytes(bs: Bytes()) -> Bool:
   match bs:
     case Nil{}:

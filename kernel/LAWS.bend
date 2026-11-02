@@ -19,6 +19,7 @@ import ./nas/sm_ies.bend as Q
 import ./aper.bend as Ap
 import ./ngap/frame.bend as Fr
 import ./ngap/gen/views.bend as GV
+import ./pfcp.bend as Pf
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -919,3 +920,58 @@ law ngap.initial_ue_message.mandatory:
   for +v: GV.InitialUEMessage.View
   for +e: {GV.InitialUEMessage.view(ies) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}
   {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}))
+
+# pfcp (ticket 14)
+# ----------------
+# TS 29.244 over bytes: a valid message reads back from its encoding, what
+# reads is valid, and the bytes a message was read from are its encoding.
+law pfcp.roundtrip:
+  for +m: Pf.Msg
+  for +rest: B.Bytes()
+  for +v: {Pf.Msg.valid(m) == True{} : Bool}
+  {Pf.Msg.read(Pf.Msg.write(m, rest)) == Done{(m, rest)} : B.Read(Pf.Msg)}
+
+law pfcp.decode_valid:
+  for +bs: B.Bytes()
+  for +m: Pf.Msg
+  for +rest: B.Bytes()
+  for +e: {Pf.Msg.read(bs) == Done{(m, rest)} : B.Read(Pf.Msg)}
+  {Pf.Msg.valid(m) == True{} : Bool}
+
+law pfcp.suffix:
+  for +bs: B.Bytes()
+  for +m: Pf.Msg
+  for +rest: B.Bytes()
+  for +e: {Pf.Msg.read(bs) == Done{(m, rest)} : B.Read(Pf.Msg)}
+  for +ab: {B.all_bytes(bs) == True{} : Bool}
+  {Pf.Msg.write(m, rest) == bs : B.Bytes()}
+
+# GHSA-4x7x-2p8x-jwrq: an IE header is four octets; fewer fail as Short.
+law pfcp.ie_header.short_input_fails:
+  for +bs: B.Bytes()
+  for +e: {Nat.is_lt(List.length(&2, U32, bs), 4n) == True{} : Bool}
+  {Pf.Ie.read(bs) == Fail{B.Short{}} : B.Read(Pf.Ie)}
+
+# GHSA-37c3-hv4f-688p: every IE, known or not, consumes exactly its four
+# header octets plus the length it declares, and fails as Short when fewer
+# octets remain.
+law pfcp.ie.suffix:
+  for +bs: B.Bytes()
+  (@ie: Pf.Ie -> @rest: B.Bytes() -> {Pf.Ie.read(bs) == Done{(ie, rest)} : B.Read(Pf.Ie)} -> {List.drop(&2, U32, bs, Nat.add(4n, U32.to_nat(Pf.Ie.len(ie)))) == rest : B.Bytes()} & {List.length(&2, U32, Pf.Ie.body(ie)) == U32.to_nat(Pf.Ie.len(ie)) : Nat})
+  & (@kind: U32 -> @len: U32 -> @tail: B.Bytes() -> {Pf.Ie.header(bs) == Done{(Pf.Hdr{kind, len}, tail)} : B.Read(Pf.Hdr)} -> {B.all_bytes(bs) == True{} : Bool} -> {Nat.is_lt(List.length(&2, U32, tail), U32.to_nat(len)) == True{} : Bool} -> {Pf.Ie.read(bs) == Fail{B.Short{}} : B.Read(Pf.Ie)})
+
+# GHSA-3mxx-vq7h-x8ff: an F-TEID decodes only when its body is exactly what
+# its flags call for, and the CH form carries no TEID and no address at all.
+law pfcp.fteid.decode_valid:
+  for +body: B.Bytes()
+  for +f: Pf.Fteid
+  for +e: {Pf.Fteid.read(body) == Done{f} : Result<&2, &2, B.Err, Pf.Fteid>}
+  {Pf.Fteid.valid(f) == True{} : Bool}
+
+# The length field counts exactly the octets that follow it.
+law pfcp.header.length_consistent:
+  for +bs: B.Bytes()
+  for +m: Pf.Msg
+  for +rest: B.Bytes()
+  for +e: {Pf.Msg.read(bs) == Done{(m, rest)} : B.Read(Pf.Msg)}
+  {List.length(&2, U32, bs) == Nat.add(4n, Nat.add(U32.to_nat(Pf.Msg.len(m)), List.length(&2, U32, rest))) : Nat}
