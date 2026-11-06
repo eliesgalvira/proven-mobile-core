@@ -412,6 +412,10 @@ type Link is Data:
 type N4 is Data:
   N4{recovery: B.Bytes(), link: Link}
 
+# Timer 0 is the N4 association's; UE and session guards take the others.
+def N4.timer() -> U32:
+  0
+
 def N4.recovery(n: N4) -> B.Bytes():
   match n:
     case N4{recovery, link}:
@@ -791,13 +795,44 @@ def Sessions.by_psi(+ue: U32, +psi: U32, sessions: Tb.Table(Session)) -> Maybe<&
     case (key, +s) <> more:
       Sessions.pick(key, s, Sessions.by_psi(ue, psi, more), Bool.and(U32.is_eq(Session.ue(s), ue), U32.is_eq(Session.psi(s), psi)))
 
+# Fresh ids
+# ---------
+# AMF-UE-NGAP-IDs and timer ids count up and wrap at 2^32, skipping every id
+# still live. Fewer ids are live than the fuel given, so among that many
+# candidates one is free and the search never runs out.
+
+def Ids.next(id: U32, later: Unit -> U32, taken: Bool) -> U32:
+  match taken:
+    case True{}:
+      later(Unit{})
+    case False{}:
+      id
+
+def Ues.free_key(fuel: Nat, +id: U32, +ues: Tb.Table(Ue)) -> U32:
+  match fuel:
+    case 0n:
+      id
+    case 1n+n:
+      Ids.next(id, u => Ues.free_key(n, U32.add(id, 1), ues), Tb.Table.has(Ue, id, ues))
+
+# A timer id is the N4 association's, a context's guard or a session's guard.
+def Timers.taken(+t: U32, ues: Tb.Table(Ue), sessions: Tb.Table(Session)) -> Bool:
+  Bool.or(U32.is_eq(t, N4.timer()), Bool.or(Tb.Table.present(Sigma<&2, &2, U32, _ => Ue>, Ues.by_timer(t, ues)), Tb.Table.present(Sigma<&2, &2, U32, _ => Session>, Sessions.by_timer(t, sessions))))
+
+def Timers.free(fuel: Nat, +id: U32, +ues: Tb.Table(Ue), +sessions: Tb.Table(Session)) -> U32:
+  match fuel:
+    case 0n:
+      id
+    case 1n+n:
+      Ids.next(id, u => Timers.free(n, U32.add(id, 1), ues, sessions), Timers.taken(id, ues, sessions))
+
 # Transactions
 # ------------
 # A procedure answers with what to change, applied by one interpreter: a
 # context put (evicting the contexts it conflicts with) or rephased in place,
 # a context and its sessions forgotten, a session put (evicting likewise),
 # changed in place or forgotten, the subscribers replaced, the N4 link moved,
-# fresh ids and PFCP sequence numbers consumed.
+# fresh ids (the next free ones) and PFCP sequence numbers consumed.
 
 type Tx is Data:
   Keep{}
@@ -852,12 +887,12 @@ def Tx.apply(tx: Tx, st: State) -> State:
           State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, N4.with_link(n4, link)}
     case BumpUe{}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, sessions, pfcp_seq, U32.add(next_ue, 1), next_timer, n4}
+        case State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, Ues.free_key(1n+List.length(&2, Sigma<&2, &2, U32, _ => Ue>, ues), U32.add(next_ue, 1), ues), next_timer, n4}
     case BumpTimer{}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, U32.add(next_timer, 1), n4}
+        case State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, next_timer, n4}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, Timers.free(2n+Nat.add(List.length(&2, Sigma<&2, &2, U32, _ => Ue>, ues), List.length(&2, Sigma<&2, &2, U32, _ => Session>, sessions)), U32.add(next_timer, 1), ues, sessions), n4}
     case BumpSeq{n}:
       match st:
         case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:

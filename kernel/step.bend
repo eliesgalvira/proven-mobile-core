@@ -60,7 +60,7 @@ def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
 def Kernel.fired_session(+st: S.State, +timer: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
   match m:
     case None{}:
-      Kernel.node_timer(st, U32.is_eq(timer, Up.N4.timer()))
+      Kernel.node_timer(st, U32.is_eq(timer, S.N4.timer()))
     case Some{(skey, +s)}:
       Gsm.Gsm.expired(st, skey, s, S.Session.phase(s))
 

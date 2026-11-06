@@ -90,6 +90,29 @@ def rand_of(nas: B.Bytes()) -> B.Bytes():
 def phase_at(st: S.State, +key: U32) -> String:
   A.phase_name(Tb.Table.get(S.Ue, key, S.State.ues(st)))
 
+def timer_of(g: Maybe<&2, S.Guard>) -> U32:
+  match g:
+    case Some{guard}:
+      S.Guard.timer(guard)
+    case None{}:
+      0
+
+def guard_of(m: Maybe<&2, S.Ue>) -> U32:
+  match m:
+    case Some{u}:
+      timer_of(S.Ue.guard(u))
+    case None{}:
+      0
+
+def timer_at(st: S.State, +key: U32) -> U32:
+  guard_of(Tb.Table.get(S.Ue, key, S.State.ues(st)))
+
+# The id counters set where they will be after counting through 2^32 ids.
+def rewound(st: S.State, ue: U32, timer: U32) -> S.State:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+      S.State{config, subs, assocs, ues, sessions, pfcp_seq, ue, timer, n4}
+
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
@@ -140,6 +163,9 @@ def main() -> IO(Unit):
     +o_replay2 : S.Out() = K.Kernel.step(st5, A.data_on(2, initial), A.entropy())
     +st_r : S.State = K.Kernel.state(o_replay2)
     C.Check.report("a captured SUCI replayed from another gNB: the registered UE stays, the newcomer is only challenged", Bool.and(String.eq(phase_at(st_r, 1), "registered"), Bool.and(Nat.is_eq(A.ue_count(st_r), 2n), Bool.and(Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.actions(o_replay2))), 1n), U32.is_eq(A.nas_type(A.nas_of(A.first_bytes(A.sends(K.Kernel.actions(o_replay2))))), 86)))))
+    +st_w1 : S.State = K.Kernel.state(K.Kernel.step(rewound(st1, 0, 4294967295), A.data_on(2, initial), A.entropy()))
+    +st_w2 : S.State = K.Kernel.state(K.Kernel.step(st_w1, A.data_on(3, initial), A.entropy()))
+    C.Check.report("the id counters wrap: AMF-UE-NGAP-ID 1 and guard timers 0 (N4) and 1, still live, are skipped", Bool.and(Nat.is_eq(A.ue_count(st_w2), 3n), Bool.and(String.eq(phase_at(st_w2, 1), "authenticating"), Bool.and(String.eq(phase_at(st_w2, 2), "authenticating"), Bool.and(U32.is_eq(timer_at(st_w2, 1), 1), Bool.and(U32.is_eq(timer_at(st_w2, 0), 4294967295), U32.is_eq(timer_at(st_w2, 2), 2)))))))
     +o_fail2 : S.Out() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, flip_last(auth_resp))), A.entropy())
     C.Check.report("the newcomer fails 5G-AKA: the registered UE is untouched", Bool.and(String.eq(phase_at(K.Kernel.state(o_fail2), 1), "registered"), String.eq(phase_at(K.Kernel.state(o_fail2), 2), "releasing")))
     +o_take : S.Out() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, auth_resp)), A.entropy())
