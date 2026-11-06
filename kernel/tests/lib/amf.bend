@@ -226,7 +226,9 @@ def phase_of(p: S.Phase) -> String:
       "context_setup"
     case S.Registered{ctx}:
       "registered"
-    case S.Releasing{}:
+    case S.Created{}:
+      "created"
+    case S.Releasing{g}:
       "releasing"
 
 def phase_name(m: Maybe<&2, S.Ue>) -> String:

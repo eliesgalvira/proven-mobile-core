@@ -23,7 +23,8 @@ import ./ngap.bend as N
 # accepted, and later released. Every outcome is a transaction on the state and
 # a list of semantic actions (`N.Act`), applied and rendered at the boundary.
 
-# T3570, T3560 and T3550 all default to 6 s.
+# T3570, T3560 and T3550 all default to 6 s; the wait for UE Context Release
+# Complete is bounded the same way.
 def Gmm.guard_ms() -> U32:
   6000
 
@@ -109,9 +110,11 @@ def Gmm.evict(victims: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session), +seq: U32
 def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
   N.Out.join((S.Put{key, ue}, []), Gmm.evict(S.Ues.evicted(key, ue, S.State.ues(st)), S.State.sessions(st), S.State.pfcp_seq(st)))
 
-# UE Context Release Command; the context waits, releasing, for the gNB.
-def Gmm.release(st: S.State, +key: U32, +ue: S.Ue, cause: G.Cause) -> N.GOut():
-  N.Out.prepend(N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.also(Gmm.place(st, key, S.Ue.with_phase(ue, S.Releasing{})), N.Guard.cancel(S.Ue.guard(ue))))
+# UE Context Release Command; the context waits, releasing, for the gNB, and
+# its guard bounds the wait.
+def Gmm.release(+st: S.State, +key: U32, +ue: S.Ue, cause: G.Cause) -> N.GOut():
+  +timer = S.State.next_timer(st)
+  N.Out.prepend(N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.join(Gmm.place(st, key, S.Ue.with_phase(ue, S.Releasing{S.Guard{timer, 0}})), (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.TimerStart{timer, Gmm.guard_ms()}]))))
 
 def Gmm.reject(st: S.State, +key: U32, +ue: S.Ue, cause: U32) -> N.GOut():
   N.Out.prepend(Gmm.dl(key, ue, Gmm.registration_reject(cause)), Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())))
@@ -193,7 +196,7 @@ def Gmm.register(+st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), ran:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_nas(assoc))
     case Done{id}:
-      N.Out.join((S.BumpUe{}, []), Gmm.proceed(st, S.State.next_ue(st), S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Releasing{}, []}, Gmm.start_of(id), entropy))
+      N.Out.join((S.BumpUe{}, []), Gmm.proceed(st, S.State.next_ue(st), S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}, Gmm.start_of(id), entropy))
 
 def Gmm.initial_mm(st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), ran: B.Bytes(), nas: B.Bytes(), m: Mm.Mm) -> N.GOut():
   match m:
@@ -530,13 +533,13 @@ def Gmm.release_request_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err
     case Done{v}:
       Gmm.release_request(st, assoc, v)
 
-# UE Context Release Complete from the owner: the context is forgotten.
+# UE Context Release Complete from the owner: the context is forgotten, its guard stopped.
 def Gmm.release_complete_ue(st: S.State, assoc: U32, key: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
     case Some{ue}:
-      N.Out.also(Gmm.forget(st, key), [N.Note{F.Info{}, "NGAP: UE context released"}])
+      N.Out.also(Gmm.forget(st, key), List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.Note{F.Info{}, "NGAP: UE context released"}]))
 
 def Gmm.release_complete(+st: S.State, +assoc: U32, v: V.UEContextReleaseComplete.View) -> N.GOut():
   match v:
@@ -561,9 +564,12 @@ def Gmm.retry_if(st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, p: S.Phase,
     case False{}:
       Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
 
-# The guard fired: retransmit the last downlink message, or give up and release.
+# The guard fired: retransmit the last downlink message, or give up and
+# release; a release the gNB never completed ends here, sessions deleted.
 def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
   match p:
+    case S.Created{}:
+      (S.Keep{}, [])
     case S.Identifying{+guard}:
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
     case S.Authenticating{+guard, av, resynced, supi}:
@@ -574,5 +580,5 @@ def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
     case S.Registered{ctx}:
       (S.Keep{}, [])
-    case S.Releasing{}:
-      (S.Keep{}, [])
+    case S.Releasing{guard}:
+      N.Out.also(Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}])

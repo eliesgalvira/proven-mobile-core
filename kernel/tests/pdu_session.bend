@@ -182,6 +182,16 @@ def session_count(st: S.State) -> Nat:
 def session_timer(st: S.State) -> U32:
   timer_of(session1(S.State.sessions(st)))
 
+def ue_guard(m: Maybe<&2, S.Ue>) -> Maybe<&2, S.Guard>:
+  match m:
+    case None{}:
+      None{}
+    case Some{u}:
+      S.Ue.guard(u)
+
+def ue_timer(st: S.State) -> U32:
+  guard_timer(ue_guard(A.ue1(st)))
+
 # The first item of a PDU Session Resource Setup Request: its transfer and NAS-PDU.
 def item_transfer(items: G.PDUSessionResourceSetupListSUReq()) -> B.Bytes():
   match items:
@@ -271,6 +281,9 @@ def main() -> IO(Unit):
     C.Check.report("the association down: the active session is deleted at eUPF", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_down)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.actions(o_down))), 54)))
     +o_rel : S.Out() = step(K.Kernel.state(step(st4, A.data(1, A.release_request(ran)))), A.data(1, N.Ngap.pdu(Fr.Pdu.successful(), 41, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, []))])))
     C.Check.report("the UE released: its session is deleted at eUPF with it", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_rel)), 0n), Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_rel)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.actions(o_rel))), 54))))
+    +st_releasing : S.State = K.Kernel.state(step(st4, A.data(1, A.release_request(ran))))
+    +o_silent : S.Out() = step(st_releasing, F.TimerFired{ue_timer(st_releasing)})
+    C.Check.report("the gNB never sends Release Complete: when the guard fires, the UE and its session are forgotten and the session deleted at eUPF", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_silent)), 0n), Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_silent)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.actions(o_silent))), 54))))
     +st_cfg : S.State = K.Kernel.state(step(S.State.initial(), F.Evt.config_make(A.config([]))))
     +st_t3 : S.State = K.Kernel.state(step(K.Kernel.state(step(st_cfg, F.TimerFired{0})), F.TimerFired{0}))
     +o_t4 : S.Out() = step(st_t3, F.TimerFired{0})

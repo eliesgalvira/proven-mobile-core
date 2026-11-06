@@ -694,7 +694,7 @@ def Tk.h_tmsi(+ue: S.Ue, +p: S.Phase, +dl: B.Bytes(), +reg: B.Bytes(), +t: U32, 
       Tk.h_apart(S.Ue{assoc, ran_id, stream, supi, Some{t}, reg, ngksi, p, dl}, u, Tk.or3(x, S.Maybe.same_u32(Some{t}, S.Ue.tmsi(u)), z, ex, ht, ez))
 
 # A context the InitialUEMessage creates has no SUPI, no 5G-TMSI and another association.
-def Tk.fresh(+assoc: U32, +ran: B.Bytes(), +stream: U32, +nas: B.Bytes(), +u: S.Ue, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {S.Ue.conflicts(S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Releasing{}, []}, u) == False{} : Bool}:
+def Tk.fresh(+assoc: U32, +ran: B.Bytes(), +stream: U32, +nas: B.Bytes(), +u: S.Ue, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {S.Ue.conflicts(S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}, u) == False{} : Bool}:
   e = Equal.sym(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), False{}, Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, U32.sym(assoc, S.Ue.assoc(u)), ea))
   %e : {Bool.or(S.Maybe.same_bytes(None{}, S.Ue.supi(u)), Bool.or(S.Maybe.same_u32(None{}, S.Ue.tmsi(u)), Bool.and(_, B.bytes_eq(ran, S.Ue.ran_id(u))))) == False{} : Bool}
   {==}
@@ -907,8 +907,9 @@ def Ws.ul_transport(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +fiel
 # 5GMM (W)
 
 def W.release(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.release(st, key, ue, cause)) == True{} : Bool}:
-  +ur = S.Ue.with_phase(ue, S.Releasing{})
-  Tk.ok_prepend(k, u, S.State.ues(st), N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.also(Gmm.Gmm.place(st, key, ur), N.Guard.cancel(S.Ue.guard(ue))), Tk.ok_also(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ur), N.Guard.cancel(S.Ue.guard(ue)), Tk.place(k, u, st, key, ur, eu, Tk.h_phase(ue, S.Releasing{}, u, h2))))
+  +ur = S.Ue.with_phase(ue, S.Releasing{S.Guard{S.State.next_timer(st), 0}})
+  +b : N.GOut() = (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.TimerStart{S.State.next_timer(st), Gmm.Gmm.guard_ms()}]))
+  Tk.ok_prepend(k, u, S.State.ues(st), N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.join(Gmm.Gmm.place(st, key, ur), b), Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ur), b, Tk.place(k, u, st, key, ur, eu, Tk.h_phase(ue, S.Releasing{S.Guard{S.State.next_timer(st), 0}}, u, h2))))
 
 def W.reject(+st: S.State, +key: U32, +ue: S.Ue, +cause: U32, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.reject(st, key, ue, cause)) == True{} : Bool}:
   Tk.ok_prepend(k, u, S.State.ues(st), Gmm.Gmm.dl(key, ue, Gmm.Gmm.registration_reject(cause)), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2))
@@ -970,7 +971,7 @@ def W.register(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ra
     case Fail{e}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Done{+id}:
-      +fresh : S.Ue = S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Releasing{}, []}
+      +fresh : S.Ue = S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}
       Tk.ok_join(k, u, S.State.ues(st), (S.BumpUe{}, []), Gmm.Gmm.proceed(st, S.State.next_ue(st), fresh, Gmm.Gmm.start_of(id), entropy), W.proceed(st, S.State.next_ue(st), fresh, Gmm.Gmm.start_of(id), entropy, k, u, eu, Tk.fresh(assoc, ran, stream, nas, u, ea)))
 
 def W.initial_mm(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ran: B.Bytes(), +nas: B.Bytes(), +m: Mm.Mm, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.initial_mm(st, assoc, stream, entropy, ran, nas, m)) == True{} : Bool}:
@@ -1150,6 +1151,8 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Mm.AuthenticationResponse{}:
       match p:
+        case S.Created{}:
+          Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Identifying{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Authenticating{guard, +av, resynced, +supi}:
@@ -1160,12 +1163,14 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Registered{old}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
     case Mm.AuthenticationReject{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Mm.AuthenticationFailure{}:
       match p:
+        case S.Created{}:
+          Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Identifying{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Authenticating{guard, +av, +resynced, +supi}:
@@ -1176,12 +1181,14 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Registered{old}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
     case Mm.IdentityRequest{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Mm.IdentityResponse{}:
       match p:
+        case S.Created{}:
+          Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Identifying{guard}:
           W.identity_answer(st, key, ue, entropy, Mi.MobileId.read(I.Fields.lve1(fields)), k, u, eu, h2)
         case S.Authenticating{guard, av, resynced, supi}:
@@ -1192,7 +1199,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Registered{old}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
     case Mm.SecurityModeCommand{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1259,6 +1266,8 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
       W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.RegistrationComplete{}:
       match p:
+        case S.Created{}:
+          W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Identifying{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Authenticating{guard, av, resynced, supi}:
@@ -1269,12 +1278,14 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.setup_step(st, key, ue, guard, ctx, response, True{}, k, u, eu, h1)
         case S.Registered{old}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.RegistrationReject{}:
       W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.DeregistrationRequestUe{}:
       match p:
+        case S.Created{}:
+          W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Identifying{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Authenticating{guard, av, resynced, supi}:
@@ -1285,7 +1296,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.deregister(st, key, ue, ctx, I.Fields.byte1(fields), k, u, eu, h2)
         case S.Registered{old}:
           W.deregister(st, key, ue, ctx, I.Fields.byte1(fields), k, u, eu, h2)
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.DeregistrationAcceptUe{}:
       W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1307,6 +1318,8 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
       W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.SecurityModeComplete{}:
       match p:
+        case S.Created{}:
+          W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Identifying{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Authenticating{guard, av, resynced, supi}:
@@ -1317,10 +1330,12 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Registered{old}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.SecurityModeReject{}:
       match p:
+        case S.Created{}:
+          W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Identifying{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Authenticating{guard, av, resynced, supi}:
@@ -1331,12 +1346,14 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Registered{old}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.Status{}:
       W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.UlNasTransport{}:
       match p:
+        case S.Created{}:
+          W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Identifying{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Authenticating{guard, av, resynced, supi}:
@@ -1347,7 +1364,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Registered{old}:
           Tk.ok_sp(k, u, S.State.ues(st), Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy), eu, Ws.ul_transport(st, key, ue, ctx, fields, opts, entropy, k, u, h1))
-        case S.Releasing{}:
+        case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.DlNasTransport{}:
       W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1400,6 +1417,8 @@ def W.uplink_of_view(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(
 
 def W.setup_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.setup_phase(st, key, ue, p)) == True{} : Bool}:
   match p:
+    case S.Created{}:
+      Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Identifying{guard}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Authenticating{guard, av, resynced, supi}:
@@ -1410,7 +1429,7 @@ def W.setup_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: 
       W.setup_step(st, key, ue, guard, ctx, True{}, complete, k, u, eu, h1)
     case S.Registered{old}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{}:
+    case S.Releasing{guard}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
 
 def W.ics_owned(+st: S.State, +key: U32, +ue: S.Ue, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, pr: {U32.is_eq(k, key) == False{} : Bool} & {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.setup_phase(st, key, ue, S.Ue.phase(ue))) == True{} : Bool}:

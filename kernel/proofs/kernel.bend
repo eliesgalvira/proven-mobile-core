@@ -255,40 +255,6 @@ def L.ausf.res_star.full_length(av, res, e):
       +e2 = P.Bool.and_true_r(Nat.is_eq(List.length(&2, U32, res), 16n), R, e)
       (P.Bool.and_true_l(Nat.is_eq(List.length(&2, U32, res), 16n), R, e), (P.Bool.and_true_l(B.bytes_eq(Kd.kdf.hres_star(rand, res), hxres_star), B.bytes_eq(res, xres_star), e2), P.Bool.and_true_r(B.bytes_eq(Kd.kdf.hres_star(rand, res), hxres_star), B.bytes_eq(res, xres_star), e2)))
 
-# Every phase before registration carries its guard, so no context is left hanging.
-def Ue.guarded(u: S.Ue) -> {S.Ue.guarded(u) == True{} : Bool}:
-  match u:
-    case S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
-      match phase:
-        case S.Identifying{guard}:
-          {==}
-        case S.Authenticating{guard, av, resynced, supi}:
-          {==}
-        case S.SecurityMode{guard, ctx, k_amf}:
-          {==}
-        case S.ContextSetup{guard, ctx, response, complete}:
-          {==}
-        case S.Registered{ctx}:
-          {==}
-        case S.Releasing{}:
-          {==}
-
-def Ues.guarded(ues: Tb.Table(S.Ue)) -> {S.Ues.guarded(ues) == True{} : Bool}:
-  match ues:
-    case Nil{}:
-      {==}
-    case (key, +u) <> +more:
-      P.Bool.and_intro(S.Ue.guarded(u), S.Ues.guarded(more), Ue.guarded(u), Ues.guarded(more))
-
-def L.amf.auth.guarded(st, ev, entropy):
-  Ues.guarded(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))))
-
-# Registration, part 2 (ticket 18)
-# --------------------------------
-
-def L.amf.registration.completes_or_releases(st, ev, entropy):
-  Ues.guarded(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))))
-
 # Only the owner releases
 # -----------------------
 

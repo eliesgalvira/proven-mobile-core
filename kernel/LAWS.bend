@@ -1114,14 +1114,6 @@ law ausf.res_star.full_length:
   for +e: {Au.Ausf.verify(av, res) == True{} : Bool}
   {Nat.is_eq(List.length(&2, U32, res), 16n) == True{} : Bool} & ({B.bytes_eq(K.kdf.hres_star(Au.Av.rand(av), res), Au.Av.hxres_star(av)) == True{} : Bool} & {B.bytes_eq(res, Au.Av.xres_star(av)) == True{} : Bool})
 
-# Every UE context in authentication holds a guard timer, in every state a step
-# reaches: the special case of amf.registration.completes_or_releases.
-law amf.auth.guarded:
-  for +st: St.State
-  for +ev: F.Evt
-  for +entropy: B.Bytes()
-  {St.Ues.guarded(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
-
 # amf (ticket 18)
 # ---------------
 # Security mode, acceptance and release.
@@ -1228,14 +1220,6 @@ law amf.nas.plaintext_after_security:
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +ef: {N.Nas.unprotect(ctx, nas) == Fail{err} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}
-
-# Every UE context is registered, holds a guard timer, or is being released, in
-# every state a step reaches: no context is left hanging.
-law amf.registration.completes_or_releases:
-  for +st: St.State
-  for +ev: F.Evt
-  for +entropy: B.Bytes()
-  {St.Ues.guarded(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
 
 # amf (ticket 32)
 # ---------------

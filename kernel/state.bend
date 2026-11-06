@@ -133,22 +133,27 @@ def Guard.retries(g: Guard) -> U32:
     case Guard{timer, retries}:
       retries
 
-# Where a UE is in registration. Every phase before Registered carries the
-# guard timer that bounds it (T3570 identifying, T3560 authenticating and in
-# security mode, T3550 setting up the context), so a context is never left
-# waiting without one; Releasing waits for the gNB's Release Complete. The SUPI
-# a SUCI de-conceals to stays in Authenticating, out of the SUPI index, until
-# 5G-AKA verifies it.
+# Where a UE is in registration. Every phase but Registered carries the guard
+# timer that bounds it (T3570 identifying, T3560 authenticating and in
+# security mode, T3550 setting up the context, and the wait for the gNB's UE
+# Context Release Complete), so no context waits forever. Created is a context
+# the InitialUEMessage has just made, before its first procedure; every outcome
+# of that message replaces it, so no stored context is in it. The SUPI a SUCI
+# de-conceals to stays in Authenticating, out of the SUPI index, until 5G-AKA
+# verifies it.
 type Phase is Data:
+  Created{}
   Identifying{guard: Guard}
   Authenticating{guard: Guard, av: Au.Av, resynced: Bool, supi: B.Digits()}
   SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, response: Bool, complete: Bool}
   Registered{ctx: N.Nas.Ctx}
-  Releasing{}
+  Releasing{guard: Guard}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
   match p:
+    case Created{}:
+      None{}
     case Identifying{guard}:
       Some{guard}
     case Authenticating{guard, av, resynced, supi}:
@@ -159,11 +164,13 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       Some{guard}
     case Registered{ctx}:
       None{}
-    case Releasing{}:
-      None{}
+    case Releasing{guard}:
+      Some{guard}
 
 def Phase.with_guard(p: Phase, g: Guard) -> Phase:
   match p:
+    case Created{}:
+      Created{}
     case Identifying{guard}:
       Identifying{g}
     case Authenticating{guard, av, resynced, supi}:
@@ -174,8 +181,8 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       ContextSetup{g, ctx, response, complete}
     case Registered{ctx}:
       Registered{ctx}
-    case Releasing{}:
-      Releasing{}
+    case Releasing{guard}:
+      Releasing{g}
 
 # The NAS security context in force, once there is one.
 def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
@@ -543,26 +550,6 @@ def Ues.by_timer(+timer: U32, ues: Tb.Table(Ue)) -> Maybe<&2, Sigma<&2, &2, U32,
       None{}
     case (key, +u) <> more:
       Ues.pick_timer(key, u, Ues.by_timer(timer, more), Ues.timer_is(Ue.guard(u), timer))
-
-# A context is registered, bounded by a guard timer, or being released: never left hanging.
-def Phase.guarded(p: Phase) -> Bool:
-  match p:
-    case Registered{ctx}:
-      True{}
-    case Releasing{}:
-      True{}
-    case other:
-      Tb.Table.present(Guard, Phase.guard(other))
-
-def Ue.guarded(u: Ue) -> Bool:
-  Phase.guarded(Ue.phase(u))
-
-def Ues.guarded(ues: Tb.Table(Ue)) -> Bool:
-  match ues:
-    case Nil{}:
-      True{}
-    case (key, u) <> more:
-      Bool.and(Ue.guarded(u), Ues.guarded(more))
 
 # Indexes
 # -------
