@@ -28,6 +28,23 @@
         '';
       });
 
+      # `bend --verdict` builds its kernel with exactly this Lean (nixpkgs has a newer one).
+      lean = pkgs.stdenv.mkDerivation (finalAttrs: {
+        pname = "lean";
+        version = "4.34.0";
+        src = pkgs.fetchurl {
+          url = "https://github.com/leanprover/lean4/releases/download/v${finalAttrs.version}/lean-${finalAttrs.version}-linux.tar.zst";
+          hash = "sha256-yqqYNWCYyF3A/LvSjh7GbznrZVGCmXK3Uv8g4ShrZGs=";
+        };
+        nativeBuildInputs = [ pkgs.zstd pkgs.autoPatchelfHook ];
+        buildInputs = [ pkgs.stdenv.cc.cc.lib pkgs.zlib ];
+        dontStrip = true;
+        installPhase = ''
+          mkdir -p $out
+          cp -r . $out/
+        '';
+      });
+
       kernel = pkgs.stdenv.mkDerivation {
         pname = "speck5g-kernel";
         version = "0.1.0";
@@ -84,7 +101,13 @@
       });
     in
     {
-      packages.${system} = { inherit bend kernel edge eupf; };
+      packages.${system} = { inherit bend lean kernel edge eupf; };
+      # The NGAP generator needs pycrate's ASN.1 compiler only; cryptomobile (unfree) and pysctp are dropped.
+      devShells.${system}.default = pkgs.mkShell {
+        # pkgs.clang goes before lean, whose release bundles a clang without system headers.
+        packages = [ bend pkgs.clang lean pkgs.cargo pkgs.rustc (pkgs.python3.withPackages (p: [ (p.pycrate.overridePythonAttrs (o: { dependencies = [ p.lxml ]; })) ])) ];
+        BEND_NO_TELEMETRY = "1";
+      };
       checks.${system}.e2e = pkgs.testers.runNixOSTest (import ./e2e/test.nix { inherit kernel edge eupf; });
     };
 }
