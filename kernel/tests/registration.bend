@@ -87,6 +87,9 @@ def synch_failure(+rand: B.Bytes(), +sqn_ms: B.Bytes()) -> B.Bytes():
 def rand_of(nas: B.Bytes()) -> B.Bytes():
   List.take(&2, U32, List.drop(&2, U32, nas, 8n), 16n)
 
+def phase_at(st: S.State, +key: U32) -> String:
+  A.phase_name(Tb.Table.get(S.Ue, key, S.State.ues(st)))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
@@ -134,8 +137,14 @@ def main() -> IO(Unit):
     C.Check.report("UE Context Release Complete from another association: Error Indication, context kept", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_cpl2)), 1n), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.actions(o_cpl2)))), Fr.Pdu.initiating(), 7)))
     +o_cpl : S.Out() = K.Kernel.step(K.Kernel.state(o_rel), A.data(1, release_complete(ran)), A.entropy())
     C.Check.report("UE Context Release Complete from the owner: the context is forgotten", Nat.is_eq(A.ue_count(K.Kernel.state(o_cpl)), 0n))
-    +o_take : S.Out() = K.Kernel.step(st5, A.data(1, initial), A.entropy())
-    C.Check.report("a second registration with the same SUPI: the old context is released, the new one authenticated", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_take)), 1n), Bool.and(Bool.not(Tb.Table.has(S.Ue, 1, S.State.ues(K.Kernel.state(o_take)))), Bool.and(A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.actions(o_take)))), Fr.Pdu.initiating(), 41), U32.is_eq(A.nas_type(A.nas_of(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.actions(o_take)), 1n)))), 86)))))
+    +o_replay2 : S.Out() = K.Kernel.step(st5, A.data_on(2, initial), A.entropy())
+    +st_r : S.State = K.Kernel.state(o_replay2)
+    C.Check.report("a captured SUCI replayed from another gNB: the registered UE stays, the newcomer is only challenged", Bool.and(String.eq(phase_at(st_r, 1), "registered"), Bool.and(Nat.is_eq(A.ue_count(st_r), 2n), Bool.and(Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.actions(o_replay2))), 1n), U32.is_eq(A.nas_type(A.nas_of(A.first_bytes(A.sends(K.Kernel.actions(o_replay2))))), 86)))))
+    +o_fail2 : S.Out() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, flip_last(auth_resp))), A.entropy())
+    C.Check.report("the newcomer fails 5G-AKA: the registered UE is untouched", Bool.and(String.eq(phase_at(K.Kernel.state(o_fail2), 1), "registered"), String.eq(phase_at(K.Kernel.state(o_fail2), 2), "releasing")))
+    +o_take : S.Out() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, auth_resp)), A.entropy())
+    +st_t : S.State = K.Kernel.state(o_take)
+    C.Check.report("the newcomer passes 5G-AKA: only then is the old context released", Bool.and(Nat.is_eq(A.ue_count(st_t), 1n), Bool.and(String.eq(phase_at(st_t, 2), "security_mode"), Bool.and(A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.actions(o_take)))), Fr.Pdu.initiating(), 41), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.actions(o_take)), 1n))), Fr.Pdu.initiating(), 4)))))
     +o_dereg : S.Out() = K.Kernel.step(st5, A.data(1, A.uplink(ran, uli, A.ue_protect(2, deregistration(1)))), A.entropy())
     C.Check.report("Deregistration Request: Deregistration Accept, then Release Command", Bool.and(A.phase_is(K.Kernel.state(o_dereg), "releasing"), Bool.and(B.bytes_eq(List.drop(&2, U32, A.nas_of(A.first_bytes(A.sends(K.Kernel.actions(o_dereg)))), 7n), [126, 0, 70]), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.actions(o_dereg)), 1n))), Fr.Pdu.initiating(), 41))))
     +o_off : S.Out() = K.Kernel.step(st5, A.data(1, A.uplink(ran, uli, A.ue_protect(2, deregistration(9)))), A.entropy())

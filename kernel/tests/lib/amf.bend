@@ -191,9 +191,12 @@ def uli_bits(m: Maybe<&2, G.UserLocationInformation>) -> Ap.Bits():
     case Some{uli}:
       G.UserLocationInformation.write(uli, 0n, [])
 
-# An UplinkNASTransport with our AMF id, the captured RAN id and location, and a NAS message.
+# An UplinkNASTransport with an AMF id, the captured RAN id and location, and a NAS message.
+def uplink_as(amf: B.Bytes(), ran: B.Bytes(), uli: Maybe<&2, G.UserLocationInformation>, nas: B.Bytes()) -> B.Bytes():
+  N.Ngap.pdu(Fr.Pdu.initiating(), 46, Fr.Criticality.ignore(), [N.Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(amf, 0n, [])), N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(38, Fr.Criticality.reject(), G.NAS_PDU.write(nas, 0n, [])), N.Ngap.ie(121, Fr.Criticality.ignore(), uli_bits(uli))])
+
 def uplink(ran: B.Bytes(), uli: Maybe<&2, G.UserLocationInformation>, nas: B.Bytes()) -> B.Bytes():
-  N.Ngap.pdu(Fr.Pdu.initiating(), 46, Fr.Criticality.ignore(), [N.Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(38, Fr.Criticality.reject(), G.NAS_PDU.write(nas, 0n, [])), N.Ngap.ie(121, Fr.Criticality.ignore(), uli_bits(uli))])
+  uplink_as([1], ran, uli, nas)
 
 def data(stream: U32, +bytes: B.Bytes()) -> F.Evt:
   F.NgapData{1, stream, U32.from_nat(List.length(&2, U32, bytes)), bytes}
@@ -215,7 +218,7 @@ def phase_of(p: S.Phase) -> String:
   match p:
     case S.Identifying{g}:
       "identifying"
-    case S.Authenticating{g, av, r}:
+    case S.Authenticating{g, av, r, s}:
       "authenticating"
     case S.SecurityMode{g, ctx, kamf}:
       "security_mode"

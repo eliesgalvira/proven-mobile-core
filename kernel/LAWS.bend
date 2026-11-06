@@ -1126,8 +1126,9 @@ law amf.auth.guarded:
 # ---------------
 # Security mode, acceptance and release.
 
-# GHSA-mg8r-2cvv-xq9j: a UE Context Release Request or Complete naming a UE that
-# another association owns changes no state.
+# GHSA-mg8r-2cvv-xq9j: a UE Context Release Request or Complete, an Initial
+# Context Setup Response, a PDU Session Resource Setup Response or an Uplink NAS
+# Transport naming a UE that another association owns changes no state.
 law amf.ue_context_release.owner_only:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1146,12 +1147,19 @@ law amf.ue_context_release.owner_only:
   for +uli: Maybe<&2, G.UserLocationInformation>
   for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
   for +diag: Maybe<&2, G.CriticalityDiagnostics>
+  for +oks: Maybe<&2, G.PDUSessionResourceSetupListSURes()>
+  for +fails: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>
+  for +nas: B.Bytes()
+  for +loc: G.UserLocationInformation
   for +ue: St.Ue
   for +eu: {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
   for +ea: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 42, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseRequest.view(ies) == Done{GV.UEContextReleaseRequest.View{amf, ran, pdus, cause}} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 14, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.InitialContextSetupResponse.view(ies) == Done{GV.InitialContextSetupResponse.View{amf, ran, diag}} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, fails, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, loc}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
 
 # GHSA-88pq-hpwv-2vjw: after the owner's UE Context Release Complete, no UE
 # context and no session carries the UE's AMF-UE-NGAP-ID. Timers live in the

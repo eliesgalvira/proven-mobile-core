@@ -136,10 +136,12 @@ def Guard.retries(g: Guard) -> U32:
 # Where a UE is in registration. Every phase before Registered carries the
 # guard timer that bounds it (T3570 identifying, T3560 authenticating and in
 # security mode, T3550 setting up the context), so a context is never left
-# waiting without one; Releasing waits for the gNB's Release Complete.
+# waiting without one; Releasing waits for the gNB's Release Complete. The SUPI
+# a SUCI de-conceals to stays in Authenticating, out of the SUPI index, until
+# 5G-AKA verifies it.
 type Phase is Data:
   Identifying{guard: Guard}
-  Authenticating{guard: Guard, av: Au.Av, resynced: Bool}
+  Authenticating{guard: Guard, av: Au.Av, resynced: Bool, supi: B.Digits()}
   SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, response: Bool, complete: Bool}
   Registered{ctx: N.Nas.Ctx}
@@ -149,7 +151,7 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
   match p:
     case Identifying{guard}:
       Some{guard}
-    case Authenticating{guard, av, resynced}:
+    case Authenticating{guard, av, resynced, supi}:
       Some{guard}
     case SecurityMode{guard, ctx, k_amf}:
       Some{guard}
@@ -164,8 +166,8 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
   match p:
     case Identifying{guard}:
       Identifying{g}
-    case Authenticating{guard, av, resynced}:
-      Authenticating{g, av, resynced}
+    case Authenticating{guard, av, resynced, supi}:
+      Authenticating{g, av, resynced, supi}
     case SecurityMode{guard, ctx, k_amf}:
       SecurityMode{g, ctx, k_amf}
     case ContextSetup{guard, ctx, response, complete}:
@@ -199,7 +201,8 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
       other
 
 # A UE context: the NGAP association that owns it, its RAN-UE-NGAP-ID there,
-# the stream its InitialUEMessage arrived on, its SUPI and 5G-TMSI once given,
+# the stream its InitialUEMessage arrived on, its SUPI once authenticated and
+# its 5G-TMSI once given,
 # the plain Registration Request, the ngKSI in use, its phase and the last
 # downlink NAS message (retransmitted when the guard fires).
 type Ue is Data:
@@ -593,6 +596,26 @@ def Ues.clear(+key: U32, +u: Ue, ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (k, v) <> more:
       Bool.and(Bool.not(Row.conflicts(key, u, k, v)), Ues.clear(key, u, more))
+
+# Some context holds 5G-TMSI t.
+def Ues.has_tmsi(+t: U32, ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      False{}
+    case (key, u) <> more:
+      Bool.or(Maybe.same_u32(Some{t}, Ue.tmsi(u)), Ues.has_tmsi(t, more))
+
+# Some context with this SUPI holds a NAS security context, which exists only
+# once 5G-AKA has verified the SUPI.
+def Ue.secures(+u: Ue, s: Maybe<&2, B.Digits()>) -> Bool:
+  Bool.and(Maybe.same_bytes(Ue.supi(u), s), Tb.Table.present(N.Nas.Ctx, Phase.ctx(Ue.phase(u))))
+
+def Ues.secured(+s: Maybe<&2, B.Digits()>, ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      False{}
+    case (key, u) <> more:
+      Bool.or(Ue.secures(u, s), Ues.secured(s, more))
 
 # No two rows share a key or an index.
 def Ues.unique(ues: Tb.Table(Ue)) -> Bool:

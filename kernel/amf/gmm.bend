@@ -99,12 +99,13 @@ def Gmm.evict(victims: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session), +seq: U32
       (S.Keep{}, [])
     case (+key, +v) <> more:
       +gone = S.Sessions.of_ue(key, sessions)
-      +n = Up.N4.deletion_count(gone)
-      N.Out.join((S.Both{S.Del{key}, S.BumpSeq{n}}, N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), N.Ngap.nas_cause(G.CauseNas.deregister())} <> Up.N4.deletions(gone, seq)), Gmm.evict(more, sessions, U32.add(seq, n)))
+      N.Out.join(N.Out.prepend(N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), N.Ngap.nas_cause(G.CauseNas.deregister())}, Gsm.Gsm.forget(gone, seq)), Gmm.evict(more, sessions, U32.add(seq, Up.N4.deletion_count(gone))))
 
 # The one write of a context's identity: it takes its place, and every live
 # context it conflicts with (the same SUPI, 5G-TMSI or RAN id on the
-# association) is released, sessions included, first.
+# association) is released and its sessions deleted. A SUPI enters a context
+# only once 5G-AKA has verified it (Gmm.secure) and a 5G-TMSI is drawn free
+# (Gmm.tmsi), so another gNB's UE is taken over only after authentication.
 def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
   N.Out.join((S.Put{key, ue}, []), Gmm.evict(S.Ues.evicted(key, ue, S.State.ues(st)), S.State.sessions(st), S.State.pfcp_seq(st)))
 
@@ -150,7 +151,7 @@ def Gmm.challenge(+st: S.State, +key: U32, +ue: S.Ue, +sub: Au.Subscriber, snn: 
   +sub2 = Au.Subscriber.with_sqn(sub, Au.Sqn.next(Au.Subscriber.sqn(sub)))
   +av = Au.Av.make(sub2, snn, List.take(&2, U32, entropy, 16n))
   +nas = Gmm.auth_request(0, av)
-  +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, Au.Subscriber.supi(sub2)), S.Authenticating{S.Guard{timer, 0}, av, resynced}, nas)
+  +ue2 = S.Ue.with_dl(ue, S.Authenticating{S.Guard{timer, 0}, av, resynced, Au.Subscriber.supi(sub2)}, nas)
   N.Out.join(Gmm.place(st, key, ue2), (S.Both{S.Subs{Au.Subscribers.update(sub2, S.State.subs(st))}, S.BumpTimer{}}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.dl(key, ue2, nas), N.TimerStart{timer, Gmm.guard_ms()}])))
 
 def Gmm.by_sub(+st: S.State, key: U32, +ue: S.Ue, cfg: S.Cfg, m: Maybe<&2, Au.Subscriber>, entropy: B.Bytes()) -> N.GOut():
@@ -261,46 +262,47 @@ def Alg.pick_ia(prefs: B.Bytes(), +byte: U32) -> Maybe<&2, Sec.Nas.Ia>:
     case +id <> more:
       Alg.ia_or(Sec.Nas.Ia.of(id), Alg.supported(byte, id), Alg.pick_ia(more, byte))
 
-# Security Mode Command, integrity protected with the new context, replacing the guard.
-def Gmm.secure(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ea: Sec.Nas.Ea, +ia: Sec.Nas.Ia, caps: B.Bytes()) -> N.GOut():
+# Security Mode Command, integrity protected with the new context, replacing
+# the guard; the verified SUPI takes its place in the index.
+def Gmm.secure(+st: S.State, +key: U32, +ue: S.Ue, supi: B.Digits(), +k_amf: B.Bytes(), +ea: Sec.Nas.Ea, +ia: Sec.Nas.Ia, caps: B.Bytes()) -> N.GOut():
   +timer = S.State.next_timer(st)
   +ctx : Sec.Nas.Ctx = Sec.Ctx{Sec.Keys{Kd.kdf.k_nas_int(k_amf, Sec.Nas.Ia.id(ia)), Kd.kdf.k_nas_enc(k_amf, Sec.Nas.Ea.id(ea)), ea, ia, 1}, Sec.Nas.Count.zero(), None{}}
   +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.IntegrityNew{}, Gmm.security_mode_command(U32.or(U32.shln(Sec.Nas.Ea.id(ea), 4n), Sec.Nas.Ia.id(ia)), S.Ue.ngksi(ue), caps))
-  +ue2 = S.Ue.with_dl(ue, S.SecurityMode{S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p))
+  +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, supi), S.SecurityMode{S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p))
   N.Out.join(Gmm.place(st, key, ue2), (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.dl(key, ue2, Sec.Nas.Protected.msg(p)), N.TimerStart{timer, Gmm.guard_ms()}])))
 
 # No algorithm in common is a UE security capabilities mismatch (cause #23).
-def Gmm.algorithms(st: S.State, key: U32, ue: S.Ue, k_amf: B.Bytes(), caps: B.Bytes(), mea: Maybe<&2, Sec.Nas.Ea>, mia: Maybe<&2, Sec.Nas.Ia>) -> N.GOut():
+def Gmm.algorithms(st: S.State, key: U32, ue: S.Ue, supi: B.Digits(), k_amf: B.Bytes(), caps: B.Bytes(), mea: Maybe<&2, Sec.Nas.Ea>, mia: Maybe<&2, Sec.Nas.Ia>) -> N.GOut():
   match mea mia:
     case Some{ea} Some{ia}:
-      Gmm.secure(st, key, ue, k_amf, ea, ia, caps)
+      Gmm.secure(st, key, ue, supi, k_amf, ea, ia, caps)
     case _ _:
       Gmm.reject(st, key, ue, 23)
 
 # Authentication
 # --------------
 
-def Gmm.keys(st: S.State, key: U32, +ue: S.Ue, av: Au.Av, cfg: Maybe<&2, S.Cfg>, supi: Maybe<&2, B.Digits()>) -> N.GOut():
-  match cfg supi:
-    case Some{+c} Some{s}:
+def Gmm.keys(st: S.State, key: U32, +ue: S.Ue, av: Au.Av, +supi: B.Digits(), cfg: Maybe<&2, S.Cfg>) -> N.GOut():
+  match cfg:
+    case Some{+c}:
       +caps = Gmm.caps(ue)
-      Gmm.algorithms(st, key, ue, Au.Ausf.k_amf(av, Au.Ausf.snn(S.Cfg.plmn(c)), s), caps, Alg.pick_ea(S.Cfg.nea(c), N.Ngap.cap_byte(caps, 0n)), Alg.pick_ia(S.Cfg.nia(c), N.Ngap.cap_byte(caps, 1n)))
-    case _ _:
+      Gmm.algorithms(st, key, ue, supi, Au.Ausf.k_amf(av, Au.Ausf.snn(S.Cfg.plmn(c)), supi), caps, Alg.pick_ea(S.Cfg.nea(c), N.Ngap.cap_byte(caps, 0n)), Alg.pick_ia(S.Cfg.nia(c), N.Ngap.cap_byte(caps, 1n)))
+    case None{}:
       Gmm.auth_reject(st, key, ue)
 
-def Gmm.verified(+st: S.State, key: U32, +ue: S.Ue, av: Au.Av, ok: Bool) -> N.GOut():
+def Gmm.verified(+st: S.State, key: U32, +ue: S.Ue, av: Au.Av, supi: B.Digits(), ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      Gmm.keys(st, key, ue, av, S.State.config(st), S.Ue.supi(ue))
+      Gmm.keys(st, key, ue, av, supi, S.State.config(st))
     case False{}:
       Gmm.auth_reject(st, key, ue)
 
-def Gmm.response(st: S.State, key: U32, ue: S.Ue, +av: Au.Av, res: Maybe<&2, B.Bytes()>) -> N.GOut():
+def Gmm.response(st: S.State, key: U32, ue: S.Ue, +av: Au.Av, supi: B.Digits(), res: Maybe<&2, B.Bytes()>) -> N.GOut():
   match res:
     case None{}:
       Gmm.auth_reject(st, key, ue)
     case Some{r}:
-      Gmm.verified(st, key, ue, av, Au.Ausf.verify(av, r))
+      Gmm.verified(st, key, ue, av, supi, Au.Ausf.verify(av, r))
 
 def Gmm.resynced(st: S.State, key: U32, ue: S.Ue, sub: Au.Subscriber, cfg: S.Cfg, entropy: B.Bytes(), m: Maybe<&2, B.Bytes()>) -> N.GOut():
   match m:
@@ -316,23 +318,23 @@ def Gmm.resync_sub(st: S.State, key: U32, ue: S.Ue, av: Au.Av, auts: B.Bytes(), 
     case Some{+sub}:
       Gmm.resynced(st, key, ue, sub, cfg, entropy, Au.Ausf.resync(sub, Au.Av.rand(av), auts))
 
-def Gmm.resync(+st: S.State, key: U32, ue: S.Ue, av: Au.Av, auts: B.Bytes(), entropy: B.Bytes(), cfg: Maybe<&2, S.Cfg>, supi: Maybe<&2, B.Digits()>) -> N.GOut():
-  match cfg supi:
-    case Some{+c} Some{s}:
-      Gmm.resync_sub(st, key, ue, av, auts, entropy, c, Au.Subscribers.find(s, S.State.subs(st)))
-    case _ _:
+def Gmm.resync(+st: S.State, key: U32, ue: S.Ue, av: Au.Av, auts: B.Bytes(), entropy: B.Bytes(), supi: B.Digits(), cfg: Maybe<&2, S.Cfg>) -> N.GOut():
+  match cfg:
+    case Some{+c}:
+      Gmm.resync_sub(st, key, ue, av, auts, entropy, c, Au.Subscribers.find(supi, S.State.subs(st)))
+    case None{}:
       Gmm.auth_reject(st, key, ue)
 
 # Synch failure with an AUTS re-synchronises once; anything else rejects.
-def Gmm.failure_kind(+st: S.State, key: U32, +ue: S.Ue, av: Au.Av, auts: Maybe<&2, B.Bytes()>, entropy: B.Bytes(), retry: Bool) -> N.GOut():
+def Gmm.failure_kind(+st: S.State, key: U32, +ue: S.Ue, av: Au.Av, supi: B.Digits(), auts: Maybe<&2, B.Bytes()>, entropy: B.Bytes(), retry: Bool) -> N.GOut():
   match auts retry:
     case Some{a} True{}:
-      Gmm.resync(st, key, ue, av, a, entropy, S.State.config(st), S.Ue.supi(ue))
+      Gmm.resync(st, key, ue, av, a, entropy, supi, S.State.config(st))
     case _ _:
       Gmm.auth_reject(st, key, ue)
 
-def Gmm.failure(st: S.State, key: U32, ue: S.Ue, av: Au.Av, resynced: Bool, cause: U32, auts: Maybe<&2, B.Bytes()>, entropy: B.Bytes()) -> N.GOut():
-  Gmm.failure_kind(st, key, ue, av, auts, entropy, Bool.and(U32.is_eq(cause, 21), Bool.not(resynced)))
+def Gmm.failure(st: S.State, key: U32, ue: S.Ue, av: Au.Av, resynced: Bool, supi: B.Digits(), cause: U32, auts: Maybe<&2, B.Bytes()>, entropy: B.Bytes()) -> N.GOut():
+  Gmm.failure_kind(st, key, ue, av, supi, auts, entropy, Bool.and(U32.is_eq(cause, 21), Bool.not(resynced)))
 
 def Gmm.identity_answer(st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), r: Mi.MobileId.Res()) -> N.GOut():
   match r:
@@ -346,10 +348,10 @@ def Gmm.identity_answer(st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), r: 
 # A plain 5GMM message from a UE without a security context, read against its phase.
 def Gmm.phase(st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), mt: Mm.Mm.Type, fields: List<&2, I.Field>, opts: List<&2, I.Ie>, p: S.Phase) -> N.GOut():
   match mt p:
-    case Mm.AuthenticationResponse{} S.Authenticating{guard, av, resynced}:
-      Gmm.response(st, key, ue, av, I.Opts.find(45, opts))
-    case Mm.AuthenticationFailure{} S.Authenticating{guard, av, resynced}:
-      Gmm.failure(st, key, ue, av, resynced, I.Fields.byte1(fields), I.Opts.find(48, opts), entropy)
+    case Mm.AuthenticationResponse{} S.Authenticating{guard, av, resynced, supi}:
+      Gmm.response(st, key, ue, av, supi, I.Opts.find(45, opts))
+    case Mm.AuthenticationFailure{} S.Authenticating{guard, av, resynced, supi}:
+      Gmm.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(48, opts), entropy)
     case Mm.IdentityResponse{} S.Identifying{guard}:
       Gmm.identity_answer(st, key, ue, entropy, Mi.MobileId.read(I.Fields.lve1(fields)))
     case _ _:
@@ -365,21 +367,29 @@ def Gmm.plain(st: S.State, key: U32, +ue: S.Ue, entropy: B.Bytes(), r: Result<&2
 # Completing registration
 # -----------------------
 
+# The 5G-TMSI: the first word of entropy that no context holds, since a
+# 5G-GUTI names one UE (TS 23.003 §2.10); a collision never evicts.
+def Gmm.tmsi(+ues: Tb.Table(S.Ue), words: B.Bytes()) -> Maybe<&2, U32>:
+  match words:
+    case a <> b <> c <> d <> more:
+      +t = N.Ngap.of_big([a, b, c, d])
+      Tb.Table.hit(U32, t, Gmm.tmsi(ues, more), Bool.not(S.Ues.has_tmsi(t, ues)))
+    case _:
+      None{}
+
 # Security Mode Complete: the Registration Request in its NAS message container
-# replaces the initial one; the 5G-TMSI comes from entropy; KgNB from the
-# uplink COUNT of this message; Initial Context Setup carries Registration
-# Accept, ciphered, and T3550 guards it.
-def Gmm.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, guard: S.Guard, k_amf: B.Bytes(), ctx: Sec.Nas.Ctx, count: Sec.Nas.Count, opts: List<&2, I.Ie>, entropy: B.Bytes(), cfg: Maybe<&2, S.Cfg>) -> N.GOut():
-  match cfg:
-    case None{}:
-      Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
-    case Some{+c}:
+# replaces the initial one; KgNB comes from the uplink COUNT of this message;
+# Initial Context Setup carries Registration Accept, ciphered, and T3550 guards it.
+def Gmm.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, guard: S.Guard, k_amf: B.Bytes(), ctx: Sec.Nas.Ctx, count: Sec.Nas.Count, opts: List<&2, I.Ie>, cfg: Maybe<&2, S.Cfg>, m: Maybe<&2, U32>) -> N.GOut():
+  match cfg m:
+    case Some{+c} Some{+tmsi}:
       +timer = S.State.next_timer(st)
-      +tmsi = N.Ngap.of_big(List.take(&2, U32, List.drop(&2, U32, entropy, 16n), 4n))
       +reg = I.Bytes.or(I.Opts.find(113, opts), S.Ue.reg(ue))
       +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.registration_accept(c, tmsi))
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, S.ContextSetup{S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), False{}, False{}}, Sec.Nas.Protected.msg(p)), reg), tmsi)
       N.Out.join(Gmm.place(st, key, ue2), (S.BumpTimer{}, [N.TimerCancel{S.Guard.timer(guard)}, N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.caps(ue2), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(p)}, N.TimerStart{timer, Gmm.guard_ms()}]))
+    case _ _:
+      Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
 
 # Registered once both Initial Context Setup Response and Registration Complete are in.
 def Gmm.setup_done(st: S.State, +key: U32, +ue: S.Ue, guard: S.Guard, ctx: Sec.Nas.Ctx, response: Bool, complete: Bool, both: Bool) -> N.GOut():
@@ -407,7 +417,7 @@ def Gmm.deregister(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, kind: U32)
 def Gmm.sphase(+st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), count: Sec.Nas.Count, ctx: Sec.Nas.Ctx, mt: Mm.Mm.Type, fields: List<&2, I.Field>, opts: List<&2, I.Ie>, p: S.Phase) -> N.GOut():
   match mt p:
     case Mm.SecurityModeComplete{} S.SecurityMode{guard, old, k_amf}:
-      Gmm.sm_complete(st, key, ue, guard, k_amf, ctx, count, opts, entropy, S.State.config(st))
+      Gmm.sm_complete(st, key, ue, guard, k_amf, ctx, count, opts, S.State.config(st), Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n)))
     case Mm.SecurityModeReject{} S.SecurityMode{guard, old, k_amf}:
       Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
     case Mm.RegistrationComplete{} S.ContextSetup{guard, old, response, complete}:
@@ -556,7 +566,7 @@ def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
   match p:
     case S.Identifying{+guard}:
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
-    case S.Authenticating{+guard, av, resynced}:
+    case S.Authenticating{+guard, av, resynced, supi}:
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
     case S.SecurityMode{+guard, ctx, k_amf}:
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
