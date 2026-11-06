@@ -1237,6 +1237,30 @@ law amf.registration.completes_or_releases:
   for +entropy: B.Bytes()
   {St.Ues.guarded(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
 
+# amf (ticket 32)
+# ---------------
+# Identity takeover after authentication.
+
+# GHSA-mg8r-2cvv-xq9j: an NGAP message from one association removes no UE
+# context that another association owns unless, in the resulting state, a
+# context with its SUPI holds a NAS security context, which exists only once
+# 5G-AKA has verified that SUPI. It holds in every state whose indexes are
+# unique, which is every state step reaches (amf.indexes.unique).
+law amf.takeover.authenticated:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +k: U32
+  for +u: St.Ue
+  for +e: {St.Ues.unique(St.State.ues(st)) == True{} : Bool}
+  for +eu: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{u} : Maybe<&2, St.Ue>}
+  for +ea: {U32.is_eq(St.Ue.assoc(u), assoc) == False{} : Bool}
+  for +eg: {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Ue>}
+  {St.Ues.secured(St.Ue.supi(u), St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool}
+
 # smf (ticket 19)
 # ---------------
 # PDU session establishment.
