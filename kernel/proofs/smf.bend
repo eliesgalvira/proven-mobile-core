@@ -11,6 +11,7 @@ import ../nas/sm_ies.bend as Q
 import ../nas/security.bend as Sec
 import ../tlv.bend as T
 import ../pfcp.bend as Pf
+import ../plmn.bend as Pl
 import ../frame.bend as F
 import ../table.bend as Tb
 import ../state.bend as S
@@ -290,6 +291,29 @@ def L.smf.epco.response_bounded(cfg, wanted):
   match wanted:
     case True{}:
       {==}
+    case False{}:
+      {==}
+
+# A DNS server of four octets makes a valid container.
+def Epco.dns(dns: B.Bytes(), e: {F.Len.is(dns, 4n) == True{} : Bool}) -> {Q.Epco.valid(Q.Epco{[Q.Container{13, I.LenBody{U32.from_nat(List.length(&2, U32, dns)), dns}}]}) == True{} : Bool}:
+  match dns:
+    case Nil{}:
+      Empty.absurd({Q.Epco.valid(Q.Epco{[Q.Container{13, I.LenBody{0, []}}]}) == True{} : Bool}, P.Refute.bool(e))
+    case a <> Nil{}:
+      Empty.absurd({Q.Epco.valid(Q.Epco{[Q.Container{13, I.LenBody{1, [a]}}]}) == True{} : Bool}, P.Refute.bool(e))
+    case a <> b <> Nil{}:
+      Empty.absurd({Q.Epco.valid(Q.Epco{[Q.Container{13, I.LenBody{2, [a, b]}}]}) == True{} : Bool}, P.Refute.bool(e))
+    case a <> b <> c <> Nil{}:
+      Empty.absurd({Q.Epco.valid(Q.Epco{[Q.Container{13, I.LenBody{3, [a, b, c]}}]}) == True{} : Bool}, P.Refute.bool(e))
+    case a <> b <> c <> d <> Nil{}:
+      {==}
+    case a <> b <> c <> d <> x <> t:
+      Empty.absurd({Q.Epco.valid(Q.Epco{[Q.Container{13, I.LenBody{U32.from_nat(List.length(&2, U32, a <> b <> c <> d <> x <> t)), a <> b <> c <> d <> x <> t}}]}) == True{} : Bool}, P.Refute.bool(e))
+
+def L.smf.epco.accept_valid(cfg, wanted, e):
+  match wanted:
+    case True{}:
+      Epco.dns(S.Cfg.dns(cfg), P.Bool.and_true_r(F.Result.ok(B.ReadValue(Pl.Plmn), Pl.Plmn.read(S.Cfg.plmn(cfg))), F.Len.is(S.Cfg.dns(cfg), 4n), P.Bool.and_true_r(F.Len.is(S.Cfg.plmn(cfg), 3n), Bool.and(F.Result.ok(B.ReadValue(Pl.Plmn), Pl.Plmn.read(S.Cfg.plmn(cfg))), F.Len.is(S.Cfg.dns(cfg), 4n)), e)))
     case False{}:
       {==}
 

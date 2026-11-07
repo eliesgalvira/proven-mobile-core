@@ -32,7 +32,7 @@ def Kernel.frames(o: N.Step()) -> List<&2, F.Action>:
 def Kernel.config(complete: Bool, st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes()) -> N.Step():
   match complete:
     case False{}:
-      (st, [N.Note{F.Error{}, "Config: a required tag is missing; configuration unchanged"}])
+      (st, [N.Note{F.Error{}, "Config: a required tag is missing or invalid; configuration unchanged"}])
     case True{}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:

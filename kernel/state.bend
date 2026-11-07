@@ -3,6 +3,7 @@ import ./bytes.bend as B
 import ./tlv.bend as T
 import ./frame.bend as F
 import ./table.bend as Tb
+import ./plmn.bend as P
 import ./ausf.bend as Au
 import ./nas/security.bend as N
 
@@ -26,10 +27,6 @@ def Cfg.given(+tag: U32, tl: List<&2, T.Tlv>) -> Bool:
 
 def Cfg.tag(+tag: U32, tl: List<&2, T.Tlv>) -> B.Bytes():
   Cfg.need(F.Config.get(tag, tl))
-
-# Every tag the milestone needs is given (0x0001 to 0x0012); subscribers may be absent.
-def Cfg.complete(+tl: List<&2, T.Tlv>) -> Bool:
-  Bool.and(Cfg.given(1, tl), Bool.and(Cfg.given(2, tl), Bool.and(Cfg.given(3, tl), Bool.and(Cfg.given(4, tl), Bool.and(Cfg.given(5, tl), Bool.and(Cfg.given(6, tl), Bool.and(Cfg.given(7, tl), Bool.and(Cfg.given(8, tl), Bool.and(Cfg.given(9, tl), Bool.and(Cfg.given(10, tl), Bool.and(Cfg.given(11, tl), Bool.and(Cfg.given(12, tl), Bool.and(Cfg.given(13, tl), Bool.and(Cfg.given(14, tl), Bool.and(Cfg.given(15, tl), Bool.and(Cfg.given(16, tl), Bool.and(Cfg.given(17, tl), Cfg.given(18, tl))))))))))))))))))
 
 def Cfg.of(+tl: List<&2, T.Tlv>) -> Cfg:
   Cfg{Cfg.tag(1, tl), Cfg.tag(2, tl), Cfg.tag(3, tl), Cfg.tag(4, tl), Cfg.tag(5, tl), Cfg.tag(6, tl), Cfg.tag(7, tl), Cfg.tag(8, tl), Cfg.tag(9, tl), Cfg.tag(10, tl), Cfg.tag(11, tl), Cfg.tag(12, tl), Cfg.tag(13, tl), Cfg.tag(14, tl), Cfg.tag(15, tl), Cfg.tag(16, tl), Cfg.tag(17, tl), Cfg.tag(18, tl), F.Config.subscribers(tl)}
@@ -118,6 +115,20 @@ def Cfg.smf_n4(c: Cfg) -> B.Bytes():
   match c:
     case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
       smf_n4
+
+# What the kernel relies on beyond the tags being given: a PLMN of three
+# octets that decodes, which the serving network name is built from, and a DNS
+# server of four octets, which the Accept's ePCO carries.
+def Cfg.valid(+c: Cfg) -> Bool:
+  Bool.and(F.Len.is(Cfg.plmn(c), 3n), Bool.and(F.Result.ok(B.ReadValue(P.Plmn), P.Plmn.read(Cfg.plmn(c))), F.Len.is(Cfg.dns(c), 4n)))
+
+# Every tag the milestone needs is given (0x0001 to 0x0012); subscribers may be absent.
+def Cfg.given_all(+tl: List<&2, T.Tlv>) -> Bool:
+  Bool.and(Cfg.given(1, tl), Bool.and(Cfg.given(2, tl), Bool.and(Cfg.given(3, tl), Bool.and(Cfg.given(4, tl), Bool.and(Cfg.given(5, tl), Bool.and(Cfg.given(6, tl), Bool.and(Cfg.given(7, tl), Bool.and(Cfg.given(8, tl), Bool.and(Cfg.given(9, tl), Bool.and(Cfg.given(10, tl), Bool.and(Cfg.given(11, tl), Bool.and(Cfg.given(12, tl), Bool.and(Cfg.given(13, tl), Bool.and(Cfg.given(14, tl), Bool.and(Cfg.given(15, tl), Bool.and(Cfg.given(16, tl), Bool.and(Cfg.given(17, tl), Cfg.given(18, tl))))))))))))))))))
+
+# A configuration the kernel takes: every tag given, and valid.
+def Cfg.complete(+tl: List<&2, T.Tlv>) -> Bool:
+  Bool.and(Cfg.given_all(tl), Cfg.valid(Cfg.of(tl)))
 
 # A guard timer the edge runs for a UE: its id and how often it has fired.
 type Guard is Data:

@@ -186,11 +186,13 @@ law kdf.length:
   & ({List.length(&2, U32, K.kdf.k_nas_int(k_amf, alg)) == 16n : Nat}
   & {List.length(&2, U32, K.kdf.k_gnb(k_amf, count)) == 32n : Nat})))))))
 
-# Advisory GHSA-f9c2-535p-3mwc: the serving network name is never empty.
+# Advisory GHSA-f9c2-535p-3mwc: the serving network name the AUSF derives keys
+# with, built from the configured PLMN, is never empty: every configuration the
+# kernel holds is valid (kernel.config.valid).
 law kdf.snn.nonempty:
-  for mcc: B.Digits()
-  for mnc: B.Digits()
-  {List.is_empty(&2, U32, K.kdf.serving_network_name(mcc, mnc)) == False{} : Bool}
+  for +cfg: St.Cfg
+  for +e: {St.Cfg.valid(cfg) == True{} : Bool}
+  {List.is_empty(&2, U32, Au.Ausf.snn(St.Cfg.plmn(cfg))) == False{} : Bool}
 
 # PLMN identity (ticket 08)
 # -------------------------
@@ -1069,6 +1071,18 @@ law amf.ng_setup.requires_supported_plmn:
   for +e: {Ng.Ngap.any_ng_setup_response(Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool}
   {Ng.NgSetup.supported_request(St.State.config(st), bytes) == True{} : Bool}
 
+# The kernel holds no configuration but a valid one (St.Cfg.valid), in the
+# initial state and after every step: Config takes effect only when complete,
+# and nothing else changes the configuration.
+law kernel.config.valid:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +cfg: St.Cfg
+  for e: @c: St.Cfg -> {St.State.config(st) == Some{c} : Maybe<&2, St.Cfg>} -> {St.Cfg.valid(c) == True{} : Bool}
+  for +ec: {St.State.config(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))) == Some{cfg} : Maybe<&2, St.Cfg>}
+  {St.State.config(St.State.initial()) == None{} : Maybe<&2, St.Cfg>} & {St.Cfg.valid(cfg) == True{} : Bool}
+
 # After an association goes down, no UE context is owned by it.
 law amf.assoc_down.releases_all:
   for +st: St.State
@@ -1448,6 +1462,16 @@ law smf.epco.response_bounded:
   for +cfg: St.Cfg
   for +wanted: Bool
   {Gs.Gsm.ids_unique(Gs.Gsm.epco_containers(cfg, wanted)) == True{} : Bool}
+
+# GHSA-796x-8w26-2xfp: the ePCO of an Accept is valid (each container's length
+# byte is its content's length; at most 255 containers in at most 65534 octets)
+# for every configuration the kernel holds (kernel.config.valid), so
+# nas.epco.encode_bounded covers it.
+law smf.epco.accept_valid:
+  for +cfg: St.Cfg
+  for +wanted: Bool
+  for +e: {St.Cfg.valid(cfg) == True{} : Bool}
+  {Q.Epco.valid(Q.Epco{Gs.Gsm.epco_containers(cfg, wanted)}) == True{} : Bool}
 
 # No two live sessions share a UE IPv4 address or an uplink TEID (nor a key or
 # a PDU session identity of one UE), in the initial state and after every step.

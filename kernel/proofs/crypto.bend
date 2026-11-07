@@ -328,6 +328,3 @@ def L.kdf.length(key, fc, ps, ck, ik, snn, sqn_xor_ak, rand, res, res_star, k_au
    (Kdf.last16_len(K.kdf(k_amf, 105, [[1], [alg]]), Kdf.len(k_amf, 105, [[1], [alg]])),
    (Kdf.last16_len(K.kdf(k_amf, 105, [[2], [alg]]), Kdf.len(k_amf, 105, [[2], [alg]])),
    Kdf.len(k_amf, 110, [B.write_u32(count, []), [1]])))))))))
-
-def L.kdf.snn.nonempty(mcc, mnc):
-  {==}

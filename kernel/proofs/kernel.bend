@@ -19,6 +19,7 @@ import ../smf/gsm.bend as Gsm
 import ../LAWS.bend as L
 import ./lib.bend as P
 import ../crypto/kdf.bend as Kd
+import ../plmn.bend as Pl
 
 # Proofs of the step function's laws (tickets 16 to 18).
 
@@ -465,3 +466,146 @@ def L.amf.nas.plaintext_after_security(st, entropy, assoc, stream, len, bytes, c
   sef = Equal.sym(Result<&2, &2, B.Err, Sec.Nas.Unprotected>, Sec.Nas.unprotect(ctx, nas), Fail{err}, ef)
   %sef : {K.Kernel.state(N.Step.of(st, Gmm.Gmm.opened(st, N.Ngap.of_big(amf), ue, entropy, _))) == st : S.State}
   {==}
+
+# The configuration
+# -----------------
+# Only Config sets it, and only when complete; every other step keeps it.
+
+def Cfgv.tx(tx: S.Tx, +st: S.State) -> {S.State.config(S.Tx.apply(tx, st)) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match tx:
+    case S.Keep{}:
+      {==}
+    case S.Put{key, ue}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.Rephase{key, phase}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.Del{key}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.PutSession{key, s}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.Revar{key, v}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.DelSession{key}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.Subs{new}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.SetLink{link}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.BumpUe{}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.BumpTimer{}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.BumpSeq{n}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          {==}
+    case S.Both{+first, second}:
+      Equal.trans(Maybe<&2, S.Cfg>, S.State.config(S.Tx.apply(second, S.Tx.apply(first, st))), S.State.config(S.Tx.apply(first, st)), S.State.config(st), Cfgv.tx(second, S.Tx.apply(first, st)), Cfgv.tx(first, st))
+
+def Cfgv.render(+st: S.State, o: N.GOut()) -> {S.State.config(K.Kernel.state(N.Step.of(st, o))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match o:
+    case (tx, acts):
+      Cfgv.tx(tx, st)
+
+def Cfgv.setup(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> {S.State.config(K.Kernel.state(N.NgSetup.of_view(st, assoc, r))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match r:
+    case Fail{err}:
+      {==}
+    case Done{v}:
+      {==}
+
+def Cfgv.d1(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> {S.State.config(K.Kernel.state(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, ok))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match ok:
+    case True{}:
+      Cfgv.setup(st, assoc, V.NGSetupRequest.view(ies))
+    case False{}:
+      Cfgv.render(st, R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n)))
+
+def Cfgv.ies(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, entropy: B.Bytes(), r: Ap.Rd(List<&2, Fr.Ie>)) -> {S.State.config(K.Kernel.state(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match r:
+    case Fail{err}:
+      {==}
+    case Done{(+ies, c)}:
+      Cfgv.d1(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 21n))
+
+def Cfgv.pdu(+st: S.State, +assoc: U32, stream: U32, entropy: B.Bytes(), r: Result<&2, &2, B.Err, Fr.Pdu>) -> {S.State.config(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, r))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match r:
+    case Fail{err}:
+      {==}
+    case Done{Fr.Pdu{kind, code, crit, value}}:
+      Cfgv.ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}))
+
+def Cfgv.up(st: S.State, assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.assoc_up(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+      {==}
+
+def Cfgv.down(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.assoc_down(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+      {==}
+
+# A step that keeps the configuration keeps it valid.
+def Cfgv.kept(+st: S.State, +st2: S.State, eq: {S.State.config(st2) == S.State.config(st) : Maybe<&2, S.Cfg>}, e: @c: S.Cfg -> {S.State.config(st) == Some{c} : Maybe<&2, S.Cfg>} -> {S.Cfg.valid(c) == True{} : Bool}, +cfg: S.Cfg, ec: {S.State.config(st2) == Some{cfg} : Maybe<&2, S.Cfg>}) -> {S.Cfg.valid(cfg) == True{} : Bool}:
+  e(cfg, Equal.trans(Maybe<&2, S.Cfg>, S.State.config(st), S.State.config(st2), Some{cfg}, Equal.sym(Maybe<&2, S.Cfg>, S.State.config(st2), S.State.config(st), eq), ec))
+
+# A complete Config is valid, and it is what the state then holds.
+def Cfgv.config(complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), ek: {S.Cfg.complete(tlvs) == complete : Bool}, e: @c: S.Cfg -> {S.State.config(st) == Some{c} : Maybe<&2, S.Cfg>} -> {S.Cfg.valid(c) == True{} : Bool}, +cfg: S.Cfg, ec: {S.State.config(K.Kernel.state(K.Kernel.config(complete, st, tlvs, entropy))) == Some{cfg} : Maybe<&2, S.Cfg>}) -> {S.Cfg.valid(cfg) == True{} : Bool}:
+  match complete:
+    case False{}:
+      e(cfg, ec)
+    case True{}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+          +st2 : S.State = S.State{Some{S.Cfg.of(tlvs)}, Au.Subscribers.of(S.Cfg.subscribers(S.Cfg.of(tlvs))), assocs, ues, sessions, pfcp_seq, next_ue, next_timer, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
+          +o : N.GOut() = N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}])
+          es = Equal.trans(Maybe<&2, S.Cfg>, Some{S.Cfg.of(tlvs)}, S.State.config(K.Kernel.state(N.Step.of(st2, o))), Some{cfg}, Equal.sym(Maybe<&2, S.Cfg>, S.State.config(K.Kernel.state(N.Step.of(st2, o))), Some{S.Cfg.of(tlvs)}, Cfgv.render(st2, o)), ec)
+          ev = Equal.cong(Maybe<&2, S.Cfg>, S.Cfg, m => P.Maybe.value(S.Cfg, m, cfg), Some{S.Cfg.of(tlvs)}, Some{cfg}, es)
+          %ev : {S.Cfg.valid(_) == True{} : Bool}
+          P.Bool.and_true_r(S.Cfg.given_all(tlvs), S.Cfg.valid(S.Cfg.of(tlvs)), ek)
+
+def L.kernel.config.valid(st, ev, entropy, cfg, e, ec):
+  match ev:
+    case F.Config{len, +tlvs}:
+      ({==}, Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, e, cfg, ec))
+    case F.NgapAssocUp{+assoc}:
+      ({==}, Cfgv.kept(st, K.Kernel.state(K.Kernel.assoc_up(st, assoc)), Cfgv.up(st, assoc), e, cfg, ec))
+    case F.NgapAssocDown{+assoc}:
+      ({==}, Cfgv.kept(st, K.Kernel.state(K.Kernel.assoc_down(st, assoc)), Cfgv.down(st, assoc), e, cfg, ec))
+    case F.NgapData{+assoc, +stream, len, +bytes}:
+      ({==}, Cfgv.kept(st, K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, Fr.Pdu.read(bytes))), Cfgv.pdu(st, assoc, stream, entropy, Fr.Pdu.read(bytes)), e, cfg, ec))
+    case F.PfcpData{len, +bytes}:
+      ({==}, Cfgv.kept(st, K.Kernel.state(N.Step.of(st, Gsm.Gsm.pfcp_data(st, bytes))), Cfgv.render(st, Gsm.Gsm.pfcp_data(st, bytes)), e, cfg, ec))
+    case F.TimerFired{+timer}:
+      ({==}, Cfgv.kept(st, K.Kernel.state(N.Step.of(st, K.Kernel.fired(st, timer))), Cfgv.render(st, K.Kernel.fired(st, timer)), e, cfg, ec))
+
+# GHSA-f9c2-535p-3mwc: a PLMN that decodes names a serving network.
+def Snn.of(r: B.Read(Pl.Plmn), e: {F.Result.ok(B.ReadValue(Pl.Plmn), r) == True{} : Bool}) -> {List.is_empty(&2, U32, Au.Ausf.snn_of(r)) == False{} : Bool}:
+  match r:
+    case Fail{err}:
+      Empty.absurd({List.is_empty(&2, U32, Au.Ausf.snn_of(Fail{err})) == False{} : Bool}, P.Refute.bool(e))
+    case Done{(p, rest)}:
+      {==}
+
+def L.kdf.snn.nonempty(cfg, e):
+  Snn.of(Pl.Plmn.read(S.Cfg.plmn(cfg)), P.Bool.and_true_l(F.Result.ok(B.ReadValue(Pl.Plmn), Pl.Plmn.read(S.Cfg.plmn(cfg))), F.Len.is(S.Cfg.dns(cfg), 4n), P.Bool.and_true_r(F.Len.is(S.Cfg.plmn(cfg), 3n), Bool.and(F.Result.ok(B.ReadValue(Pl.Plmn), Pl.Plmn.read(S.Cfg.plmn(cfg))), F.Len.is(S.Cfg.dns(cfg), 4n)), e)))

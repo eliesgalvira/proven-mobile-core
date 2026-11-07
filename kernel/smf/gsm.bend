@@ -51,7 +51,8 @@ def Gsm.rule_filters(r: Q.Rule) -> Q.RuleFilters:
 def Gsm.epco_containers(cfg: S.Cfg, wanted: Bool) -> List<&2, Q.Container>:
   match wanted:
     case True{}:
-      [Q.Container{13, I.LenBody{4, S.Cfg.dns(cfg)}}]
+      +dns = S.Cfg.dns(cfg)
+      [Q.Container{13, I.LenBody{U32.from_nat(List.length(&2, U32, dns)), dns}}]
     case False{}:
       []
 
