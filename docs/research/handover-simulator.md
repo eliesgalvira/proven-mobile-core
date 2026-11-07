@@ -1,6 +1,6 @@
 # A RAN simulator for handover against Open5GS 2.8.0
 
-Answers ticket 24's first question: which simulator runs an Xn-based and an N2-based handover between two gNBs against Open5GS 2.8.0. Researched 2026-11-07 by reading the source code, then by running PacketRusher in the capture bench (`test-vectors/capture/setup/handover.py`).
+Answers ticket 24's first question: which simulator runs an Xn-based and an N2-based handover between two gNBs against Open5GS 2.8.0. Researched 2026-11-07 by reading the source code, then by running PacketRusher in the capture bench (`test-vectors/capture/setup/capture.py`, then named `handover.py`).
 
 ## Sources
 
@@ -55,7 +55,7 @@ Cancelling after the Handover Command is the case TS 38.413 §8.4.6 describes fo
 - It accepts all three procedures: Path Switch (`src/amf/ngap-handler.c:2872`), Handover Required (`:3327`), Handover Cancel (`:4122`), Handover Notify (`:4423`).
 - On Handover Cancel it asks the SMF to cancel, sends UE Context Release Command to the target, and answers the source with Handover Cancel Acknowledge after the target's release complete (`src/amf/nsmf-handler.c:761-773`). No PFCP message is sent for the cancel.
 - NH and NCC: after registration the AMF holds NH_1 with NCC 1 (`src/amf/gmm-handler.c:295-296`). Path Switch and Handover Required each increment NCC and chain a new NH before sending it (`ngap-handler.c:3323-3324`, `:3740-3741`). The cancelled handover does not roll back: in the capture the Path Switch carries NCC 2 (NH_2), the cancelled Handover Request NCC 3 (NH_3), and the completed Handover Request NCC 4 (NH_4). `setup/extract.py` recomputes each NH from K_AMF and K_gNB.
-- eUPF's XDP path sends downlink G-PDUs only to a gNB address already in its ARP table. Without the ARP warm-up in `handover.py`, the downlink to the second gNB was silently dropped after the Xn handover although the FAR was updated correctly. This is a bench artefact, not something the kernel's SMF can fix.
+- eUPF's XDP path sends downlink G-PDUs only to a gNB address already in its ARP table. Without the ARP warm-up in `test-vectors/capture/setup/capture.py`, the downlink to the second gNB was silently dropped after the Xn handover although the FAR was updated correctly. This is a bench artefact, not something the kernel's SMF can fix.
 
 ## What needs hand-built vectors from TS 38.413
 

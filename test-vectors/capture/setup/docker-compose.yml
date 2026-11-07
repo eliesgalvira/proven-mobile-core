@@ -30,7 +30,7 @@ services:
     volumes:
       - ./subscriber.js:/subscriber.js:ro
 
-  # Packet capture helper on the host network namespace. run.sh execs tcpdump in
+  # Packet capture helper on the host network namespace. capture.py execs tcpdump in
   # it and streams the pcap to stdout, so the file on the host belongs to the
   # invoking user rather than root.
   capture:
@@ -78,8 +78,8 @@ services:
     devices: [/dev/net/tun]
     entrypoint: ["nr-ue", "-c", "/cfg/ue.yaml"]
 
-  # Profile `handover` (handover.py): PacketRusher runs both gNBs and the UE in one
-  # container. handover.py adds the second gNB's address, 10.33.0.31, and starts
+  # Profile `handover` (capture.py handover): PacketRusher runs both gNBs and the UE in one
+  # container. capture.py adds the second gNB's address, 10.33.0.31, and starts
   # PacketRusher with `docker compose exec`.
   ran:
     image: speck5g-packetrusher:2.0.0

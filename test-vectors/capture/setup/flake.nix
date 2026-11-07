@@ -19,7 +19,7 @@
           extraCommands = "mkdir -m 1777 tmp";
         };
 
-        # Host-side tools for run.sh: tshark to filter the capture, Python with
+        # Host-side tools for capture.py: tshark to filter the capture, Python with
         # `cryptography` for extract.py.
         extract-tools = pkgs.buildEnv {
           name = "speck5g-extract-tools";

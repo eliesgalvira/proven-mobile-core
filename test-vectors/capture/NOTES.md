@@ -16,17 +16,17 @@ This file covers how the captures were made and what went wrong along the way.
 | `eupf-probes.pcapng`, `eupf-probes.json` | The eUPF probes from `INVENTORY.md`, run after the main capture: PFCP, GTP-U, and the N6 ICMP that shows decapsulation. |
 | `logs/` | eUPF log (debug, shows eBPF map writes), the eUPF session list after the probes, AMF/gNB/UE logs, ping results, and the subscriber record after authentication (SQN 64 → 96). |
 | `handover.pcapng`, `handover.json`, `logs/handover/` | The handover capture, in the same format as `vectors.json`, and its AMF, eUPF, PacketRusher and ping logs. See § Handover capture. |
-| `setup/` | Everything needed to rerun the captures: `flake.nix`/`flake.lock` (images and host tools), `docker-compose.yml`, configs, `subscriber.js`, the home-network key, `run.sh`, `pfcp_probe.py`, `extract.py`, and for the handover capture `handover.py` and `packetrusher/`. |
+| `setup/` | Everything needed to rerun the captures: `flake.nix`/`flake.lock` (images and host tools), `docker-compose.yml`, configs, `subscriber.js`, the home-network key, `capture.py`, `pfcp_probe.py`, `extract.py`, and for the handover capture `packetrusher/`. |
 
 ## Reproduce
 
 ```
-OUT=/tmp/speck5g-out test-vectors/capture/setup/run.sh
+python3 -I test-vectors/capture/setup/capture.py registration /tmp/speck5g-out
 ```
 
-You need Nix with flakes, Docker with Compose v2, a user in the `docker` group, and the host's `sctp` kernel module (it was already loaded here; `run.sh` does not load it). No sudo. `run.sh` builds and `docker load`s the two Nix images, starts the stack, captures, runs the probes, saves logs, tears everything down (`KEEP_UP=1` keeps it), then filters the pcap and runs `extract.py`. A rerun gives new bytes, because RAND, the SUCI ephemeral key, TEIDs, SEIDs, the 5G-TMSI and timestamps all change. The message sequence and IE sets stay the same. `extract.py` aborts if any crypto check fails.
+You need Nix with flakes, Docker with Compose v2, a user in the `docker` group, and the host's `sctp` kernel module (it was already loaded here; `capture.py` does not load it). No sudo. `capture.py` builds and `docker load`s the two Nix images, starts the stack, captures, runs the probes, saves logs, tears everything down (`--keep-up` keeps it), then filters the pcap and runs `extract.py`. A rerun gives new bytes, because RAND, the SUCI ephemeral key, TEIDs, SEIDs, the 5G-TMSI and timestamps all change. The message sequence and IE sets stay the same. `extract.py` aborts if any crypto check fails.
 
-`run.sh` takes the flake from its own directory. Inside this repo, Nix evaluates it as a Git flake, so the tracked repo is copied into the store (small).
+`capture.py` takes the flake from its own directory. Inside this repo, Nix evaluates it as a Git flake, so the tracked repo is copied into the store (small).
 
 ## Versions and pins
 
@@ -64,7 +64,7 @@ You need Nix with flakes, Docker with Compose v2, a user in the `docker` group, 
 
 - Earlier attempts ran the `gradiant/open5gs` and `gradiant/ueransim` images. They were replaced by the Nix images.
 - The Nix UERANSIM image first crashed (exit 139, `ProcTable could not be created`) because the image had no `/tmp`. Next, `nr-ue` could not set up its TUN (`Could not open '/etc/iproute2/rt_tables'`), and the image had no `ping`. Fixed with `extraCommands` (a 1777 `/tmp` and a writable `rt_tables`) and `iputils`.
-- The first working capture missed the PFCP Association Setup, because tcpdump started after the SMF. `run.sh` now starts the capture before the SMF and AMF.
+- The first working capture missed the PFCP Association Setup, because tcpdump started after the SMF. `capture.py` starts the capture before the SMF and AMF.
 - The Open5GS image is large: about 3 GB unpacked, 2.96 GB as reported by Docker. The nixpkgs `open5gs` closure (1.2 GiB) pulls in mongosh, nodejs and gcc. It was not trimmed.
 - eUPF issue #637 did not reproduce on v0.7.2 with the inputs the issue describes (see `INVENTORY.md`).
 - After the probes, the real UE's session no longer carries downlink traffic, because the duplicate session overwrote its eBPF entries. That is why the probes run after the main capture.
@@ -75,13 +75,13 @@ You need Nix with flakes, Docker with Compose v2, a user in the `docker` group, 
 UERANSIM has no handover, so this capture uses PacketRusher v2.0.0, patched to send a Handover Cancel. `docs/research/handover-simulator.md` explains the choice.
 
 ```
-python3 -I test-vectors/capture/setup/handover.py /tmp/speck5g-handover
+python3 -I test-vectors/capture/setup/capture.py handover /tmp/speck5g-handover
 ```
 
-Same requirements as `run.sh`. `handover.py` builds and loads the Open5GS and PacketRusher images, starts the stack with the compose profile `handover`, runs the scenario through PacketRusher's control socket, tears everything down, filters the capture and runs `extract.py handover`. A rerun gives new bytes, as for milestone 1.
+Same requirements and the same bring-up as milestone 1. `capture.py handover` builds and loads the Open5GS and PacketRusher images, starts the stack with the `ran` service of the compose profile `handover`, runs the scenario through PacketRusher's control socket, tears everything down, filters the capture and runs `extract.py handover`. A rerun gives new bytes, as for milestone 1.
 
 - `handover.pcapng`: 92 frames, 14.7 kB, sha256 `4bff5a02…2cd74e50`. `handover.json`: 86 messages, sha256 `982ec178…15267b81`.
-- Bench: as milestone 1, except that one container, `ran` (10.33.0.30), runs PacketRusher with both gNBs and the UE. `handover.py` adds 10.33.0.31 to it for gNB 2. gNB 1 is ID 1 (32 bits, NCI `0x000000010`), gNB 2 is ID 2 (NCI `0x000000020`). Same PLMN, TAC, slice, subscriber and home-network key.
+- Bench: as milestone 1, except that one container, `ran` (10.33.0.30), runs PacketRusher with both gNBs and the UE. `capture.py` adds 10.33.0.31 to it for gNB 2. gNB 1 is ID 1 (32 bits, NCI `0x000000010`), gNB 2 is ID 2 (NCI `0x000000020`). Same PLMN, TAC, slice, subscriber and home-network key.
 - Scenario, in wire order: PFCP association; NG Setup of gNB 1 and gNB 2; registration and PDU session on gNB 1 (UE 10.45.0.2); 2 pings; Xn handover to gNB 2 (Path Switch Request, PFCP Session Modification, Path Switch Request Acknowledge); 2 pings; N2 handover to gNB 1 (Handover Required, Handover Request, Handover Request Acknowledge, Handover Command) cancelled (Handover Cancel, UE Context Release Command/Complete to gNB 1, Handover Cancel Acknowledge); 2 pings; N2 handover to gNB 1 (the same four, Handover Notify, PFCP Session Modification, UE Context Release Command/Complete to gNB 2); 2 pings. Every ping got its reply, through the gNB serving the UE at the time.
 - Secrets: as `vectors.json`, plus `secrets.handovers`: the NCC and NH of each Security Context (Path Switch Request Acknowledge, both Handover Requests) and its position on the NH chain from K_AMF and K_gNB. `extract.py` aborts unless each NH is on the chain at a position whose NCC it carries. Open5GS sent NCC 2, 3 and 4: the cancelled handover used up NCC 3.
 - Not captured: Path Switch Request Failure, Handover Failure, Handover Preparation Failure, RAN Status Transfer, and a cancel before the Handover Command. PacketRusher produces none of them; the research note lists the tickets that need hand-built vectors.
@@ -89,6 +89,6 @@ Same requirements as `run.sh`. `handover.py` builds and loads the Open5GS and Pa
 
 What failed or needed fixing:
 
-- After the Xn handover the downlink was silently dropped, although eUPF's FAR pointed at gNB 2 with the right TEID. eUPF's XDP path forwards only to a gNB address its ARP table holds, and nothing had made it resolve 10.33.0.31. `handover.py` now pings eUPF from both gNB addresses before the capture.
-- The first ping after an N2 handover could leave before the Handover Notify, since PacketRusher's control socket reports the UE on the target as soon as it moves. `handover.py` waits a second before each ping.
+- After the Xn handover the downlink was silently dropped, although eUPF's FAR pointed at gNB 2 with the right TEID. eUPF's XDP path forwards only to a gNB address its ARP table holds, and nothing had made it resolve 10.33.0.31. `capture.py` now pings eUPF from both gNB addresses before the capture.
+- The first ping after an N2 handover could leave before the Handover Notify, since PacketRusher's control socket reports the UE on the target as soon as it moves. `capture.py` waits a second before each ping.
 - PacketRusher's tests are not run in the Nix build (`doCheck = false`): they open SCTP sockets and tunnels.
