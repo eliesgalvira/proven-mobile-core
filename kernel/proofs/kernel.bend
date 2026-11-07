@@ -24,47 +24,64 @@ import ../plmn.bend as Pl
 
 # Proofs of the step function's laws (tickets 16 to 18).
 
-# A transaction that keeps the session table
-# ------------------------------------------
+# A transaction that keeps every session row
+# -------------------------------------------
+# A key no session row holds after it held none before.
 
-def Tx.kept(+tx: S.Tx, +st: S.State, +e: {S.Tx.keeps_sessions(tx) == True{} : Bool}) -> {S.State.sessions(S.Tx.apply(tx, st)) == S.State.sessions(st) : Tb.Table(S.Session)}:
+def Re.none_row(+r: S.Session, +t: S.Session, +a: Maybe<&2, S.Session>, +b: Maybe<&2, S.Session>, +c: Bool, +eh: {Tb.Table.hit(S.Session, r, a, c) == None{} : Maybe<&2, S.Session>}, ih: {a == None{} : Maybe<&2, S.Session>} -> {b == None{} : Maybe<&2, S.Session>}) -> {Tb.Table.hit(S.Session, t, b, c) == None{} : Maybe<&2, S.Session>}:
+  match c:
+    case True{}:
+      Empty.absurd({Some{t} == None{} : Maybe<&2, S.Session>}, P.Refute.none_some(S.Session, r, Equal.sym(Maybe<&2, S.Session>, Some{r}, None{}, eh)))
+    case False{}:
+      ih(eh)
+
+def Re.none(+key: U32, +v: S.SVar, ss: Tb.Table(S.Session), +k: U32, +eh: {Tb.Table.get(S.Session, k, S.Sessions.revar(key, v, ss)) == None{} : Maybe<&2, S.Session>}) -> {Tb.Table.get(S.Session, k, ss) == None{} : Maybe<&2, S.Session>}:
+  match ss:
+    case Nil{}:
+      {==}
+    case (+k0, +t) <> +more:
+      Re.none_row(S.Session.revar_if(t, v, U32.is_eq(k0, key)), t, Tb.Table.get(S.Session, k, S.Sessions.revar(key, v, more)), Tb.Table.get(S.Session, k, more), U32.is_eq(k0, k), eh, e => Re.none(key, v, more, k, e))
+
+def Tx.kept(+tx: S.Tx, +st: S.State, +e: {S.Tx.keeps_sessions(tx) == True{} : Bool}, +k: U32, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(S.Tx.apply(tx, st))) == None{} : Maybe<&2, S.Session>}) -> {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}:
   match tx:
     case S.Keep{}:
-      {==}
+      eh
     case S.Put{key, ue}:
-      Empty.absurd({S.State.sessions(S.Tx.apply(S.Put{key, ue}, st)) == S.State.sessions(st) : Tb.Table(S.Session)}, P.Refute.bool(e))
+      Empty.absurd({Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, P.Refute.bool(e))
     case S.Rephase{key, phase}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          {==}
+          eh
     case S.Del{key}:
-      Empty.absurd({S.State.sessions(S.Tx.apply(S.Del{key}, st)) == S.State.sessions(st) : Tb.Table(S.Session)}, P.Refute.bool(e))
+      Empty.absurd({Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, P.Refute.bool(e))
     case S.PutSession{key, s}:
-      Empty.absurd({S.State.sessions(S.Tx.apply(S.PutSession{key, s}, st)) == S.State.sessions(st) : Tb.Table(S.Session)}, P.Refute.bool(e))
-    case S.Revar{key, v}:
-      Empty.absurd({S.State.sessions(S.Tx.apply(S.Revar{key, v}, st)) == S.State.sessions(st) : Tb.Table(S.Session)}, P.Refute.bool(e))
+      Empty.absurd({Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, P.Refute.bool(e))
+    case S.Revar{+key, +v}:
+      match st:
+        case S.State{config, subs, assocs, ues, +sessions, pfcp_seq, next_ue, n4}:
+          Re.none(key, v, sessions, k, eh)
     case S.DelSession{key}:
-      Empty.absurd({S.State.sessions(S.Tx.apply(S.DelSession{key}, st)) == S.State.sessions(st) : Tb.Table(S.Session)}, P.Refute.bool(e))
+      Empty.absurd({Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, P.Refute.bool(e))
     case S.Subs{new}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          {==}
+          eh
     case S.SetLink{link}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          {==}
+          eh
     case S.BumpUe{bk}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          {==}
+          eh
     case S.BumpSeq{n}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          {==}
+          eh
     case S.Both{+first, +second}:
       +ef = P.Bool.and_true_l(S.Tx.keeps_sessions(first), S.Tx.keeps_sessions(second), e)
       +es = P.Bool.and_true_r(S.Tx.keeps_sessions(first), S.Tx.keeps_sessions(second), e)
-      Equal.trans(Tb.Table(S.Session), S.State.sessions(S.Tx.apply(second, S.Tx.apply(first, st))), S.State.sessions(S.Tx.apply(first, st)), S.State.sessions(st), Tx.kept(second, S.Tx.apply(first, st), es), Tx.kept(first, st, ef))
+      Tx.kept(first, st, ef, k, Tx.kept(second, S.Tx.apply(first, st), es, k, eh))
 
 # An undecodable PDU
 # ------------------

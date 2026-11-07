@@ -326,22 +326,24 @@ def Ue.with_reg(u: Ue, r: B.Bytes()) -> Ue:
 type SId is Data:
   SId{ue: U32, psi: U32, ip: U32, teid: U32}
 
-# Where a session is: PFCP Session Establishment pending (the PTI and the
-# Accept to send on success), the gNB's resource setup pending, the
-# PFCP Session Modification with the gNB's tunnel pending, or active.
+# Where a session is: PFCP Session Establishment pending (the PTI, the Accept
+# to send on success and the request, kept to send again), the gNB's resource
+# setup pending, the PFCP Session Modification with the gNB's tunnel pending
+# (the request kept the same way), or active. A guard counts its PFCP
+# request's retransmissions.
 type SPhase is Data:
-  Creating{guard: Guard, pti: U32, accept: Sm.Sm}
+  Creating{guard: Guard, pti: U32, accept: Sm.Sm, request: B.Bytes()}
   Setting{guard: Guard, pti: U32}
-  Modifying{guard: Guard}
+  Modifying{guard: Guard, request: B.Bytes()}
   Active{}
 
 def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
   match p:
-    case Creating{guard, pti, accept}:
+    case Creating{guard, pti, accept, request}:
       Some{guard}
     case Setting{guard, pti}:
       Some{guard}
-    case Modifying{guard}:
+    case Modifying{guard, request}:
       Some{guard}
     case Active{}:
       None{}
@@ -349,7 +351,7 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
 # The UPF knows a session exactly when it is past Creating.
 def SPhase.knows(p: SPhase, +known: Bool) -> Bool:
   match p:
-    case Creating{guard, pti, accept}:
+    case Creating{guard, pti, accept, request}:
       Bool.not(known)
     case _:
       known
@@ -948,7 +950,7 @@ def Tx.apply(tx: Tx, st: State) -> State:
     case Both{first, second}:
       Tx.apply(second, Tx.apply(first, st))
 
-# The transactions that leave the session table as it is.
+# The transactions that leave every session row in place.
 def Tx.keeps_sessions(tx: Tx) -> Bool:
   match tx:
     case Put{key, ue}:
@@ -956,8 +958,6 @@ def Tx.keeps_sessions(tx: Tx) -> Bool:
     case Del{key}:
       False{}
     case PutSession{key, s}:
-      False{}
-    case Revar{key, v}:
       False{}
     case DelSession{key}:
       False{}

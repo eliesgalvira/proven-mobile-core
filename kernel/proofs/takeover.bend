@@ -775,22 +775,22 @@ def Ws.modify(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +seq: U32, +tu
 
 def Ws.set_up_phase(+st: S.State, +skey: U32, +s: S.Session, +transfer: B.Bytes(), +seq: U32, +p: S.SPhase, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.set_up_phase(st, skey, s, transfer, seq, p)) == True{} : Bool}:
   match p:
-    case S.Creating{guard, pti, accept}:
+    case S.Creating{guard, pti, accept, request}:
       {==}
     case S.Setting{+guard, +pti}:
       Ws.modify(st, skey, s, pti, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), k, u, hs)
-    case S.Modifying{guard}:
+    case S.Modifying{guard, request}:
       {==}
     case S.Active{}:
       {==}
 
 def Ws.failed_phase(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.failed_phase(st, skey, s, seq, p)) == True{} : Bool}:
   match p:
-    case S.Creating{guard, pti, accept}:
+    case S.Creating{guard, pti, accept, request}:
       {==}
     case S.Setting{guard, +pti}:
       Ws.abort(st, skey, s, pti, 26, seq, k, u, hs)
-    case S.Modifying{guard}:
+    case S.Modifying{guard, request}:
       {==}
     case S.Active{}:
       {==}
@@ -836,7 +836,7 @@ def Ws.place(+st: S.State, +key: U32, +s: S.Session, +seq: U32, +k: U32, +u: S.U
 
 def Ws.create(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +teid: U32, +seid: U32, +v4v6: Bool, +dns: Bool, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.create(st, key, ue, ctx, cfg, psi, pti, ip, teid, seid, v4v6, dns)) == True{} : Bool}:
   +seq = S.State.pfcp_seq(st)
-  +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{0}, pti, Gsm.Gsm.accept(cfg, psi, pti, ip, dns, v4v6)}}}
+  +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{0}, pti, Gsm.Gsm.accept(cfg, psi, pti, ip, dns, v4v6), Up.N4.establish(cfg, seid, ip, teid, seq)}}}
   +ph = S.Phase.with_ctx(S.Ue.phase(ue), ctx)
   Tk.sp_join(k, u, (S.Both{S.Rephase{key, ph}, S.BumpSeq{1}}, [N.Pfcp{Some{key}, Up.N4.establish(cfg, seid, ip, teid, seq)}, N.TimerStart{Some{key}, seid, Up.N4.t1_ms()}]), Gsm.Gsm.place(st, seid, s, U32.add(seq, 1)), P.Bool.and_intro(Tk.spares(k, u, S.Rephase{key, ph}), True{}, Tk.sp_rephase(k, u, key, ph, h1), {==}), Ws.place(st, seid, s, U32.add(seq, 1), k, u))
 

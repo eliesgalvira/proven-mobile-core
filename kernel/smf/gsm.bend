@@ -72,7 +72,7 @@ def Gsm.accept_bounded(m: Sm.Sm) -> Bool:
 
 def Gsm.phase_bounded(p: S.SPhase) -> Bool:
   match p:
-    case S.Creating{guard, pti, accept}:
+    case S.Creating{guard, pti, accept, request}:
       Gsm.accept_bounded(accept)
     case _:
       True{}
@@ -343,8 +343,9 @@ def Gsm.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: Lis
 # with its Accept ready, under its guard, its local SEID.
 def Gsm.create(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +teid: U32, +seid: U32, v4v6: Bool, dns: Bool) -> N.GOut():
   +seq = S.State.pfcp_seq(st)
-  +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{0}, pti, Gsm.accept(cfg, psi, pti, ip, dns, v4v6)}}}
-  N.Out.join((S.Both{S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, S.BumpSeq{1}}, [N.Pfcp{Some{key}, Up.N4.establish(cfg, seid, ip, teid, seq)}, N.TimerStart{Some{key}, seid, Up.N4.t1_ms()}]), Gsm.place(st, seid, s, U32.add(seq, 1)))
+  +request = Up.N4.establish(cfg, seid, ip, teid, seq)
+  +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{0}, pti, Gsm.accept(cfg, psi, pti, ip, dns, v4v6), request}}}
+  N.Out.join((S.Both{S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, S.BumpSeq{1}}, [N.Pfcp{Some{key}, request}, N.TimerStart{Some{key}, seid, Up.N4.t1_ms()}]), Gsm.place(st, seid, s, U32.add(seq, 1)))
 
 def Gsm.checked(+st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, c: Check) -> N.GOut():
   match c:
@@ -418,7 +419,7 @@ def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, pti: U32, accept:
 
 def Gsm.established_phase(st: S.State, skey: U32, s: S.Session, +msg: Pf.Msg, p: S.SPhase) -> N.GOut():
   match p:
-    case S.Creating{guard, pti, accept}:
+    case S.Creating{guard, pti, accept, request}:
       Gsm.established_as(st, skey, s, pti, accept, Up.N4.accepted(Up.N4.cause(msg)), Up.N4.up_seid(msg))
     case _:
       N.Out.warn("PFCP: Session Establishment Response for a session not being created")
@@ -440,7 +441,7 @@ def Gsm.modified_as(+st: S.State, +skey: U32, +s: S.Session, ok: Bool) -> N.GOut
 
 def Gsm.modified_phase(st: S.State, skey: U32, s: S.Session, msg: Pf.Msg, p: S.SPhase) -> N.GOut():
   match p:
-    case S.Modifying{guard}:
+    case S.Modifying{guard, request}:
       Gsm.modified_as(st, skey, s, Up.N4.accepted(Up.N4.cause(msg)))
     case _:
       N.Out.warn("PFCP: Session Modification Response for a session not being modified")
@@ -550,7 +551,8 @@ def Gsm.modify(st: S.State, +skey: U32, +s: S.Session, pti: U32, +seq: U32, tunn
     case None{}:
       Gsm.drop(st, skey, s, seq)
     case Some{(gnb_teid, gnb_addr)}:
-      (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+      +request = Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)
+      (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
 
 def Gsm.set_up_phase(st: S.State, skey: U32, s: S.Session, transfer: B.Bytes(), seq: U32, p: S.SPhase) -> N.GOut():
   match p:
@@ -635,15 +637,24 @@ def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err,
 # Guard timers
 # ------------
 
+# A PFCP request unanswered for T1 goes again, unchanged, its sequence number
+# included, up to N1 times (TS 29.244 §6.4); after that the session fails.
+def Gsm.resend_if(+skey: U32, +s: S.Session, p: S.SPhase, +request: B.Bytes(), fail: N.GOut(), more: Bool) -> N.GOut():
+  match more:
+    case True{}:
+      (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), p}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+    case False{}:
+      fail
+
 # No answer in time: before the Accept went out the UE is refused (#38);
 # after it, the session is released.
 def Gsm.expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase) -> N.GOut():
   match p:
-    case S.Creating{guard, pti, accept}:
-      Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))
+    case S.Creating{+guard, +pti, accept, +request}:
+      Gsm.resend_if(skey, s, S.Creating{S.Guard{U32.add(S.Guard.retries(guard), 1)}, pti, accept, request}, request, Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st)), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
     case S.Setting{guard, pti}:
       Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
-    case S.Modifying{guard}:
-      Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
+    case S.Modifying{+guard, +request}:
+      Gsm.resend_if(skey, s, S.Modifying{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, Gsm.drop(st, skey, s, S.State.pfcp_seq(st)), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
     case S.Active{}:
       (S.Keep{}, [])

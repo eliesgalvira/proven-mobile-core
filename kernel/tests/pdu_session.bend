@@ -144,11 +144,11 @@ def session1(t: Tb.Table(S.Session)) -> Maybe<&2, S.Session>:
 
 def sphase_of(p: S.SPhase) -> String:
   match p:
-    case S.Creating{g, pti, accept}:
+    case S.Creating{g, pti, accept, request}:
       "creating"
     case S.Setting{g, pti}:
       "setting"
-    case S.Modifying{g}:
+    case S.Modifying{g, request}:
       "modifying"
     case S.Active{}:
       "active"
@@ -228,6 +228,18 @@ def resent(+o: N.Step(), +kind: U32, +seq: U32) -> Bool:
   +p : B.Bytes() = first_pfcp(K.Kernel.frames(o))
   Bool.and(U32.is_eq(pfcp_kind(p), kind), Bool.and(U32.is_eq(pfcp_seq(p), seq), U32.is_eq(first_ms(K.Kernel.frames(o)), 3000)))
 
+# The first session's guard, 466, fired n + 1 times in a row.
+def expire(n: Nat, st: S.State) -> N.Step():
+  match n:
+    case 0n:
+      step(st, F.TimerFired{466})
+    case 1n+p:
+      expire(p, K.Kernel.state(step(st, F.TimerFired{466})))
+
+# A session request sent again unchanged, its guard started again.
+def again(+o: N.Step(), +req: B.Bytes()) -> Bool:
+  Bool.and(B.bytes_eq(first_pfcp(K.Kernel.frames(o)), req), U32.is_eq(first_ms(K.Kernel.frames(o)), 3000))
+
 # A step stops the timer with this id, how often.
 def cancel_count(actions: List<&2, F.Action>, +id: U32) -> Nat:
   match actions:
@@ -300,15 +312,17 @@ def main() -> IO(Unit):
     C.Check.report("PDU Session Modification Request: Modification Reject #31, the session as it was", Bool.and(sphase_is(K.Kernel.state(o_mod), "active"), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod))))), [126, 0, 104, 1, 0, 5, 46, 1, 2, 202, 31, 18, 1])))
     +o_refused : N.Step() = step(st1, pfcp_event(with_cause(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req)), 73)))
     C.Check.report("Session Establishment refused by the UPF: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_refused)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_refused))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
-    +o_late : N.Step() = step(st1, F.TimerFired{session_timer(st1)})
-    C.Check.report("no Session Establishment Response in time: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_late)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_late))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
+    C.Check.report("no Session Establishment Response: three retransmissions of the same request, its sequence number included, the session still being created", Bool.and(again(expire(0n, st1), req), Bool.and(again(expire(1n, st1), req), Bool.and(again(expire(2n, st1), req), sphase_is(K.Kernel.state(expire(2n, st1)), "creating")))))
+    +o_late : N.Step() = expire(3n, st1)
+    C.Check.report("no Session Establishment Response after the third retransmission: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_late)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_late))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
     +rel_cmd : B.Bytes() = [126, 0, 104, 1, 0, 5, 46, 1, 0, 211, 26, 18, 1]
     +o_set_late : N.Step() = step(st2, F.TimerFired{session_timer(st2)})
     C.Check.report("no answer from the gNB in time, after the Accept: PDU Session Release Command #26, Session Deletion at the UPF, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_set_late)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_set_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_set_late))))), rel_cmd))))
     +o_mod_no : N.Step() = step(st3, pfcp_event(Pf.Msg.write(Pf.Msg.make(53, Some{[0, 0, 0, 0, 0, 0, 0, 1]}, pfcp_seq(mod), [T.Tlv.make(19, [73])]), [])))
     C.Check.report("Session Modification refused by the UPF: PDU Session Release Command #26, Session Deletion, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_mod_no)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_mod_no))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_no))))), rel_cmd))))
-    +o_mod_late : N.Step() = step(st3, F.TimerFired{session_timer(st3)})
-    C.Check.report("no Session Modification Response in time: PDU Session Release Command #26, Session Deletion, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_mod_late)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
+    C.Check.report("no Session Modification Response: three retransmissions of the same request, the session still being modified", Bool.and(again(expire(0n, st3), mod), Bool.and(again(expire(1n, st3), mod), Bool.and(again(expire(2n, st3), mod), sphase_is(K.Kernel.state(expire(2n, st3)), "modifying")))))
+    +o_mod_late : N.Step() = expire(3n, st3)
+    C.Check.report("no Session Modification Response after the third retransmission: PDU Session Release Command #26, Session Deletion, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_mod_late)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
     +o_gnb : N.Step() = step(st2, A.data(1, setup_failure(ran)))
     C.Check.report("the gNB fails the setup: Session Deletion at the UPF, Establishment Reject #26, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_gnb)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_gnb))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_gnb))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1]))))
     +o_dnn : N.Step() = step(st_reg, A.data(1, A.uplink(ran, uli, A.ue_protect(2, ul_transport(A.hex_of(A.entry(32n, msgs), "hex"), [37, 4, 3, 102, 111, 111])))))
