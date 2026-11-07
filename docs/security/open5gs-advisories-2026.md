@@ -19,8 +19,8 @@ Kernel parts:
 | Reading or writing outside a message or buffer | 17 | 12 |
 | Crash on input an attacker chose (reachable `assert`) | 8 | 5 |
 | Data used after it was freed, or never released | 10 | 5 |
-| Logic or permission error | 7 | 1 |
-| **Total** | **42** | **23** |
+| Logic or permission error | 7 | 3 |
+| **Total** | **42** | **25** |
 
 In the "In scope" column, a row tagged "in (5G analogue)" counts as out, because only its 5G counterpart is in scope.
 
@@ -48,8 +48,8 @@ The broader record is larger: the NVD (National Vulnerability Database) lists ab
 | [GHSA-r9rw-hx33-745g](https://github.com/open5gs/open5gs/security/advisories/GHSA-r9rw-hx33-745g) | 2026-08-14 | critical | The 4G MME compares the authentication answer using the length the attacker sent, so authentication can be bypassed with a 1-in-256 guess | Crypto | The challenge answer is always compared at full length | in (5G analogue); the 4G MME itself is out | `ausf.res_star.full_length` |
 | [GHSA-855g-699w-9w28](https://github.com/open5gs/open5gs/security/advisories/GHSA-855g-699w-9w28) | 2026-08-14 | medium | A session is orphaned after a failure while creating it | Procedure | Every failure path releases what it created | in | `smf.establish.failure_releases` |
 | [GHSA-9643-6pmq-j7g2](https://github.com/open5gs/open5gs/security/advisories/GHSA-9643-6pmq-j7g2) | 2026-08-18 | high | The SMF reads past a truncated session-management container | Codec (NAS) | Decoding is total and never reads outside the input | in | `nas.payload_container.suffix` |
-| [GHSA-wpwr-xj64-h6cp](https://github.com/open5gs/open5gs/security/advisories/GHSA-wpwr-xj64-h6cp) | 2026-08-18 | medium | During handover, one gNB can change a UE context before the sender's ownership is checked | Procedure | Only the owning gNB can modify a UE | out (handover) | — |
-| [GHSA-v6fv-hmw8-6ffv](https://github.com/open5gs/open5gs/security/advisories/GHSA-v6fv-hmw8-6ffv) | 2026-08-21 | low | After a cancelled handover, a response with no matching request is accepted and redirects a UE's downlink traffic | Procedure | Every response must answer an outstanding request from the same peer | out (handover) | — |
+| [GHSA-wpwr-xj64-h6cp](https://github.com/open5gs/open5gs/security/advisories/GHSA-wpwr-xj64-h6cp) | 2026-08-18 | medium | During handover, one gNB can change a UE context before the sender's ownership is checked | Procedure | Only the owning gNB can modify a UE | in | `amf.handover.owner_only`, `amf.handover.single_owner` |
+| [GHSA-v6fv-hmw8-6ffv](https://github.com/open5gs/open5gs/security/advisories/GHSA-v6fv-hmw8-6ffv) | 2026-08-21 | low | After a cancelled handover, a response with no matching request is accepted and redirects a UE's downlink traffic | Procedure | Every response must answer an outstanding request from the same peer | in | `amf.handover.responses_correlated`, `amf.handover.guarded` |
 | [GHSA-m795-gjf7-c8ch](https://github.com/open5gs/open5gs/security/advisories/GHSA-m795-gjf7-c8ch) | 2026-09-16 | low | Out-of-bounds read in the session bit-rate field (Session-AMBR, Aggregate Maximum Bit Rate) | Codec (NAS) | Decoding is total and never reads outside the input; the kernel keeps the Session-AMBR a UE sends as bytes and never parses it | in | `nas.session_ambr.decode_valid` |
 | [GHSA-xmqj-59c5-jfjc](https://github.com/open5gs/open5gs/security/advisories/GHSA-xmqj-59c5-jfjc) | 2026-09-17 | low | Out-of-bounds read in the 4G policy server (PCRF, Policy and Charging Rules Function) | Codec | Decoding is total | out (4G, policy) | — |
 | [GHSA-cvp4-6qm5-6jv2](https://github.com/open5gs/open5gs/security/advisories/GHSA-cvp4-6qm5-6jv2) | 2026-09-19 | high | The SMF aborts on a 4G session request with radio type 0 | Procedure | Every handler is total over its input type | out (4G interface) | — |
