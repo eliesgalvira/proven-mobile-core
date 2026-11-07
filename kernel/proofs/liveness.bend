@@ -700,13 +700,6 @@ def Ck.ok(c: Gsm.Check) -> Bool:
     case Gsm.Go{v4v6, dns, ip, teid, +seid}:
       S.Ids.seid(seid)
 
-def Ck.pick(+ok: Bool, +cause: U32, +next: Gsm.Check, +h: {Ck.ok(next) == True{} : Bool}) -> {Ck.ok(Gsm.Gsm.pick(ok, cause, next)) == True{} : Bool}:
-  match ok:
-    case True{}:
-      h
-    case False{}:
-      {==}
-
 def Ck.grant(+v4v6: Bool, +dns: Bool, +ip: Maybe<&2, U32>, +teid: Maybe<&2, U32>, +seid: Maybe<&2, U32>, +h: {Ck.seid_ok(seid) == True{} : Bool}) -> {Ck.ok(Gsm.Gsm.grant(v4v6, dns, ip, teid, seid)) == True{} : Bool}:
   match ip teid seid:
     case Some{a} Some{t} Some{k}:
@@ -725,13 +718,6 @@ def Ck.grant(+v4v6: Bool, +dns: Bool, +ip: Maybe<&2, U32>, +teid: Maybe<&2, U32>
       {==}
     case None{} None{} None{}:
       {==}
-
-def Ck.type_check(+t: Maybe<&2, U32>, +dns: Bool, +ip: Maybe<&2, U32>, +teid: Maybe<&2, U32>, +seid: Maybe<&2, U32>, +h: {Ck.seid_ok(seid) == True{} : Bool}) -> {Ck.ok(Gsm.Gsm.type_check(t, dns, ip, teid, seid)) == True{} : Bool}:
-  match t:
-    case None{}:
-      Ck.grant(False{}, dns, ip, teid, seid, h)
-    case Some{+v}:
-      Ck.pick(Bool.or(U32.is_eq(v, 1), U32.is_eq(v, 3)), 50, Gsm.Gsm.grant(U32.is_eq(v, 3), dns, ip, teid, seid), Ck.grant(U32.is_eq(v, 3), dns, ip, teid, seid, h))
 
 def Ck.even(+w: U32) -> {S.Ids.odd(U32.and(4294967294, w)) == False{} : Bool}:
   match w:
@@ -762,14 +748,16 @@ def Ck.seid_from(+ss: Tb.Table(S.Session), +words: B.Bytes()) -> {Ck.seid_ok(Gsm
     case Nil{}:
       {==}
 
+def Ck.allocate(+r: Maybe<&2, U32>, +v4v6: Bool, +dns: Bool, +cfg: S.Cfg, +ss: Tb.Table(S.Session), +entropy: B.Bytes()) -> {Ck.ok(Gsm.Gsm.allocate(r, v4v6, dns, cfg, ss, entropy)) == True{} : Bool}:
+  match r:
+    case Some{cause}:
+      {==}
+    case None{}:
+      Ck.grant(v4v6, dns, Gsm.Ip.alloc(cfg, ss), Gsm.Ip.teid_from(ss, Gsm.Ip.around(entropy, 20n)), Gsm.Ip.seid_from(ss, Gsm.Ip.around(entropy, 24n)), Ck.seid_from(ss, Gsm.Ip.around(entropy, 24n)))
+
 def Ck.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +up: Bool, +ss: Tb.Table(S.Session), +entropy: B.Bytes()) -> {Ck.ok(Gsm.Gsm.validate(cfg, psi, mm_opts, sm_opts, up, ss, entropy)) == True{} : Bool}:
-  +tc = Gsm.Gsm.type_check(I.Opts.t1(9, sm_opts), Gsm.Gsm.dns_asked(I.Opts.find(123, sm_opts)), Gsm.Ip.alloc(cfg, ss), Gsm.Ip.teid_from(ss, Gsm.Ip.around(entropy, 20n)), Gsm.Ip.seid_from(ss, Gsm.Ip.around(entropy, 24n)))
-  +htc = Ck.type_check(I.Opts.t1(9, sm_opts), Gsm.Gsm.dns_asked(I.Opts.find(123, sm_opts)), Gsm.Ip.alloc(cfg, ss), Gsm.Ip.teid_from(ss, Gsm.Ip.around(entropy, 20n)), Gsm.Ip.seid_from(ss, Gsm.Ip.around(entropy, 24n)), Ck.seid_from(ss, Gsm.Ip.around(entropy, 24n)))
-  +n4 = Gsm.Gsm.pick(up, 38, tc)
-  +n3 = Gsm.Gsm.pick(Gsm.Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, n4)
-  +n2 = Gsm.Gsm.pick(Gsm.Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, n3)
-  +n1 = Gsm.Gsm.pick(Gsm.Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, n2)
-  Ck.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, n1, Ck.pick(Gsm.Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, n2, Ck.pick(Gsm.Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, n3, Ck.pick(Gsm.Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, n4, Ck.pick(up, 38, tc, htc)))))
+  +t = I.Opts.t1(9, sm_opts)
+  Ck.allocate(Gsm.Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.Gsm.pick(Gsm.Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.Gsm.pick(Gsm.Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.Gsm.pick(Gsm.Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.Gsm.pick(up, 38, Gsm.Gsm.pick(Gsm.Gsm.type_ok(t), 50, None{})))))), Gsm.Gsm.v4v6(t), Gsm.Gsm.dns_asked(I.Opts.find(123, sm_opts)), cfg, ss, entropy)
 
 def Lw.checked(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +c: Gsm.Check, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eck: {Ck.ok(c) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.checked(st, key, ue, ctx, cfg, psi, pti, c)) == True{} : Bool}:
   match c:

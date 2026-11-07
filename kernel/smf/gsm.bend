@@ -257,12 +257,13 @@ type Check is Data:
   Refuse{cause: U32}
   Go{v4v6: Bool, dns: Bool, ip: U32, teid: U32, seid: U32}
 
-def Gsm.pick(ok: Bool, cause: U32, next: Check) -> Check:
+# The first check a request fails, as its 5GSM cause.
+def Gsm.pick(ok: Bool, cause: U32, next: Maybe<&2, U32>) -> Maybe<&2, U32>:
   match ok:
     case True{}:
       next
     case False{}:
-      Refuse{cause}
+      Some{cause}
 
 # A free address of the pool, a free TEID and a free SEID, or #26.
 def Gsm.grant(v4v6: Bool, dns: Bool, ip: Maybe<&2, U32>, teid: Maybe<&2, U32>, seid: Maybe<&2, U32>) -> Check:
@@ -272,13 +273,28 @@ def Gsm.grant(v4v6: Bool, dns: Bool, ip: Maybe<&2, U32>, teid: Maybe<&2, U32>, s
     case _ _ _:
       Refuse{26}
 
+# The address, TEID and SEID are drawn only for a request that passed.
+def Gsm.allocate(refused: Maybe<&2, U32>, v4v6: Bool, dns: Bool, +cfg: S.Cfg, +sessions: Tb.Table(S.Session), +entropy: B.Bytes()) -> Check:
+  match refused:
+    case Some{cause}:
+      Refuse{cause}
+    case None{}:
+      Gsm.grant(v4v6, dns, Ip.alloc(cfg, sessions), Ip.teid_from(sessions, Ip.around(entropy, 20n)), Ip.seid_from(sessions, Ip.around(entropy, 24n)))
+
 # IPv4 (1) or IPv4v6 (3), granted IPv4; another type is refused (#50).
-def Gsm.type_check(t: Maybe<&2, U32>, dns: Bool, ip: Maybe<&2, U32>, teid: Maybe<&2, U32>, seid: Maybe<&2, U32>) -> Check:
+def Gsm.type_ok(t: Maybe<&2, U32>) -> Bool:
   match t:
     case None{}:
-      Gsm.grant(False{}, dns, ip, teid, seid)
+      True{}
     case Some{+v}:
-      Gsm.pick(Bool.or(U32.is_eq(v, 1), U32.is_eq(v, 3)), 50, Gsm.grant(U32.is_eq(v, 3), dns, ip, teid, seid))
+      Bool.or(U32.is_eq(v, 1), U32.is_eq(v, 3))
+
+def Gsm.v4v6(t: Maybe<&2, U32>) -> Bool:
+  match t:
+    case None{}:
+      False{}
+    case Some{v}:
+      U32.is_eq(v, 3)
 
 def Gsm.dnn_ok(+cfg: S.Cfg, m: Maybe<&2, B.Bytes()>) -> Bool:
   match m:
@@ -320,7 +336,8 @@ def Gsm.request_type_ok(m: Maybe<&2, U32>) -> Bool:
 # associated, the type IPv4 (IPv4v6 is granted IPv4), and the pool must hold
 # a free address, and entropy a free TEID and SEID.
 def Gsm.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, up: Bool, +sessions: Tb.Table(S.Session), +entropy: B.Bytes()) -> Check:
-  Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.pick(up, 38, Gsm.type_check(I.Opts.t1(9, sm_opts), Gsm.dns_asked(I.Opts.find(123, sm_opts)), Ip.alloc(cfg, sessions), Ip.teid_from(sessions, Ip.around(entropy, 20n)), Ip.seid_from(sessions, Ip.around(entropy, 24n))))))))
+  +t = I.Opts.t1(9, sm_opts)
+  Gsm.allocate(Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.pick(up, 38, Gsm.pick(Gsm.type_ok(t), 50, None{})))))), Gsm.v4v6(t), Gsm.dns_asked(I.Opts.find(123, sm_opts)), cfg, sessions, entropy)
 
 # The PFCP Session Establishment Request goes out; the session waits for eUPF
 # with its Accept ready, under its guard, its local SEID.
