@@ -85,6 +85,10 @@ def N4.modify(up_seid: B.Bytes(), gnb_teid: U32, gnb_addr: B.Bytes(), seq: U32) 
 def N4.delete(up_seid: B.Bytes(), seq: U32) -> B.Bytes():
   N4.msg(54, Some{up_seid}, seq, [])
 
+# A Session Deletion Request for the session is among the actions, at some sequence number.
+def N4.deleted(+s: S.Session, +acts: List<&2, N.Act>) -> Type:
+  Sigma<&2, &2, U32, seq => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> post) : List<&2, N.Act>}>>>
+
 # A session eUPF knows has its UP SEID.
 def N4.known(s: S.Session) -> Bool:
   Nat.is_eq(List.length(&2, U32, S.Session.up_seid(s)), 8n)

@@ -1364,11 +1364,13 @@ law smf.establish.reject_leaves_state:
   & ({St.State.pfcp_seq(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.pfcp_seq(st) : U32}
   & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}] : List<&2, Ng.Act>})
 
-# GHSA-855g-699w-9w28: whichever later step fails, no session entry remains for
-# the PDU session, so no address, TEID or SEID is held for it: eUPF refuses the
-# Session Establishment; the guard expires while the session is being created,
-# set up or modified; eUPF refuses the Session Modification; or the gNB reports
-# the session failed to set up.
+# GHSA-855g-699w-9w28: whichever later step fails, no session entry remains
+# for the PDU session, so no address, TEID or SEID is held for it, and when
+# eUPF knows the session (it has the UP SEID) a PFCP Session Deletion Request
+# for it goes out: eUPF refuses the Session Establishment; the guard expires
+# while the session is being created, set up or modified; eUPF refuses the
+# Session Modification; or the gNB lists the session among those that failed
+# to set up, whatever else its response names.
 law smf.establish.failure_releases:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1390,20 +1392,23 @@ law smf.establish.failure_releases:
   for +c: Ap.Cur
   for +amf: B.Bytes()
   for +ran: B.Bytes()
+  for +oks: Maybe<&2, G.PDUSessionResourceSetupListSURes()>
+  for +pre: G.PDUSessionResourceFailedToSetupListSURes()
   for +psi: U32
   for +transfer: B.Bytes()
   for +x: Maybe<&2, List<&2, Fr.Ie>>
+  for +post: G.PDUSessionResourceFailedToSetupListSURes()
   for +diag: Maybe<&2, G.CriticalityDiagnostics>
   for +uli: Maybe<&2, G.UserLocationInformation>
   for +ue: St.Ue
   ({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 51 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Creating{guard, pti, accept} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
-    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & ({Up.N4.known(s) == True{} : Bool} -> Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))))
   & (({St.SPhase.pending(St.Session.phase(s)) == True{} : Bool} -> {St.Ues.by_timer(timer, St.State.ues(st)) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Ue>>} -> {St.Sessions.by_timer(timer, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>}
-    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, St.Session>})
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, St.Session>} & ({Up.N4.known(s) == True{} : Bool} -> Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))))
   & (({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 53 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Modifying{guard} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
-    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})
-  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, None{}, Some{[G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x}]}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(Ng.Ngap.of_big(amf), psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
-    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})))
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & ({Up.N4.known(s) == True{} : Bool} -> Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))))
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(Ng.Ngap.of_big(amf), psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
+    -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & ({Up.N4.known(s) == True{} : Bool} -> Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))))))
 
 # GHSA-x8ww-5xvf-qxg6: a PDU Session Modification Request gets Modification
 # Reject #31; the sessions are as they were. A later milestone that offers
