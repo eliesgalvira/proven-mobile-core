@@ -1194,7 +1194,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Switching{guard, old, nh, released}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1216,7 +1216,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Switching{guard, old, nh, released}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1238,7 +1238,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Switching{guard, old, nh, released}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1325,7 +1325,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1347,7 +1347,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.deregister(st, key, ue, ctx, I.Fields.byte1(fields), k, u, eu, h2)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1385,7 +1385,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1405,7 +1405,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1427,7 +1427,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           Tk.ok_sp(k, u, S.State.ues(st), Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy), eu, Ws.ul_transport(st, key, ue, ctx, fields, opts, entropy, k, u, h1))
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Handover{guard, old, nh, source, leg}:
+        case S.Handover{old, nh, source, leg}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1507,7 +1507,7 @@ def W.setup_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: 
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, old, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Handover{guard, old, nh, source, leg}:
+    case S.Handover{old, nh, source, leg}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Releasing{guard}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1759,7 +1759,7 @@ def W.ps_phase(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B
       W.ps_identified(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ue.supi(ue), k, u, eu, eun, ea, em, {==})
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Handover{guard, ctx, nh, source, leg}:
+    case S.Handover{ctx, nh, source, leg}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Releasing{guard}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1845,7 +1845,7 @@ def W.ho_required_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +kind: 
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Handover{guard, ctx, nh, source, leg}:
+    case S.Handover{ctx, nh, source, leg}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Releasing{guard}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1882,8 +1882,8 @@ def W.ho_required(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.Handove
 
 def W.ho_cancel_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.cancel_phase(key, ue, p)):
   match p:
-    case S.Handover{guard, +ctx, +nh, source, +leg}:
-      W.ho_sp(k, u, S.State.ues(st), Ho.Ho.cancel_phase(key, ue, S.Handover{guard, ctx, nh, source, leg}), eu, Tk.sp_rephase(k, u, key, S.Created{}, h1))
+    case S.Handover{+ctx, +nh, source, +leg}:
+      W.ho_sp(k, u, S.State.ues(st), Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg}), eu, Tk.sp_rephase(k, u, key, S.Created{}, h1))
     case S.Created{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Identifying{guard}:
@@ -1924,7 +1924,7 @@ def W.ho_cancel(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverC
 
 def W.ho_status_phase(+st: S.State, +key: U32, +container: G.RANStatusTransfer_TransparentContainer, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.status_phase(key, container, p)):
   match p:
-    case S.Handover{guard, ctx, nh, source, leg}:
+    case S.Handover{ctx, nh, source, leg}:
       match leg:
         case S.Asked{t}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -2032,10 +2032,10 @@ def W.ho_target_rephase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +acts: 
 
 def W.ho_ack_phase(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, p)):
   match p:
-    case S.Handover{guard, +ctx, +nh, source, leg}:
+    case S.Handover{+ctx, +nh, source, leg}:
       match leg:
         case S.Asked{t}:
-          W.ho_target_rephase(st, key, ue, S.Handover{S.Guard{0}, ctx, nh, S.Ue.assoc(ue), S.Acked{assoc, ran, stream, Ho.Ho.admitted(admitted)}}, [], k, u, eu, pr, {==})
+          W.ho_target_rephase(st, key, ue, S.Handover{ctx, nh, S.Ue.assoc(ue), S.Acked{assoc, ran, stream, Ho.Ho.admitted(admitted)}}, [], k, u, eu, pr, {==})
         case S.Acked{t, r, s, ts}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Created{}:
@@ -2078,7 +2078,7 @@ def W.ho_ack(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err, 
 
 def W.ho_failure_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause: G.Cause, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.failure_phase(assoc, key, ue, cause, p)):
   match p:
-    case S.Handover{guard, +ctx, +nh, source, leg}:
+    case S.Handover{+ctx, +nh, source, leg}:
       match leg:
         case S.Asked{t}:
           W.ho_target_rephase(st, key, ue, S.Registered{ctx, nh, None{}}, [], k, u, eu, pr, {==})
@@ -2141,7 +2141,7 @@ def W.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas
 
 def W.ho_notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +p: S.Phase, +sp: B.Digits(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +esupi: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_phase(st, assoc, key, ue, ran, p)):
   match p:
-    case S.Handover{guard, +ctx, +nh, source, leg}:
+    case S.Handover{+ctx, +nh, source, leg}:
       match leg:
         case S.Asked{t}:
           Tk.kept_get(k, u, S.State.ues(st), eu)

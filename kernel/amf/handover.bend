@@ -88,7 +88,7 @@ def Ho.drop(+key: U32, leg: S.Leg, cause: G.Cause) -> List<&2, N.Act>:
 # The target of a handover pending, released when the UE is.
 def Ho.leg_drop(+key: U32, p: S.Phase, cause: G.Cause) -> List<&2, N.Act>:
   match p:
-    case S.Handover{guard, ctx, nh, source, leg}:
+    case S.Handover{ctx, nh, source, leg}:
       Ho.drop(key, leg, cause)
     case _:
       []
@@ -129,7 +129,7 @@ def Ho.prepare(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +t: U32, +cfg: 
       Ho.fail(key, ue, Ho.radio(G.CauseRadioNetwork.unknown_PDU_session_ID()))
     case i <> more:
       +next = S.Nh.next(nh)
-      (S.Rephase{key, S.Handover{S.Guard{0}, ctx, next, S.Ue.assoc(ue), S.Asked{t}}}, [N.UeSend{t, Ho.stream(), key, Ho.request(key, cfg, cause, N.Ue.caps(ue), next, i <> more, container)}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}, N.Note{F.Info{}, "NGAP: Handover Required; Handover Request sent to the target"}])
+      (S.Rephase{key, S.Handover{ctx, next, S.Ue.assoc(ue), S.Asked{t}}}, [N.UeSend{t, Ho.stream(), key, Ho.request(key, cfg, cause, N.Ue.caps(ue), next, i <> more, container)}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}, N.Note{F.Info{}, "NGAP: Handover Required; Handover Request sent to the target"}])
 
 def Ho.required_cfg(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +t: U32, cause: G.Cause, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), m: Maybe<&2, S.Cfg>) -> N.GOut():
   match m:
@@ -238,9 +238,9 @@ def Ho.admitted(items: G.PDUSessionResourceAdmittedList()) -> List<&2, S.Tunnel>
 # Handover Request Acknowledge: Handover Command to the source, under the completion guard.
 def Ho.ack_phase(+assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), admitted: G.PDUSessionResourceAdmittedList(), container: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:
-    case S.Handover{guard, ctx, nh, source, S.Asked{t}}:
+    case S.Handover{ctx, nh, source, S.Asked{t}}:
       +ts = Ho.admitted(admitted)
-      (S.Rephase{key, S.Handover{S.Guard{0}, ctx, nh, S.Ue.assoc(ue), S.Acked{assoc, ran, stream, ts}}}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.command(key, S.Ue.ran_id(ue), ts, container)}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}, N.Note{F.Info{}, "NGAP: Handover Request Acknowledge; Handover Command sent to the source"}])
+      (S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), S.Acked{assoc, ran, stream, ts}}}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.command(key, S.Ue.ran_id(ue), ts, container)}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}, N.Note{F.Info{}, "NGAP: Handover Request Acknowledge; Handover Command sent to the source"}])
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
 
@@ -267,7 +267,7 @@ def Ho.ack(+st: S.State, +assoc: U32, +stream: U32, v: V.HandoverRequestAcknowle
 # target's cause; the target holds nothing to release.
 def Ho.failure_phase(+assoc: U32, +key: U32, +ue: S.Ue, cause: G.Cause, p: S.Phase) -> N.GOut():
   match p:
-    case S.Handover{guard, ctx, nh, source, S.Asked{t}}:
+    case S.Handover{ctx, nh, source, S.Asked{t}}:
       (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [Ho.preparation_failure(key, ue, cause), N.TimerCancel{key}, N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}])
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
@@ -305,7 +305,7 @@ def Ho.complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ct
 
 def Ho.notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:
-    case S.Handover{guard, ctx, nh, source, S.Acked{t, +r, s, ts}}:
+    case S.Handover{ctx, nh, source, S.Acked{t, +r, s, ts}}:
       Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), Ps.Ps.ran_free(key, assoc, r, S.State.ues(st))))
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
@@ -336,7 +336,7 @@ def Ho.notify(+st: S.State, +assoc: U32, v: V.HandoverNotify.View) -> N.GOut():
 # pending, acknowledged alone (§8.4.6.2).
 def Ho.cancel_phase(+key: U32, +ue: S.Ue, p: S.Phase) -> N.GOut():
   match p:
-    case S.Handover{guard, ctx, nh, source, +leg}:
+    case S.Handover{ctx, nh, source, +leg}:
       (S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.cancel_ack(key, S.Ue.ran_id(ue))} <> List.append(&2, N.Act, Ho.drop(key, leg, Ho.radio(G.CauseRadioNetwork.handover_cancelled())), [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}]))
     case _:
       (S.Keep{}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.cancel_ack(key, S.Ue.ran_id(ue))}, N.Note{F.Warn{}, "NGAP: Handover Cancel with no handover pending"}])
@@ -363,7 +363,7 @@ def Ho.cancel(+st: S.State, +assoc: U32, v: V.HandoverCancel.View) -> N.GOut():
 # Uplink RAN Status Transfer: relayed to the ready target as Downlink RAN Status Transfer.
 def Ho.status_phase(+key: U32, container: G.RANStatusTransfer_TransparentContainer, p: S.Phase) -> N.GOut():
   match p:
-    case S.Handover{guard, ctx, nh, source, S.Acked{t, r, s, ts}}:
+    case S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}:
       (S.Keep{}, [N.UeSend{t, s, key, Ho.dl_status(key, r, container)}])
     case _:
       N.Out.warn("NGAP: Uplink RAN Status Transfer with no target ready")
@@ -400,13 +400,8 @@ def Ho.expiry(+key: U32, +ue: S.Ue, leg: S.Leg) -> List<&2, N.Act>:
     case S.Acked{t, r, s, ts}:
       Ho.drop(key, S.Acked{t, r, s, ts}, Ho.radio(G.CauseRadioNetwork.tngrelocoverall_expiry()))
 
-# A guard at its retry limit releases the context, as in every phase.
-def Ho.expired(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg, ok: Bool) -> N.GOut():
-  match ok:
-    case True{}:
-      (S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, List.append(&2, N.Act, Ho.expiry(key, ue, leg), [N.Note{F.Warn{}, "NGAP: N2 handover guard expired; the UE stays with its owner"}]))
-    case False{}:
-      (S.Rephase{key, S.Releasing{S.Guard{0}}}, N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.radio(G.CauseRadioNetwork.unspecified())} <> N.TimerStart{Some{key}, key, N.Ue.guard_ms()} <> Ho.drop(key, leg, Ho.radio(G.CauseRadioNetwork.unspecified())))
+def Ho.expired(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg) -> N.GOut():
+  (S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, List.append(&2, N.Act, Ho.expiry(key, ue, leg), [N.Note{F.Warn{}, "NGAP: N2 handover guard expired; the UE stays with its owner"}]))
 
 # An association going down
 # -------------------------
@@ -432,7 +427,7 @@ def Ho.down_leg(+k: U32, +u: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg, targ
 
 def Ho.down_row(+assoc: U32, +k: U32, +u: S.Ue, p: S.Phase) -> N.GOut():
   match p:
-    case S.Handover{guard, ctx, nh, source, +leg}:
+    case S.Handover{ctx, nh, source, +leg}:
       Ho.down_leg(k, u, ctx, nh, leg, U32.is_eq(S.Leg.target(leg), assoc), U32.is_eq(S.Ue.assoc(u), assoc))
     case _:
       (S.Keep{}, [])

@@ -217,9 +217,10 @@ def Side.is(m: Maybe<&2, Side>, +a: U32, +r: B.Bytes()) -> Bool:
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
 # security mode, T3550 setting up the context, the Path Switch waiting on the
 # UPF, the N2 handover's preparation then completion, and the wait for the
-# gNB's UE Context Release Complete), so no context waits forever. A UE in N2
-# handover stays with its owner, the source, until the target's Handover
-# Notify; it holds the {NH, NCC} sent to the target. A registered UE keeps
+# gNB's UE Context Release Complete), so no context waits forever. The N2
+# handover's guard is never retried, so its phase holds no retry count. A UE
+# in N2 handover stays with its owner, the source, until the target's
+# Handover Notify; it holds the {NH, NCC} sent to the target. A registered UE keeps
 # the side its last N2 handover released until it leaves Registered. Created
 # is a context the InitialUEMessage has just made, before its first procedure
 # places it; no stored context is in it (amf.contexts.guarded). The SUPI a
@@ -233,7 +234,7 @@ type Phase is Data:
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
   Registered{ctx: N.Nas.Ctx, nh: Nh, released: Maybe<&2, Side>}
   Switching{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, released: List<&2, U32>}
-  Handover{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, source: U32, leg: Leg}
+  Handover{ctx: N.Nas.Ctx, nh: Nh, source: U32, leg: Leg}
   Releasing{guard: Guard}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
@@ -252,8 +253,8 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       None{}
     case Switching{guard, ctx, nh, released}:
       Some{guard}
-    case Handover{guard, ctx, nh, source, leg}:
-      Some{guard}
+    case Handover{ctx, nh, source, leg}:
+      Some{Guard{0}}
     case Releasing{guard}:
       Some{guard}
 
@@ -269,8 +270,6 @@ def Phase.guarded(p: Phase) -> Bool:
 
 def Phase.with_guard(p: Phase, g: Guard) -> Phase:
   match p:
-    case Created{}:
-      Created{}
     case Identifying{guard}:
       Identifying{g}
     case Authenticating{guard, av, resynced, supi}:
@@ -279,14 +278,12 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       SecurityMode{g, ctx, k_amf}
     case ContextSetup{guard, ctx, nh, response, complete}:
       ContextSetup{g, ctx, nh, response, complete}
-    case Registered{ctx, nh, released}:
-      Registered{ctx, nh, released}
     case Switching{guard, ctx, nh, released}:
       Switching{g, ctx, nh, released}
-    case Handover{guard, ctx, nh, source, leg}:
-      Handover{g, ctx, nh, source, leg}
     case Releasing{guard}:
       Releasing{g}
+    case other:
+      other
 
 # The NAS security context in force, once there is one.
 def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
@@ -318,7 +315,7 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
 # The target of the N2 handover pending, if any.
 def Phase.pending(p: Phase) -> Maybe<&2, U32>:
   match p:
-    case Handover{guard, ctx, nh, source, leg}:
+    case Handover{ctx, nh, source, leg}:
       Some{Leg.target(leg)}
     case _:
       None{}
@@ -338,7 +335,7 @@ def Phase.idle(p: Phase) -> Bool:
 # read while the target takes it over.
 def Phase.secured(p: Phase) -> Bool:
   match p:
-    case Handover{guard, ctx, nh, source, leg}:
+    case Handover{ctx, nh, source, leg}:
       True{}
     case other:
       Tb.Table.present(N.Nas.Ctx, Phase.ctx(other))
@@ -347,7 +344,7 @@ def Phase.secured(p: Phase) -> Bool:
 # from and not its target.
 def Phase.owned_by(p: Phase, +a: U32) -> Bool:
   match p:
-    case Handover{guard, ctx, nh, +source, leg}:
+    case Handover{ctx, nh, +source, leg}:
       Bool.and(U32.is_eq(a, source), Bool.not(U32.is_eq(Leg.target(leg), source)))
     case _:
       True{}

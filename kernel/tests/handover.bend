@@ -44,7 +44,7 @@ def nh_phase(p: S.Phase) -> U32:
   match p:
     case S.Registered{ctx, nh, released}:
       nh_ncc(nh)
-    case S.Handover{g, ctx, nh, source, leg}:
+    case S.Handover{ctx, nh, source, leg}:
       nh_ncc(nh)
     case _:
       99

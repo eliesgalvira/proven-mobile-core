@@ -639,7 +639,7 @@ def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
       (S.Keep{}, [])
     case S.Switching{guard, ctx, nh, released}:
       Gmm.release(st, key, ue, N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))
-    case S.Handover{+guard, ctx, nh, source, leg}:
-      Ho.Ho.expired(key, ue, ctx, nh, leg, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
+    case S.Handover{ctx, nh, source, leg}:
+      Ho.Ho.expired(key, ue, ctx, nh, leg)
     case S.Releasing{guard}:
       N.Out.also(Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}])
