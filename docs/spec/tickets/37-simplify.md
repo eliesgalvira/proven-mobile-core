@@ -40,7 +40,7 @@ The findings of the owner's simplify review on 2026-11-03, about 3,000 lines and
    - one F-SEID/F-TEID flags lemma;
    - the per-step session search of `N.Step.of` (ticket 35) and the eager `Ip.alloc` in `Gsm.validate`;
    - the `Created` phase, if `Gmm.proceed` can build the context when its first phase is known.
-10. **No bash:** rewrite `scripts/check.nu` and `scripts/test-kernel.nu` in nushell (add nushell to the dev shell), and replace `test-vectors/capture/setup/run.sh` with the Python orchestration ticket 24 started. The capture bring-up then exists once.
+10. **No bash:** rewrite `scripts/check.sh` and `scripts/test-kernel.sh` in nushell (ticket 39 named them `.nu`) (add nushell to the dev shell), and replace `test-vectors/capture/setup/run.sh` with the Python orchestration ticket 24 started. The capture bring-up then exists once.
 11. **The e2e edge unit** waits until its address is configured (`After` and `Wants` on the network target), so its first start doesn't fail binding.
 
 ## Verify
