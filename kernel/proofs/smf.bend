@@ -470,7 +470,7 @@ def Rel.by(+r: N.Step(), +st: S.State, +o: N.GOut(), +skey: U32, +s: S.Session, 
 # The Session Deletion of a session the UPF knows.
 def Del.one(+skey: U32, +s: S.Session, +seq: U32, k: {S.Session.known(s) == True{} : Bool}) -> Up.N4.deleted(s, Up.N4.deletions([(skey, s)], seq)):
   sk = Equal.sym(Bool, S.Session.known(s), True{}, k)
-  %sk : Up.N4.deleted(s, Up.N4.number(Tb.Table.keep(S.Session, skey, s, [], _), seq))
+  %sk : Up.N4.deleted(s, Up.N4.delete_if(s, seq, q => Up.N4.deletions([], q), _))
   (seq, ([], ([], {==})))
 
 # No session put

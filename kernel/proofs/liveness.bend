@@ -476,23 +476,21 @@ def Lv.srows_sift(+s: S.SSieve, +ss: Tb.Table(S.Session)) -> {Lv.srows(S.Session
     case (+k, +t) <> +more:
       Lv.srows_keep(k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), (k, t) <> more, Lv.owner_head(k, t, more), Lv.srows_cons(S.Sessions.sift(s, more), k, t, more, Lv.srows_sift(s, more)))
 
-def Lv.known(+rows: Tb.Table(S.Session), +ss: Tb.Table(S.Session), +e: {Lv.srows(rows, ss) == True{} : Bool}) -> {Lv.srows(Up.N4.known_rows(rows), ss) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+key, +t) <> +more:
-      Lv.srows_keep(key, t, Up.N4.known_rows(more), S.Session.known(t), ss, P.Bool.and_true_l(Lv.owner(S.Session.ue(t), ss), Lv.srows(more, ss), e), Lv.known(more, ss, P.Bool.and_true_r(Lv.owner(S.Session.ue(t), ss), Lv.srows(more, ss), e)))
-
-def Lv.number(+st: S.State, +rows: Tb.Table(S.Session), +seq: U32, +e: {Lv.srows(rows, S.State.sessions(st)) == True{} : Bool}) -> {Lv.acts(st, Up.N4.number(rows, seq)) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+key, +t) <> +more:
-      Lv.cons(st, N.Pfcp{Some{S.Session.ue(t)}, Up.N4.delete(S.Session.up_seid(t), seq)}, Up.N4.number(more, U32.add(seq, 1)), Lv.owner_live(st, S.Session.ue(t), P.Bool.and_true_l(Lv.owner(S.Session.ue(t), S.State.sessions(st)), Lv.srows(more, S.State.sessions(st)), e)), Lv.number(st, more, U32.add(seq, 1), P.Bool.and_true_r(Lv.owner(S.Session.ue(t), S.State.sessions(st)), Lv.srows(more, S.State.sessions(st)), e)))
+def Lv.del_if(+st: S.State, +t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +b: Bool, +ht: {Lv.owner(S.Session.ue(t), S.State.sessions(st)) == True{} : Bool}, later: @q:U32 -> {Lv.acts(st, Up.N4.deletions(more, q)) == True{} : Bool}) -> {Lv.acts(st, Up.N4.delete_if(t, seq, q => Up.N4.deletions(more, q), b)) == True{} : Bool}:
+  match b:
+    case True{}:
+      Lv.cons(st, N.Pfcp{Some{S.Session.ue(t)}, Up.N4.delete(S.Session.up_seid(t), seq)}, Up.N4.deletions(more, U32.add(seq, 1)), Lv.owner_live(st, S.Session.ue(t), ht), later(U32.add(seq, 1)))
+    case False{}:
+      later(seq)
 
 # Session Deletions at the UPF are built from sessions of the state.
 def Lv.dels(+st: S.State, +rows: Tb.Table(S.Session), +seq: U32, +e: {Lv.srows(rows, S.State.sessions(st)) == True{} : Bool}) -> {Lv.acts(st, Up.N4.deletions(rows, seq)) == True{} : Bool}:
-  Lv.number(st, Up.N4.known_rows(rows), seq, Lv.known(rows, S.State.sessions(st), e))
+  match rows:
+    case Nil{}:
+      {==}
+    case (+key, +t) <> +more:
+      +hm = P.Bool.and_true_r(Lv.owner(S.Session.ue(t), S.State.sessions(st)), Lv.srows(more, S.State.sessions(st)), e)
+      Lv.del_if(st, t, seq, more, S.Session.known(t), P.Bool.and_true_l(Lv.owner(S.Session.ue(t), S.State.sessions(st)), Lv.srows(more, S.State.sessions(st)), e), +q => Lv.dels(st, more, q, hm))
 
 def Lv.dels_free(+st: S.State, +vs: Tb.Table(S.Session)) -> {Lv.free(st, Gsm.Gsm.dels(vs)) == True{} : Bool}:
   match vs:

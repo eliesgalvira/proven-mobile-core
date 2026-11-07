@@ -89,26 +89,34 @@ def N4.delete(up_seid: B.Bytes(), seq: U32) -> B.Bytes():
 def N4.deleted(+s: S.Session, +acts: List<&2, N.Act>) -> Type:
   Sigma<&2, &2, U32, seq => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> post) : List<&2, N.Act>}>>>
 
-def N4.known_rows(rows: Tb.Table(S.Session)) -> Tb.Table(S.Session):
-  match rows:
-    case Nil{}:
-      []
-    case (key, +s) <> more:
-      Tb.Table.keep(S.Session, key, s, N4.known_rows(more), S.Session.known(s))
-
-def N4.number(rows: Tb.Table(S.Session), +seq: U32) -> List<&2, N.Act>:
-  match rows:
-    case Nil{}:
-      []
-    case (key, +s) <> more:
-      N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> N4.number(more, U32.add(seq, 1))
+def N4.delete_if(+s: S.Session, +seq: U32, later: U32 -> List<&2, N.Act>, known: Bool) -> List<&2, N.Act>:
+  match known:
+    case True{}:
+      N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> later(U32.add(seq, 1))
+    case False{}:
+      later(seq)
 
 # A Session Deletion for each session row the UPF knows, numbered from seq.
 def N4.deletions(rows: Tb.Table(S.Session), seq: U32) -> List<&2, N.Act>:
-  N4.number(N4.known_rows(rows), seq)
+  match rows:
+    case Nil{}:
+      []
+    case (key, +s) <> more:
+      N4.delete_if(s, seq, q => N4.deletions(more, q), S.Session.known(s))
+
+def N4.counted(known: Bool) -> U32:
+  match known:
+    case True{}:
+      1
+    case False{}:
+      0
 
 def N4.deletion_count(rows: Tb.Table(S.Session)) -> U32:
-  U32.from_nat(List.length(&2, Sigma<&2, &2, U32, _ => S.Session>, N4.known_rows(rows)))
+  match rows:
+    case Nil{}:
+      0
+    case (key, s) <> more:
+      U32.add(N4.counted(S.Session.known(s)), N4.deletion_count(more))
 
 # Reading responses
 # -----------------
