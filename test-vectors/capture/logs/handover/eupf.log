@@ -1,0 +1,197 @@
+eupf-1  | 2026/11/07 04:22:18 Startup config: map[api_address::8080 association_setup_timeout:5 far_map_size:0 feature_ftup:false feature_ueip:false gtp_echo_interval:10 gtp_peer:[] heartbeat_interval:5 heartbeat_retries:3 heartbeat_timeout:5 interface_name:[eth0] logging_level:debug max_sessions:65535 metrics_address::9090 n3_address:10.33.0.20 n9_address:127.0.0.1 pdr_map_size:0 pfcp_address::8805 pfcp_node_id:10.33.0.20 pfcp_remote_node:[] qer_map_size:0 teid_pool:65535 ueip_pool:10.60.0.0/24 urr_map_size:0 xdp_attach_mode:generic]
+eupf-1  | 2026/11/07 04:22:18 Apply eUPF config: {InterfaceName:[eth0] XDPAttachMode:generic ApiAddress::8080 PfcpAddress::8805 PfcpNodeId:10.33.0.20 PfcpRemoteNode:[] AssociationSetupTimeout:5 MetricsAddress::9090 N3Address:10.33.0.20 N9Address:127.0.0.1 GtpPeer:[] GtpEchoInterval:10 QerMapSize:65535 FarMapSize:131070 UrrMapSize:131070 PdrMapSize:131070 MaxSessions:65535 HeartbeatRetries:3 HeartbeatInterval:5 HeartbeatTimeout:5 LoggingLevel:debug UEIPPool: FTEIDPool:0 FeatureUEIP:false FeatureFTUP:false}
+eupf-1  | 2026/11/07 04:22:18 DBG Loaded map qer_map
+eupf-1  | 2026/11/07 04:22:18 DBG Loaded map far_map
+eupf-1  | 2026/11/07 04:22:18 DBG Loaded map pdr_map_downlink_ip4
+eupf-1  | 2026/11/07 04:22:18 DBG Loaded map pdr_map_downlink_ip6
+eupf-1  | 2026/11/07 04:22:18 DBG Loaded map pdr_map_teid_ip4
+eupf-1  | 2026/11/07 04:22:18 DBG Loaded map urr_map
+eupf-1  | 2026/11/07 04:22:18 INF Attached XDP program to iface "eth0" (index 2)
+eupf-1  | 2026/11/07 04:22:18 INF Initialize resources: UEIP pool (CIDR: ""), TEID pool (size: 0)
+eupf-1  | 2026/11/07 04:22:18 INF Starting PFCP connection: :8805 with Node ID: 10.33.0.20, N3 address: 10.33.0.20, N9 address: 127.0.0.1
+eupf-1  | [GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+eupf-1  | 
+eupf-1  | [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+eupf-1  |  - using env:	export GIN_MODE=release
+eupf-1  |  - using code:	gin.SetMode(gin.ReleaseMode)
+eupf-1  | 
+eupf-1  | [GIN-debug] GET    /api/v1/health            --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).InitRoutes.func1 (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/xdp_stats         --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).displayXdpStatistics-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/packet_stats      --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).displayPacketStats-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/route_stats       --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).displayRouteStats-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/config            --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).displayConfig-fm (4 handlers)
+eupf-1  | [GIN-debug] POST   /api/v1/config            --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).editConfig-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/uplink_pdr_map/:id --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).getUplinkPdrValue-fm (4 handlers)
+eupf-1  | [GIN-debug] PUT    /api/v1/uplink_pdr_map/:id --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).setUplinkPdrValue-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/qer_map           --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).listQerMapContent-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/qer_map/:id       --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).getQerValue-fm (4 handlers)
+eupf-1  | [GIN-debug] PUT    /api/v1/qer_map/:id       --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).setQerValue-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/far_map/:id       --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).getFarValue-fm (4 handlers)
+eupf-1  | [GIN-debug] PUT    /api/v1/far_map/:id       --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).setFarValue-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/pfcp_associations --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).listPfcpAssociations-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/pfcp_associations/full --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).listPfcpAssociationsFull-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /api/v1/pfcp_sessions     --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).listPfcpSessionsFiltered-fm (4 handlers)
+eupf-1  | [GIN-debug] GET    /swagger/*any             --> github.com/swaggo/gin-swagger.CustomWrapHandler.func1 (4 handlers)
+eupf-1  | [GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+eupf-1  | 
+eupf-1  | [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+eupf-1  |  - using env:	export GIN_MODE=release
+eupf-1  |  - using code:	gin.SetMode(gin.ReleaseMode)
+eupf-1  | 
+eupf-1  | [GIN-debug] GET    /metrics                  --> github.com/edgecomllc/eupf/cmd/api/rest.(*ApiHandler).InitMetricsRoute.(*ApiHandler).InitMetricsRoute.func1.func2 (4 handlers)
+eupf-1  | 2026/11/07 04:22:18 INF running on :8080
+eupf-1  | 2026/11/07 04:22:18 INF running on :9090
+eupf-1  | 2026/11/07 04:22:25 DBG Received 30 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:25 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:25 INF Got Association Setup Request from: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:25 INF 
+eupf-1  | Association Setup Request:
+eupf-1  |   Node ID: 10.33.0.12
+eupf-1  |   Recovery Time: 2026-11-07 04:22:25 +0000 UTC
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:25 INF Saving new association: &{ID:10.33.0.12 Addr:10.33.0.12 NextSessionID:1 NextSequenceID:1 Sessions:map[] HeartbeatChannel:0x3df190aca4d0 HeartbeatsActive:false Mutex:{_:{} mu:{state:0 sema:0}}}
+eupf-1  | 2026/11/07 04:22:25 DBG Sent Heartbeat Request to: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:25 DBG Received 16 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:25 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:25 DBG Got Heartbeat Request with TS: 2026-11-07 04:22:25 +0000 UTC, from: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:25 DBG Sent Heartbeat Response to: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:25 DBG Received 16 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:25 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:25 DBG Got Heartbeat Response with TS: 2026-11-07 04:22:25 +0000 UTC, from: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:30 DBG Sent Heartbeat Request to: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:30 DBG Received 16 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:30 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:30 DBG Got Heartbeat Response with TS: 2026-11-07 04:22:25 +0000 UTC, from: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:35 DBG Received 618 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:35 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:35 INF Got Session Establishment Request from: 10.33.0.12.
+eupf-1  | 2026/11/07 04:22:35 INF 
+eupf-1  | Session Establishment Request:
+eupf-1  |   CreatePDR ID: 1 
+eupf-1  |     FAR ID: 1 
+eupf-1  |     QER ID: 1 
+eupf-1  |     URR ID: 1 
+eupf-1  |     Source Interface: 1 
+eupf-1  |     UE IPv4 Address: 10.45.0.2 
+eupf-1  |   CreatePDR ID: 2 
+eupf-1  |     Outer Header Removal: 6 
+eupf-1  |     FAR ID: 2 
+eupf-1  |     QER ID: 1 
+eupf-1  |     Source Interface: 0 
+eupf-1  |     TEID: 26848 
+eupf-1  |     Ipv4: 10.33.0.20 
+eupf-1  |     Ipv6: <nil> 
+eupf-1  |   CreatePDR ID: 3 
+eupf-1  |     Outer Header Removal: 6 
+eupf-1  |     FAR ID: 1 
+eupf-1  |     Source Interface: 3 
+eupf-1  |     TEID: 64796 
+eupf-1  |     Ipv4: 10.33.0.20 
+eupf-1  |     Ipv6: <nil> 
+eupf-1  |   CreatePDR ID: 4 
+eupf-1  |     Outer Header Removal: 6 
+eupf-1  |     FAR ID: 3 
+eupf-1  |     Source Interface: 0 
+eupf-1  |     TEID: 26848 
+eupf-1  |     Ipv4: 10.33.0.20 
+eupf-1  |     Ipv6: <nil> 
+eupf-1  |     SDF Filter: permit out 58 from ff02::2/128 to assigned 
+eupf-1  |   CreateFAR ID: 1 
+eupf-1  |     Apply Action: [12 0] 
+eupf-1  |     BAR ID: 1 
+eupf-1  |   CreateFAR ID: 2 
+eupf-1  |     Apply Action: [2 0] 
+eupf-1  |     Forwarding Parameters:
+eupf-1  |       Network Instance: internet 
+eupf-1  |   CreateFAR ID: 3 
+eupf-1  |     Apply Action: [2 0] 
+eupf-1  |     Forwarding Parameters:
+eupf-1  |       Outer Header Creation: &{OuterHeaderCreationDescription:256 TEID:1 IPv4Address:10.33.0.12 IPv6Address:<nil> PortNumber:0 CTag:0 STag:0} 
+eupf-1  |   CreateQER ID: 1 
+eupf-1  |     Gate Status DL: 0 
+eupf-1  |     Gate Status UL: 0 
+eupf-1  |     Max Bitrate DL: 1000000 
+eupf-1  |     Max Bitrate UL: 1000000 
+eupf-1  |     QFI: 1 
+eupf-1  |   CreateURR ID: 1 
+eupf-1  |     Measurement Method: 2 
+eupf-1  |     Volume Threshold: &{Flags:1 TotalVolume:104857600 UplinkVolume:0 DownlinkVolume:0} 
+eupf-1  |   CreateBAR ID: 1
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:35 INF Saving FAR info to session: 1, {Action:12 OuterHeaderCreation:0 Teid:0 RemoteIP:0 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:35 Matched groups: ["permit out 58 from ff02::2/128 to assigned" "58" "ff02::2" "128" "" "assigned" "" ""]
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put FAR: internalId=0, farInfo={Action:12 OuterHeaderCreation:0 Teid:0 RemoteIP:0 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:35 WRN No OuterHeaderCreation
+eupf-1  | 2026/11/07 04:22:35 INF Saving FAR info to session: 2, {Action:2 OuterHeaderCreation:0 Teid:0 RemoteIP:0 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put FAR: internalId=1, farInfo={Action:2 OuterHeaderCreation:0 Teid:0 RemoteIP:0 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:35 INF Saving FAR info to session: 3, {Action:2 OuterHeaderCreation:1 Teid:1 RemoteIP:201335050 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put FAR: internalId=2, farInfo={Action:2 OuterHeaderCreation:1 Teid:1 RemoteIP:201335050 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:35 INF Saving QER info to session: 1, {GateStatusUL:0 GateStatusDL:0 Qfi:1 MaxBitrateUL:1000000000 MaxBitrateDL:1000000000 StartUL:0 StartDL:0}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put QER: internalId=0, qerInfo={GateStatusUL:0 GateStatusDL:0 Qfi:1 MaxBitrateUL:1000000000 MaxBitrateDL:1000000000 StartUL:0 StartDL:0}
+eupf-1  | 2026/11/07 04:22:35 INF Saving URR info to session: 1, {UplinkVolume:0 DownlinkVolume:0}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put URR: internalId=0, urrInfo={UplinkVolume:0 DownlinkVolume:0}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put PDR Downlink: ipv4=10.45.0.2, pdrInfo={OuterHeaderRemoval:0 FarId:0 QerId:0 Urr1Id:0 Urr2Id:0 SdfFilter:<nil>}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put PDR Uplink: teid=26848, pdrInfo={OuterHeaderRemoval:6 FarId:1 QerId:0 Urr1Id:0 Urr2Id:0 SdfFilter:<nil>}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put PDR Uplink: teid=64796, pdrInfo={OuterHeaderRemoval:6 FarId:0 QerId:0 Urr1Id:0 Urr2Id:0 SdfFilter:<nil>}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Put PDR Uplink: teid=26848, pdrInfo={OuterHeaderRemoval:6 FarId:2 QerId:0 Urr1Id:0 Urr2Id:0 SdfFilter:{Protocol:4 SrcAddress:{Type:2 Ip:ff02::2 Mask:ffffffffffffffffffffffffffffffff} SrcPortRange:{LowerBound:0 UpperBound:65535} DstAddress:{Type:0 Ip:<nil> Mask:<nil>} DstPortRange:{LowerBound:0 UpperBound:65535}}}
+eupf-1  | 2026/11/07 04:22:35 INF Session Establishment Request from 10.33.0.12 accepted.
+eupf-1  | 2026/11/07 04:22:35 DBG Received 75 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:35 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:35 INF Got Session Modification Request from: 10.33.0.12. 
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:35 INF Finding association for 10.33.0.12
+eupf-1  | 2026/11/07 04:22:35 INF Finding session 2
+eupf-1  | 2026/11/07 04:22:35 INF 
+eupf-1  | Session Modification Request:
+eupf-1  |   UpdateFAR ID: 1 
+eupf-1  |     Apply Action: [2 0] 
+eupf-1  |     Update forwarding Parameters:
+eupf-1  |       Network Instance: internet 
+eupf-1  |       Outer Header Creation: &{OuterHeaderCreationDescription:256 TEID:1 IPv4Address:10.33.0.30 IPv6Address:<nil> PortNumber:0 CTag:0 STag:0} 
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:35 INF Updating FAR info: 1, {FarInfo:{Action:2 OuterHeaderCreation:1 Teid:1 RemoteIP:503324938 TransportLevelMarking:0} GlobalId:0}
+eupf-1  | 2026/11/07 04:22:35 DBG EBPF: Update FAR: internalId=0, farInfo={Action:2 OuterHeaderCreation:1 Teid:1 RemoteIP:503324938 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:35 DBG Sent Heartbeat Request to: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:35 DBG Received 16 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:35 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:35 DBG Got Heartbeat Response with TS: 2026-11-07 04:22:25 +0000 UTC, from: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:36 DBG Received 16 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:36 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:36 DBG Got Heartbeat Request with TS: 2026-11-07 04:22:25 +0000 UTC, from: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:36 DBG Sent Heartbeat Response to: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:37 DBG Received 80 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:37 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:37 INF Got Session Modification Request from: 10.33.0.12. 
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:37 INF Finding association for 10.33.0.12
+eupf-1  | 2026/11/07 04:22:37 INF Finding session 2
+eupf-1  | 2026/11/07 04:22:37 INF 
+eupf-1  | Session Modification Request:
+eupf-1  |   UpdateFAR ID: 1 
+eupf-1  |     Apply Action: [2 0] 
+eupf-1  |     Update forwarding Parameters:
+eupf-1  |       Network Instance: internet 
+eupf-1  |       Outer Header Creation: &{OuterHeaderCreationDescription:256 TEID:1 IPv4Address:10.33.0.31 IPv6Address:<nil> PortNumber:0 CTag:0 STag:0} 
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:37 INF Updating FAR info: 1, {FarInfo:{Action:2 OuterHeaderCreation:1 Teid:1 RemoteIP:520102154 TransportLevelMarking:0} GlobalId:0}
+eupf-1  | 2026/11/07 04:22:37 DBG EBPF: Update FAR: internalId=0, farInfo={Action:2 OuterHeaderCreation:1 Teid:1 RemoteIP:520102154 TransportLevelMarking:0}
+eupf-1  | 2026/11/07 04:22:40 DBG Sent Heartbeat Request to: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:40 DBG Received 16 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:40 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:40 DBG Got Heartbeat Response with TS: 2026-11-07 04:22:25 +0000 UTC, from: 10.33.0.12
+eupf-1  | 2026/11/07 04:22:40 DBG Received 80 bytes from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:40 DBG Handling PFCP message from 10.33.0.12:8805
+eupf-1  | 2026/11/07 04:22:40 INF Got Session Modification Request from: 10.33.0.12. 
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:40 INF Finding association for 10.33.0.12
+eupf-1  | 2026/11/07 04:22:40 INF Finding session 2
+eupf-1  | 2026/11/07 04:22:40 INF 
+eupf-1  | Session Modification Request:
+eupf-1  |   UpdateFAR ID: 1 
+eupf-1  |     Apply Action: [2 0] 
+eupf-1  |     Update forwarding Parameters:
+eupf-1  |       Network Instance: internet 
+eupf-1  |       Outer Header Creation: &{OuterHeaderCreationDescription:256 TEID:3 IPv4Address:10.33.0.30 IPv6Address:<nil> PortNumber:0 CTag:0 STag:0} 
+eupf-1  | 
+eupf-1  | 2026/11/07 04:22:40 INF Updating FAR info: 1, {FarInfo:{Action:2 OuterHeaderCreation:1 Teid:3 RemoteIP:503324938 TransportLevelMarking:0} GlobalId:0}
+eupf-1  | 2026/11/07 04:22:40 DBG EBPF: Update FAR: internalId=0, farInfo={Action:2 OuterHeaderCreation:1 Teid:3 RemoteIP:503324938 TransportLevelMarking:0}
