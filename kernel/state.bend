@@ -773,7 +773,7 @@ def State.with_assocs(st: State, as: Tb.Table(B.Bytes())) -> State:
       State{config, subs, as, ues, sessions, pfcp_seq, next_ue, n4}
 
 # NG Setup answered: the association is set up when it succeeded, and not
-# otherwise, since a new NG Setup replaces what the last one set up.
+# otherwise.
 def State.ready(+st: State, +a: U32, id: B.Bytes(), ok: Bool) -> State:
   State.with_assocs(st, Assocs.set(a, id, State.assocs(st), ok))
 
@@ -787,6 +787,14 @@ def Ues.none_assoc(+a: U32, ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (key, u) <> more:
       Bool.and(Bool.not(U32.is_eq(Ue.assoc(u), a)), Ues.none_assoc(a, more))
+
+# Every context is owned by an association that has completed NG Setup.
+def Ues.set_up(ues: Tb.Table(Ue), +as: Tb.Table(B.Bytes())) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, u) <> more:
+      Bool.and(Assocs.has(Ue.assoc(u), as), Ues.set_up(more, as))
 
 # Indexes
 # -------

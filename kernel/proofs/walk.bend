@@ -38,14 +38,14 @@ def Walk.Keep(-Q: N.Step() -> Type, +st: S.State) -> Type:
 # NG Setup: the association's UE-related contexts re-initialised, then the
 # associations set up changed, with actions that name no UE context.
 def Walk.Ready(-Q: N.Step() -> Type, +st: S.State, +assoc: U32) -> Type:
-  @as:Tb.Table(B.Bytes()) -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((S.State.with_assocs(N.Step.state(R.Route.drop(st, assoc)), as), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
+  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
 
 def Walk.Out(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State) -> Type:
   @o:N.GOut() -> ok(o) -> Q(N.Step.of(st, o))
 
 # The outcome of every NGAP message that is not NG Setup.
 def Walk.Routed(-ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes()) -> Type:
-  @kind:Nat -> @code:Nat -> @ies:List<&2, Fr.Ie> -> ok(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)))
+  @kind:Nat -> @code:Nat -> @ies:List<&2, Fr.Ie> -> {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool} -> ok(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)))
 
 # The routed outcomes: each UE procedure's on any view of its message, and
 # the N2 handover messages, which Ho.Ho.route tells apart from the rest.
@@ -103,12 +103,12 @@ def Walk.setup(-Q: N.Step() -> Type, +st: S.State, +assoc: U32, +r: Result<&2, &
     case Fail{e}:
       keep(N.Ngap.bad_view(assoc), k => {==})
     case Done{+v}:
-      ready(S.Assocs.set(assoc, N.NgSetup.node(v), S.State.assocs(N.Step.state(R.Route.drop(st, assoc))), N.NgSetup.supported_view(S.State.config(st), v)), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==})
+      ready(N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==})
 
-def Walk.ready(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, keep: Walk.Keep(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b)):
+def Walk.ready(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, +eb: {S.Assocs.has(assoc, S.State.assocs(st)) == b : Bool}, keep: Walk.Keep(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b)):
   match b:
     case True{}:
-      out(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), routed(kind, code, ies))
+      out(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), routed(kind, code, ies, eb))
     case False{}:
       keep(N.Ngap.unhandled(assoc), k => {==})
 
@@ -117,7 +117,7 @@ def Walk.d1(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U
     case True{}:
       Walk.setup(Q, st, assoc, V.NGSetupRequest.view(ies), keep, ready)
     case False{}:
-      Walk.ready(Q, ok, st, assoc, stream, kind, code, ies, entropy, S.Assocs.has(assoc, S.State.assocs(st)), keep, out, routed)
+      Walk.ready(Q, ok, st, assoc, stream, kind, code, ies, entropy, S.Assocs.has(assoc, S.State.assocs(st)), {==}, keep, out, routed)
 
 def Walk.ies(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)):
   match r:
@@ -150,7 +150,7 @@ def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.
 
 # A property that holds after any outcome.
 def Walk.any(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: @assoc:U32 -> Walk.Ready(Q, st, assoc), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(R.Route.down(st, assoc)), out: @o:N.GOut() -> Q(N.Step.of(st, o))) -> Q(K.Kernel.step(st, ev, entropy)):
-  Walk.step(Q, o => Unit, st, ev, entropy, keep, ready, config, down, o => u => out(o), a => s => kind => code => ies => Unit{}, bytes => Unit{}, timer => Unit{})
+  Walk.step(Q, o => Unit, st, ev, entropy, keep, ready, config, down, o => u => out(o), a => s => kind => code => ies => ea => Unit{}, bytes => Unit{}, timer => Unit{})
 
 # The N2 handover messages, walked
 # --------------------------------

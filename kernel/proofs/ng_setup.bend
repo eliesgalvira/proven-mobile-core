@@ -49,11 +49,11 @@ def Req.view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupReques
       +x : N.Act = N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}
       Req.reply(S.State.config(st), assoc, v, P.Bool.or_true_l(N.Ngap.is_ng_setup_response(x), False{}, {==}, Req.skip(acts, [x], PL.Lv.no_response(st, acts, PL.Lv.drop_acts(st, assoc)), e)))
 
-def Req.ready(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), b: Bool, e: {N.Ngap.any_ng_setup_response(K.Kernel.actions(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b))) == True{} : Bool}) -> {False{} == True{} : Bool}:
+def Req.ready(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), b: Bool, +eb: {S.Assocs.has(assoc, S.State.assocs(st)) == b : Bool}, e: {N.Ngap.any_ng_setup_response(K.Kernel.actions(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b))) == True{} : Bool}) -> {False{} == True{} : Bool}:
   match b:
     case True{}:
       +o = R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code))
-      ar = PL.Lv.no_response(st, K.Kernel.actions(N.Step.of(st, o)), PL.Lv.step_acts(st, o, PL.Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code))))
+      ar = PL.Lv.no_response(st, K.Kernel.actions(N.Step.of(st, o)), PL.Lv.step_acts(st, o, PL.Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), eb)))
       (%ar : {_ == True{} : Bool}; e)
     case False{}:
       e
@@ -63,7 +63,7 @@ def Req.d1(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies
     case True{}:
       Req.view(st, assoc, V.NGSetupRequest.view(ies), e)
     case False{}:
-      Req.ready(st, assoc, stream, kind, code, ies, entropy, S.Assocs.has(assoc, S.State.assocs(st)), e)
+      Req.ready(st, assoc, stream, kind, code, ies, entropy, S.Assocs.has(assoc, S.State.assocs(st)), {==}, e)
 
 def Req.ies(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, entropy: B.Bytes(), r: Ap.Rd(List<&2, Fr.Ie>), e: {N.Ngap.any_ng_setup_response(K.Kernel.actions(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r))) == True{} : Bool}) -> {N.NgSetup.supported_ies(S.State.config(st), kind, code, r) == True{} : Bool}:
   match r:

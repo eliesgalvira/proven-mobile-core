@@ -1423,6 +1423,20 @@ law amf.contexts.guarded:
   {St.Ues.guarded(St.State.ues(St.State.initial())) == True{} : Bool}
   & {St.Ues.guarded(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
 
+# TS 38.413 §8.7.1.1: every context is owned by an association that has
+# completed NG Setup, in the initial state and after every step: contexts are
+# made and moved only by messages from such an association, and NG Setup and
+# the association going down release its contexts first. A UE-associated
+# message from an association without NG Setup therefore names no context
+# (amf.ng_setup.first says what it gets).
+law amf.contexts.set_up:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +e: {St.Ues.set_up(St.State.ues(st), St.State.assocs(st)) == True{} : Bool}
+  {St.Ues.set_up(St.State.ues(St.State.initial()), St.State.assocs(St.State.initial())) == True{} : Bool}
+  & {St.Ues.set_up(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))), St.State.assocs(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
+
 # state (ticket 35)
 # -----------------
 

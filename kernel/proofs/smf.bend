@@ -923,7 +923,7 @@ def Dk.drop_assoc(+st: S.State, +assoc: U32, +e: {S.Deletions.keyed(S.State.dele
       Dk.tx(N.Out.tx(Up.N4.deletions(gone, pfcp_seq)), S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}, e)
 
 def L.smf.deletion.keyed(st, ev, entropy, k, e):
-  +held = PW.Walk.any(o => Dk.Held(o), st, ev, entropy, acts => x => e, +a => +as => acts => x => Dk.assocs(K.Kernel.state(R.Route.drop(st, a)), as, Dk.drop_assoc(st, a, e)), +tlvs => Dk.config(S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => Dk.drop_assoc(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), a, Dk.out(st, Ho.Ho.down(st, a), e)), +o => Dk.out(st, o, e))
+  +held = PW.Walk.any(o => Dk.Held(o), st, ev, entropy, acts => x => e, +a => +id => +ok => acts => x => Dk.assocs(K.Kernel.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(K.Kernel.state(R.Route.drop(st, a))), ok), Dk.drop_assoc(st, a, e)), +tlvs => Dk.config(S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => Dk.drop_assoc(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), a, Dk.out(st, Ho.Ho.down(st, a), e)), +o => Dk.out(st, o, e))
   ({==}, (held, ek => Dk.apart(k, ek)))
 
 # A deletion's guard fired
