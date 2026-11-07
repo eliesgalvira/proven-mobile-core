@@ -1,38 +1,43 @@
-#!/usr/bin/env bash
-# The gate: docs/spec/milestone-1.md § Verification.
-set -euo pipefail
-cd "$(dirname "$0")/.."
+#!/usr/bin/env nu
+# The gate: docs/spec/milestone-1.md § Verification. Any failing command
+# stops it.
 
-step() { printf '\n== %s\n' "$*"; }
+def step [name: string] {
+  print $"\n== ($name)"
+}
 
-step "1. no @unsafe or foreign import outside kernel/main.bend"
-if grep -rnE '@unsafe|^\s*def\s+\S+\?\(|^\s*import\s+"' kernel --include='*.bend' | grep -v '^kernel/main.bend:'; then
-  echo "FAIL: unsafe or foreign code outside kernel/main.bend"
-  exit 1
-fi
+def main [] {
+  cd ($env.FILE_PWD | path dirname)
 
-step "2. bend kernel/PROOF.bend"
-timeout 1500 bend kernel/PROOF.bend
+  step "1. no @unsafe or foreign import outside kernel/main.bend"
+  let unsafe = glob --no-dir kernel/**/*.bend
+    | each {|f| $f | path relative-to (pwd) }
+    | where $it != "kernel/main.bend"
+    | each {|f| open --raw $f | lines | enumerate | where {|l| $l.item =~ '@unsafe|^\s*def\s+\S+\?\(|^\s*import\s+"' } | each {|l| $"($f):($l.index + 1):($l.item)" } }
+    | flatten
+  if ($unsafe | is-not-empty) {
+    $unsafe | each {|l| print $l }
+    error make {msg: "unsafe or foreign code outside kernel/main.bend"}
+  }
 
-step "3. bend kernel/PROOF.bend --verdict"
-timeout 1500 bend kernel/PROOF.bend --verdict
+  step "2. bend kernel/PROOF.bend"
+  ^timeout 1500 bend kernel/PROOF.bend
 
-step "4. kernel tests"
-scripts/test-kernel.sh
+  step "3. bend kernel/PROOF.bend --verdict"
+  ^timeout 1500 bend kernel/PROOF.bend --verdict
 
-if [ -d edge ]; then
+  step "4. kernel tests"
+  ^nu scripts/test-kernel.sh
+
   step "5. cargo test (edge)"
-  (cd edge && timeout 1500 cargo test --quiet)
-else
-  step "5. cargo test: no edge/ yet"
-fi
+  do { cd edge; ^timeout 1500 cargo test --quiet }
 
-step "6. acceptance list"
-python3 -I scripts/acceptance.py
+  step "6. acceptance list"
+  ^python3 -I scripts/acceptance.py
 
-step "7. ngap: generated code is current and agrees with pycrate on the capture"
-python3 -I tools/ngap-gen/test_gen.py
-python3 -I tools/ngap-gen/oracle.py
+  step "7. ngap: generated code is current and agrees with pycrate on the capture"
+  ^python3 -I tools/ngap-gen/test_gen.py
+  ^python3 -I tools/ngap-gen/oracle.py
 
-echo
-echo "CHECK OK"
+  print "\nCHECK OK"
+}
