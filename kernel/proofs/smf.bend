@@ -180,13 +180,13 @@ def Su.tx_revar(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U
 def Su.tx_del_session(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Su.inv(st0, ues, ss) == True{} : Bool}) -> {Su.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
   SUnique.sift(S.SExcept{key}, ss, e)
 
-def Down.sunique(st: S.State, +assoc: U32, e: {S.Sessions.unique(S.State.sessions(st)) == True{} : Bool}) -> {S.Sessions.unique(S.State.sessions(K.Kernel.state(K.Kernel.drop(st, assoc)))) == True{} : Bool}:
+def Down.sunique(st: S.State, +assoc: U32, e: {S.Sessions.unique(S.State.sessions(st)) == True{} : Bool}) -> {S.Sessions.unique(S.State.sessions(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
       SUnique.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, sessions, e)
 
 def L.smf.ip_pool.unique(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => S.Sessions.unique(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => Down.sunique(s, a, e1)))
+  ({==}, PL.Inv.step(ues => ss => S.Sessions.unique(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => Down.sunique(s, a, e1), a => s => e1 => Down.sunique(s, a, e1)))
 
 # Rows of a unique table
 # ----------------------
@@ -310,13 +310,13 @@ def Bd.tx_revar(+st0: S.State, +ep: {Bd.pre(st0) == True{} : Bool}, +key: U32, +
 def Bd.tx_del_session(+st0: S.State, +ep: {Bd.pre(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Bd.inv(st0, ues, ss) == True{} : Bool}) -> {Bd.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
   Bd.sift(S.SExcept{key}, ss, e)
 
-def Bd.down(+st: S.State, +assoc: U32, +e: {Gsm.Gsm.bounded(S.State.sessions(st)) == True{} : Bool}) -> {Gsm.Gsm.bounded(S.State.sessions(K.Kernel.state(K.Kernel.drop(st, assoc)))) == True{} : Bool}:
+def Bd.down(+st: S.State, +assoc: U32, +e: {Gsm.Gsm.bounded(S.State.sessions(st)) == True{} : Bool}) -> {Gsm.Gsm.bounded(S.State.sessions(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
       Bd.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, sessions, e)
 
 def L.smf.packet_filters.capacity_reject(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => Gsm.Gsm.bounded(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Bd.down(s, a, e1)))
+  ({==}, PL.Inv.step(ues => ss => Gsm.Gsm.bounded(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Bd.down(s, a, e1), a => s => e1 => Bd.down(s, a, e1)))
 
 def L.smf.epco.response_bounded(cfg, wanted):
   match wanted:
@@ -414,13 +414,13 @@ def Kw.tx_revar(+st0: S.State, +ep: {Kw.pre(st0) == True{} : Bool}, +key: U32, +
 def Kw.tx_del_session(+st0: S.State, +ep: {Kw.pre(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Kw.inv(st0, ues, ss) == True{} : Bool}) -> {Kw.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
   Kw.sift(S.SExcept{key}, ss, e)
 
-def Kw.down(+st: S.State, +assoc: U32, +e: {S.Sessions.known(S.State.sessions(st)) == True{} : Bool}) -> {S.Sessions.known(S.State.sessions(K.Kernel.state(K.Kernel.drop(st, assoc)))) == True{} : Bool}:
+def Kw.down(+st: S.State, +assoc: U32, +e: {S.Sessions.known(S.State.sessions(st)) == True{} : Bool}) -> {S.Sessions.known(S.State.sessions(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
       Kw.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, sessions, e)
 
 def L.smf.sessions.known(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => S.Sessions.known(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Kw.down(s, a, e1)))
+  ({==}, PL.Inv.step(ues => ss => S.Sessions.known(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Kw.down(s, a, e1), a => s => e1 => Kw.down(s, a, e1)))
 
 # A failed establishment leaves nothing
 # -------------------------------------
@@ -916,14 +916,14 @@ def Dk.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B
           +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}, []}}
           Dk.out(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]), {==})
 
-def Dk.drop_assoc(+st: S.State, +assoc: U32, +e: {S.Deletions.keyed(S.State.deletions(st)) == True{} : Bool}) -> Dk.Held(K.Kernel.drop(st, assoc)):
+def Dk.drop_assoc(+st: S.State, +assoc: U32, +e: {S.Deletions.keyed(S.State.deletions(st)) == True{} : Bool}) -> Dk.Held(R.Route.drop(st, assoc)):
   match st:
     case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
       +gone = S.Sessions.sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions)
       Dk.tx(N.Out.tx(Up.N4.deletions(gone, pfcp_seq)), S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}, e)
 
 def L.smf.deletion.keyed(st, ev, entropy, k, e):
-  +held = PW.Walk.any(o => Dk.Held(o), st, ev, entropy, acts => x => e, +as => acts => x => Dk.assocs(st, as, e), +tlvs => Dk.config(S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => Dk.drop_assoc(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), a, Dk.out(st, Ho.Ho.down(st, a), e)), +o => Dk.out(st, o, e))
+  +held = PW.Walk.any(o => Dk.Held(o), st, ev, entropy, acts => x => e, +a => +as => acts => x => Dk.assocs(K.Kernel.state(R.Route.drop(st, a)), as, Dk.drop_assoc(st, a, e)), +tlvs => Dk.config(S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => Dk.drop_assoc(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), a, Dk.out(st, Ho.Ho.down(st, a), e)), +o => Dk.out(st, o, e))
   ({==}, (held, ek => Dk.apart(k, ek)))
 
 # A deletion's guard fired

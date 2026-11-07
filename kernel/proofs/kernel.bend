@@ -198,7 +198,7 @@ def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.o
 # An association going down
 # -------------------------
 
-def Down.none(+st: S.State, +assoc: U32) -> {S.Ues.none_assoc(assoc, S.State.ues(K.Kernel.state(K.Kernel.drop(st, assoc)))) == True{} : Bool}:
+def Down.none(+st: S.State, +assoc: U32) -> {S.Ues.none_assoc(assoc, S.State.ues(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
       Ues.drop_none(assoc, ues)
@@ -474,7 +474,7 @@ def Unique.rephase(+key: U32, +p: S.Phase, ues: Tb.Table(S.Ue)) -> {S.Ues.unique
 # a Del and an association going down are siftings (amf.indexes.unique, in
 # liveness.bend).
 
-def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.drop(st, assoc)))) == True{} : Bool}:
+def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Unique.sift(S.Others{assoc}, ues, e)
@@ -565,10 +565,13 @@ def Cfgv.assocs(st: S.State, as: Tb.Table(B.Bytes())) -> {S.State.config(S.State
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
 
-def Cfgv.down(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.drop(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+def Cfgv.down(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(R.Route.drop(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
+
+def Cfgv.down_all(+st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(R.Route.down(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  Equal.trans(Maybe<&2, S.Cfg>, S.State.config(K.Kernel.state(R.Route.down(st, assoc))), S.State.config(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc)))), S.State.config(st), Cfgv.down(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc))), assoc), Cfgv.render(st, Ho.Ho.down(st, assoc)))
 
 # The configuration a state holds is valid, if it holds one.
 def Cfgv.held(m: Maybe<&2, S.Cfg>) -> Bool:
@@ -606,7 +609,7 @@ def Cfgv.config(complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: 
 
 def L.kernel.config.valid(st, ev, entropy, cfg, e, ec):
   +h = Cfgv.of(S.State.config(st), e)
-  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => h, +as => acts => x => Cfgv.kept(st, S.State.with_assocs(st, as), Cfgv.assocs(st, as), h), +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(K.Kernel.assoc_down(st, a)), Equal.trans(Maybe<&2, S.Cfg>, S.State.config(K.Kernel.state(K.Kernel.assoc_down(st, a))), S.State.config(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a)))), S.State.config(st), Cfgv.down(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), a), Cfgv.render(st, Ho.Ho.down(st, a))), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
+  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => h, +a => +as => acts => x => Cfgv.kept(st, S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), as), Equal.trans(Maybe<&2, S.Cfg>, S.State.config(S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), as)), S.State.config(N.Step.state(R.Route.drop(st, a))), S.State.config(st), Cfgv.assocs(N.Step.state(R.Route.drop(st, a)), as), Cfgv.down(st, a)), h), +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(R.Route.down(st, a)), Cfgv.down_all(st, a), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
   ({==}, (%ec : {Cfgv.held(_) == True{} : Bool}; held))
 
 # GHSA-f9c2-535p-3mwc: a PLMN that decodes names a serving network.

@@ -16,14 +16,10 @@ import ./amf/handover.bend as Ho
 # pure; every law about a procedure is a law about it.
 
 def Kernel.state(o: N.Step()) -> S.State:
-  match o:
-    case (st, actions):
-      st
+  N.Step.state(o)
 
 def Kernel.actions(o: N.Step()) -> List<&2, N.Act>:
-  match o:
-    case (st, actions):
-      actions
+  N.Step.acts(o)
 
 # The actions as the edge receives them.
 def Kernel.frames(o: N.Step()) -> List<&2, F.Action>:
@@ -40,24 +36,6 @@ def Kernel.config(complete: Bool, st: S.State, +tlvs: List<&2, T.Tlv>, +entropy:
           +cfg = S.Cfg.of(tlvs)
           +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}, []}}
           N.Step.of(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]))
-
-# An association going down releases every UE it owned, their sessions at the
-# UPF included, and stops the guards of the sessions gone. The deletions
-# change only the N4 side and the sequence numbers.
-def Kernel.drop(st: S.State, +assoc: U32) -> N.Step():
-  match st:
-    case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
-      +left = S.Ues.drop_assoc(assoc, ues)
-      +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
-      +o = Up.N4.deletions(gone, pfcp_seq)
-      +st1 = S.Tx.apply(N.Out.tx(o), S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4})
-      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, S.Sessions.sift(S.SOwned{left}, sessions), S.State.pfcp_seq(st1), next_ue, S.State.n4(st1)}, List.append(&2, N.Act, N.Out.acts(o), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Gone.cancels(gone, [])))
-
-# First the N2 handovers it takes part in end (Ho.Ho.down), then its UEs go.
-def Kernel.assoc_down(+st: S.State, +assoc: U32) -> N.Step():
-  +s1 = N.Step.of(st, Ho.Ho.down(st, assoc))
-  +s2 = Kernel.drop(Kernel.state(s1), assoc)
-  (Kernel.state(s2), List.append(&2, N.Act, Kernel.actions(s1), Kernel.actions(s2)))
 
 # A guard timer fired: a UE's, a session's, a pending deletion's, or the N4
 # association's (timer 0).
@@ -100,7 +78,7 @@ def Kernel.step(+st: S.State, ev: F.Evt, +entropy: B.Bytes()) -> N.Step():
     case F.NgapAssocUp{assoc}:
       (st, [])
     case F.NgapAssocDown{assoc}:
-      Kernel.assoc_down(st, assoc)
+      R.Route.down(st, assoc)
     case F.NgapData{assoc, stream, len, bytes}:
       R.Route.data(st, assoc, stream, bytes, entropy)
     case F.PfcpData{len, bytes}:

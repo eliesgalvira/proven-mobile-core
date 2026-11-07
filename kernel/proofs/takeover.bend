@@ -1924,11 +1924,13 @@ def Tk.out(+st: S.State, +o: N.GOut(), +k: U32, +u: S.Ue, w: Tk.Ok(k, u, S.State
   (%se : Tk.Kept(k, u, _); w)
 
 # NG Setup changes the associations set up, no context.
-def Tk.assocs(+st: S.State, +as: Tb.Table(B.Bytes()), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Kept(k, u, S.State.ues(S.State.with_assocs(st, as))):
+# NG Setup releases only its own association's contexts.
+def Tk.assocs(+st: S.State, +assoc: U32, +as: Tb.Table(B.Bytes()), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(S.State.with_assocs(N.Step.state(R.Route.drop(st, assoc)), as))):
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-      Inl{eu}
+    case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
+      sa = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(u), assoc), False{}, ea)
+      Inl{Sift.get(S.Others{assoc}, k, u, ues, eu, (%sa : {Bool.not(_) == True{} : Bool}; {==}))}
 
 def L.amf.takeover.authenticated(st, entropy, assoc, stream, len, bytes, k, u, e, eu, ea, eg):
   +x = S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
-  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => Tk.kept_get(k, u, S.State.ues(st), eu), +as => acts => h => Tk.assocs(st, as, k, u, eu), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))
+  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => Tk.kept_get(k, u, S.State.ues(st), eu), +as => acts => h => Tk.assocs(st, assoc, as, k, u, eu, ea), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))

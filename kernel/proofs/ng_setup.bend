@@ -31,12 +31,23 @@ def Req.reply(config: Maybe<&2, S.Cfg>, +assoc: U32, v: V.NGSetupRequest.View, e
         case V.NGSetupRequest.View{globalrannodeid, +supportedtalist, defaultpagingdrx}:
           Req.answer(cfg, assoc, N.Ta.supported(S.Cfg.plmn(cfg), S.Cfg.tac(cfg), supportedtalist), e)
 
-def Req.view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, e: {N.Ngap.any_ng_setup_response(K.Kernel.actions(N.NgSetup.of_view(st, assoc, r))) == True{} : Bool}) -> {N.NgSetup.supported_of_view(S.State.config(st), r) == True{} : Bool}:
+# A setup response among xs ++ ys, none among xs, is among ys.
+def Req.skip(+xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Ngap.any_ng_setup_response(xs) == False{} : Bool}, +e: {N.Ngap.any_ng_setup_response(List.append(&2, N.Act, xs, ys)) == True{} : Bool}) -> {N.Ngap.any_ng_setup_response(ys) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      e
+    case +a <> +more:
+      +ha = P.Bool.or_false_l(N.Ngap.is_ng_setup_response(a), N.Ngap.any_ng_setup_response(more), h)
+      Req.skip(more, ys, P.Bool.or_false_r(N.Ngap.is_ng_setup_response(a), N.Ngap.any_ng_setup_response(more), h), P.Bool.or_true_r(N.Ngap.is_ng_setup_response(a), N.Ngap.any_ng_setup_response(List.append(&2, N.Act, more, ys)), ha, e))
+
+def Req.view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, e: {N.Ngap.any_ng_setup_response(K.Kernel.actions(R.Route.setup(st, assoc, r))) == True{} : Bool}) -> {N.NgSetup.supported_of_view(S.State.config(st), r) == True{} : Bool}:
   match r:
     case Fail{err}:
       Empty.absurd({False{} == True{} : Bool}, P.Refute.bool(e))
     case Done{+v}:
-      Req.reply(S.State.config(st), assoc, v, P.Bool.or_true_l(N.Ngap.is_ng_setup_response(N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}), False{}, {==}, e))
+      +acts = K.Kernel.actions(R.Route.drop(st, assoc))
+      +x : N.Act = N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}
+      Req.reply(S.State.config(st), assoc, v, P.Bool.or_true_l(N.Ngap.is_ng_setup_response(x), False{}, {==}, Req.skip(acts, [x], PL.Lv.no_response(st, acts, PL.Lv.drop_acts(st, assoc)), e)))
 
 def Req.ready(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), b: Bool, e: {N.Ngap.any_ng_setup_response(K.Kernel.actions(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b))) == True{} : Bool}) -> {False{} == True{} : Bool}:
   match b:
