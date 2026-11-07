@@ -173,8 +173,9 @@ def Nh.initial(k_amf: B.Bytes(), k_gnb: B.Bytes()) -> Nh:
 
 # Where a UE is in registration. Every phase but Registered carries the guard
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
-# security mode, T3550 setting up the context, and the wait for the gNB's UE
-# Context Release Complete), so no context waits forever. Created is a context
+# security mode, T3550 setting up the context, the Path Switch waiting on the
+# UPF, and the wait for the gNB's UE Context Release Complete), so no context
+# waits forever. Created is a context
 # the InitialUEMessage has just made, before its first procedure places it;
 # no stored context is in it (amf.contexts.guarded). The SUPI a SUCI
 # de-conceals to stays in Authenticating, out of the SUPI index, until 5G-AKA
@@ -186,6 +187,7 @@ type Phase is Data:
   SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
   Registered{ctx: N.Nas.Ctx, nh: Nh}
+  Switching{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, released: List<&2, U32>}
   Releasing{guard: Guard}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
@@ -202,6 +204,8 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       Some{guard}
     case Registered{ctx, nh}:
       None{}
+    case Switching{guard, ctx, nh, released}:
+      Some{guard}
     case Releasing{guard}:
       Some{guard}
 
@@ -229,6 +233,8 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       ContextSetup{g, ctx, nh, response, complete}
     case Registered{ctx, nh}:
       Registered{ctx, nh}
+    case Switching{guard, ctx, nh, released}:
+      Switching{g, ctx, nh, released}
     case Releasing{guard}:
       Releasing{g}
 
@@ -241,6 +247,8 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
       Some{ctx}
     case Registered{ctx, nh}:
       Some{ctx}
+    case Switching{guard, ctx, nh, released}:
+      Some{ctx}
     case _:
       None{}
 
@@ -252,6 +260,8 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
       ContextSetup{guard, c, nh, response, complete}
     case Registered{ctx, nh}:
       Registered{c, nh}
+    case Switching{guard, ctx, nh, released}:
+      Switching{guard, c, nh, released}
     case other:
       other
 
@@ -336,6 +346,12 @@ def Ue.with_reg(u: Ue, r: B.Bytes()) -> Ue:
     case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       Ue{assoc, ran_id, stream, supi, tmsi, r, ngksi, phase, last_dl}
 
+# The context owned by another association, under its RAN-UE-NGAP-ID and stream there.
+def Ue.moved(u: Ue, a: U32, r: B.Bytes(), s: U32, p: Phase) -> Ue:
+  match u:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      Ue{a, r, s, supi, tmsi, reg, ngksi, p, last_dl}
+
 # A PDU session, keyed by its local SEID. Its identity (the UE, the PDU
 # session identity, the UE IPv4 address, the N3 uplink TEID) never changes;
 # the rest does as the procedure advances.
@@ -345,12 +361,14 @@ type SId is Data:
 # Where a session is: PFCP Session Establishment pending (the PTI, the Accept
 # to send on success and the request, kept to send again), the gNB's resource
 # setup pending, the PFCP Session Modification with the gNB's tunnel pending
-# (the request kept the same way), or active. A guard counts its PFCP
+# (the request kept the same way), the one repointing the downlink to a Path
+# Switch's target pending (likewise), or active. A guard counts its PFCP
 # request's retransmissions.
 type SPhase is Data:
   Creating{guard: Guard, pti: U32, accept: Sm.Sm, request: B.Bytes()}
   Setting{guard: Guard, pti: U32}
   Modifying{guard: Guard, request: B.Bytes()}
+  Repointing{guard: Guard, request: B.Bytes()}
   Active{}
 
 def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
@@ -360,6 +378,8 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
     case Setting{guard, pti}:
       Some{guard}
     case Modifying{guard, request}:
+      Some{guard}
+    case Repointing{guard, request}:
       Some{guard}
     case Active{}:
       None{}
@@ -536,6 +556,7 @@ def State.n4(st: State) -> N4:
 
 # Associations
 # ------------
+# The NGAP associations whose gNB has completed NG Setup (TS 38.413 §8.7.1).
 
 def Assocs.has(+a: U32, as: List<&2, U32>) -> Bool:
   match as:
@@ -567,6 +588,23 @@ def Assocs.drop(+a: U32, as: List<&2, U32>) -> List<&2, U32>:
       []
     case +b <> more:
       Assocs.drop_if(b, Assocs.drop(a, more), U32.is_eq(b, a))
+
+def State.with_assocs(st: State, as: List<&2, U32>) -> State:
+  match st:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      State{config, subs, as, ues, sessions, pfcp_seq, next_ue, n4}
+
+def Assocs.set(+a: U32, +as: List<&2, U32>, ok: Bool) -> List<&2, U32>:
+  match ok:
+    case True{}:
+      Assocs.add(a, as)
+    case False{}:
+      Assocs.drop(a, as)
+
+# NG Setup answered: the association is set up when it succeeded, and not
+# otherwise, since a new NG Setup replaces what the last one set up.
+def State.ready(+st: State, +a: U32, ok: Bool) -> State:
+  State.with_assocs(st, Assocs.set(a, State.assocs(st), ok))
 
 # UE contexts of an association
 # -----------------------------

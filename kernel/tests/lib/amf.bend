@@ -236,6 +236,8 @@ def phase_of(p: S.Phase) -> String:
       "context_setup"
     case S.Registered{ctx, nh}:
       "registered"
+    case S.Switching{g, ctx, nh, released}:
+      "switching"
     case S.Created{}:
       "created"
     case S.Releasing{g}:

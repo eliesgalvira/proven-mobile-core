@@ -7,45 +7,53 @@ import ../state.bend as S
 import ./ngap.bend as N
 import ./gmm.bend as Gmm
 import ../smf/gsm.bend as Gsm
+import ./path_switch.bend as Ps
 
 # Incoming NGAP PDUs: decode, then tell the procedures apart by comparing the
 # PDU kind and procedure code in turn, so that a proof can follow each branch.
 # Every UE procedure answers with a transaction; NG Setup alone answers directly.
 
-def Route.d7(st: S.State, +assoc: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+def Route.d8(st: S.State, +assoc: U32, stream: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+  match ok:
+    case True{}:
+      Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))
+    case False{}:
+      (S.Keep{}, N.Ngap.unhandled(assoc))
+
+def Route.d7(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gsm.Gsm.setup_response_of_view(st, assoc, V.PDUSessionResourceSetupResponse.view(ies))
     case False{}:
-      (S.Keep{}, N.Ngap.unhandled(assoc))
+      Route.d8(st, assoc, stream, ies, N.Ngap.is_path_switch_request(kind, code))
 
-def Route.d6(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+def Route.d6(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.release_complete_of_view(st, assoc, V.UEContextReleaseComplete.view(ies))
     case False{}:
-      Route.d7(st, assoc, ies, N.Ngap.is_pdu_session_resource_setup_response(kind, code))
+      Route.d7(st, assoc, stream, kind, code, ies, N.Ngap.is_pdu_session_resource_setup_response(kind, code))
 
-def Route.d5(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+def Route.d5(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.release_request_of_view(st, assoc, V.UEContextReleaseRequest.view(ies))
     case False{}:
-      Route.d6(st, assoc, kind, code, ies, N.Ngap.is_ue_context_release_complete(kind, code))
+      Route.d6(st, assoc, stream, kind, code, ies, N.Ngap.is_ue_context_release_complete(kind, code))
 
-def Route.d4(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+def Route.d4(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.ics_response_of_view(st, assoc, V.InitialContextSetupResponse.view(ies))
     case False{}:
-      Route.d5(st, assoc, kind, code, ies, N.Ngap.is_ue_context_release_request(kind, code))
+      Route.d5(st, assoc, stream, kind, code, ies, N.Ngap.is_ue_context_release_request(kind, code))
 
 def Route.d3(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.uplink_of_view(st, assoc, stream, entropy, V.UplinkNASTransport.view(ies))
     case False{}:
-      Route.d4(st, assoc, kind, code, ies, N.Ngap.is_initial_context_setup_response(kind, code))
+      Route.d4(st, assoc, stream, kind, code, ies, N.Ngap.is_initial_context_setup_response(kind, code))
 
 def Route.d2(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.GOut():
   match ok:

@@ -6,6 +6,8 @@ import ../ngap/gen/types.bend as G
 import ../ngap/gen/views.bend as V
 import ../frame.bend as F
 import ../nas/security.bend as Sec
+import ../nas/ie.bend as I
+import ../nas/mm.bend as Mm
 import ../state.bend as S
 import ../table.bend as Tb
 
@@ -107,6 +109,9 @@ def Ngap.is_ue_context_release_complete(+kind: Nat, +code: Nat) -> Bool:
 
 def Ngap.is_pdu_session_resource_setup_response(+kind: Nat, +code: Nat) -> Bool:
   Ngap.is_procedure(kind, code, Fr.Pdu.successful(), G.Proc.PDUSessionResourceSetup())
+
+def Ngap.is_path_switch_request(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.PathSwitchRequest())
 
 # What the laws ask of a reply: whether an action carries an NG Setup Response,
 # and whether a request's supported TA list names the configured PLMN and TAC.
@@ -228,6 +233,22 @@ def Ngap.alg_bits(b: U32) -> Ap.Bits():
 def Ngap.ue_caps(+caps: B.Bytes()) -> G.UESecurityCapabilities:
   G.UESecurityCapabilities{Ngap.alg_bits(Ngap.cap_byte(caps, 0n)), Ngap.alg_bits(Ngap.cap_byte(caps, 1n)), Ngap.alg_bits(Ngap.cap_byte(caps, 2n)), Ngap.alg_bits(Ngap.cap_byte(caps, 3n)), None{}}
 
+# T3570, T3560 and T3550 all default to 6 s; the wait for UE Context Release
+# Complete is bounded the same way.
+def Ue.guard_ms() -> U32:
+  6000
+
+# The UE security capability of the Registration Request held for the UE.
+def Ue.caps_of(r: Result<&2, &2, B.Err, Mm.Mm>) -> B.Bytes():
+  match r:
+    case Fail{e}:
+      []
+    case Done{Mm.Mm{mt, fields, opts}}:
+      I.Bytes.or(I.Opts.find(I.Iei.ue_security_capability(), opts), [])
+
+def Ue.caps(ue: S.Ue) -> B.Bytes():
+  Ue.caps_of(Mm.Mm.read(S.Ue.reg(ue)))
+
 def Ngap.ics_request(key: U32, ran_id: B.Bytes(), +cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), G.Proc.InitialContextSetup(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.GUAMI(), Fr.Criticality.reject(), G.GUAMI.write(NgSetup.guami(cfg), 0n, [])), Ngap.ie(G.Id.AllowedNSSAI(), Fr.Criticality.reject(), G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{S.Cfg.sst(cfg), None{}, None{}}, None{}}], 0n, [])), Ngap.ie(G.Id.UESecurityCapabilities(), Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(G.Id.SecurityKey(), Fr.Criticality.reject(), G.SecurityKey.write(Ap.unpack(k_gnb), 0n, [])), Ngap.ie(G.Id.NAS_PDU(), Fr.Criticality.ignore(), G.NAS_PDU.write(nas, 0n, []))])
 
@@ -242,14 +263,68 @@ def Ngap.ue_ambr() -> Ap.Bits():
 def Ngap.pdu_setup(key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), G.Proc.PDUSessionResourceSetup(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.PDUSessionResourceSetupListSUReq(), Fr.Criticality.reject(), G.PDUSessionResourceSetupListSUReq.write([G.PDUSessionResourceSetupItemSUReq{psi, Some{nas}, G.S_NSSAI{sst, None{}, None{}}, transfer, None{}}], 0n, [])), Ngap.ie(G.Id.UEAggregateMaximumBitRate(), Fr.Criticality.ignore(), Ngap.ue_ambr())])
 
+# Path Switch (§8.4.4)
+# --------------------
+
+# The PDU sessions a Path Switch Request Acknowledge or Failure releases, each
+# with its cause.
+def Ngap.unsuccessful(cause: G.Cause) -> B.Bytes():
+  Ap.pack(G.PathSwitchRequestUnsuccessfulTransfer.write(G.PathSwitchRequestUnsuccessfulTransfer{cause, None{}}, 0n, []))
+
+def Ngap.released_ack(psis: List<&2, U32>, +cause: G.Cause) -> G.PDUSessionResourceReleasedListPSAck():
+  match psis:
+    case Nil{}:
+      []
+    case p <> more:
+      G.PDUSessionResourceReleasedItemPSAck{p, Ngap.unsuccessful(cause), None{}} <> Ngap.released_ack(more, cause)
+
+def Ngap.released_fail(psis: List<&2, U32>, +cause: G.Cause) -> G.PDUSessionResourceReleasedListPSFail():
+  match psis:
+    case Nil{}:
+      []
+    case p <> more:
+      G.PDUSessionResourceReleasedItemPSFail{p, Ngap.unsuccessful(cause), None{}} <> Ngap.released_fail(more, cause)
+
+# The uplink tunnel stays, so each switched session's transfer is empty.
+def Ngap.switched(psis: List<&2, U32>) -> G.PDUSessionResourceSwitchedList():
+  match psis:
+    case Nil{}:
+      []
+    case p <> more:
+      G.PDUSessionResourceSwitchedItem{p, Ap.pack(G.PathSwitchRequestAcknowledgeTransfer.write(G.PathSwitchRequestAcknowledgeTransfer{None{}, None{}, None{}}, 0n, [])), None{}} <> Ngap.switched(more)
+
+def Ngap.released_ies(psis: List<&2, U32>) -> List<&2, Fr.Ie>:
+  match psis:
+    case Nil{}:
+      []
+    case p <> more:
+      [Ngap.ie(G.Id.PDUSessionResourceReleasedListPSAck(), Fr.Criticality.ignore(), G.PDUSessionResourceReleasedListPSAck.write(Ngap.released_ack(p <> more, Ngap.radio_cause(G.CauseRadioNetwork.unspecified())), 0n, []))]
+
+def Ngap.security_context(c: S.Nh) -> G.SecurityContext:
+  match c:
+    case S.Nh{k_amf, nh, ncc}:
+      G.SecurityContext{ncc, Ap.unpack(nh), None{}}
+
+# Path Switch Request Acknowledge: the UE security capabilities the AMF holds,
+# the next {NH, NCC}, the sessions switched and those released, the slice.
+def Ngap.path_switch_ack(key: U32, ran_id: B.Bytes(), +caps: B.Bytes(), nh: S.Nh, switched: List<&2, U32>, released: List<&2, U32>, sst: B.Bytes()) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.successful(), G.Proc.PathSwitchRequest(), Fr.Criticality.reject(), List.append(&2, Fr.Ie, [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.UESecurityCapabilities(), Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(G.Id.SecurityContext(), Fr.Criticality.reject(), G.SecurityContext.write(Ngap.security_context(nh), 0n, [])), Ngap.ie(G.Id.PDUSessionResourceSwitchedList(), Fr.Criticality.ignore(), G.PDUSessionResourceSwitchedList.write(Ngap.switched(switched), 0n, []))], List.append(&2, Fr.Ie, Ngap.released_ies(released), [Ngap.ie(G.Id.AllowedNSSAI(), Fr.Criticality.reject(), G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{sst, None{}, None{}}, None{}}], 0n, []))])))
+
+# Path Switch Request Failure: the PDU sessions named, released with a cause.
+def Ngap.path_switch_failure(amf: B.Bytes(), ran_id: B.Bytes(), psis: List<&2, U32>, cause: G.Cause) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.unsuccessful(), G.Proc.PathSwitchRequest(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write(amf, 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.PDUSessionResourceReleasedListPSFail(), Fr.Criticality.ignore(), G.PDUSessionResourceReleasedListPSFail.write(Ngap.released_fail(psis, cause), 0n, []))])
+
 # What a step asks for, rendered to frame actions for the edge (Kernel.frames). Each
 # action names the UE context it is built from, if any: the AMF-UE-NGAP-ID of
-# a UE-associated NGAP message, the UE of a PFCP session message or a guard.
+# a UE-associated NGAP message, the UE of a PFCP session message or a guard. A
+# Path Switch Request Failure that echoes the request's IDs names none.
 type Act is Data:
   DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
   Ics{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()}
   PduSetup{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()}
   Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
+  SwitchAck{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), caps: B.Bytes(), nh: S.Nh, switched: List<&2, U32>, released: List<&2, U32>, sst: B.Bytes()}
+  SwitchFail{assoc: U32, stream: U32, ue: Maybe<&2, U32>, amf: B.Bytes(), ran_id: B.Bytes(), psis: List<&2, U32>, cause: G.Cause}
   ErrInd{assoc: U32, cause: G.Cause}
   Setup{assoc: U32, answer: B.Bytes()}
   Pfcp{ue: Maybe<&2, U32>, bytes: B.Bytes()}
@@ -271,6 +346,10 @@ def Act.render(a: Act) -> F.Action:
       Ngap.send(assoc, stream, Ngap.pdu_setup(key, ran_id, psi, sst, nas, transfer))
     case Release{assoc, stream, key, ran_id, cause}:
       Ngap.send(assoc, stream, Ngap.release_command(key, ran_id, cause))
+    case SwitchAck{assoc, stream, key, ran_id, caps, nh, switched, released, sst}:
+      Ngap.send(assoc, stream, Ngap.path_switch_ack(key, ran_id, caps, nh, switched, released, sst))
+    case SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
+      Ngap.send(assoc, stream, Ngap.path_switch_failure(amf, ran_id, psis, cause))
     case ErrInd{assoc, cause}:
       Ngap.error_indication(assoc, cause)
     case Setup{assoc, answer}:
@@ -294,6 +373,10 @@ def Act.ue(a: Act) -> Maybe<&2, U32>:
       Some{key}
     case Release{assoc, stream, key, ran_id, cause}:
       Some{key}
+    case SwitchAck{assoc, stream, key, ran_id, caps, nh, switched, released, sst}:
+      Some{key}
+    case SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
+      ue
     case Pfcp{ue, bytes}:
       ue
     case TimerStart{ue, timer, ms}:
@@ -456,9 +539,10 @@ def Ngap.no_key(assoc: U32) -> List<&2, Act>:
 def Ngap.unknown_ue(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID())}, Note{F.Warn{}, "NGAP: UE-associated message for a UE this association does not own"}]
 
+# NG Setup answered; the association is set up when the answer is a Response.
 def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> Step():
   match r:
     case Fail{e}:
       (st, Ngap.bad_view(assoc))
-    case Done{v}:
-      (st, [Setup{assoc, NgSetup.reply(S.State.config(st), v)}])
+    case Done{+v}:
+      (S.State.ready(st, assoc, NgSetup.supported_view(S.State.config(st), v)), [Setup{assoc, NgSetup.reply(S.State.config(st), v)}])

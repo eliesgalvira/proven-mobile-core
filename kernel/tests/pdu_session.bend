@@ -17,6 +17,7 @@ import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
 import ./lib/amf.bend as A
+import ./lib/pfcp.bend as Pc
 
 # Replays the captured PDU session establishment after the captured
 # registration: the UL NAS Transport opens a session whose PFCP Session
@@ -33,149 +34,12 @@ def entropy() -> B.Bytes():
 def step(st: S.State, ev: F.Evt) -> N.Step():
   K.Kernel.step(st, ev, entropy())
 
-def pfcp_sends(actions: List<&2, F.Action>) -> List<&2, B.Bytes()>:
-  match actions:
-    case Nil{}:
-      []
-    case F.PfcpSend{len, bytes} <> more:
-      bytes <> pfcp_sends(more)
-    case a <> more:
-      pfcp_sends(more)
-
-def head_or_empty(bs: List<&2, B.Bytes()>) -> B.Bytes():
-  match bs:
-    case Nil{}:
-      []
-    case b <> more:
-      b
-
-def first_pfcp(actions: List<&2, F.Action>) -> B.Bytes():
-  head_or_empty(pfcp_sends(actions))
-
-def msg_of(r: B.Read(Pf.Msg)) -> Maybe<&2, Pf.Msg>:
-  match r:
-    case Fail{e}:
-      None{}
-    case Done{(m, rest)}:
-      Some{m}
-
-def kind_of(m: Maybe<&2, Pf.Msg>) -> U32:
-  match m:
-    case None{}:
-      0
-    case Some{m}:
-      Pf.Msg.kind(m)
-
-def seq_of(m: Maybe<&2, Pf.Msg>) -> U32:
-  match m:
-    case None{}:
-      0
-    case Some{m}:
-      Pf.Msg.seq(m)
-
-def ies_in(m: Maybe<&2, Pf.Msg>) -> List<&2, T.Tlv>:
-  match m:
-    case None{}:
-      []
-    case Some{m}:
-      Pf.Msg.ies(m)
-
-def pfcp_kind(bytes: B.Bytes()) -> U32:
-  kind_of(msg_of(Pf.Msg.read(bytes)))
-
-def pfcp_seq(bytes: B.Bytes()) -> U32:
-  seq_of(msg_of(Pf.Msg.read(bytes)))
-
-def pfcp_ies(bytes: B.Bytes()) -> List<&2, T.Tlv>:
-  ies_in(msg_of(Pf.Msg.read(bytes)))
-
-def body_of(m: Maybe<&2, T.Tlv>) -> B.Bytes():
-  match m:
-    case None{}:
-      []
-    case Some{t}:
-      T.Tlv.body(t)
-
-def tlvs_or(r: Result<&2, &2, B.Err, List<&2, T.Tlv>>) -> List<&2, T.Tlv>:
-  match r:
-    case Fail{e}:
-      []
-    case Done{tl}:
-      tl
-
-# The body of the first IE of a kind, and the IEs inside it.
-def body(kind: U32, ies: List<&2, T.Tlv>) -> B.Bytes():
-  body_of(T.Tlvs.find(kind, ies))
-
-def inside(kind: U32, ies: List<&2, T.Tlv>) -> List<&2, T.Tlv>:
-  tlvs_or(T.Tlvs.decode(body(kind, ies)))
-
-def Bool.to_nat(b: Bool) -> Nat:
-  match b:
-    case True{}:
-      1n
-    case False{}:
-      0n
-
 def count_kind(+kind: U32, ies: List<&2, T.Tlv>) -> Nat:
   match ies:
     case Nil{}:
       0n
     case +t <> more:
-      Nat.add(Bool.to_nat(U32.is_eq(T.Tlv.kind(t), kind)), count_kind(kind, more))
-
-# A captured PFCP response, its sequence number made ours.
-def with_seq(+bytes: B.Bytes(), seq: U32) -> B.Bytes():
-  List.append(&2, U32, List.take(&2, U32, bytes, 12n), List.append(&2, U32, List.drop(&2, U32, B.write_u32(seq, []), 1n), List.drop(&2, U32, bytes, 15n)))
-
-# The captured Session Establishment Response with another cause (its Cause IE sits after the header and the Node ID).
-def with_cause(+bytes: B.Bytes(), cause: U32) -> B.Bytes():
-  List.append(&2, U32, List.take(&2, U32, bytes, 29n), cause <> List.drop(&2, U32, bytes, 30n))
-
-def pfcp_event(+bytes: B.Bytes()) -> F.Evt:
-  F.PfcpData{U32.from_nat(List.length(&2, U32, bytes)), bytes}
-
-def session1(t: Tb.Table(S.Session)) -> Maybe<&2, S.Session>:
-  match t:
-    case (key, s) <> more:
-      Some{s}
-    case _:
-      None{}
-
-def sphase_of(p: S.SPhase) -> String:
-  match p:
-    case S.Creating{g, pti, accept, request}:
-      "creating"
-    case S.Setting{g, pti}:
-      "setting"
-    case S.Modifying{g, request}:
-      "modifying"
-    case S.Active{}:
-      "active"
-
-def sphase_name(m: Maybe<&2, S.Session>) -> String:
-  match m:
-    case None{}:
-      "none"
-    case Some{s}:
-      sphase_of(S.Session.phase(s))
-
-def sphase_is(st: S.State, name: String) -> Bool:
-  String.eq(sphase_name(session1(S.State.sessions(st))), name)
-
-def session_count(st: S.State) -> Nat:
-  List.length(&2, Sigma<&2, &2, U32, _ => S.Session>, S.State.sessions(st))
-
-# A session's guard timer is its key, the first session's here.
-def key1(t: Tb.Table(S.Session)) -> U32:
-  match t:
-    case (key, s) <> more:
-      key
-    case _:
-      0
-
-def session_timer(st: S.State) -> U32:
-  key1(S.State.sessions(st))
+      Nat.add(Pc.Bool.to_nat(U32.is_eq(T.Tlv.kind(t), kind)), count_kind(kind, more))
 
 # The first item of a PDU Session Resource Setup Request: its transfer and NAS-PDU.
 def item_transfer(items: G.PDUSessionResourceSetupListSUReq()) -> B.Bytes():
@@ -214,19 +78,10 @@ def ul_transport(+sm: B.Bytes(), more: B.Bytes()) -> B.Bytes():
 def inner(nas: B.Bytes()) -> B.Bytes():
   List.drop(&2, U32, nas, 7n)
 
-def first_ms(actions: List<&2, F.Action>) -> U32:
-  match actions:
-    case Nil{}:
-      0
-    case F.TimerStart{timer, ms} <> more:
-      ms
-    case a <> more:
-      first_ms(more)
-
 # A step sends one PFCP message, of this kind and sequence number, and starts T1.
 def resent(+o: N.Step(), +kind: U32, +seq: U32) -> Bool:
-  +p : B.Bytes() = first_pfcp(K.Kernel.frames(o))
-  Bool.and(U32.is_eq(pfcp_kind(p), kind), Bool.and(U32.is_eq(pfcp_seq(p), seq), U32.is_eq(first_ms(K.Kernel.frames(o)), 3000)))
+  +p : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o))
+  Bool.and(U32.is_eq(Pc.pfcp_kind(p), kind), Bool.and(U32.is_eq(Pc.pfcp_seq(p), seq), U32.is_eq(Pc.first_ms(K.Kernel.frames(o)), 3000)))
 
 # The first session's guard, 466, fired n + 1 times in a row.
 def expire(n: Nat, st: S.State) -> N.Step():
@@ -238,34 +93,21 @@ def expire(n: Nat, st: S.State) -> N.Step():
 
 # A session request sent again unchanged, its guard started again.
 def again(+o: N.Step(), +req: B.Bytes()) -> Bool:
-  Bool.and(B.bytes_eq(first_pfcp(K.Kernel.frames(o)), req), U32.is_eq(first_ms(K.Kernel.frames(o)), 3000))
-
-# A step stops the timer with this id, how often.
-def cancel_count(actions: List<&2, F.Action>, +id: U32) -> Nat:
-  match actions:
-    case Nil{}:
-      0n
-    case F.TimerCancel{timer} <> more:
-      Nat.add(Bool.to_nat(U32.is_eq(timer, id)), cancel_count(more, id))
-    case a <> more:
-      cancel_count(more, id)
-
-def cancels(actions: List<&2, F.Action>, +id: U32) -> Bool:
-  Bool.not(Nat.is_eq(cancel_count(actions, id), 0n))
+  Bool.and(B.bytes_eq(Pc.first_pfcp(K.Kernel.frames(o)), req), U32.is_eq(Pc.first_ms(K.Kernel.frames(o)), 3000))
 
 # Whatever forgets a session stops its guard, so no stale timer meets a later session under the same SEID.
 def stale_guards(+msgs: List<&2, V.Vec>) -> IO(Unit):
   do IO<Unit>:
     +ran : B.Bytes() = A.ran_of(W.InitialUEMessage.view(A.ies_of(Fr.Pdu.read(A.hex_of(A.entry(14n, msgs), "hex")))))
     +st1 : S.State = K.Kernel.state(step(A.registered(msgs), A.data(1, A.hex_of(A.entry(30n, msgs), "hex"))))
-    +req : B.Bytes() = first_pfcp(K.Kernel.frames(step(A.registered(msgs), A.data(1, A.hex_of(A.entry(30n, msgs), "hex")))))
-    +st2 : S.State = K.Kernel.state(step(st1, pfcp_event(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req)))))
-    +refused : N.Step() = step(st1, pfcp_event(with_cause(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req)), 73)))
+    +req : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(step(A.registered(msgs), A.data(1, A.hex_of(A.entry(30n, msgs), "hex")))))
+    +st2 : S.State = K.Kernel.state(step(st1, Pc.pfcp_event(Pc.with_seq(A.hex_of(A.entry(36n, msgs), "hex"), Pc.pfcp_seq(req)))))
+    +refused : N.Step() = step(st1, Pc.pfcp_event(Pc.with_cause(Pc.with_seq(A.hex_of(A.entry(36n, msgs), "hex"), Pc.pfcp_seq(req)), 73)))
     +cpl : B.Bytes() = N.Ngap.pdu(Fr.Pdu.successful(), 41, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, []))])
     +o_gone : N.Step() = step(K.Kernel.state(step(st1, A.data(1, A.release_request(ran)))), A.data(1, cpl))
-    C.Check.report("the UE released while its session is being created: the session's guard, 466, is stopped", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_gone)), 0n), cancels(K.Kernel.frames(o_gone), 466)))
-    C.Check.report("the association down while a session is being set up: its guard is stopped", cancels(K.Kernel.frames(step(st2, F.NgapAssocDown{1})), 466))
-    C.Check.report("The UPF refuses the Session Establishment: the session's guard is stopped once", Nat.is_eq(cancel_count(K.Kernel.frames(refused), 466), 1n))
+    C.Check.report("the UE released while its session is being created: the session's guard, 466, is stopped", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_gone)), 0n), Pc.cancels(K.Kernel.frames(o_gone), 466)))
+    C.Check.report("the association down while a session is being set up: its guard is stopped", Pc.cancels(K.Kernel.frames(step(st2, F.NgapAssocDown{1})), 466))
+    C.Check.report("The UPF refuses the Session Establishment: the session's guard is stopped once", Nat.is_eq(Pc.cancel_count(K.Kernel.frames(refused), 466), 1n))
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -278,78 +120,78 @@ def main() -> IO(Unit):
     C.Check.report("the captured Association Setup Response brings the N4 link up", Bool.and(Up.N4.up(st_reg), A.phase_is(st_reg, "registered")))
     +o1 : N.Step() = step(st_reg, A.data(1, A.hex_of(A.entry(30n, msgs), "hex")))
     +st1 : S.State = K.Kernel.state(o1)
-    +req : B.Bytes() = first_pfcp(K.Kernel.frames(o1))
-    +req_ies : List<&2, T.Tlv> = pfcp_ies(req)
-    +cap_ies : List<&2, T.Tlv> = pfcp_ies(A.hex_of(A.entry(35n, msgs), "hex"))
-    C.Check.report("UL NAS Transport: one session creating, one PFCP Session Establishment Request, one guard", Bool.and(Nat.is_eq(session_count(st1), 1n), Bool.and(sphase_is(st1, "creating"), Bool.and(U32.is_eq(pfcp_kind(req), 50), Nat.is_eq(A.timer_starts(K.Kernel.frames(o1)), 1n)))))
+    +req : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o1))
+    +req_ies : List<&2, T.Tlv> = Pc.pfcp_ies(req)
+    +cap_ies : List<&2, T.Tlv> = Pc.pfcp_ies(A.hex_of(A.entry(35n, msgs), "hex"))
+    C.Check.report("UL NAS Transport: one session creating, one PFCP Session Establishment Request, one guard", Bool.and(Nat.is_eq(Pc.session_count(st1), 1n), Bool.and(Pc.sphase_is(st1, "creating"), Bool.and(U32.is_eq(Pc.pfcp_kind(req), 50), Nat.is_eq(A.timer_starts(K.Kernel.frames(o1)), 1n)))))
     C.Check.report("UL NAS Transport: the session's guard timer is its local SEID, the captured 466", U32.is_eq(A.first_timer(K.Kernel.frames(o1)), 466))
     C.Check.report("UL NAS Transport: the Accept the creating session holds has QoS rules within sixteen packet filters", Gs.Gsm.bounded(S.State.sessions(st1)))
-    C.Check.report("Session Establishment Request: the captured F-SEID, two PDRs, two FARs, one QER", Bool.and(B.bytes_eq(body(57, req_ies), body(57, cap_ies)), Bool.and(Nat.is_eq(count_kind(1, req_ies), 2n), Bool.and(Nat.is_eq(count_kind(3, req_ies), 2n), Nat.is_eq(count_kind(7, req_ies), 1n)))))
-    C.Check.report("Session Establishment Request: the uplink PDR has the captured N3 F-TEID, the downlink one the captured UE address", Bool.and(B.bytes_eq(body(21, inside(2, inside(1, req_ies))), [1, 0, 0, 199, 196, 10, 33, 0, 20]), B.bytes_eq(body(93, inside(2, inside(1, List.drop(&2, T.Tlv, req_ies, 3n)))), [6, 10, 45, 0, 2])))
-    C.Check.report("Session Establishment Request: the QER carries QFI 1 and the captured MBR", Bool.and(B.bytes_eq(body(124, inside(7, req_ies)), [1]), B.bytes_eq(body(26, inside(7, req_ies)), [0, 0, 15, 66, 64, 0, 0, 15, 66, 64])))
-    +o2 : N.Step() = step(st1, pfcp_event(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req))))
+    C.Check.report("Session Establishment Request: the captured F-SEID, two PDRs, two FARs, one QER", Bool.and(B.bytes_eq(Pc.body(57, req_ies), Pc.body(57, cap_ies)), Bool.and(Nat.is_eq(count_kind(1, req_ies), 2n), Bool.and(Nat.is_eq(count_kind(3, req_ies), 2n), Nat.is_eq(count_kind(7, req_ies), 1n)))))
+    C.Check.report("Session Establishment Request: the uplink PDR has the captured N3 F-TEID, the downlink one the captured UE address", Bool.and(B.bytes_eq(Pc.body(21, Pc.inside(2, Pc.inside(1, req_ies))), [1, 0, 0, 199, 196, 10, 33, 0, 20]), B.bytes_eq(Pc.body(93, Pc.inside(2, Pc.inside(1, List.drop(&2, T.Tlv, req_ies, 3n)))), [6, 10, 45, 0, 2])))
+    C.Check.report("Session Establishment Request: the QER carries QFI 1 and the captured MBR", Bool.and(B.bytes_eq(Pc.body(124, Pc.inside(7, req_ies)), [1]), B.bytes_eq(Pc.body(26, Pc.inside(7, req_ies)), [0, 0, 15, 66, 64, 0, 0, 15, 66, 64])))
+    +o2 : N.Step() = step(st1, Pc.pfcp_event(Pc.with_seq(A.hex_of(A.entry(36n, msgs), "hex"), Pc.pfcp_seq(req))))
     +st2 : S.State = K.Kernel.state(o2)
     +setup : B.Bytes() = A.first_bytes(A.sends(K.Kernel.frames(o2)))
     +cap_setup : B.Bytes() = A.hex_of(A.entry(37n, msgs), "hex")
-    C.Check.report("Session Establishment Response: the session is being set up; PDU Session Resource Setup Request", Bool.and(sphase_is(st2, "setting"), A.pdu_is(Fr.Pdu.read(setup), Fr.Pdu.initiating(), 29)))
+    C.Check.report("Session Establishment Response: the session is being set up; PDU Session Resource Setup Request", Bool.and(Pc.sphase_is(st2, "setting"), A.pdu_is(Fr.Pdu.read(setup), Fr.Pdu.initiating(), 29)))
     C.Check.report("PDU Session Resource Setup Request: the captured transfer and UE aggregate bit rate", Bool.and(B.bytes_eq(item_transfer(setup_items(setup)), item_transfer(setup_items(cap_setup))), A.same_ie(110, setup, cap_setup)))
     C.Check.report("PDU Session Establishment Accept: IPv4, SSC 1, the default rule, 1 Gbit/s, 10.45.0.2, the DNS server", B.bytes_eq(inner(item_nas(setup_items(setup))), [126, 0, 104, 1, 0, 41, 46, 1, 1, 194, 17, 0, 9, 1, 0, 6, 49, 49, 1, 1, 255, 1, 6, 6, 3, 232, 6, 3, 232, 41, 5, 1, 10, 45, 0, 2, 123, 0, 8, 128, 0, 13, 4, 8, 8, 8, 8, 18, 1]))
     +o3 : N.Step() = step(st2, A.data(1, A.hex_of(A.entry(40n, msgs), "hex")))
     +st3 : S.State = K.Kernel.state(o3)
-    +mod : B.Bytes() = first_pfcp(K.Kernel.frames(o3))
-    C.Check.report("PDU Session Resource Setup Response: Session Modification with the captured gNB tunnel", Bool.and(sphase_is(st3, "modifying"), Bool.and(U32.is_eq(pfcp_kind(mod), 52), B.bytes_eq(body(84, inside(11, inside(10, pfcp_ies(mod)))), body(84, inside(11, inside(10, pfcp_ies(A.hex_of(A.entry(41n, msgs), "hex")))))))))
-    +o4 : N.Step() = step(st3, pfcp_event(with_seq(A.hex_of(A.entry(42n, msgs), "hex"), pfcp_seq(mod))))
+    +mod : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o3))
+    C.Check.report("PDU Session Resource Setup Response: Session Modification with the captured gNB tunnel", Bool.and(Pc.sphase_is(st3, "modifying"), Bool.and(U32.is_eq(Pc.pfcp_kind(mod), 52), B.bytes_eq(Pc.body(84, Pc.inside(11, Pc.inside(10, Pc.pfcp_ies(mod)))), Pc.body(84, Pc.inside(11, Pc.inside(10, Pc.pfcp_ies(A.hex_of(A.entry(41n, msgs), "hex")))))))))
+    +o4 : N.Step() = step(st3, Pc.pfcp_event(Pc.with_seq(A.hex_of(A.entry(42n, msgs), "hex"), Pc.pfcp_seq(mod))))
     +st4 : S.State = K.Kernel.state(o4)
-    C.Check.report("Session Modification Response: the session is active, its guard stopped", Bool.and(sphase_is(st4, "active"), Nat.is_eq(A.timer_cancels(K.Kernel.frames(o4)), 1n)))
-    +o_heart : N.Step() = step(st4, pfcp_event(A.hex_of(A.entry(2n, msgs), "hex")))
-    C.Check.report("Heartbeat Request from the UPF: Heartbeat Response with its sequence number", Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_heart))), 2), U32.is_eq(pfcp_seq(first_pfcp(K.Kernel.frames(o_heart))), 2)))
+    C.Check.report("Session Modification Response: the session is active, its guard stopped", Bool.and(Pc.sphase_is(st4, "active"), Nat.is_eq(A.timer_cancels(K.Kernel.frames(o4)), 1n)))
+    +o_heart : N.Step() = step(st4, Pc.pfcp_event(A.hex_of(A.entry(2n, msgs), "hex")))
+    C.Check.report("Heartbeat Request from the UPF: Heartbeat Response with its sequence number", Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_heart))), 2), U32.is_eq(Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_heart))), 2)))
     +o_tick : N.Step() = step(st4, F.TimerFired{0})
-    C.Check.report("the N4 timer: a Heartbeat Request and the timer again", Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_tick))), 1), Nat.is_eq(A.timer_starts(K.Kernel.frames(o_tick)), 1n)))
+    C.Check.report("the N4 timer: a Heartbeat Request and the timer again", Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_tick))), 1), Nat.is_eq(A.timer_starts(K.Kernel.frames(o_tick)), 1n)))
     +o_two : N.Step() = step(st4, A.data(1, A.uplink(ran, uli, A.ue_protect(3, ul_transport([46, 2, 3, 193, 255, 255], [])))))
-    +two_ies : List<&2, T.Tlv> = pfcp_ies(first_pfcp(K.Kernel.frames(o_two)))
-    C.Check.report("a TEID and a SEID drawn that a live session holds are drawn again, never evicting it", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_two)), 2n), Bool.and(B.bytes_eq(body(21, inside(2, inside(1, two_ies))), [1, 0, 0, 1, 210, 10, 33, 0, 20]), B.bytes_eq(List.take(&2, U32, body(57, two_ies), 9n), [2, 0, 0, 0, 0, 45, 202, 228, 28]))))
+    +two_ies : List<&2, T.Tlv> = Pc.pfcp_ies(Pc.first_pfcp(K.Kernel.frames(o_two)))
+    C.Check.report("a TEID and a SEID drawn that a live session holds are drawn again, never evicting it", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_two)), 2n), Bool.and(B.bytes_eq(Pc.body(21, Pc.inside(2, Pc.inside(1, two_ies))), [1, 0, 0, 1, 210, 10, 33, 0, 20]), B.bytes_eq(List.take(&2, U32, Pc.body(57, two_ies), 9n), [2, 0, 0, 0, 0, 45, 202, 228, 28]))))
     +o_mod : N.Step() = step(st4, A.data(1, A.uplink(ran, uli, A.ue_protect(3, ul_transport([46, 1, 2, 201], [])))))
-    C.Check.report("PDU Session Modification Request: Modification Reject #31, the session as it was", Bool.and(sphase_is(K.Kernel.state(o_mod), "active"), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod))))), [126, 0, 104, 1, 0, 5, 46, 1, 2, 202, 31, 18, 1])))
-    +o_refused : N.Step() = step(st1, pfcp_event(with_cause(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req)), 73)))
-    C.Check.report("Session Establishment refused by the UPF: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_refused)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_refused))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
-    C.Check.report("no Session Establishment Response: three retransmissions of the same request, its sequence number included, the session still being created", Bool.and(again(expire(0n, st1), req), Bool.and(again(expire(1n, st1), req), Bool.and(again(expire(2n, st1), req), sphase_is(K.Kernel.state(expire(2n, st1)), "creating")))))
+    C.Check.report("PDU Session Modification Request: Modification Reject #31, the session as it was", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod), "active"), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod))))), [126, 0, 104, 1, 0, 5, 46, 1, 2, 202, 31, 18, 1])))
+    +o_refused : N.Step() = step(st1, Pc.pfcp_event(Pc.with_cause(Pc.with_seq(A.hex_of(A.entry(36n, msgs), "hex"), Pc.pfcp_seq(req)), 73)))
+    C.Check.report("Session Establishment refused by the UPF: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_refused)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_refused))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
+    C.Check.report("no Session Establishment Response: three retransmissions of the same request, its sequence number included, the session still being created", Bool.and(again(expire(0n, st1), req), Bool.and(again(expire(1n, st1), req), Bool.and(again(expire(2n, st1), req), Pc.sphase_is(K.Kernel.state(expire(2n, st1)), "creating")))))
     +o_late : N.Step() = expire(3n, st1)
-    C.Check.report("no Session Establishment Response after the third retransmission: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_late)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_late))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
+    C.Check.report("no Session Establishment Response after the third retransmission: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_late)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_late))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
     +rel_cmd : B.Bytes() = [126, 0, 104, 1, 0, 5, 46, 1, 0, 211, 26, 18, 1]
-    +o_set_late : N.Step() = step(st2, F.TimerFired{session_timer(st2)})
-    C.Check.report("no answer from the gNB in time, after the Accept: PDU Session Release Command #26, Session Deletion at the UPF, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_set_late)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_set_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_set_late))))), rel_cmd))))
-    +o_mod_no : N.Step() = step(st3, pfcp_event(Pf.Msg.write(Pf.Msg.make(53, Some{[0, 0, 0, 0, 0, 0, 0, 1]}, pfcp_seq(mod), [T.Tlv.make(19, [73])]), [])))
-    C.Check.report("Session Modification refused by the UPF: PDU Session Release Command #26, Session Deletion, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_mod_no)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_mod_no))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_no))))), rel_cmd))))
-    C.Check.report("no Session Modification Response: three retransmissions of the same request, the session still being modified", Bool.and(again(expire(0n, st3), mod), Bool.and(again(expire(1n, st3), mod), Bool.and(again(expire(2n, st3), mod), sphase_is(K.Kernel.state(expire(2n, st3)), "modifying")))))
+    +o_set_late : N.Step() = step(st2, F.TimerFired{Pc.session_timer(st2)})
+    C.Check.report("no answer from the gNB in time, after the Accept: PDU Session Release Command #26, Session Deletion at the UPF, no session left", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_set_late)), 0n), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_set_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_set_late))))), rel_cmd))))
+    +o_mod_no : N.Step() = step(st3, Pc.pfcp_event(Pf.Msg.write(Pf.Msg.make(53, Some{[0, 0, 0, 0, 0, 0, 0, 1]}, Pc.pfcp_seq(mod), [T.Tlv.make(19, [73])]), [])))
+    C.Check.report("Session Modification refused by the UPF: PDU Session Release Command #26, Session Deletion, no session left", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_mod_no)), 0n), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_no))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_no))))), rel_cmd))))
+    C.Check.report("no Session Modification Response: three retransmissions of the same request, the session still being modified", Bool.and(again(expire(0n, st3), mod), Bool.and(again(expire(1n, st3), mod), Bool.and(again(expire(2n, st3), mod), Pc.sphase_is(K.Kernel.state(expire(2n, st3)), "modifying")))))
     +o_mod_late : N.Step() = expire(3n, st3)
-    C.Check.report("no Session Modification Response after the third retransmission: PDU Session Release Command #26, Session Deletion, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_mod_late)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
+    C.Check.report("no Session Modification Response after the third retransmission: PDU Session Release Command #26, Session Deletion, no session left", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_mod_late)), 0n), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
     +o_gnb : N.Step() = step(st2, A.data(1, setup_failure(ran)))
-    C.Check.report("the gNB fails the setup: Session Deletion at the UPF, Establishment Reject #26, no session left", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_gnb)), 0n), Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_gnb))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_gnb))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1]))))
+    C.Check.report("the gNB fails the setup: Session Deletion at the UPF, Establishment Reject #26, no session left", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_gnb)), 0n), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_gnb))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_gnb))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1]))))
     +o_dnn : N.Step() = step(st_reg, A.data(1, A.uplink(ran, uli, A.ue_protect(2, ul_transport(A.hex_of(A.entry(32n, msgs), "hex"), [37, 4, 3, 102, 111, 111])))))
-    C.Check.report("an unknown DNN: Establishment Reject #27, no session, no PFCP", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_dnn)), 0n), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.frames(o_dnn))), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_dnn))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 27, 18, 1]))))
+    C.Check.report("an unknown DNN: Establishment Reject #27, no session, no PFCP", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_dnn)), 0n), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_dnn))), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_dnn))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 27, 18, 1]))))
     +st_small : S.State = A.registered_with(List.append(&2, T.Tlv, A.config([T.Tlv.make(32, A.subscriber([0, 0, 0, 0, 0, 32]))]), [T.Tlv.make(10, [31])]), msgs)
     +o_pool : N.Step() = step(st_small, A.data(1, A.hex_of(A.entry(30n, msgs), "hex")))
-    C.Check.report("the pool exhausted: Establishment Reject #26, no session", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_pool)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_pool))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1])))
+    C.Check.report("the pool exhausted: Establishment Reject #26, no session", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_pool)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_pool))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1])))
     +o_down : N.Step() = step(st4, F.NgapAssocDown{1})
-    C.Check.report("the association down: the active session is deleted at the UPF", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_down)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_down))), 54)))
+    C.Check.report("the association down: the active session is deleted at the UPF", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_down)), 0n), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_down))), 54)))
     +o_rel : N.Step() = step(K.Kernel.state(step(st4, A.data(1, A.release_request(ran)))), A.data(1, N.Ngap.pdu(Fr.Pdu.successful(), 41, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, []))])))
-    C.Check.report("the UE released: its session is deleted at the UPF with it", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_rel)), 0n), Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_rel)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_rel))), 54))))
+    C.Check.report("the UE released: its session is deleted at the UPF with it", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_rel)), 0n), Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_rel)), 0n), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_rel))), 54))))
     +st_releasing : S.State = K.Kernel.state(step(st4, A.data(1, A.release_request(ran))))
     +o_silent : N.Step() = step(st_releasing, F.TimerFired{1})
-    C.Check.report("the gNB never sends Release Complete: when the guard fires, the UE and its session are forgotten and the session deleted at the UPF", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_silent)), 0n), Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_silent)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_silent))), 54))))
+    C.Check.report("the gNB never sends Release Complete: when the guard fires, the UE and its session are forgotten and the session deleted at the UPF", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_silent)), 0n), Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_silent)), 0n), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_silent))), 54))))
     +o_cfg : N.Step() = step(S.State.initial(), F.Evt.config_make(A.config([])))
-    +seq0 : U32 = pfcp_seq(first_pfcp(K.Kernel.frames(o_cfg)))
+    +seq0 : U32 = Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_cfg)))
     +o_t1 : N.Step() = step(K.Kernel.state(o_cfg), F.TimerFired{0})
     +o_t2 : N.Step() = step(K.Kernel.state(o_t1), F.TimerFired{0})
     +o_t3 : N.Step() = step(K.Kernel.state(o_t2), F.TimerFired{0})
     +o_t4 : N.Step() = step(K.Kernel.state(o_t3), F.TimerFired{0})
     C.Check.report("no Association Setup Response: three retransmissions with the first request's sequence number", Bool.and(resent(o_t1, 5, seq0), Bool.and(resent(o_t2, 5, seq0), resent(o_t3, 5, seq0))))
-    C.Check.report("no Association Setup Response after the third retransmission: a pause", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.frames(o_t4))), 0n), Nat.is_eq(A.timer_starts(K.Kernel.frames(o_t4)), 1n)))
+    C.Check.report("no Association Setup Response after the third retransmission: a pause", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_t4))), 0n), Nat.is_eq(A.timer_starts(K.Kernel.frames(o_t4)), 1n)))
     +st_t4 : S.State = K.Kernel.state(o_t4)
-    C.Check.report("the pause over: the association is asked for again", U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(step(st_t4, F.TimerFired{0})))), 5))
-    +o_late_answer : N.Step() = step(st_t4, pfcp_event(with_seq(A.hex_of(A.entry(1n, msgs), "hex"), seq0)))
+    C.Check.report("the pause over: the association is asked for again", U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(step(st_t4, F.TimerFired{0})))), 5))
+    +o_late_answer : N.Step() = step(st_t4, Pc.pfcp_event(Pc.with_seq(A.hex_of(A.entry(1n, msgs), "hex"), seq0)))
     C.Check.report("an Association Setup Response during the pause: ignored", Bool.not(Up.N4.up(K.Kernel.state(o_late_answer))))
-    +hb : U32 = pfcp_seq(first_pfcp(K.Kernel.frames(o_tick)))
+    +hb : U32 = Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_tick)))
     +st_b0 : S.State = K.Kernel.state(o_tick)
     +o_b1 : N.Step() = step(st_b0, F.TimerFired{0})
     +o_b2 : N.Step() = step(K.Kernel.state(o_b1), F.TimerFired{0})
@@ -357,11 +199,11 @@ def main() -> IO(Unit):
     C.Check.report("no Heartbeat Response: three retransmissions with the same sequence number, the link still up", Bool.and(resent(o_b1, 1, hb), Bool.and(resent(o_b2, 1, hb), Bool.and(resent(o_b3, 1, hb), Up.N4.up(K.Kernel.state(o_b3))))))
     +o_lost : N.Step() = step(K.Kernel.state(o_b3), F.TimerFired{0})
     +st_lost : S.State = K.Kernel.state(o_lost)
-    C.Check.report("no Heartbeat Response after the third retransmission: the link is down and the association asked for again", Bool.and(Bool.not(Up.N4.up(st_lost)), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_lost))), 5)))
-    +o_wrong : N.Step() = step(st_b0, pfcp_event(Up.N4.heartbeat(2, [0, 0, 0, 1], U32.add(hb, 1))))
+    C.Check.report("no Heartbeat Response after the third retransmission: the link is down and the association asked for again", Bool.and(Bool.not(Up.N4.up(st_lost)), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_lost))), 5)))
+    +o_wrong : N.Step() = step(st_b0, Pc.pfcp_event(Up.N4.heartbeat(2, [0, 0, 0, 1], U32.add(hb, 1))))
     C.Check.report("a Heartbeat Response with another sequence number: ignored", resent(step(K.Kernel.state(o_wrong), F.TimerFired{0}), 1, hb))
-    +o_alive : N.Step() = step(st_b0, pfcp_event(Up.N4.heartbeat(2, [0, 0, 0, 1], hb)))
-    C.Check.report("the Heartbeat Response: the link up, the next Heartbeat Request in 30 s with a new sequence number", Bool.and(Up.N4.up(K.Kernel.state(o_alive)), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.frames(o_alive))), 0n), Bool.and(U32.is_eq(first_ms(K.Kernel.frames(o_alive)), 30000), Bool.not(U32.is_eq(pfcp_seq(first_pfcp(K.Kernel.frames(step(K.Kernel.state(o_alive), F.TimerFired{0})))), hb))))))
+    +o_alive : N.Step() = step(st_b0, Pc.pfcp_event(Up.N4.heartbeat(2, [0, 0, 0, 1], hb)))
+    C.Check.report("the Heartbeat Response: the link up, the next Heartbeat Request in 30 s with a new sequence number", Bool.and(Up.N4.up(K.Kernel.state(o_alive)), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_alive))), 0n), Bool.and(U32.is_eq(Pc.first_ms(K.Kernel.frames(o_alive)), 30000), Bool.not(U32.is_eq(Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(step(K.Kernel.state(o_alive), F.TimerFired{0})))), hb))))))
     +st_lost_reg : S.State = K.Kernel.state(step(K.Kernel.state(step(K.Kernel.state(step(K.Kernel.state(step(K.Kernel.state(step(st_reg, F.TimerFired{0})), F.TimerFired{0})), F.TimerFired{0})), F.TimerFired{0})), F.TimerFired{0}))
     +o_refuse : N.Step() = step(st_lost_reg, A.data(1, A.hex_of(A.entry(30n, msgs), "hex")))
-    C.Check.report("with the link down: a new session is refused, Establishment Reject #38", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_refuse)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_refuse))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
+    C.Check.report("with the link down: a new session is refused, Establishment Reject #38", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_refuse)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_refuse))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))

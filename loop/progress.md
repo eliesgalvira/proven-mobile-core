@@ -43,7 +43,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 24 | handover-capture | done | — | bc4134f: PacketRusher v2.0.0 with a Handover Cancel patch (UERANSIM has no handover); 86-message capture of Xn and N2 handover (one cancelled) with NH/NCC recomputed; uncaptured failure messages are hand-built in test-vectors/hand/ |
 | 25 | ngap-handover | done | 13, 24 | 232ba2b: 14 messages and 8 transfers (140→253 types, 15→30 views), a generated mandatory law per view, the three ticket laws; pycrate agrees on 46 NGAP messages |
 | 26 | nh-ncc | done | 07, 24 | 0a629ba: NH derivation (TS 33.501 A.10) and S.Nh{k_amf, nh, ncc} in the security context, stored as {A.10(KAMF, KgNB), NCC 1} at Initial Context Setup; the three captured pairs (NCC 2, 3, 4) recomputed; laws kdf.nh.length and amf.ncc.chain |
-| 27 | path-switch | todo | 19, 25, 26 | |
+| 27 | path-switch | in-progress | 19, 25, 26 | |
 | 28 | n2-handover | todo | 19, 25, 26 | |
 | 29 | handover-acceptance | todo | 27, 28 | |
 | 30 | e2e-handover | todo | 24, 27, 28 | |
