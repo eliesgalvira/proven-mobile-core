@@ -72,7 +72,7 @@ fn an_invalid_frame_from_the_kernel_is_an_error() {
 }
 
 #[test]
-fn the_loop_runs_timers_and_answers_the_upf_where_it_asked_from() {
+fn the_loop_runs_timers_and_sends_pfcp_responses_where_the_upf_asked_from() {
     let upf = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     upf.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
     let upf_asking = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
@@ -84,7 +84,7 @@ fn the_loop_runs_timers_and_answers_the_upf_where_it_asked_from() {
     let (port, kernel) = fake_kernel(Box::new(|e| match e {
         Event::Config(_) => Some(vec![Action::TimerStart { timer: 1, ms: 500 }, Action::TimerStart { timer: 2, ms: 20 }, Action::TimerCancel(1)]),
         Event::TimerFired(2) => Some(vec![Action::PfcpSend(vec![0x20, 0x01]), Action::NgapClose(9)]),
-        Event::PfcpData(bytes) => Some(vec![Action::PfcpSend(bytes.clone())]),
+        Event::PfcpData(_) => Some(vec![Action::PfcpSend(vec![0x20, 0x02]), Action::PfcpSend(vec![0x21, 0x36])]),
         _ => Some(vec![]),
     }));
     let mut edge = Edge::new(connect(port), UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(), upf_addr);
@@ -92,7 +92,7 @@ fn the_loop_runs_timers_and_answers_the_upf_where_it_asked_from() {
     let (tx, rx) = mpsc::channel();
     let stranger = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(10, 0, 0, 9), 8805));
     tx.send(Msg::Pfcp(vec![0x20, 0x02], stranger)).unwrap();
-    tx.send(Msg::Pfcp(vec![0x20, 0x03], upf_asking.local_addr().unwrap())).unwrap();
+    tx.send(Msg::Pfcp(vec![0x20, 0x01], upf_asking.local_addr().unwrap())).unwrap();
     let started = Instant::now();
     let stop = thread::spawn(move || {
         thread::sleep(Duration::from_millis(200));
@@ -104,11 +104,15 @@ fn the_loop_runs_timers_and_answers_the_upf_where_it_asked_from() {
     stop.join().unwrap();
     let mut buf = [0u8; 16];
     let (n, _) = upf_asking.recv_from(&mut buf).unwrap();
-    assert_eq!(&buf[..n], &[0x20, 0x03], "the UPF's datagram is answered at its source port");
+    assert_eq!(&buf[..n], &[0x20, 0x02], "the response to the UPF's request goes to its source port");
+    upf_asking.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
+    assert!(upf_asking.recv_from(&mut buf).is_err(), "a request goes nowhere but the UPF's N4 port");
+    let (n, _) = upf.recv_from(&mut buf).unwrap();
+    assert_eq!(&buf[..n], &[0x21, 0x36], "a request made while answering the UPF goes to its N4 port");
     let (n, _) = upf.recv_from(&mut buf).unwrap();
     assert_eq!(&buf[..n], &[0x20, 0x01], "timer 2's request goes to the UPF's N4 port");
     drop(edge);
-    assert_eq!(kernel.join().unwrap(), vec![Event::Config(vec![]), Event::PfcpData(vec![0x20, 0x03]), Event::TimerFired(2)]);
+    assert_eq!(kernel.join().unwrap(), vec![Event::Config(vec![]), Event::PfcpData(vec![0x20, 0x01]), Event::TimerFired(2)]);
 }
 
 #[test]

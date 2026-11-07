@@ -68,9 +68,10 @@ impl Edge {
         self.step_to(event, SocketAddr::V4(self.upf))
     }
 
-    /// Steps the kernel and sends its PFCP to `n4`: the UPF's N4 port, or the
-    /// source of the UPF datagram being answered (TS 29.244 §7.2).
-    fn step_to(&mut self, event: &Event, n4: SocketAddr) -> Result<(), Error> {
+    /// Steps the kernel. A PFCP response goes to `asker`, the source of the
+    /// UPF datagram being handled; a request goes to the UPF's N4 port
+    /// (TS 29.244 §7.2).
+    fn step_to(&mut self, event: &Event, asker: SocketAddr) -> Result<(), Error> {
         let actions = self.link.step(&entropy()?, event).map_err(Error::Kernel)?;
         let now = Instant::now();
         for action in actions {
@@ -89,7 +90,8 @@ impl Edge {
                     }
                 }
                 Action::PfcpSend(bytes) => {
-                    if let Err(e) = self.udp.send_to(&bytes, n4) {
+                    let to = if is_response(&bytes) { asker } else { SocketAddr::V4(self.upf) };
+                    if let Err(e) = self.udp.send_to(&bytes, to) {
                         eprintln!("edge: N4 send: {e}");
                     }
                 }
@@ -147,6 +149,14 @@ impl Edge {
             Err(RecvTimeoutError::Disconnected) => Err(Error::Fatal("every socket thread has stopped".to_string())),
         }
     }
+}
+
+/// The PFCP response message types (TS 29.244 Table 7.3-1), read from the
+/// header's second octet.
+const PFCP_RESPONSES: [u8; 13] = [2, 4, 6, 8, 10, 11, 13, 15, 17, 51, 53, 55, 57];
+
+fn is_response(pfcp: &[u8]) -> bool {
+    pfcp.get(1).is_some_and(|kind| PFCP_RESPONSES.contains(kind))
 }
 
 /// The first id after `last`, wrapping from u32::MAX to 1, that `live` does
