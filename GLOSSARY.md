@@ -105,3 +105,20 @@ _Avoid_: hidden identity, encrypted IMSI
 
 **5G-AKA (5G Authentication and Key Agreement)**:
 The challenge-response procedure that proves the UE holds the subscriber's secret key and derives the session keys.
+
+## Handover
+
+**Xn handover**:
+A handover of a UE between two gNBs that prepare it between themselves over Xn; the target gNB then asks the AMF with Path Switch (TS 23.502 §4.9.1.2).
+
+**Path Switch**:
+The procedure by which the target gNB of an Xn handover has the AMF move the UE to it and the SMF repoint the downlink of the UE's PDU sessions to it.
+
+**N2 handover**:
+A handover the source gNB asks the AMF for with Handover Required; the AMF prepares the target gNB and moves the UE when the target sends Handover Notify (TS 23.502 §4.9.1.3).
+
+**NH (Next Hop)**:
+A key the AMF derives from KAMF and the previous NH for the target gNB of a handover, so the target's keys are not the source's (TS 33.501 §6.9.2).
+
+**NCC (Next hop Chaining Counter)**:
+A 3-bit counter, raised with each new NH, that tells the UE which NH the target gNB's key comes from.
