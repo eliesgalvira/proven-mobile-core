@@ -96,20 +96,6 @@ def Ngap.header_is(bs: B.Bytes(), +k: U32, +c: U32) -> Bool:
     case _:
       False{}
 
-def Ngap.is_ng_setup_response(a: F.Action) -> Bool:
-  match a:
-    case F.NgapSend{assoc, stream, len, bytes}:
-      Ngap.header_is(bytes, 32, 21)
-    case _:
-      False{}
-
-def Ngap.any_ng_setup_response(actions: List<&2, F.Action>) -> Bool:
-  match actions:
-    case Nil{}:
-      False{}
-    case a <> more:
-      Bool.or(Ngap.is_ng_setup_response(a), Ngap.any_ng_setup_response(more))
-
 def NgSetup.supported_view(config: Maybe<&2, S.Cfg>, v: V.NGSetupRequest.View) -> Bool:
   match config:
     case None{}:
@@ -222,16 +208,19 @@ def Ngap.ue_ambr() -> Ap.Bits():
 def Ngap.pdu_setup(key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), 29, Fr.Criticality.reject(), [Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(74, Fr.Criticality.reject(), G.PDUSessionResourceSetupListSUReq.write([G.PDUSessionResourceSetupItemSUReq{psi, Some{nas}, G.S_NSSAI{sst, None{}, None{}}, transfer, None{}}], 0n, [])), Ngap.ie(110, Fr.Criticality.ignore(), Ngap.ue_ambr())])
 
-# What a UE procedure asks for, rendered to frame actions at the boundary.
+# What a step asks for, rendered to frame actions for the edge (Kernel.frames). Each
+# action names the UE context it is built from, if any: the AMF-UE-NGAP-ID of
+# a UE-associated NGAP message, the UE of a PFCP session message or a guard.
 type Act is Data:
   DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
   Ics{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()}
   PduSetup{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()}
   Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
   ErrInd{assoc: U32, cause: G.Cause}
-  Pfcp{bytes: B.Bytes()}
+  Setup{assoc: U32, answer: B.Bytes()}
+  Pfcp{ue: Maybe<&2, U32>, bytes: B.Bytes()}
   Note{level: F.Level, text: String}
-  TimerStart{timer: U32, ms: U32}
+  TimerStart{ue: Maybe<&2, U32>, timer: U32, ms: U32}
   TimerCancel{timer: U32}
 
 # A procedure answers with a transaction on the state and its actions.
@@ -250,14 +239,41 @@ def Act.render(a: Act) -> F.Action:
       Ngap.send(assoc, stream, Ngap.release_command(key, ran_id, cause))
     case ErrInd{assoc, cause}:
       Ngap.error_indication(assoc, cause)
-    case Pfcp{bytes}:
+    case Setup{assoc, answer}:
+      Ngap.send(assoc, 0, answer)
+    case Pfcp{ue, bytes}:
       F.Action.pfcp_make(bytes)
     case Note{level, text}:
       F.Action.log_make(level, text)
-    case TimerStart{timer, ms}:
+    case TimerStart{ue, timer, ms}:
       F.TimerStart{timer, ms}
     case TimerCancel{timer}:
       F.TimerCancel{timer}
+
+def Act.ue(a: Act) -> Maybe<&2, U32>:
+  match a:
+    case DlNas{assoc, stream, key, ran_id, nas}:
+      Some{key}
+    case Ics{assoc, stream, key, ran_id, cfg, caps, k_gnb, nas}:
+      Some{key}
+    case PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
+      Some{key}
+    case Release{assoc, stream, key, ran_id, cause}:
+      Some{key}
+    case Pfcp{ue, bytes}:
+      ue
+    case TimerStart{ue, timer, ms}:
+      ue
+    case _:
+      None{}
+
+# No action is built from the UE context keyed k.
+def Acts.spare(+k: U32, acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      True{}
+    case a <> more:
+      Bool.and(Bool.not(S.Maybe.same_u32(Act.ue(a), Some{k})), Acts.spare(k, more))
 
 def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
   match acts:
@@ -266,10 +282,29 @@ def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
     case a <> more:
       Act.render(a) <> Acts.render(more)
 
-def render_out(st: S.State, o: GOut()) -> S.Out():
+def Ngap.is_ng_setup_response(a: Act) -> Bool:
+  match a:
+    case Setup{assoc, answer}:
+      Ngap.header_is(answer, 32, 21)
+    case _:
+      False{}
+
+def Ngap.any_ng_setup_response(actions: List<&2, Act>) -> Bool:
+  match actions:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Ngap.is_ng_setup_response(a), Ngap.any_ng_setup_response(more))
+
+# What one step answers: the next state and the actions to perform.
+def Step() -> Data:
+  Sigma<&2, &2, S.State, _ => List<&2, Act>>
+
+# The step a procedure's outcome makes from st.
+def Step.of(st: S.State, o: GOut()) -> Step():
   match o:
     case (tx, acts):
-      (S.Tx.apply(tx, st), Acts.render(acts))
+      (S.Tx.apply(tx, st), acts)
 
 # Combining outcomes: an action in front, actions after, two outcomes in order, a note alone.
 def Out.prepend(a: Act, o: GOut()) -> GOut():
@@ -342,9 +377,9 @@ def Ngap.bad_nas(assoc: U32) -> List<&2, Act>:
 def Ngap.unknown_ue(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID())}, Note{F.Warn{}, "NGAP: UE-associated message for a UE this association does not own"}]
 
-def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> S.Out():
+def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> Step():
   match r:
     case Fail{e}:
-      (st, Acts.render(Ngap.bad_view(assoc)))
+      (st, Ngap.bad_view(assoc))
     case Done{v}:
-      (st, [Ngap.send(assoc, 0, NgSetup.reply(S.State.config(st), v))])
+      (st, [Setup{assoc, NgSetup.reply(S.State.config(st), v)}])

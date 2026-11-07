@@ -346,7 +346,7 @@ def Tk.ok(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +o: N.GOut()) -> Bool:
 def Tk.sp(+k: U32, +u: S.Ue, +o: N.GOut()) -> Bool:
   Tk.spares(k, u, Tk.tx(o))
 
-def Tk.render(+st: S.State, +o: N.GOut()) -> {S.State.ues(K.Kernel.state(N.render_out(st, o))) == Tk.ues(Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}:
+def Tk.render(+st: S.State, +o: N.GOut()) -> {S.State.ues(K.Kernel.state(N.Step.of(st, o))) == Tk.ues(Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}:
   match o:
     case (tx, acts):
       Tk.ues_apply(tx, st)
@@ -397,14 +397,7 @@ def Tk.tx_join(+a: N.GOut(), +b: N.GOut()) -> {Tk.tx(N.Out.join(a, b)) == S.Both
         case (tb, ab):
           {==}
 
-# Session deletions leave the UE table alone and spare every row.
-def Tk.dels(+vs: Tb.Table(S.Session), +x: Tb.Table(S.Ue)) -> {Tk.ues(Gsm.Gsm.dels(vs), x) == x : Tb.Table(S.Ue)}:
-  match vs:
-    case Nil{}:
-      {==}
-    case (key, t) <> more:
-      Tk.dels(more, x)
-
+# Session deletions spare every row.
 def Tk.sp_dels(+k: U32, +u: S.Ue, +vs: Tb.Table(S.Session)) -> {Tk.spares(k, u, Gsm.Gsm.dels(vs)) == True{} : Bool}:
   match vs:
     case Nil{}:
@@ -415,19 +408,17 @@ def Tk.sp_dels(+k: U32, +u: S.Ue, +vs: Tb.Table(S.Session)) -> {Tk.spares(k, u, 
 def Tk.sp_forget(+k: U32, +u: S.Ue, +vs: Tb.Table(S.Session), +seq: U32) -> {Tk.sp(k, u, Gsm.Gsm.forget(vs, seq)) == True{} : Bool}:
   P.Bool.and_intro(Tk.spares(k, u, Gsm.Gsm.dels(vs)), True{}, Tk.sp_dels(k, u, vs), {==})
 
-# Releasing the contexts a put displaces touches only their sessions.
+# Releasing the contexts a put displaces leaves the UE table to the put.
 def Tk.evict(+vs: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +q: U32, +x: Tb.Table(S.Ue)) -> {Tk.ues(Tk.tx(Gmm.Gmm.evict(vs, ss, q)), x) == x : Tb.Table(S.Ue)}:
   match vs:
     case Nil{}:
       {==}
     case (+key, +v) <> more:
       +gone = S.Sessions.of_ue(key, ss)
-      +a = N.Out.prepend(N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), N.Ngap.nas_cause(G.CauseNas.deregister())}, Gsm.Gsm.forget(gone, q))
+      +a = N.Out.prepend(N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), N.Ngap.nas_cause(G.CauseNas.deregister())}, (S.BumpSeq{Up.N4.deletion_count(gone)}, Up.N4.deletions(gone, q)))
       +b = Gmm.Gmm.evict(more, ss, U32.add(q, Up.N4.deletion_count(gone)))
       ej = Equal.sym(S.Tx, Tk.tx(N.Out.join(a, b)), S.Both{Tk.tx(a), Tk.tx(b)}, Tk.tx_join(a, b))
       %ej : {Tk.ues(_, x) == x : Tb.Table(S.Ue)}
-      ed = Equal.sym(Tb.Table(S.Ue), Tk.ues(Gsm.Gsm.dels(gone), x), x, Tk.dels(gone, x))
-      %ed : {Tk.ues(Tk.tx(b), _) == x : Tb.Table(S.Ue)}
       Tk.evict(more, ss, U32.add(q, Up.N4.deletion_count(gone)), x)
 
 def Bool.or_true(+x: Bool) -> {Bool.or(x, True{}) == True{} : Bool}:
@@ -846,7 +837,7 @@ def Ws.create(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg
   +teid = Gsm.Ip.teid(entropy)
   +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{timer, 0}, pti, Gsm.Gsm.accept(cfg, psi, pti, ip, dns, v4v6)}}}
   +ph = S.Phase.with_ctx(S.Ue.phase(ue), ctx)
-  Tk.sp_join(k, u, (S.Both{S.Rephase{key, ph}, S.Both{S.BumpTimer{}, S.BumpSeq{1}}}, [N.Pfcp{Up.N4.establish(cfg, Gsm.Ip.seid(entropy), ip, teid, seq)}, N.TimerStart{timer, Up.N4.t1_ms()}]), Gsm.Gsm.place(st, Gsm.Ip.seid(entropy), s, U32.add(seq, 1)), P.Bool.and_intro(Tk.spares(k, u, S.Rephase{key, ph}), True{}, Tk.sp_rephase(k, u, key, ph, h1), {==}), Ws.place(st, Gsm.Ip.seid(entropy), s, U32.add(seq, 1), k, u))
+  Tk.sp_join(k, u, (S.Both{S.Rephase{key, ph}, S.Both{S.BumpTimer{}, S.BumpSeq{1}}}, [N.Pfcp{Some{key}, Up.N4.establish(cfg, Gsm.Ip.seid(entropy), ip, teid, seq)}, N.TimerStart{Some{key}, timer, Up.N4.t1_ms()}]), Gsm.Gsm.place(st, Gsm.Ip.seid(entropy), s, U32.add(seq, 1)), P.Bool.and_intro(Tk.spares(k, u, S.Rephase{key, ph}), True{}, Tk.sp_rephase(k, u, key, ph, h1), {==}), Ws.place(st, Gsm.Ip.seid(entropy), s, U32.add(seq, 1), k, u))
 
 def Ws.allocated(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +entropy: B.Bytes(), +v4v6: Bool, +dns: Bool, +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.allocated(st, key, ue, ctx, cfg, psi, pti, entropy, v4v6, dns, m)) == True{} : Bool}:
   match m:
@@ -908,7 +899,7 @@ def Ws.ul_transport(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +fiel
 
 def W.release(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.release(st, key, ue, cause)) == True{} : Bool}:
   +ur = S.Ue.with_phase(ue, S.Releasing{S.Guard{S.State.next_timer(st), 0}})
-  +b : N.GOut() = (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.TimerStart{S.State.next_timer(st), Gmm.Gmm.guard_ms()}]))
+  +b : N.GOut() = (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.TimerStart{Some{key}, S.State.next_timer(st), Gmm.Gmm.guard_ms()}]))
   Tk.ok_prepend(k, u, S.State.ues(st), N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.join(Gmm.Gmm.place(st, key, ur), b), Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ur), b, Tk.place(k, u, st, key, ur, eu, Tk.h_phase(ue, S.Releasing{S.Guard{S.State.next_timer(st), 0}}, u, h2))))
 
 def W.reject(+st: S.State, +key: U32, +ue: S.Ue, +cause: U32, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.reject(st, key, ue, cause)) == True{} : Bool}:
@@ -922,7 +913,7 @@ def W.identity_ask(+st: S.State, +key: U32, +ue: S.Ue, +k: U32, +u: S.Ue, +eu: {
   +nas = Gmm.Gmm.identity_request()
   +p : S.Phase = S.Identifying{S.Guard{timer, 0}}
   +ue2 = S.Ue.with_dl(ue, p, nas)
-  Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.BumpTimer{}, [Gmm.Gmm.dl(key, ue2, nas), N.TimerStart{timer, Gmm.Gmm.guard_ms()}]), Tk.place(k, u, st, key, ue2, eu, Tk.h_dl(ue, p, nas, u, h2)))
+  Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.BumpTimer{}, [Gmm.Gmm.dl(key, ue2, nas), N.TimerStart{Some{key}, timer, Gmm.Gmm.guard_ms()}]), Tk.place(k, u, st, key, ue2, eu, Tk.h_dl(ue, p, nas, u, h2)))
 
 def W.challenge(+st: S.State, +key: U32, +ue: S.Ue, +sub: Au.Subscriber, +snn: B.Bytes(), +entropy: B.Bytes(), +resynced: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.challenge(st, key, ue, sub, snn, entropy, resynced)) == True{} : Bool}:
   +timer = S.State.next_timer(st)
@@ -931,7 +922,7 @@ def W.challenge(+st: S.State, +key: U32, +ue: S.Ue, +sub: Au.Subscriber, +snn: B
   +nas = Gmm.Gmm.auth_request(0, av)
   +p : S.Phase = S.Authenticating{S.Guard{timer, 0}, av, resynced, Au.Subscriber.supi(sub2)}
   +ue2 = S.Ue.with_dl(ue, p, nas)
-  Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.Both{S.Subs{Au.Subscribers.update(sub2, S.State.subs(st))}, S.BumpTimer{}}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.Gmm.dl(key, ue2, nas), N.TimerStart{timer, Gmm.Gmm.guard_ms()}])), Tk.place(k, u, st, key, ue2, eu, Tk.h_dl(ue, p, nas, u, h2)))
+  Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.Both{S.Subs{Au.Subscribers.update(sub2, S.State.subs(st))}, S.BumpTimer{}}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.Gmm.dl(key, ue2, nas), N.TimerStart{Some{key}, timer, Gmm.Gmm.guard_ms()}])), Tk.place(k, u, st, key, ue2, eu, Tk.h_dl(ue, p, nas, u, h2)))
 
 def W.by_sub(+st: S.State, +key: U32, +ue: S.Ue, +cfg: S.Cfg, +m: Maybe<&2, Au.Subscriber>, +entropy: B.Bytes(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.by_sub(st, key, ue, cfg, m, entropy)) == True{} : Bool}:
   match m:
@@ -1044,7 +1035,7 @@ def W.secure(+st: S.State, +key: U32, +ue: S.Ue, +supi: B.Digits(), +k_amf: B.By
   +ctx : Sec.Nas.Ctx = Sec.Ctx{Sec.Keys{Kd.kdf.k_nas_int(k_amf, Sec.Nas.Ia.id(nia)), Kd.kdf.k_nas_enc(k_amf, Sec.Nas.Ea.id(nea)), nea, nia, 1}, Sec.Nas.Count.zero(), None{}}
   +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.IntegrityNew{}, Gmm.Gmm.security_mode_command(U32.or(U32.shln(Sec.Nas.Ea.id(nea), 4n), Sec.Nas.Ia.id(nia)), S.Ue.ngksi(ue), caps))
   +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, supi), S.SecurityMode{S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p))
-  Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.Gmm.dl(key, ue2, Sec.Nas.Protected.msg(p)), N.TimerStart{timer, Gmm.Gmm.guard_ms()}])), Tk.place(k, u, st, key, ue2, eu, Tk.h_secure(ue, supi, S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), k_amf, Sec.Nas.Protected.msg(p), u, h2)))
+  Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [Gmm.Gmm.dl(key, ue2, Sec.Nas.Protected.msg(p)), N.TimerStart{Some{key}, timer, Gmm.Gmm.guard_ms()}])), Tk.place(k, u, st, key, ue2, eu, Tk.h_secure(ue, supi, S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), k_amf, Sec.Nas.Protected.msg(p), u, h2)))
 
 def W.algorithms(+st: S.State, +key: U32, +ue: S.Ue, +supi: B.Digits(), +k_amf: B.Bytes(), +caps: B.Bytes(), +mea: Maybe<&2, Sec.Nas.Ea>, +mia: Maybe<&2, Sec.Nas.Ia>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.algorithms(st, key, ue, supi, k_amf, caps, mea, mia)) == True{} : Bool}:
   match mea mia:
@@ -1230,7 +1221,7 @@ def W.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +k_amf: B
       +ph : S.Phase = S.ContextSetup{S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), False{}, False{}}
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi)
       ht = Tmsi.apart(tmsi, S.State.ues(st), k, u, PK.Bool.not_true(S.Ues.has_tmsi(tmsi, S.State.ues(st)), hm), eu)
-      Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.BumpTimer{}, [N.TimerCancel{S.Guard.timer(guard)}, N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.Gmm.caps(ue2), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(p)}, N.TimerStart{timer, Gmm.Gmm.guard_ms()}]), Tk.place(k, u, st, key, ue2, eu, Tk.h_tmsi(ue, ph, Sec.Nas.Protected.msg(p), reg, tmsi, u, h2, ht)))
+      Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.BumpTimer{}, [N.TimerCancel{S.Guard.timer(guard)}, N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.Gmm.caps(ue2), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(p)}, N.TimerStart{Some{key}, timer, Gmm.Gmm.guard_ms()}]), Tk.place(k, u, st, key, ue2, eu, Tk.h_tmsi(ue, ph, Sec.Nas.Protected.msg(p), reg, tmsi, u, h2, ht)))
     case Some{c} None{}:
       W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2)
     case None{} Some{t}:
@@ -1589,7 +1580,7 @@ def W.d1(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: 
       W.ng_setup(st, assoc, V.NGSetupRequest.view(ies), k, u, eu)
     case False{}:
       +o = R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n))
-      se = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.render_out(st, o))), Tk.ues(Tk.tx(o), S.State.ues(st)), Tk.render(st, o))
+      se = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), Tk.ues(Tk.tx(o), S.State.ues(st)), Tk.render(st, o))
       %se : {Tk.kept(k, u, _) == True{} : Bool}
       W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n), k, u, eu, eun, ea)
 

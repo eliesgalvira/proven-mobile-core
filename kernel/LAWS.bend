@@ -1080,7 +1080,7 @@ law kernel.bad_pdu.only_error_indication:
   for +bytes: B.Bytes()
   for +err: B.Err
   for +e: {Fr.Pdu.read(bytes) == Fail{err} : Result<&2, &2, B.Err, Fr.Pdu>}
-  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Acts.render(Ng.Ngap.bad_pdu(assoc))) : St.Out()}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.bad_pdu(assoc)) : Ng.Step()}
 
 # amf (ticket 17)
 # ---------------
@@ -1103,7 +1103,7 @@ law amf.initial_ue.reject_leaves_state:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 15, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.InitialUEMessage.view(ies) == Fail{err} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}
-  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Acts.render(Ng.Ngap.bad_view(assoc))) : St.Out()}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.bad_view(assoc)) : Ng.Step()}
 
 # GHSA-r9rw-hx33-745g (5G analogue): authentication succeeds only when RES* is
 # sixteen octets, HRES* equals HXRES* over all of them and RES* equals XRES*
@@ -1153,11 +1153,9 @@ law amf.ue_context_release.owner_only:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, fails, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, loc}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
 
-# GHSA-88pq-hpwv-2vjw: after the owner's UE Context Release Complete, no UE
-# context and no session carries the UE's AMF-UE-NGAP-ID. Timers live in the
-# context and a later message for the id finds no owner, so no action can
-# mention it.
-law amf.release.forgets_ue:
+# After the owner's UE Context Release Complete, no UE context and no session
+# carries the UE's AMF-UE-NGAP-ID.
+law amf.release.complete_forgets:
   for +st: St.State
   for +entropy: B.Bytes()
   for +assoc: U32
@@ -1245,6 +1243,52 @@ law amf.takeover.authenticated:
   for +eg: {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Ue>}
   {St.Ues.secured(St.Ue.supi(u), St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool}
 
+# amf (ticket 33)
+# ---------------
+# Liveness: a guard that fires ends the wait it bounds, and a UE that is gone
+# is never acted for again.
+
+# GHSA-cfp8-93x2-6h9x: a context whose guard fires at the retry limit moves to
+# Releasing with a new guard; a Releasing context whose guard fires is gone with
+# its sessions, which are deleted at eUPF. The context is the one the kernel
+# finds for the timer.
+law amf.guard.expires:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +timer: U32
+  for +k: U32
+  for +u: St.Ue
+  for +g: St.Guard
+  for +et: {St.Ues.by_timer(timer, St.State.ues(st)) == Some{(k, u)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Ue>>}
+  for +eg: {St.Ue.guard(u) == Some{g} : Maybe<&2, St.Guard>}
+  (({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> Empty) -> {U32.is_lt(St.Guard.retries(g), Gm.Gmm.max_retries()) == False{} : Bool} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == Some{St.Ue.with_phase(u, St.Releasing{St.Guard{St.State.next_timer(st), 0}})} : Maybe<&2, St.Ue>})
+  & ({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, St.Ue>} & ({St.Sessions.of_ue(k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == [] : Tb.Table(St.Session)} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)) == List.append(&2, Ng.Act, Up.N4.deletions(St.Sessions.of_ue(k, St.State.sessions(st)), St.State.pfcp_seq(st)), [Ng.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}]) : List<&2, Ng.Act>}))
+
+# Every session belongs to a UE context, in the initial state and after every
+# step: whatever forgets a context forgets its sessions.
+law amf.sessions.owned:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +e: {St.Sessions.owned(St.State.sessions(st), St.State.ues(st)) == True{} : Bool}
+  {St.Sessions.owned(St.State.sessions(St.State.initial()), St.State.ues(St.State.initial())) == True{} : Bool}
+  & {St.Sessions.owned(St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))), St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
+
+# GHSA-88pq-hpwv-2vjw: a UE context that is gone, by whatever path, is never
+# acted for again. No UE-associated NGAP message, PFCP message or timer a step
+# starts is built from a key that names no context, unless it is the key the
+# step gives a new context; Error Indication names no UE. It holds in every
+# state whose sessions belong to contexts (amf.sessions.owned).
+law amf.release.forgets_ue:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +k: U32
+  for +eo: {St.Sessions.owned(St.State.sessions(st), St.State.ues(st)) == True{} : Bool}
+  for +eg: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == None{} : Maybe<&2, St.Ue>}
+  for +en: {U32.is_eq(k, St.State.next_ue(st)) == False{} : Bool}
+  {Ng.Acts.spare(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool}
+
 # smf (ticket 19)
 # ---------------
 # PDU session establishment.
@@ -1297,7 +1341,7 @@ law smf.establish.reject_leaves_state:
   for +ex: {Gs.Gsm.validate(cfg, psi, opts, sopts, Up.N4.up(st)) == Gs.Refuse{cause} : Gs.Check}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
   & ({St.State.pfcp_seq(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.pfcp_seq(st) : U32}
-  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == Ng.Acts.render([Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}]) : List<&2, F.Action>})
+  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}] : List<&2, Ng.Act>})
 
 # GHSA-855g-699w-9w28: whichever later step fails, no session entry remains for
 # the PDU session, so no address, TEID or SEID is held for it: eUPF refuses the
@@ -1383,7 +1427,7 @@ law smf.modification.rejected:
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.ModificationRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
-  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == Ng.Acts.render([Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}]) : List<&2, F.Action>}
+  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}] : List<&2, Ng.Act>}
 
 # GHSA-g97g-v8mh-wg24: a session holds the one default QoS rule, with one
 # packet filter, and modification (the only way to add filters) is rejected,

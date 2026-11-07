@@ -9,6 +9,7 @@ import ../ngap/gen/views.bend as W
 import ../frame.bend as F
 import ../state.bend as S
 import ../step.bend as K
+import ../amf/ngap.bend as N
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
@@ -228,12 +229,12 @@ def main() -> IO(Unit):
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
     +request : B.Bytes() = bytes_or(first_of("NGSetupRequest", msgs))
     +response : B.Bytes() = bytes_or(first_of("NGSetupResponse", msgs))
-    +o1 : S.Out() = K.Kernel.step(S.State.initial(), config_event([0, 0, 1]), entropy())
+    +o1 : N.Step() = K.Kernel.step(S.State.initial(), config_event([0, 0, 1]), entropy())
     +st1 : S.State = K.Kernel.state(o1)
-    +a1 : List<&2, F.Action> = K.Kernel.actions(o1)
+    +a1 : List<&2, F.Action> = K.Kernel.frames(o1)
     +st2 : S.State = K.Kernel.state(K.Kernel.step(st1, F.NgapAssocUp{1}, entropy()))
-    +o3 : S.Out() = K.Kernel.step(st2, data_event(1, request), entropy())
-    +a3 : List<&2, F.Action> = K.Kernel.actions(o3)
+    +o3 : N.Step() = K.Kernel.step(st2, data_event(1, request), entropy())
+    +a3 : List<&2, F.Action> = K.Kernel.frames(o3)
     +reply : B.Bytes() = send_bytes(one_send(a3))
     C.Check.report("Config: the configuration is kept", configured(st1))
     C.Check.report("Config: a PFCP Association Setup Request goes to eUPF", pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(a1))), 5, False{}))
@@ -244,18 +245,18 @@ def main() -> IO(Unit):
     C.Check.report("NG Setup Request: the response is the captured one, byte for byte", B.bytes_eq(reply, response))
     C.Check.report("NG Setup Request: no state changes", Nat.is_eq(List.length(&2, U32, ue_keys(K.Kernel.state(o3))), 0n))
     +st_tac : S.State = K.Kernel.state(K.Kernel.step(K.Kernel.state(K.Kernel.step(S.State.initial(), config_event([0, 0, 2]), entropy())), F.NgapAssocUp{1}, entropy()))
-    +reply_tac : B.Bytes() = send_bytes(one_send(K.Kernel.actions(K.Kernel.step(st_tac, data_event(1, request), entropy()))))
+    +reply_tac : B.Bytes() = send_bytes(one_send(K.Kernel.frames(K.Kernel.step(st_tac, data_event(1, request), entropy()))))
     C.Check.report("NG Setup Request for another TAC: NG Setup Failure", pdu_is(Fr.Pdu.read(reply_tac), Fr.Pdu.unsuccessful(), 21))
-    +reply_none : B.Bytes() = send_bytes(one_send(K.Kernel.actions(K.Kernel.step(S.State.initial(), data_event(1, request), entropy()))))
+    +reply_none : B.Bytes() = send_bytes(one_send(K.Kernel.frames(K.Kernel.step(S.State.initial(), data_event(1, request), entropy()))))
     C.Check.report("NG Setup Request before Config: NG Setup Failure", pdu_is(Fr.Pdu.read(reply_none), Fr.Pdu.unsuccessful(), 21))
-    +o_bad : S.Out() = K.Kernel.step(st2, data_event(1, [1, 2, 3]), entropy())
-    +a_bad : List<&2, F.Action> = K.Kernel.actions(o_bad)
+    +o_bad : N.Step() = K.Kernel.step(st2, data_event(1, [1, 2, 3]), entropy())
+    +a_bad : List<&2, F.Action> = K.Kernel.frames(o_bad)
     C.Check.report("an undecodable PDU: Error Indication on stream 0 and one log line", Bool.and(pdu_is(Fr.Pdu.read(send_bytes(one_send(a_bad))), Fr.Pdu.initiating(), 7), Bool.and(send_on(one_send(a_bad), 1, 0), Bool.and(Nat.is_eq(count_logs(a_bad), 1n), Nat.is_eq(List.length(&2, F.Action, a_bad), 2n)))))
     C.Check.report("an undecodable PDU: the association stays known", S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_bad))))
-    +o_inc : S.Out() = K.Kernel.step(S.State.initial(), F.Evt.config_make([T.Tlv.make(1, [0, 241, 16])]), entropy())
-    C.Check.report("an incomplete Config: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_inc))), Nat.is_eq(count_logs(K.Kernel.actions(o_inc)), 1n)))
+    +o_inc : N.Step() = K.Kernel.step(S.State.initial(), F.Evt.config_make([T.Tlv.make(1, [0, 241, 16])]), entropy())
+    C.Check.report("an incomplete Config: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_inc))), Nat.is_eq(count_logs(K.Kernel.frames(o_inc)), 1n)))
     +st_ues : S.State = with_ues(st2, [(7, ue_of(1, [1])), (8, ue_of(2, [1])), (9, ue_of(1, [2]))], [(1, S.Session{S.SId{7, 1, 1, 1}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 1], 0, S.Active{}}}), (2, S.Session{S.SId{8, 1, 2, 2}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 2], 0, S.Active{}}})])
-    +o_down : S.Out() = K.Kernel.step(st_ues, F.NgapAssocDown{1}, entropy())
+    +o_down : N.Step() = K.Kernel.step(st_ues, F.NgapAssocDown{1}, entropy())
     C.Check.report("NgapAssocDown: only the other association's UE remains", B.bytes_eq(ue_keys(K.Kernel.state(o_down)), [8]))
-    C.Check.report("NgapAssocDown: the released UE's session is deleted at eUPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.actions(o_down))), 1n), pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(K.Kernel.actions(o_down)))), 54, True{})))
+    C.Check.report("NgapAssocDown: the released UE's session is deleted at eUPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.frames(o_down))), 1n), pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(K.Kernel.frames(o_down)))), 54, True{})))
     C.Check.report("NgapAssocDown: the association is forgotten", Bool.not(S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_down)))))

@@ -100,8 +100,8 @@ def N4.number(rows: Tb.Table(S.Session), +seq: U32) -> List<&2, N.Act>:
   match rows:
     case Nil{}:
       []
-    case (key, s) <> more:
-      N.Pfcp{N4.delete(S.Session.up_seid(s), seq)} <> N4.number(more, U32.add(seq, 1))
+    case (key, +s) <> more:
+      N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> N4.number(more, U32.add(seq, 1))
 
 # A Session Deletion for each session row eUPF knows, numbered from seq.
 def N4.deletions(rows: Tb.Table(S.Session), seq: U32) -> List<&2, N.Act>:
@@ -158,10 +158,10 @@ def N4.accepted(c: Maybe<&2, U32>) -> Bool:
 # ---------------
 
 def N4.ask(cfg: S.Cfg, n4: S.N4, tries: U32, seq: U32) -> N.GOut():
-  (S.Both{S.SetLink{S.Asking{tries}}, S.BumpSeq{1}}, [N.Pfcp{N4.assoc_setup(cfg, S.N4.recovery(n4), seq)}, N.TimerStart{S.N4.timer(), N4.t1_ms()}])
+  (S.Both{S.SetLink{S.Asking{tries}}, S.BumpSeq{1}}, [N.Pfcp{None{}, N4.assoc_setup(cfg, S.N4.recovery(n4), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
 
 def N4.pause() -> N.GOut():
-  (S.SetLink{S.Paused{}}, [N.TimerStart{S.N4.timer(), N4.pause_ms()}, N.Note{F.Warn{}, "PFCP: no association with eUPF; trying again later"}])
+  (S.SetLink{S.Paused{}}, [N.TimerStart{None{}, S.N4.timer(), N4.pause_ms()}, N.Note{F.Warn{}, "PFCP: no association with eUPF; trying again later"}])
 
 def N4.start_with_tries(+st: S.State, cfg: Maybe<&2, S.Cfg>, tries: U32) -> N.GOut():
   match cfg:
@@ -182,7 +182,7 @@ def N4.retry(st: S.State, cfg: Maybe<&2, S.Cfg>, tries: U32, again: Bool) -> N.G
       N4.pause()
 
 def N4.heartbeat_out(+st: S.State) -> N.GOut():
-  (S.BumpSeq{1}, [N.Pfcp{N4.heartbeat(1, S.N4.recovery(S.State.n4(st)), S.State.pfcp_seq(st))}, N.TimerStart{S.N4.timer(), N4.heartbeat_ms()}])
+  (S.BumpSeq{1}, [N.Pfcp{None{}, N4.heartbeat(1, S.N4.recovery(S.State.n4(st)), S.State.pfcp_seq(st))}, N.TimerStart{None{}, S.N4.timer(), N4.heartbeat_ms()}])
 
 # Timer 0 fired.
 def N4.expired(+st: S.State, link: S.Link) -> N.GOut():
@@ -202,7 +202,7 @@ def N4.fired(+st: S.State) -> N.GOut():
 def N4.assoc_answer(ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      (S.SetLink{S.Up{}}, [N.TimerStart{S.N4.timer(), N4.heartbeat_ms()}, N.Note{F.Info{}, "PFCP: association with eUPF up"}])
+      (S.SetLink{S.Up{}}, [N.TimerStart{None{}, S.N4.timer(), N4.heartbeat_ms()}, N.Note{F.Info{}, "PFCP: association with eUPF up"}])
     case False{}:
       N4.pause()
 
@@ -210,7 +210,7 @@ def N4.assoc_response(msg: Pf.Msg) -> N.GOut():
   N4.assoc_answer(N4.accepted(N4.cause(msg)))
 
 def N4.heartbeat_answer(+st: S.State, msg: Pf.Msg) -> N.GOut():
-  (S.Keep{}, [N.Pfcp{N4.heartbeat(2, S.N4.recovery(S.State.n4(st)), Pf.Msg.seq(msg))}])
+  (S.Keep{}, [N.Pfcp{None{}, N4.heartbeat(2, S.N4.recovery(S.State.n4(st)), Pf.Msg.seq(msg))}])
 
 def Link.up(l: S.Link) -> Bool:
   match l:

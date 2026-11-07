@@ -19,3 +19,4 @@ import ./proofs/frame.bend as PFr
 import ./proofs/kernel.bend as PK
 import ./proofs/smf.bend as PSm
 import ./proofs/takeover.bend as PTk
+import ./proofs/liveness.bend as PL

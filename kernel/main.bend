@@ -57,8 +57,8 @@ def Main.fail(sock: Socket, why: String) -> IO(Unit):
     case Fail{e}:
       Main.fail(sock, "event not decodable")
     case Done{(F.Input{entropy, event}, Nil{})}:
-      +o : S.Out() = K.Kernel.step(st, event, entropy)
-      +actions : List<&2, F.Action> = K.Kernel.actions(o)
+      +o = K.Kernel.step(st, event, entropy)
+      +actions : List<&2, F.Action> = K.Kernel.frames(o)
       do IO<Unit>:
         sent : Socket & Result<&1, &1, (U32 & String) & List<&2, U32>, Unit> <- TCP.send_bytes(sock, F.Frame.write(F.Actions.write(F.Actions.make(actions), []), []))
         Main.echo(actions)

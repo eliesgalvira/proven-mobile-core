@@ -54,29 +54,29 @@ def Route.d2(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies:
     case False{}:
       Route.d3(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 46n))
 
-def Route.d1(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> S.Out():
+def Route.d1(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.Step():
   match ok:
     case True{}:
       N.NgSetup.of_view(st, assoc, V.NGSetupRequest.view(ies))
     case False{}:
-      N.render_out(st, Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n)))
+      N.Step.of(st, Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n)))
 
-def Route.dispatch(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes()) -> S.Out():
+def Route.dispatch(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes()) -> N.Step():
   Route.d1(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 21n))
 
-def Route.of_ies(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, entropy: B.Bytes(), r: Ap.Rd(List<&2, Fr.Ie>)) -> S.Out():
+def Route.of_ies(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, entropy: B.Bytes(), r: Ap.Rd(List<&2, Fr.Ie>)) -> N.Step():
   match r:
     case Fail{e}:
-      (st, N.Acts.render(N.Ngap.bad_pdu(assoc)))
+      (st, N.Ngap.bad_pdu(assoc))
     case Done{(ies, c)}:
       Route.dispatch(st, assoc, stream, kind, code, ies, entropy)
 
-def Route.of_pdu(st: S.State, +assoc: U32, stream: U32, entropy: B.Bytes(), r: Result<&2, &2, B.Err, Fr.Pdu>) -> S.Out():
+def Route.of_pdu(st: S.State, +assoc: U32, stream: U32, entropy: B.Bytes(), r: Result<&2, &2, B.Err, Fr.Pdu>) -> N.Step():
   match r:
     case Fail{e}:
-      (st, N.Acts.render(N.Ngap.bad_pdu(assoc)))
+      (st, N.Ngap.bad_pdu(assoc))
     case Done{Fr.Pdu{kind, code, crit, value}}:
       Route.of_ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}))
 
-def Route.data(st: S.State, +assoc: U32, stream: U32, bytes: B.Bytes(), entropy: B.Bytes()) -> S.Out():
+def Route.data(st: S.State, +assoc: U32, stream: U32, bytes: B.Bytes(), entropy: B.Bytes()) -> N.Step():
   Route.of_pdu(st, assoc, stream, entropy, Fr.Pdu.read(bytes))

@@ -482,10 +482,6 @@ def State.n4(st: State) -> N4:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
       n4
 
-# What one step answers: the next state and the actions to perform.
-def Out() -> Data:
-  Sigma<&2, &2, State, _ => List<&2, F.Action>>
-
 # Associations
 # ------------
 
@@ -695,6 +691,14 @@ def Sessions.unique(sessions: Tb.Table(Session)) -> Bool:
     case (+key, +s) <> +more:
       Bool.and(Sessions.clear(key, s, more), Sessions.unique(more))
 
+# Every session belongs to a context of the table.
+def Sessions.owned(sessions: Tb.Table(Session), +ues: Tb.Table(Ue)) -> Bool:
+  match sessions:
+    case Nil{}:
+      True{}
+    case (k, s) <> more:
+      Bool.and(Tb.Table.has(Ue, Session.ue(s), ues), Sessions.owned(more, ues))
+
 # Which sessions to keep: those of other UEs, those of one UE, those whose UE
 # exists, the orphans, those clear of a session, the victims of one, all but a key.
 type SSieve is Data:
@@ -829,7 +833,8 @@ def Timers.free(fuel: Nat, +id: U32, +ues: Tb.Table(Ue), +sessions: Tb.Table(Ses
 # Transactions
 # ------------
 # A procedure answers with what to change, applied by one interpreter: a
-# context put (evicting the contexts it conflicts with) or rephased in place,
+# context put (evicting the contexts it conflicts with, and their sessions) or
+# rephased in place,
 # a context and its sessions forgotten, a session put (evicting likewise),
 # changed in place or forgotten, the subscribers replaced, the N4 link moved,
 # fresh ids (the next free ones) and PFCP sequence numbers consumed.
@@ -853,10 +858,11 @@ def Tx.apply(tx: Tx, st: State) -> State:
   match tx:
     case Keep{}:
       st
-    case Put{key, ue}:
+    case Put{+key, +ue}:
       match st:
         case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, Ues.put(key, ue, ues), sessions, pfcp_seq, next_ue, next_timer, n4}
+          +left = Ues.put(key, ue, ues)
+          State{config, subs, assocs, left, Sessions.sift(SOwned{left}, sessions), pfcp_seq, next_ue, next_timer, n4}
     case Rephase{key, phase}:
       match st:
         case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
