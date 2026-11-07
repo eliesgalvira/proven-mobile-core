@@ -1502,7 +1502,7 @@ law smf.establish.reject_leaves_state:
   for +ctx2: N.Nas.Ctx
   for +old: N.Nas.Ctx
   for +nh: St.Nh
-  for +left: Maybe<&2, St.Side>
+  for +released: Maybe<&2, St.Side>
   for +fields: List<&2, I.Field>
   for +opts: List<&2, I.Ie>
   for +psi: U32
@@ -1519,7 +1519,7 @@ law smf.establish.reject_leaves_state:
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
-  for +er: {St.Ue.phase(ue) == St.Registered{old, nh, left} : St.Phase}
+  for +er: {St.Ue.phase(ue) == St.Registered{old, nh, released} : St.Phase}
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.EstablishmentRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   for +ef: {St.State.config(st) == Some{cfg} : Maybe<&2, St.Cfg>}
@@ -1638,7 +1638,7 @@ law smf.modification.rejected:
   for +ctx2: N.Nas.Ctx
   for +old: N.Nas.Ctx
   for +nh: St.Nh
-  for +left: Maybe<&2, St.Side>
+  for +released: Maybe<&2, St.Side>
   for +fields: List<&2, I.Field>
   for +opts: List<&2, I.Ie>
   for +psi: U32
@@ -1653,7 +1653,7 @@ law smf.modification.rejected:
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
-  for +er: {St.Ue.phase(ue) == St.Registered{old, nh, left} : St.Phase}
+  for +er: {St.Ue.phase(ue) == St.Registered{old, nh, released} : St.Phase}
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.ModificationRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}

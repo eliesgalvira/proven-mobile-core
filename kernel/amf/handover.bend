@@ -183,7 +183,7 @@ def Ho.target(+st: S.State, intra: Bool, m: Maybe<&2, B.Bytes()>) -> Maybe<&2, U
 
 def Ho.required_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, kind: G.HandoverType(), cause: G.Cause, id: G.TargetID, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:
-    case S.Registered{ctx, nh, left}:
+    case S.Registered{ctx, nh, released}:
       Ho.required_target(st, key, ue, ctx, nh, cause, items, container, Ho.target(st, Ho.intra_type(kind), Ho.node(id)))
     case _:
       Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()))

@@ -80,7 +80,7 @@ def Pw.phase(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf
       fail(Ps.Ps.unknown())
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       fail(Ps.Ps.unknown())
-    case S.Registered{+ctx, +nh, left}:
+    case S.Registered{+ctx, +nh, released}:
       Pw.identified(Q, st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ue.supi(ue), ek, fail, go)
     case S.Switching{guard, ctx, nh, released}:
       fail(Ps.Ps.unknown())

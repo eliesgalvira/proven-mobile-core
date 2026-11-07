@@ -145,7 +145,7 @@ def Ps.identified(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran
 
 def Ps.phase(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, p: S.Phase) -> N.GOut():
   match p:
-    case S.Registered{ctx, nh, left}:
+    case S.Registered{ctx, nh, released}:
       Ps.identified(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ue.supi(ue))
     case _:
       Ps.fail(assoc, stream, amf, ran, items, Ps.unknown())

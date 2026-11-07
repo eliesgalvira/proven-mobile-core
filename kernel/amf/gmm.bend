@@ -449,9 +449,9 @@ def Gmm.sphase(+st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), count: Sec.
       Gmm.setup_step(st, key, ue, guard, ctx, nh, response, True{})
     case Mm.DeregistrationRequestUe{} S.ContextSetup{guard, old, nh, response, complete}:
       Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields))
-    case Mm.DeregistrationRequestUe{} S.Registered{old, nh, left}:
+    case Mm.DeregistrationRequestUe{} S.Registered{old, nh, released}:
       Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields))
-    case Mm.UlNasTransport{} S.Registered{old, nh, left}:
+    case Mm.UlNasTransport{} S.Registered{old, nh, released}:
       Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy)
     case _ _:
       N.Out.verified(key, ue, ctx, "5GMM: message not expected in this phase")
@@ -635,7 +635,7 @@ def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
     case S.ContextSetup{+guard, ctx, nh, response, complete}:
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
-    case S.Registered{ctx, nh, left}:
+    case S.Registered{ctx, nh, released}:
       (S.Keep{}, [])
     case S.Switching{guard, ctx, nh, released}:
       Gmm.release(st, key, ue, N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))

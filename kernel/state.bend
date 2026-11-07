@@ -231,7 +231,7 @@ type Phase is Data:
   Authenticating{guard: Guard, av: Au.Av, resynced: Bool, supi: B.Digits()}
   SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
-  Registered{ctx: N.Nas.Ctx, nh: Nh, left: Maybe<&2, Side>}
+  Registered{ctx: N.Nas.Ctx, nh: Nh, released: Maybe<&2, Side>}
   Switching{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, released: List<&2, U32>}
   Handover{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, source: U32, leg: Leg}
   Releasing{guard: Guard}
@@ -248,7 +248,7 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       Some{guard}
     case ContextSetup{guard, ctx, nh, response, complete}:
       Some{guard}
-    case Registered{ctx, nh, left}:
+    case Registered{ctx, nh, released}:
       None{}
     case Switching{guard, ctx, nh, released}:
       Some{guard}
@@ -262,7 +262,7 @@ def Phase.guarded(p: Phase) -> Bool:
   match p:
     case Created{}:
       False{}
-    case Registered{ctx, nh, left}:
+    case Registered{ctx, nh, released}:
       True{}
     case other:
       Tb.Table.present(Guard, Phase.guard(other))
@@ -279,8 +279,8 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       SecurityMode{g, ctx, k_amf}
     case ContextSetup{guard, ctx, nh, response, complete}:
       ContextSetup{g, ctx, nh, response, complete}
-    case Registered{ctx, nh, left}:
-      Registered{ctx, nh, left}
+    case Registered{ctx, nh, released}:
+      Registered{ctx, nh, released}
     case Switching{guard, ctx, nh, released}:
       Switching{g, ctx, nh, released}
     case Handover{guard, ctx, nh, source, leg}:
@@ -295,7 +295,7 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
       Some{ctx}
     case ContextSetup{guard, ctx, nh, response, complete}:
       Some{ctx}
-    case Registered{ctx, nh, left}:
+    case Registered{ctx, nh, released}:
       Some{ctx}
     case Switching{guard, ctx, nh, released}:
       Some{ctx}
@@ -308,8 +308,8 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
       SecurityMode{guard, c, k_amf}
     case ContextSetup{guard, ctx, nh, response, complete}:
       ContextSetup{guard, c, nh, response, complete}
-    case Registered{ctx, nh, left}:
-      Registered{c, nh, left}
+    case Registered{ctx, nh, released}:
+      Registered{c, nh, released}
     case Switching{guard, ctx, nh, released}:
       Switching{guard, c, nh, released}
     case other:
@@ -326,8 +326,8 @@ def Phase.pending(p: Phase) -> Maybe<&2, U32>:
 # Association a, under RAN-UE-NGAP-ID r, is the side a handover released.
 def Phase.released(p: Phase, +a: U32, +r: B.Bytes()) -> Bool:
   match p:
-    case Registered{ctx, nh, left}:
-      Side.is(left, a, r)
+    case Registered{ctx, nh, released}:
+      Side.is(released, a, r)
     case _:
       False{}
 
