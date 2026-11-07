@@ -7,7 +7,7 @@ Depends on: 35–38. Estimate: 3–4 h.
 What the 2026-11-07 merge review left after the pre-merge fixes:
 
 1. **N2 release:** after a failure following the Accept, send PDU Session Resource Release Command over N2 as well as the N1 release (TS 23.502 §4.3.4.2), so the gNB frees its radio and tunnel resources. Add the message, its response and its transfers to the NGAP generator's set.
-2. **Session guards:** they are always `Guard{0}`, so drop the field and use a Bool. Also `Releasing{Guard{0}}`.
+2. **Session Deletion retransmission** (TS 29.244 §6.4): resend up to N1 = 3 times with the same sequence number. This needs a pending-deletion table with its own guard timers, in a key space `state.ids.free` keeps apart from new sessions' ids. It is the acceptance report's one open gap.
 3. **N4 state machines:** `Asking` and `Beating` become one "outstanding request" state with a kind field.
 4. **Draws and walks:**
    - one draw instead of `Ip.teid_from` and `Ip.seid_from`;
