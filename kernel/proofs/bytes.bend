@@ -118,13 +118,8 @@ def Short.take(n: Nat, bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), n)
       %ih : {B.Take.cons(b, _) == Fail{B.Short{}} : B.Read(B.Bytes())}
       {==}
 
-def Short.tbcd(n: Nat, bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), n) == True{} : Bool}) -> {B.tbcd_digits(bs, n) == Fail{B.Short{}} : B.Read(B.Digits())}:
-  ih = Equal.sym(B.Read(B.Bytes()), B.take(n, bs), Fail{B.Short{}}, Short.take(n, bs, e))
-  %ih : {B.Tbcd.after_take(_) == Fail{B.Short{}} : B.Read(B.Digits())}
-  {==}
-
 def L.bytes.short_input_fails(bs):
-  (e => Short.u8(bs, e), (e => Short.u16(bs, e), (e => Short.u24(bs, e), (e => Short.u32(bs, e), (e => Short.nibbles(bs, e), (n => e => Short.take(n, bs, e), n => e => Short.tbcd(n, bs, e)))))))
+  (e => Short.u8(bs, e), (e => Short.u16(bs, e), (e => Short.u24(bs, e), (e => Short.u32(bs, e), (e => Short.nibbles(bs, e), n => e => Short.take(n, bs, e))))))
 
 # take
 # ----
@@ -237,33 +232,6 @@ def Tbcd.decode_len(bs: B.Bytes(), +ds: B.Digits(), e: {B.Tbcd.decode(bs) == Don
     case +b <> +rest:
       Tbcd.low_spec(U32.and(15, b), U32.and(15, U32.shrn(b, 4n)), rest, ds, u => B.Tbcd.decode(rest), ds2 => e2 => Tbcd.decode_len(rest, ds2, e2), B.Tbcd.is_digit(U32.and(15, b)), {==}, e)
 
-def Tbcd.main2(+k: Nat, +digits: B.Digits(), +rest: B.Bytes(), +bytes: B.Bytes(), +rs: B.Bytes(), d: Tbcd.Res(),
-  dl: @ds: B.Digits() -> {d == Done{ds} : Tbcd.Res()} -> Tbcd.Spec(ds, List.length(&2, U32, bytes)),
-  lenk: {List.length(&2, U32, bytes) == k : Nat},
-  e: {B.Tbcd.with_rest(d, rs) == Done{(digits, rest)} : B.Read(B.Digits())}) -> Tbcd.Spec(digits, k):
-  match d:
-    case Fail{err}:
-      Empty.absurd(Tbcd.Spec(digits, k), P.Refute.fail_done(B.Err, B.ReadValue(B.Digits()), err, (digits, rest), e))
-    case Done{+ds}:
-      et = Equal.cong(B.Read(B.Digits()), B.Digits(), x => P.Read.value(B.Digits(), x, digits), Done{(ds, rs)}, Done{(digits, rest)}, e)
-      %et : Tbcd.Spec(_, k)
-      %lenk : Tbcd.Spec(ds, _)
-      dl(ds, {==})
-
-def Tbcd.main1(+k: Nat, +digits: B.Digits(), +rest: B.Bytes(), +bs: B.Bytes(), +bytes: B.Bytes(), +rs: B.Bytes(), la: Take.Spec(bytes, rs, k, bs),
-  e: {B.Tbcd.with_rest(B.Tbcd.decode(bytes), rs) == Done{(digits, rest)} : B.Read(B.Digits())}) -> Tbcd.Spec(digits, k):
-  (lenk, app) = la
-  Tbcd.main2(k, digits, rest, bytes, rs, B.Tbcd.decode(bytes), ds => e2 => Tbcd.decode_len(bytes, ds, e2), lenk, e)
-
-def Tbcd.main(+k: Nat, +digits: B.Digits(), +rest: B.Bytes(), +bs: B.Bytes(), r: B.Read(B.Bytes()),
-  tl: @tk: B.Bytes() -> @rs: B.Bytes() -> {r == Done{(tk, rs)} : B.Read(B.Bytes())} -> Take.Spec(tk, rs, k, bs),
-  e: {B.Tbcd.after_take(r) == Done{(digits, rest)} : B.Read(B.Digits())}) -> Tbcd.Spec(digits, k):
-  match r:
-    case Fail{err}:
-      Empty.absurd(Tbcd.Spec(digits, k), P.Refute.fail_done(B.Err, B.ReadValue(B.Digits()), err, (digits, rest), e))
-    case Done{(+bytes, +rs)}:
-      Tbcd.main1(k, digits, rest, bs, bytes, rs, tl(bytes, rs, {==}), e)
-
 def Tbcd.encode_len(ds: B.Digits(), out: B.Bytes()) -> {List.length(&2, U32, B.write_tbcd(ds, out)) == Nat.add(B.Tbcd.byte_count(List.length(&2, U32, ds)), List.length(&2, U32, out)) : Nat}:
   match ds:
     case Nil{}:
@@ -277,8 +245,8 @@ def Tbcd.assemble(+digits: B.Digits(), +k: Nat, la: Tbcd.Spec(digits, k)) -> {Na
   (le, all) = la
   (le, (all, ds => out => Tbcd.encode_len(ds, out)))
 
-def L.bytes.tbcd.length(bs, k, digits, rest, e):
-  Tbcd.assemble(digits, k, Tbcd.main(k, digits, rest, bs, B.take(k, bs), tk => rs => e2 => L.bytes.take.length(k, bs, tk, rs, e2), e))
+def L.bytes.tbcd.length(bs, digits, e):
+  Tbcd.assemble(digits, List.length(&2, U32, bs), Tbcd.decode_len(bs, digits, e))
 
 # Lengths and suffixes of what `take` read
 # ----------------------------------------

@@ -41,7 +41,14 @@ def short_u32(r: B.Read(U32)) -> Bool:
     case _:
       False{}
 
-def fails_digits(r: B.Read(B.Digits())) -> Bool:
+def digits_is(r: Result<&2, &2, B.Err, B.Digits()>, v: B.Digits()) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{x}:
+      C.Check.bytes_eq(x, v)
+
+def fails_digits(r: Result<&2, &2, B.Err, B.Digits()>) -> Bool:
   match r:
     case Fail{e}:
       True{}
@@ -64,10 +71,9 @@ def main() -> IO(Unit):
     C.Check.report("take too many is Short", Bool.not(bytes_is(B.take(5n, recovery()), recovery(), [])))
     C.Check.report("nibbles of PLMN 00 f1 10", Bool.and(Bool.and(nibbles_is(B.nibbles([0, 241, 16]), 0, 0, [241, 16]), nibbles_is(B.nibbles([241, 16]), 15, 1, [16])), nibbles_is(B.nibbles([16]), 1, 0, [])))
     C.Check.report("write_nibbles packs hi then lo", C.Check.bytes_eq(B.write_nibbles(15, 1, []), [241]))
-    C.Check.report("tbcd decodes the MSIN 0000000001", bytes_is(B.tbcd_digits([0, 0, 0, 0, 16], 5n), [0, 0, 0, 0, 0, 0, 0, 0, 0, 1], []))
+    C.Check.report("tbcd decodes the MSIN 0000000001", digits_is(B.Tbcd.decode([0, 0, 0, 0, 16]), [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
     C.Check.report("tbcd encodes the MSIN", C.Check.bytes_eq(B.write_tbcd([0, 0, 0, 0, 0, 0, 0, 0, 0, 1], []), [0, 0, 0, 0, 16]))
     C.Check.report("tbcd odd count gets a filler", C.Check.bytes_eq(B.write_tbcd([0, 0, 1], [9]), [0, 241, 9]))
-    C.Check.report("tbcd decodes an odd count", bytes_is(B.tbcd_digits([0, 241, 9], 2n), [0, 0, 1], [9]))
-    C.Check.report("tbcd rejects a non-digit", fails_digits(B.tbcd_digits([250], 1n)))
-    C.Check.report("tbcd rejects a filler before the end", fails_digits(B.tbcd_digits([240, 18], 2n)))
-    C.Check.report("tbcd on too few bytes is Short", fails_digits(B.tbcd_digits([16], 2n)))
+    C.Check.report("tbcd decodes an odd count", digits_is(B.Tbcd.decode([0, 241]), [0, 0, 1]))
+    C.Check.report("tbcd rejects a non-digit", fails_digits(B.Tbcd.decode([250])))
+    C.Check.report("tbcd rejects a filler before the end", fails_digits(B.Tbcd.decode([240, 18])))

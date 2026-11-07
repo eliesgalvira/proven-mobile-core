@@ -85,17 +85,15 @@ law bytes.short_input_fails:
   & ({Nat.is_lt(List.length(&2, U32, bs), 4n) == True{} : Bool} -> {B.u32(bs) == Fail{B.Short{}} : B.Read(U32)})
   & ({Nat.is_lt(List.length(&2, U32, bs), 1n) == True{} : Bool} -> {B.nibbles(bs) == Fail{B.Short{}} : B.Read(B.Nibbles())})
   & (@n: Nat -> {Nat.is_lt(List.length(&2, U32, bs), n) == True{} : Bool} -> {B.take(n, bs) == Fail{B.Short{}} : B.Read(B.Bytes())})
-  & (@n: Nat -> {Nat.is_lt(List.length(&2, U32, bs), n) == True{} : Bool} -> {B.tbcd_digits(bs, n) == Fail{B.Short{}} : B.Read(B.Digits())})
 
-# Advisory GHSA-vp44-3q85-5cm4: decoding k bytes yields at most 2k digits, each 0..9;
-# encoding d digits yields ceil(d/2) bytes.
+# Advisory GHSA-vp44-3q85-5cm4: the TBCD decoder of MSIN, IMEI and IMEISV
+# yields at most 2k digits from k bytes, each 0..9; encoding d digits yields
+# ceil(d/2) bytes.
 law bytes.tbcd.length:
   for +bs: B.Bytes()
-  for +k: Nat
   for +digits: B.Digits()
-  for rest: B.Bytes()
-  for e: {B.tbcd_digits(bs, k) == Done{(digits, rest)} : B.Read(B.Digits())}
-  {Nat.is_le(List.length(&2, U32, digits), Nat.double(k)) == True{} : Bool}
+  for e: {B.Tbcd.decode(bs) == Done{digits} : Result<&2, &2, B.Err, B.Digits()>}
+  {Nat.is_le(List.length(&2, U32, digits), Nat.double(List.length(&2, U32, bs))) == True{} : Bool}
   & {B.Tbcd.all_digits(digits) == True{} : Bool}
   & (@ds: B.Digits() -> @out: B.Bytes() -> {List.length(&2, U32, B.write_tbcd(ds, out))
       == Nat.add(B.Tbcd.byte_count(List.length(&2, U32, ds)), List.length(&2, U32, out)) : Nat})

@@ -193,24 +193,6 @@ def Tbcd.decode(bs: Bytes()) -> Result<&2, &2, Err, Digits()>:
     case +b <> +rest:
       Tbcd.low(U32.and(15, b), U32.and(15, U32.shrn(b, 4n)), rest, u => Tbcd.decode(rest), Tbcd.is_digit(U32.and(15, b)))
 
-def Tbcd.with_rest(r: Result<&2, &2, Err, Digits()>, rest: Bytes()) -> Read(Digits()):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{ds}:
-      Done{(ds, rest)}
-
-def Tbcd.after_take(r: Read(Bytes())) -> Read(Digits()):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(bytes, rest)}:
-      Tbcd.with_rest(Tbcd.decode(bytes), rest)
-
-# The digits held in the next `count` bytes.
-def tbcd_digits(bs: Bytes(), count: Nat) -> Read(Digits()):
-  Tbcd.after_take(take(count, bs))
-
 def write_tbcd(ds: Digits(), rest: Bytes()) -> Bytes():
   match ds:
     case Nil{}:
