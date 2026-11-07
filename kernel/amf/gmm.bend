@@ -81,16 +81,23 @@ def Gmm.dl(key: U32, +ue: S.Ue, nas: B.Bytes()) -> N.Act:
 # A context forgotten, its sessions released at the UPF.
 def Gmm.forget(+st: S.State, +key: U32) -> N.GOut():
   +gone = S.Sessions.of_ue(key, S.State.sessions(st))
-  (S.Both{S.Del{key}, S.BumpSeq{Up.N4.deletion_count(gone)}}, Up.N4.deletions(gone, S.State.pfcp_seq(st)))
+  N.Out.join((S.Del{key}, []), Up.N4.deletions(gone, S.State.pfcp_seq(st)))
 
-def Gmm.evict(victims: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session), +seq: U32) -> N.GOut():
+def Gmm.evict(victims: Tb.Table(S.Ue)) -> List<&2, N.Act>:
   match victims:
     case Nil{}:
-      (S.Keep{}, [])
+      []
     case (+key, +v) <> more:
-      +gone = S.Sessions.of_ue(key, sessions)
       +cause = N.Ngap.nas_cause(G.CauseNas.deregister())
-      N.Out.join(N.Out.prepend(N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), cause}, (S.BumpSeq{Up.N4.deletion_count(gone)}, List.append(&2, N.Act, Up.N4.deletions(gone, seq), Ho.Ho.leg_drop(key, S.Ue.phase(v), cause)))), Gmm.evict(more, sessions, U32.add(seq, Up.N4.deletion_count(gone))))
+      N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), cause} <> List.append(&2, N.Act, Ho.Ho.leg_drop(key, S.Ue.phase(v), cause), Gmm.evict(more))
+
+# The sessions of the contexts given.
+def Gmm.sessions(ues: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session)) -> Tb.Table(S.Session):
+  match ues:
+    case Nil{}:
+      []
+    case (key, u) <> more:
+      List.append(&2, Sigma<&2, &2, U32, _ => S.Session>, S.Sessions.of_ue(key, sessions), Gmm.sessions(more, sessions))
 
 # The one write of a context's identity: it takes its place, and every live
 # context it conflicts with (the same SUPI, 5G-TMSI or RAN id on the
@@ -99,7 +106,8 @@ def Gmm.evict(victims: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session), +seq: U32
 # only once 5G-AKA has verified it (Gmm.secure) and a 5G-TMSI is drawn free
 # (Gmm.tmsi), so another gNB's UE is taken over only after authentication.
 def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
-  N.Out.join((S.Put{key, ue}, []), Gmm.evict(S.Ues.evicted(key, ue, S.State.ues(st)), S.State.sessions(st), S.State.pfcp_seq(st)))
+  +victims = S.Ues.evicted(key, ue, S.State.ues(st))
+  N.Out.join((S.Put{key, ue}, Gmm.evict(victims)), Up.N4.deletions(Gmm.sessions(victims, S.State.sessions(st)), S.State.pfcp_seq(st)))
 
 # UE Context Release Command; the context waits, releasing, for the gNB, and
 # its guard, started again, bounds the wait; the target of its pending

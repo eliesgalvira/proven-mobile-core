@@ -30,4 +30,4 @@ Depends on: 13, 15.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

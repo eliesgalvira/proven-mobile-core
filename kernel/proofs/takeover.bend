@@ -178,6 +178,8 @@ def Tk.ues(+tx: S.Tx, +ues: Tb.Table(S.Ue)) -> Tb.Table(S.Ue):
       ues
     case S.SetLink{link}:
       ues
+    case S.Pend{pk, pd}:
+      ues
     case S.BumpUe{bk}:
       ues
     case S.BumpSeq{n}:
@@ -223,6 +225,10 @@ def Tk.ues_apply(+tx: S.Tx, +st: S.State) -> {S.State.ues(S.Tx.apply(tx, st)) ==
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
+    case S.Pend{pk, pd}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          {==}
     case S.BumpUe{bk}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
@@ -255,6 +261,8 @@ def Tk.spares(+k: U32, +u: S.Ue, +tx: S.Tx) -> Bool:
     case S.Subs{subs}:
       True{}
     case S.SetLink{link}:
+      True{}
+    case S.Pend{pk, pd}:
       True{}
     case S.BumpUe{bk}:
       True{}
@@ -289,6 +297,8 @@ def Tk.spared(+k: U32, +u: S.Ue, +tx: S.Tx, +ues: Tb.Table(S.Ue), +eu: {Tb.Table
       eu
     case S.SetLink{link}:
       eu
+    case S.Pend{pk, pd}:
+      eu
     case S.BumpUe{bk}:
       eu
     case S.BumpSeq{n}:
@@ -301,18 +311,13 @@ def Tk.spared(+k: U32, +u: S.Ue, +tx: S.Tx, +ues: Tb.Table(S.Ue), +eu: {Tb.Table
 def Tk.Kept(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue)) -> Data:
   Either<&2, &2, {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}, {S.Ues.secured(S.Ue.supi(u), ues) == True{} : Bool}>
 
-def Tk.tx(+o: N.GOut()) -> S.Tx:
-  match o:
-    case (tx, acts):
-      tx
-
 def Tk.Ok(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +o: N.GOut()) -> Data:
-  Tk.Kept(k, u, Tk.ues(Tk.tx(o), ues))
+  Tk.Kept(k, u, Tk.ues(N.Out.tx(o), ues))
 
 def Tk.sp(+k: U32, +u: S.Ue, +o: N.GOut()) -> Bool:
-  Tk.spares(k, u, Tk.tx(o))
+  Tk.spares(k, u, N.Out.tx(o))
 
-def Tk.render(+st: S.State, +o: N.GOut()) -> {S.State.ues(K.Kernel.state(N.Step.of(st, o))) == Tk.ues(Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}:
+def Tk.render(+st: S.State, +o: N.GOut()) -> {S.State.ues(K.Kernel.state(N.Step.of(st, o))) == Tk.ues(N.Out.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}:
   match o:
     case (tx, acts):
       Tk.ues_apply(tx, st)
@@ -335,7 +340,7 @@ def Tk.ok_also(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +o: N.GOut(), +more: Lis
     case (tx, acts):
       h
 
-def Tk.ok_join(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +a: N.GOut(), +b: N.GOut(), +h: Tk.Kept(k, u, Tk.ues(Tk.tx(b), Tk.ues(Tk.tx(a), ues)))) -> Tk.Ok(k, u, ues, N.Out.join(a, b)):
+def Tk.ok_join(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +a: N.GOut(), +b: N.GOut(), +h: Tk.Kept(k, u, Tk.ues(N.Out.tx(b), Tk.ues(N.Out.tx(a), ues)))) -> Tk.Ok(k, u, ues, N.Out.join(a, b)):
   match a:
     case (ta, aa):
       match b:
@@ -349,12 +354,66 @@ def Tk.sp_join(+k: U32, +u: S.Ue, +a: N.GOut(), +b: N.GOut(), +ha: {Tk.sp(k, u, 
         case (tb, ab):
           P.Bool.and_intro(Tk.spares(k, u, ta), Tk.spares(k, u, tb), ha, hb)
 
-def Tk.tx_join(+a: N.GOut(), +b: N.GOut()) -> {Tk.tx(N.Out.join(a, b)) == S.Both{Tk.tx(a), Tk.tx(b)} : S.Tx}:
-  match a:
-    case (ta, aa):
-      match b:
-        case (tb, ab):
-          {==}
+# Session deletions, and every other transaction on the N4 side alone, spare
+# every context.
+def Tk.ues_n4(+tx: S.Tx, +x: Tb.Table(S.Ue), +e: {PW.N4s.only(tx) == True{} : Bool}) -> {Tk.ues(tx, x) == x : Tb.Table(S.Ue)}:
+  match tx:
+    case S.Keep{}:
+      {==}
+    case S.SetLink{link}:
+      {==}
+    case S.Pend{pk, pd}:
+      {==}
+    case S.BumpSeq{n}:
+      {==}
+    case S.Both{+a, +b}:
+      ea = Equal.sym(Tb.Table(S.Ue), Tk.ues(a, x), x, Tk.ues_n4(a, x, P.Bool.and_true_l(PW.N4s.only(a), PW.N4s.only(b), e)))
+      (%ea : {Tk.ues(b, _) == x : Tb.Table(S.Ue)}; Tk.ues_n4(b, x, P.Bool.and_true_r(PW.N4s.only(a), PW.N4s.only(b), e)))
+    case S.Put{key, ue}:
+      Empty.absurd({Tk.ues(S.Put{key, ue}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+    case S.Rephase{key, phase}:
+      Empty.absurd({Tk.ues(S.Rephase{key, phase}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+    case S.Del{key}:
+      Empty.absurd({Tk.ues(S.Del{key}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+    case S.PutSession{key, s}:
+      Empty.absurd({Tk.ues(S.PutSession{key, s}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+    case S.Revar{key, v}:
+      Empty.absurd({Tk.ues(S.Revar{key, v}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+    case S.DelSession{key}:
+      Empty.absurd({Tk.ues(S.DelSession{key}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+    case S.Subs{new}:
+      Empty.absurd({Tk.ues(S.Subs{new}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+    case S.BumpUe{bk}:
+      Empty.absurd({Tk.ues(S.BumpUe{bk}, x) == x : Tb.Table(S.Ue)}, P.Refute.bool(e))
+
+def Tk.sp_n4(+k: U32, +u: S.Ue, +tx: S.Tx, +e: {PW.N4s.only(tx) == True{} : Bool}) -> {Tk.spares(k, u, tx) == True{} : Bool}:
+  match tx:
+    case S.Keep{}:
+      {==}
+    case S.SetLink{link}:
+      {==}
+    case S.Pend{pk, pd}:
+      {==}
+    case S.BumpSeq{n}:
+      {==}
+    case S.Both{+a, +b}:
+      P.Bool.and_intro(Tk.spares(k, u, a), Tk.spares(k, u, b), Tk.sp_n4(k, u, a, P.Bool.and_true_l(PW.N4s.only(a), PW.N4s.only(b), e)), Tk.sp_n4(k, u, b, P.Bool.and_true_r(PW.N4s.only(a), PW.N4s.only(b), e)))
+    case S.Put{key, v}:
+      Empty.absurd({Tk.spares(k, u, S.Put{key, v}) == True{} : Bool}, P.Refute.bool(e))
+    case S.Rephase{key, phase}:
+      Empty.absurd({Tk.spares(k, u, S.Rephase{key, phase}) == True{} : Bool}, P.Refute.bool(e))
+    case S.Del{key}:
+      Empty.absurd({Tk.spares(k, u, S.Del{key}) == True{} : Bool}, P.Refute.bool(e))
+    case S.PutSession{key, s}:
+      Empty.absurd({Tk.spares(k, u, S.PutSession{key, s}) == True{} : Bool}, P.Refute.bool(e))
+    case S.Revar{key, v}:
+      Empty.absurd({Tk.spares(k, u, S.Revar{key, v}) == True{} : Bool}, P.Refute.bool(e))
+    case S.DelSession{key}:
+      Empty.absurd({Tk.spares(k, u, S.DelSession{key}) == True{} : Bool}, P.Refute.bool(e))
+    case S.Subs{new}:
+      Empty.absurd({Tk.spares(k, u, S.Subs{new}) == True{} : Bool}, P.Refute.bool(e))
+    case S.BumpUe{bk}:
+      Empty.absurd({Tk.spares(k, u, S.BumpUe{bk}) == True{} : Bool}, P.Refute.bool(e))
 
 # Session deletions spare every row.
 def Tk.sp_dels(+k: U32, +u: S.Ue, +vs: Tb.Table(S.Session)) -> {Tk.spares(k, u, Gsm.Gsm.dels(vs)) == True{} : Bool}:
@@ -364,22 +423,25 @@ def Tk.sp_dels(+k: U32, +u: S.Ue, +vs: Tb.Table(S.Session)) -> {Tk.spares(k, u, 
     case (key, t) <> more:
       Tk.sp_dels(k, u, more)
 
-def Tk.sp_forget(+k: U32, +u: S.Ue, +vs: Tb.Table(S.Session), +seq: U32) -> {Tk.sp(k, u, Gsm.Gsm.forget(vs, seq)) == True{} : Bool}:
-  P.Bool.and_intro(Tk.spares(k, u, Gsm.Gsm.dels(vs)), True{}, Tk.sp_dels(k, u, vs), {==})
-
-# Releasing the contexts a put displaces leaves the UE table to the put.
-def Tk.evict(+vs: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +q: U32, +x: Tb.Table(S.Ue)) -> {Tk.ues(Tk.tx(Gmm.Gmm.evict(vs, ss, q)), x) == x : Tb.Table(S.Ue)}:
+def Tk.ues_dels(+vs: Tb.Table(S.Session), +x: Tb.Table(S.Ue)) -> {Tk.ues(Gsm.Gsm.dels(vs), x) == x : Tb.Table(S.Ue)}:
   match vs:
     case Nil{}:
       {==}
-    case (+key, +v) <> more:
-      +gone = S.Sessions.of_ue(key, ss)
-      +cause = N.Ngap.nas_cause(G.CauseNas.deregister())
-      +a = N.Out.prepend(N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), cause}, (S.BumpSeq{Up.N4.deletion_count(gone)}, List.append(&2, N.Act, Up.N4.deletions(gone, q), Ho.Ho.leg_drop(key, S.Ue.phase(v), cause))))
-      +b = Gmm.Gmm.evict(more, ss, U32.add(q, Up.N4.deletion_count(gone)))
-      ej = Equal.sym(S.Tx, Tk.tx(N.Out.join(a, b)), S.Both{Tk.tx(a), Tk.tx(b)}, Tk.tx_join(a, b))
-      %ej : {Tk.ues(_, x) == x : Tb.Table(S.Ue)}
-      Tk.evict(more, ss, U32.add(q, Up.N4.deletion_count(gone)), x)
+    case (key, t) <> more:
+      Tk.ues_dels(more, x)
+
+# Forgetting sessions touches no context.
+def Tk.ues_forget(+vs: Tb.Table(S.Session), +seq: U32, +x: Tb.Table(S.Ue)) -> {Tk.ues(N.Out.tx(Gsm.Gsm.forget(vs, seq)), x) == x : Tb.Table(S.Ue)}:
+  +d = Up.N4.deletions(vs, seq)
+  ej = Equal.sym(S.Tx, N.Out.tx(N.Out.join((Gsm.Gsm.dels(vs), []), d)), S.Both{Gsm.Gsm.dels(vs), N.Out.tx(d)}, PW.Out.tx_join((Gsm.Gsm.dels(vs), []), d))
+  %ej : {Tk.ues(_, x) == x : Tb.Table(S.Ue)}
+  ed = Equal.sym(Tb.Table(S.Ue), Tk.ues(Gsm.Gsm.dels(vs), x), x, Tk.ues_dels(vs, x))
+  %ed : {Tk.ues(N.Out.tx(d), _) == x : Tb.Table(S.Ue)}
+  Tk.ues_n4(N.Out.tx(d), x, PW.N4s.deletions(vs, seq))
+
+def Tk.sp_forget(+k: U32, +u: S.Ue, +vs: Tb.Table(S.Session), +seq: U32) -> {Tk.sp(k, u, Gsm.Gsm.forget(vs, seq)) == True{} : Bool}:
+  +d = Up.N4.deletions(vs, seq)
+  Tk.sp_join(k, u, (Gsm.Gsm.dels(vs), []), d, Tk.sp_dels(k, u, vs), Tk.sp_n4(k, u, N.Out.tx(d), PW.N4s.deletions(vs, seq)))
 
 def Tk.keeps_clear(+k: U32, +u: S.Ue, +key: U32, +v: S.Ue, +nk: {U32.is_eq(k, key) == False{} : Bool}, +nc: {S.Ue.conflicts(v, u) == False{} : Bool}) -> {S.Sieve.keeps(S.Clear{key, v}, k, u) == True{} : Bool}:
   snk = Equal.sym(Bool, U32.is_eq(k, key), False{}, nk)
@@ -415,9 +477,9 @@ def Tk.put(+k: U32, +u: S.Ue, +key: U32, +v: S.Ue, +ues: Tb.Table(S.Ue), +eu: {T
   Tk.put_case(k, u, key, v, ues, eu, h1, h, S.Ue.secures(v, S.Ue.supi(u)), {==})
 
 def Tk.place(+k: U32, +u: S.Ue, +st: S.State, +key: U32, +v: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}, +h: {Bool.or(Bool.not(S.Ue.conflicts(v, u)), S.Ue.secures(v, S.Ue.supi(u))) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, v)):
-  +b = Gmm.Gmm.evict(S.Ues.evicted(key, v, S.State.ues(st)), S.State.sessions(st), S.State.pfcp_seq(st))
-  ee = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(b), S.Ues.put(key, v, S.State.ues(st))), S.Ues.put(key, v, S.State.ues(st)), Tk.evict(S.Ues.evicted(key, v, S.State.ues(st)), S.State.sessions(st), S.State.pfcp_seq(st), S.Ues.put(key, v, S.State.ues(st))))
-  Tk.ok_join(k, u, S.State.ues(st), (S.Put{key, v}, []), b, (%ee : Tk.Kept(k, u, _); Tk.put(k, u, key, v, S.State.ues(st), eu, h1, h)))
+  +b = Up.N4.deletions(Gmm.Gmm.sessions(S.Ues.evicted(key, v, S.State.ues(st)), S.State.sessions(st)), S.State.pfcp_seq(st))
+  ee = Equal.sym(Tb.Table(S.Ue), Tk.ues(N.Out.tx(b), S.Ues.put(key, v, S.State.ues(st))), S.Ues.put(key, v, S.State.ues(st)), Tk.ues_n4(N.Out.tx(b), S.Ues.put(key, v, S.State.ues(st)), PW.N4s.deletions(Gmm.Gmm.sessions(S.Ues.evicted(key, v, S.State.ues(st)), S.State.sessions(st)), S.State.pfcp_seq(st))))
+  Tk.ok_join(k, u, S.State.ues(st), (S.Put{key, v}, Gmm.Gmm.evict(S.Ues.evicted(key, v, S.State.ues(st)))), b, (%ee : Tk.Kept(k, u, _); Tk.put(k, u, key, v, S.State.ues(st), eu, h1, h)))
 
 # The context a step acts for, keyed key, conflicts with u's row neither by
 # key nor by identity.
@@ -1571,17 +1633,17 @@ def W.release_request_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Er
     case Done{+v}:
       W.release_request(st, assoc, v, k, u, eu, eun, ea)
 
-def W.forget(+st: S.State, +key: U32, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +ue: S.Ue, pr: {U32.is_eq(k, key) == False{} : Bool} & {S.Ue.conflicts(ue, u) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), N.Out.also(Gmm.Gmm.forget(st, key), [N.Note{F.Info{}, "NGAP: UE context released"}])):
+def W.forget(+st: S.State, +key: U32, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +ue: S.Ue, +more: List<&2, N.Act>, pr: {U32.is_eq(k, key) == False{} : Bool} & {S.Ue.conflicts(ue, u) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), N.Out.also(Gmm.Gmm.forget(st, key), more)):
   match pr:
     case (+h1, h2):
-      Tk.ok_also(k, u, S.State.ues(st), Gmm.Gmm.forget(st, key), [N.Note{F.Info{}, "NGAP: UE context released"}], Tk.ok_sp(k, u, S.State.ues(st), Gmm.Gmm.forget(st, key), eu, P.Bool.and_intro(Tk.spares(k, u, S.Del{key}), True{}, Tk.sp_del(k, u, key, h1), {==})))
+      Tk.ok_also(k, u, S.State.ues(st), Gmm.Gmm.forget(st, key), more, Tk.ok_sp(k, u, S.State.ues(st), Gmm.Gmm.forget(st, key), eu, Tk.sp_join(k, u, (S.Del{key}, []), Up.N4.deletions(S.Sessions.of_ue(key, S.State.sessions(st)), S.State.pfcp_seq(st)), Tk.sp_del(k, u, key, h1), Tk.sp_n4(k, u, N.Out.tx(Up.N4.deletions(S.Sessions.of_ue(key, S.State.sessions(st)), S.State.pfcp_seq(st))), PW.N4s.deletions(S.Sessions.of_ue(key, S.State.sessions(st)), S.State.pfcp_seq(st))))))
 
 def W.release_complete_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.release_complete_ue(st, assoc, key, m, S.Ue.released(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))):
   match m:
     case None{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Some{+ue}:
-      W.forget(st, key, k, u, eu, ue, Own.apart(st, assoc, key, ran, ue, k, u, eun, eu, ea, eo))
+      W.forget(st, key, k, u, eu, ue, List.append(&2, N.Act, N.Guard.cancel(key, S.Ue.guard(ue)), List.append(&2, N.Act, Ho.Ho.leg_drop(key, S.Ue.phase(ue), N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified())), [N.Note{F.Info{}, "NGAP: UE context released"}])), Own.apart(st, assoc, key, ran, ue, k, u, eun, eu, ea, eo))
 
 
 def W.release_complete_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.release_complete_key(st, assoc, ran, m)):
@@ -1644,14 +1706,14 @@ def W.setup_response_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err
 # context conflicts with it only on the target. Its sessions' changes touch
 # no context.
 
-def W.ps_session_ues(+skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +x: Tb.Table(S.Ue)) -> {Tk.ues(Tk.tx(Sw.Sw.session(skey, s, seq, t)), x) == x : Tb.Table(S.Ue)}:
+def W.ps_session_ues(+skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +x: Tb.Table(S.Ue)) -> {Tk.ues(N.Out.tx(Sw.Sw.session(skey, s, seq, t)), x) == x : Tb.Table(S.Ue)}:
   match t:
     case None{}:
-      {==}
+      Tk.ues_forget([(skey, s)], seq, x)
     case Some{(teid, addr)}:
       {==}
 
-def W.ps_sessions_ues(+ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq: U32, +x: Tb.Table(S.Ue)) -> {Tk.ues(Tk.tx(Sw.Sw.sessions(ts, rows, seq)), x) == x : Tb.Table(S.Ue)}:
+def W.ps_sessions_ues(+ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq: U32, +x: Tb.Table(S.Ue)) -> {Tk.ues(N.Out.tx(Sw.Sw.sessions(ts, rows, seq)), x) == x : Tb.Table(S.Ue)}:
   match rows:
     case Nil{}:
       {==}
@@ -1659,12 +1721,12 @@ def W.ps_sessions_ues(+ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq:
       +o = Sw.Sw.session(skey, s, seq, Sw.Sw.tunnel_for(ts, s))
       +a = N.Out.join((S.BumpSeq{1}, []), o)
       +b = Sw.Sw.sessions(ts, more, U32.add(seq, 1))
-      ej = Equal.sym(S.Tx, Tk.tx(N.Out.join(a, b)), S.Both{Tk.tx(a), Tk.tx(b)}, Tk.tx_join(a, b))
+      ej = Equal.sym(S.Tx, N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), N.Out.tx(b)}, PW.Out.tx_join(a, b))
       %ej : {Tk.ues(_, x) == x : Tb.Table(S.Ue)}
-      ea2 = Equal.sym(S.Tx, Tk.tx(a), S.Both{S.BumpSeq{1}, Tk.tx(o)}, Tk.tx_join((S.BumpSeq{1}, []), o))
-      %ea2 : {Tk.ues(Tk.tx(b), Tk.ues(_, x)) == x : Tb.Table(S.Ue)}
-      es = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(o), x), x, W.ps_session_ues(skey, s, seq, Sw.Sw.tunnel_for(ts, s), x))
-      %es : {Tk.ues(Tk.tx(b), _) == x : Tb.Table(S.Ue)}
+      ea2 = Equal.sym(S.Tx, N.Out.tx(a), S.Both{S.BumpSeq{1}, N.Out.tx(o)}, PW.Out.tx_join((S.BumpSeq{1}, []), o))
+      %ea2 : {Tk.ues(N.Out.tx(b), Tk.ues(_, x)) == x : Tb.Table(S.Ue)}
+      es = Equal.sym(Tb.Table(S.Ue), Tk.ues(N.Out.tx(o), x), x, W.ps_session_ues(skey, s, seq, Sw.Sw.tunnel_for(ts, s), x))
+      %es : {Tk.ues(N.Out.tx(b), _) == x : Tb.Table(S.Ue)}
       W.ps_sessions_ues(ts, more, U32.add(seq, 1), x)
 
 # The context moved to association a conflicts with no context of another one
@@ -1716,8 +1778,8 @@ def W.ps_go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.By
   +b : N.GOut() = (S.Put{key, v}, [])
   +ues = S.State.ues(st)
   ha = Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(u)), ea)
-  es = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(a), ues), ues, W.ps_sessions_ues(ts, rows, S.State.pfcp_seq(st), ues))
-  h : Tk.Kept(k, u, Tk.ues(Tk.tx(b), Tk.ues(Tk.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, ran, stream, S.Switching{g, ctx, n, rel}, sp, ues, eu, eun, ha, em, esupi, {==}, U32.is_eq(k, key), {==}))
+  es = Equal.sym(Tb.Table(S.Ue), Tk.ues(N.Out.tx(a), ues), ues, W.ps_sessions_ues(ts, rows, S.State.pfcp_seq(st), ues))
+  h : Tk.Kept(k, u, Tk.ues(N.Out.tx(b), Tk.ues(N.Out.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, ran, stream, S.Switching{g, ctx, n, rel}, sp, ues, eu, eun, ha, em, esupi, {==}, U32.is_eq(k, key), {==}))
   Tk.ok_also(k, u, ues, N.Out.join(a, b), [N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}], Tk.ok_join(k, u, ues, a, b, h))
 
 def W.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err, V.PathSwitchRequest.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.of_view(st, assoc, stream, r)):
@@ -1725,11 +1787,10 @@ def W.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.E
     case Fail{e}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Done{V.PathSwitchRequest.View{+ran, +amf, uli, caps, +items, failed, rrc}}:
-      +ok = S.Assocs.has(assoc, S.State.assocs(st))
       +ts = Sw.Sw.path_tunnels(items)
       +m = Ps.Ps.named(st, amf)
-      +h = PW.Pw.ready(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, amf, ran, items, ts, ok, cause => Tk.kept_get(k, u, S.State.ues(st), eu), +key => +ue => +ctx => +nh => +sp => ek => +eg => +es => W.ps_go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, sp, k, u, eu, eun, ea, eg, es))
-      Tk.ok_also(k, u, S.State.ues(st), Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, m, ok), Ps.Ps.caps_note(caps, m), h)
+      +h = PW.Pw.claim(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, amf, ran, items, ts, cause => Tk.kept_get(k, u, S.State.ues(st), eu), +key => +ue => +ctx => +nh => +sp => ek => +eg => +es => W.ps_go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, sp, k, u, eu, eun, ea, eg, es))
+      Tk.ok_also(k, u, S.State.ues(st), Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m), Ps.Ps.caps_note(caps, m), h)
 
 # N2 handover
 # -----------
@@ -1838,8 +1899,8 @@ def W.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas
   +b : N.GOut() = (S.Put{key, v}, [])
   +ues = S.State.ues(st)
   ha = Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(u)), ea)
-  es = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(a), ues), ues, W.ps_sessions_ues(ts, rows, S.State.pfcp_seq(st), ues))
-  h : Tk.Kept(k, u, Tk.ues(Tk.tx(b), Tk.ues(Tk.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, r, s, p, sp, ues, eu, eun, ha, eg, esupi, {==}, U32.is_eq(k, key), {==}))
+  es = Equal.sym(Tb.Table(S.Ue), Tk.ues(N.Out.tx(a), ues), ues, W.ps_sessions_ues(ts, rows, S.State.pfcp_seq(st), ues))
+  h : Tk.Kept(k, u, Tk.ues(N.Out.tx(b), Tk.ues(N.Out.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, r, s, p, sp, ues, eu, eun, ha, eg, esupi, {==}, U32.is_eq(k, key), {==}))
   Tk.ok_also(k, u, ues, N.Out.join(a, b), [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}], Tk.ok_join(k, u, ues, a, b, h))
 
 def W.ho_notify(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverNotify.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_of_view(st, assoc, r)):
@@ -1859,15 +1920,17 @@ def Tk.removed(+k: U32, +u: S.Ue, +x: Tb.Table(S.Ue), eg: {Tb.Table.get(S.Ue, k,
       e
 
 def Tk.out(+st: S.State, +o: N.GOut(), +k: U32, +u: S.Ue, w: Tk.Ok(k, u, S.State.ues(st), o)) -> Tk.Kept(k, u, S.State.ues(K.Kernel.state(N.Step.of(st, o)))):
-  se = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), Tk.ues(Tk.tx(o), S.State.ues(st)), Tk.render(st, o))
+  se = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), Tk.ues(N.Out.tx(o), S.State.ues(st)), Tk.render(st, o))
   (%se : Tk.Kept(k, u, _); w)
 
 # NG Setup changes the associations set up, no context.
-def Tk.assocs(+st: S.State, +as: Tb.Table(B.Bytes()), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Kept(k, u, S.State.ues(S.State.with_assocs(st, as))):
+# NG Setup releases only its own association's contexts.
+def Tk.assocs(+st: S.State, +assoc: U32, +as: Tb.Table(B.Bytes()), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(S.State.with_assocs(N.Step.state(R.Route.drop(st, assoc)), as))):
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-      Inl{eu}
+    case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
+      sa = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(u), assoc), False{}, ea)
+      Inl{Sift.get(S.Others{assoc}, k, u, ues, eu, (%sa : {Bool.not(_) == True{} : Bool}; {==}))}
 
 def L.amf.takeover.authenticated(st, entropy, assoc, stream, len, bytes, k, u, e, eu, ea, eg):
   +x = S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
-  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => Tk.kept_get(k, u, S.State.ues(st), eu), +as => acts => h => Tk.assocs(st, as, k, u, eu), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))
+  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => Tk.kept_get(k, u, S.State.ues(st), eu), +id => +ok => acts => h => Tk.assocs(st, assoc, S.Assocs.set(assoc, id, S.State.assocs(N.Step.state(R.Route.drop(st, assoc))), ok), k, u, eu, ea), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => ea2 => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))

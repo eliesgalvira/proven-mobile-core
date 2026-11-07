@@ -622,34 +622,77 @@ type Link is Data:
   Up{}
   Beating{seq: U32, resent: U32}
 
-# N4: the PFCP recovery stamp chosen at Config, and the association.
-type N4 is Data:
-  N4{recovery: B.Bytes(), link: Link}
+# A Session Deletion Request the UPF has not answered (TS 29.244 §6.4): the
+# request, sent again unchanged, its sequence number, and its guard.
+type Deletion is Data:
+  Deletion{request: B.Bytes(), seq: U32, guard: Guard}
 
-# Timer 0 is the N4 association's; a context's or a session's guard is its key.
+def Deletion.seq(d: Deletion) -> U32:
+  match d:
+    case Deletion{request, seq, guard}:
+      seq
+
+def Deletions.drop(+key: U32, ds: Tb.Table(Deletion)) -> Tb.Table(Deletion):
+  match ds:
+    case Nil{}:
+      []
+    case (+k, d) <> more:
+      Tb.Table.keep(Deletion, k, d, Deletions.drop(key, more), Bool.not(U32.is_eq(k, key)))
+
+def Deletions.set(+key: U32, d: Maybe<&2, Deletion>, ds: Tb.Table(Deletion)) -> Tb.Table(Deletion):
+  match d:
+    case None{}:
+      Deletions.drop(key, ds)
+    case Some{x}:
+      (key, x) <> Deletions.drop(key, ds)
+
+# The pending deletion a Session Deletion Response answers, by its sequence number.
+def Deletions.by_seq(+seq: U32, ds: Tb.Table(Deletion)) -> Maybe<&2, U32>:
+  match ds:
+    case Nil{}:
+      None{}
+    case (k, +d) <> more:
+      Tb.Table.hit(U32, k, Deletions.by_seq(seq, more), U32.is_eq(Deletion.seq(d), seq))
+
+# N4: the PFCP recovery stamp chosen at Config, the association, and the
+# Session Deletion Requests pending, each keyed by its guard timer (§ Keys).
+type N4 is Data:
+  N4{recovery: B.Bytes(), link: Link, deletions: Tb.Table(Deletion)}
+
+# Timer 0 is the N4 association's; every other guard timer is its row's key (§ Keys).
 def N4.timer() -> U32:
   0
 
 def N4.recovery(n: N4) -> B.Bytes():
   match n:
-    case N4{recovery, link}:
+    case N4{recovery, link, deletions}:
       recovery
 
 def N4.link(n: N4) -> Link:
   match n:
-    case N4{recovery, link}:
+    case N4{recovery, link, deletions}:
       link
+
+def N4.deletions(n: N4) -> Tb.Table(Deletion):
+  match n:
+    case N4{recovery, link, deletions}:
+      deletions
 
 def N4.with_link(n: N4, l: Link) -> N4:
   match n:
-    case N4{recovery, link}:
-      N4{recovery, l}
+    case N4{recovery, link, deletions}:
+      N4{recovery, l, deletions}
+
+def N4.with_deletion(n: N4, +key: U32, d: Maybe<&2, Deletion>) -> N4:
+  match n:
+    case N4{recovery, link, deletions}:
+      N4{recovery, link, Deletions.set(key, d, deletions)}
 
 type State is Data:
   State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: Tb.Table(B.Bytes()), ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, n4: N4}
 
 def State.initial() -> State:
-  State{None{}, [], [], [], [], 1, 1, N4{[], Idle{}}}
+  State{None{}, [], [], [], [], 1, 1, N4{[], Idle{}, []}}
 
 def State.config(st: State) -> Maybe<&2, Cfg>:
   match st:
@@ -691,6 +734,9 @@ def State.n4(st: State) -> N4:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       n4
 
+def State.deletions(st: State) -> Tb.Table(Deletion):
+  N4.deletions(State.n4(st))
+
 # Associations
 # ------------
 # The NGAP associations whose gNB has completed NG Setup (TS 38.413 §8.7.1),
@@ -727,7 +773,7 @@ def State.with_assocs(st: State, as: Tb.Table(B.Bytes())) -> State:
       State{config, subs, as, ues, sessions, pfcp_seq, next_ue, n4}
 
 # NG Setup answered: the association is set up when it succeeded, and not
-# otherwise, since a new NG Setup replaces what the last one set up.
+# otherwise.
 def State.ready(+st: State, +a: U32, id: B.Bytes(), ok: Bool) -> State:
   State.with_assocs(st, Assocs.set(a, id, State.assocs(st), ok))
 
@@ -741,6 +787,14 @@ def Ues.none_assoc(+a: U32, ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (key, u) <> more:
       Bool.and(Bool.not(U32.is_eq(Ue.assoc(u), a)), Ues.none_assoc(a, more))
+
+# Every context is owned by an association that has completed NG Setup.
+def Ues.set_up(ues: Tb.Table(Ue), +as: Tb.Table(B.Bytes())) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, u) <> more:
+      Bool.and(Assocs.has(Ue.assoc(u), as), Ues.set_up(more, as))
 
 # Indexes
 # -------
@@ -994,20 +1048,26 @@ def Sessions.revar(+key: U32, +v: SVar, sessions: Tb.Table(Session)) -> Tb.Table
     case (+k, s) <> more:
       (k, Session.revar_if(s, v, U32.is_eq(k, key))) <> Sessions.revar(key, v, more)
 
-# The session with a given UE IPv4 address or uplink TEID, pending PFCP sequence number, or UE and PDU session identity.
-def Sessions.has_ip(+ip: U32, sessions: Tb.Table(Session)) -> Bool:
-  match sessions:
-    case Nil{}:
-      False{}
-    case (k, s) <> more:
-      Bool.or(U32.is_eq(Session.ip(s), ip), Sessions.has_ip(ip, more))
+# A session's UE IPv4 address or uplink TEID.
+type Field is Data:
+  Ip{}
+  Teid{}
 
-def Sessions.has_teid(+teid: U32, sessions: Tb.Table(Session)) -> Bool:
+def Field.of(f: Field, s: Session) -> U32:
+  match f:
+    case Ip{}:
+      Session.ip(s)
+    case Teid{}:
+      Session.teid(s)
+
+# Some session holds v in the field; the session with a pending PFCP
+# sequence number, or with a UE and PDU session identity.
+def Sessions.holds(+f: Field, +v: U32, sessions: Tb.Table(Session)) -> Bool:
   match sessions:
     case Nil{}:
       False{}
     case (k, s) <> more:
-      Bool.or(U32.is_eq(Session.teid(s), teid), Sessions.has_teid(teid, more))
+      Bool.or(U32.is_eq(Field.of(f, s), v), Sessions.holds(f, v, more))
 
 def Sessions.pick(key: U32, s: Session, later: Maybe<&2, Sigma<&2, &2, U32, _ => Session>>, hit: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
   match hit:
@@ -1032,16 +1092,35 @@ def Sessions.by_psi(+ue: U32, +psi: U32, sessions: Tb.Table(Session)) -> Maybe<&
 
 # Keys
 # ----
-# A context's guard timer is its key, its AMF-UE-NGAP-ID, and a session's is
-# its key, its local SEID; timer 0 is the N4 association's. AMF-UE-NGAP-IDs
-# are odd and local SEIDs even and not zero, so no two rows share a guard
-# timer (state.ids.free).
+# A context's guard timer is its key, its AMF-UE-NGAP-ID, a session's is its
+# key, its local SEID, and a pending Session Deletion Request's is its
+# session's SEID with the top bit set; timer 0 is the N4 association's.
+# AMF-UE-NGAP-IDs are odd, local SEIDs even, not zero and below 2^31, and
+# deletion keys even and from 2^31, so no two rows share a guard timer
+# (state.ids.free, smf.deletion.keyed).
 
 def Ids.odd(+k: U32) -> Bool:
   Bool.not(U32.is_eq(U32.and(1, k), 0))
 
+def Ids.top(+k: U32) -> Bool:
+  Bool.not(U32.is_eq(U32.and(2147483648, k), 0))
+
 def Ids.seid(+k: U32) -> Bool:
-  Bool.and(Bool.not(Ids.odd(k)), Bool.not(U32.is_eq(k, 0)))
+  Bool.and(Bool.not(Ids.odd(k)), Bool.and(Bool.not(Ids.top(k)), Bool.not(U32.is_eq(k, 0))))
+
+def Ids.pending(+k: U32) -> Bool:
+  Bool.and(Bool.not(Ids.odd(k)), Ids.top(k))
+
+# The key of the deletion of the session keyed k.
+def Ids.deletion(+k: U32) -> U32:
+  U32.or(2147483648, U32.and(4294967294, k))
+
+def Deletions.keyed(ds: Tb.Table(Deletion)) -> Bool:
+  match ds:
+    case Nil{}:
+      True{}
+    case (+k, d) <> more:
+      Bool.and(Ids.pending(k), Deletions.keyed(more))
 
 def Ues.keyed(ues: Tb.Table(Ue)) -> Bool:
   match ues:
@@ -1082,13 +1161,19 @@ def State.fresh(+st: State) -> Maybe<&2, U32>:
   +ues = State.ues(st)
   Ues.free_key(1n+List.length(&2, Sigma<&2, &2, U32, _ => Ue>, ues), State.next_ue(st), ues)
 
+def State.with_deletion(st: State, +key: U32, d: Maybe<&2, Deletion>) -> State:
+  match st:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, N4.with_deletion(n4, key, d)}
+
 # Transactions
 # ------------
 # A procedure answers with what to change, applied by one interpreter: a
 # context put (evicting the contexts it conflicts with, and their sessions) or
 # rephased in place,
 # a context and its sessions forgotten, a session put (evicting likewise),
-# changed in place or forgotten, the subscribers replaced, the N4 link moved,
+# changed in place or forgotten, the subscribers replaced, the N4 link moved, a
+# pending Session Deletion Request recorded, renewed or forgotten,
 # an AMF-UE-NGAP-ID given and PFCP sequence numbers consumed.
 
 type Tx is Data:
@@ -1101,6 +1186,7 @@ type Tx is Data:
   DelSession{key: U32}
   Subs{subs: List<&2, Au.Subscriber>}
   SetLink{link: Link}
+  Pend{key: U32, d: Maybe<&2, Deletion>}
   BumpUe{key: U32}
   BumpSeq{n: U32}
   Both{first: Tx, second: Tx}
@@ -1142,6 +1228,8 @@ def Tx.apply(tx: Tx, st: State) -> State:
       match st:
         case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, N4.with_link(n4, link)}
+    case Pend{key, d}:
+      State.with_deletion(st, Ids.deletion(key), d)
     case BumpUe{key}:
       match st:
         case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:

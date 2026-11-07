@@ -19,4 +19,4 @@ Correctness against the standard is established by the vectors, not by proof.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

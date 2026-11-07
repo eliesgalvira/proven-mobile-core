@@ -69,14 +69,9 @@ def Ps.phase(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.B
     case _:
       Ps.fail(assoc, stream, amf, ran, items, Ps.unknown())
 
-# Only a gNB that has completed NG Setup may switch a path, of a UE the
-# request's AMF-UE-NGAP-ID names.
-def Ps.ready(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, m: Maybe<&2, N.Keyed()>, ok: Bool) -> N.GOut():
-  match ok:
-    case False{}:
-      Ps.fail(assoc, stream, amf, ran, items, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()))
-    case True{}:
-      N.Ue.found(m, Ps.fail(assoc, stream, amf, ran, items, Ps.unknown()), +key => +ue => Ps.phase(st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue)))
+# The UE the request's AMF-UE-NGAP-ID names, claimed.
+def Ps.claim(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, m: Maybe<&2, N.Keyed()>) -> N.GOut():
+  N.Ue.found(m, Ps.fail(assoc, stream, amf, ran, items, Ps.unknown()), +key => +ue => Ps.phase(st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue)))
 
 # The request's UE security capabilities are only compared with the stored
 # ones, which the acknowledgement carries (TS 33.501 §6.7.3.1): a mismatch is logged.
@@ -102,7 +97,7 @@ def Ps.request(+st: S.State, +assoc: U32, +stream: U32, v: V.PathSwitchRequest.V
   match v:
     case V.PathSwitchRequest.View{+ran, +amf, uli, caps, +items, failed, rrc}:
       +m = Ps.named(st, amf)
-      N.Out.also(Ps.ready(st, assoc, stream, amf, ran, items, Sw.Sw.path_tunnels(items), m, S.Assocs.has(assoc, S.State.assocs(st))), Ps.caps_note(caps, m))
+      N.Out.also(Ps.claim(st, assoc, stream, amf, ran, items, Sw.Sw.path_tunnels(items), m), Ps.caps_note(caps, m))
 
 def Ps.of_view(+st: S.State, +assoc: U32, +stream: U32, r: Result<&2, &2, B.Err, V.PathSwitchRequest.View>) -> N.GOut():
   match r:

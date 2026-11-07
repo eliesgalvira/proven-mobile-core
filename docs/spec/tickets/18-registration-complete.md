@@ -39,4 +39,4 @@ Replay the captured Security Mode Complete, InitialContextSetupResponse and Regi
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

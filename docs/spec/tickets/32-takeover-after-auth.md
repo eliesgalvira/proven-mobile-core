@@ -17,4 +17,4 @@ Today `Gmm.challenge` → `Gmm.place` evicts any context holding the same SUPI a
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

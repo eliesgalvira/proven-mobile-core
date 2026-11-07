@@ -26,4 +26,4 @@ None (Rust). The frame codec reuses the hand-made frames of ticket 15 as shared 
 
 ## Verify
 
-`cargo test --manifest-path edge/Cargo.toml && scripts/check.sh`
+`cargo test --manifest-path edge/Cargo.toml && scripts/check.nu`

@@ -496,6 +496,16 @@ def Ngap.any_switch_failure(actions: List<&2, Act>) -> Bool:
 def Step() -> Data:
   Sigma<&2, &2, S.State, _ => List<&2, Act>>
 
+def Step.state(o: Step()) -> S.State:
+  match o:
+    case (st, acts):
+      st
+
+def Step.acts(o: Step()) -> List<&2, Act>:
+  match o:
+    case (st, acts):
+      acts
+
 # Combining outcomes: an action in front, actions after, two outcomes in order, a note alone.
 def Out.prepend(a: Act, o: GOut()) -> GOut():
   match o:
@@ -516,6 +526,16 @@ def Out.join(a: GOut(), b: GOut()) -> GOut():
   match a:
     case (ta, aa):
       Out.join_go(ta, aa, b)
+
+def Out.tx(o: GOut()) -> S.Tx:
+  match o:
+    case (tx, acts):
+      tx
+
+def Out.acts(o: GOut()) -> List<&2, Act>:
+  match o:
+    case (tx, acts):
+      acts
 
 def Out.warn(why: String) -> GOut():
   (S.Keep{}, [Note{F.Warn{}, why}])
@@ -629,11 +649,3 @@ def Ngap.no_key(assoc: U32) -> List<&2, Act>:
 
 def Ngap.unknown_ue(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID())}, Note{F.Warn{}, "NGAP: UE-associated message for a UE this association does not own"}]
-
-# NG Setup answered; the association is set up when the answer is a Response.
-def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> Step():
-  match r:
-    case Fail{e}:
-      (st, Ngap.bad_view(assoc))
-    case Done{+v}:
-      (S.State.ready(st, assoc, NgSetup.node(v), NgSetup.supported_view(S.State.config(st), v)), [Setup{assoc, NgSetup.reply(S.State.config(st), v)}])

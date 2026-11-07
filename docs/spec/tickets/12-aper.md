@@ -28,4 +28,4 @@ Hand-made vectors per primitive taken from X.691 examples, plus the captured NGA
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

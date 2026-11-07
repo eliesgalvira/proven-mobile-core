@@ -143,8 +143,7 @@ fn expired_timers_fire_between_queued_events() {
 fn the_loop_stops_when_the_kernel_exits_while_idle() {
     let (port, kernel) = fake_kernel(Box::new(|_| Some(vec![])));
     let (tx, rx) = mpsc::channel();
-    let exited = tx.clone();
-    let (process, link) = kernel::Process::spawn("true", port, move || drop(exited.send(Msg::Fatal("the kernel exited".to_string())))).unwrap();
+    let (process, link) = edge::edge::spawn_kernel("true", port, tx.clone()).unwrap();
     let upf = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8805);
     let mut edge = Edge::new(link, UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(), upf);
     let (done, stopped) = mpsc::channel();

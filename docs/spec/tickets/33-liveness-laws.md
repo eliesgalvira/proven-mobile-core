@@ -18,4 +18,4 @@ Depends on: 18. Estimate: 3–4 h.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

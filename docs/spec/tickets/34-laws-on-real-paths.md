@@ -18,4 +18,4 @@ Restate the laws that are about helpers the kernel never calls, or that leave ca
 
 ## Verify
 
-`scripts/test-kernel.sh --strict && python3 -I scripts/acceptance.py --strict && scripts/check.sh`
+`scripts/test-kernel.nu --strict && python3 -I scripts/acceptance.py --strict && scripts/check.nu`

@@ -32,4 +32,4 @@ Every new message in the ticket 24 capture decodes, re-encodes to identical byte
 
 ## Verify
 
-`python3 -I tools/ngap-gen/test_gen.py && scripts/check.sh`
+`python3 -I tools/ngap-gen/test_gen.py && scripts/check.nu`

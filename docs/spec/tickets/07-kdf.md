@@ -26,4 +26,4 @@ Recompute RES*, HXRES*, KAUSF, KSEAF, KAMF and the NAS keys for the captured ses
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

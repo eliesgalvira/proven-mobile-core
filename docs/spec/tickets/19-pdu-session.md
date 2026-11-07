@@ -41,4 +41,4 @@ Replay the captured PDU Session Establishment exchange. eUPF responses come from
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

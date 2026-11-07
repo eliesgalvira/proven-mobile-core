@@ -20,4 +20,4 @@ The review of tickets 32–34 found three premises that are true in every state 
 
 ## Verify
 
-`scripts/test-kernel.sh --strict && python3 -I scripts/acceptance.py --strict && scripts/check.sh`
+`scripts/test-kernel.nu --strict && python3 -I scripts/acceptance.py --strict && scripts/check.nu`

@@ -154,25 +154,36 @@ def Gsm.transfer(cfg: S.Cfg, teid: U32) -> B.Bytes():
 # ----------
 # UE addresses are the first free host of the pool after the gateway. The N3
 # TEID and the local SEID are words of entropy, from bytes 20 and 24 on and
-# around: the first that is not zero and that no session holds, the SEID made
-# even (S.Ids). A collision draws again; none is ever evicted.
+# around: the first that is not zero and that no session holds (Ip.draw). A
+# collision draws again; none is ever evicted.
 
 def Ip.around(+entropy: B.Bytes(), +n: Nat) -> B.Bytes():
   List.append(&2, U32, List.drop(&2, U32, entropy, n), List.take(&2, U32, entropy, n))
 
-def Ip.teid_from(+sessions: Tb.Table(S.Session), words: B.Bytes()) -> Maybe<&2, U32>:
-  match words:
-    case a <> b <> c <> d <> more:
-      +t = N.Ngap.of_big([a, b, c, d])
-      Tb.Table.hit(U32, t, Ip.teid_from(sessions, more), Bool.not(Bool.or(U32.is_eq(t, 0), S.Sessions.has_teid(t, sessions))))
-    case _:
-      None{}
+# What is drawn: an uplink TEID, or a local SEID made even and below 2^31 (S.Ids).
+type Draw is Data:
+  Teid{}
+  Seid{}
 
-def Ip.seid_from(+sessions: Tb.Table(S.Session), words: B.Bytes()) -> Maybe<&2, U32>:
+def Draw.word(d: Draw, +w: U32) -> U32:
+  match d:
+    case Teid{}:
+      w
+    case Seid{}:
+      U32.and(2147483646, w)
+
+def Draw.taken(d: Draw, +v: U32, sessions: Tb.Table(S.Session)) -> Bool:
+  match d:
+    case Teid{}:
+      S.Sessions.holds(S.Teid{}, v, sessions)
+    case Seid{}:
+      Tb.Table.has(S.Session, v, sessions)
+
+def Ip.draw(+d: Draw, +sessions: Tb.Table(S.Session), words: B.Bytes()) -> Maybe<&2, U32>:
   match words:
-    case a <> b <> c <> d <> more:
-      +k = U32.and(4294967294, N.Ngap.of_big([a, b, c, d]))
-      Tb.Table.hit(U32, k, Ip.seid_from(sessions, more), Bool.not(Bool.or(U32.is_eq(k, 0), Tb.Table.has(S.Session, k, sessions))))
+    case a <> b <> c <> d0 <> more:
+      +k = Draw.word(d, N.Ngap.of_big([a, b, c, d0]))
+      Tb.Table.hit(U32, k, Ip.draw(d, sessions, more), Bool.not(Bool.or(U32.is_eq(k, 0), Draw.taken(d, k, sessions))))
     case _:
       None{}
 
@@ -188,7 +199,7 @@ def Ip.free_from(fuel: Nat, +candidate: U32, +sessions: Tb.Table(S.Session)) -> 
     case 0n:
       None{}
     case 1n+n:
-      Ip.next(candidate, u => Ip.free_from(n, U32.add(candidate, 1), sessions), S.Sessions.has_ip(candidate, sessions))
+      Ip.next(candidate, u => Ip.free_from(n, U32.add(candidate, 1), sessions), S.Sessions.holds(S.Ip{}, candidate, sessions))
 
 def Ip.alloc_in(base: U32, +hosts: U32, sessions: Tb.Table(S.Session), ok: Bool) -> Maybe<&2, U32>:
   match ok:
@@ -214,7 +225,7 @@ def Gsm.dels(victims: Tb.Table(S.Session)) -> S.Tx:
 
 # Sessions forgotten, those the UPF knows deleted there, from sequence number seq.
 def Gsm.forget(+victims: Tb.Table(S.Session), seq: U32) -> N.GOut():
-  (S.Both{Gsm.dels(victims), S.BumpSeq{Up.N4.deletion_count(victims)}}, Up.N4.deletions(victims, seq))
+  N.Out.join((Gsm.dels(victims), []), Up.N4.deletions(victims, seq))
 
 # The one write of a session: it takes its place, and a live session it
 # conflicts with goes. The address, TEID and SEID are drawn free, so that is
@@ -282,7 +293,7 @@ def Gsm.allocate(refused: Maybe<&2, U32>, v4v6: Bool, dns: Bool, +cfg: S.Cfg, +s
     case Some{cause}:
       Refuse{cause}
     case None{}:
-      Gsm.grant(v4v6, dns, Ip.alloc(cfg, sessions), Ip.teid_from(sessions, Ip.around(entropy, 20n)), Ip.seid_from(sessions, Ip.around(entropy, 24n)))
+      Gsm.grant(v4v6, dns, Ip.alloc(cfg, sessions), Ip.draw(Teid{}, sessions, Ip.around(entropy, 20n)), Ip.draw(Seid{}, sessions, Ip.around(entropy, 24n)))
 
 # IPv4 (1) or IPv4v6 (3), granted IPv4; another type is refused (#50).
 def Gsm.type_ok(t: Maybe<&2, U32>) -> Bool:
@@ -567,7 +578,7 @@ def Gsm.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
 def Gsm.pfcp_k4(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      (S.Keep{}, [])
+      Up.N4.deletion_response(st, msg)
     case False{}:
       Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 

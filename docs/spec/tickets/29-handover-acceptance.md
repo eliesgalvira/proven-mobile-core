@@ -9,4 +9,4 @@ Depends on: 27, 28. Estimate: 1 h.
 
 ## Verify
 
-`scripts/test-kernel.sh --strict && python3 -I scripts/acceptance.py --strict && scripts/check.sh`
+`scripts/test-kernel.nu --strict && python3 -I scripts/acceptance.py --strict && scripts/check.nu`

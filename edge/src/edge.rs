@@ -237,15 +237,16 @@ pub fn spawn_n4(udp: UdpSocket, tx: Sender<Msg>) {
     });
 }
 
+/// Starts the kernel; its exit reaches the loop as a fatal message.
+pub fn spawn_kernel(path: &str, port: u16, tx: Sender<Msg>) -> std::io::Result<(kernel::Process, Link)> {
+    kernel::Process::spawn(path, port, move || drop(tx.send(Msg::Fatal("the kernel exited".to_string()))))
+}
+
 /// The whole edge for one configuration: kernel, Config, N2, N4, then the loop.
 pub fn run(config: &Config) -> Result<(), Error> {
     let tlvs = config.tlvs().map_err(|e| Error::Fatal(e.to_string()))?;
     let (tx, rx) = std::sync::mpsc::channel();
-    let exited = tx.clone();
-    let (_process, link) = kernel::Process::spawn(&config.kernel.path, config.kernel.port, move || {
-        let _ = exited.send(Msg::Fatal("the kernel exited".to_string()));
-    })
-    .map_err(Error::Socket)?;
+    let (_process, link) = spawn_kernel(&config.kernel.path, config.kernel.port, tx.clone()).map_err(Error::Socket)?;
     let upf = SocketAddrV4::new(config.n4.upf, N4_PORT);
     let udp = UdpSocket::bind(SocketAddrV4::new(config.n4.smf, N4_PORT)).map_err(Error::Socket)?;
     let listener = sctp::Listener::bind(config.n2.address, N2_PORT).map_err(Error::Socket)?;

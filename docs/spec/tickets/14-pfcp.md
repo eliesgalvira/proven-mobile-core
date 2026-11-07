@@ -28,4 +28,4 @@ The PFCP messages in `test-vectors/capture`.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

@@ -1,7 +1,7 @@
 import Base
 import ../../bytes.bend as B
 
-# Test harness: scripts/test-kernel.sh reads the PASS, FAIL and SKIP lines.
+# Test harness: scripts/test-kernel.nu reads the PASS, FAIL and SKIP lines.
 
 def Check.bytes_eq(xs: List<&2, U32>, ys: List<&2, U32>) -> Bool:
   B.bytes_eq(xs, ys)

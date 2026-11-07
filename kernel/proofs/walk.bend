@@ -16,33 +16,36 @@ import ../amf/path_switch.bend as Ps
 import ../amf/handover.bend as Ho
 import ./lib.bend as P
 import ../smf/gsm.bend as Gsm
+import ../smf/n4.bend as Up
 import ../smf/switch.bend as Sw
 import ../nas/security.bend as Sec
 
 # The step function, walked once
 # ------------------------------
-# A step ends in one of four ways: the state as it was, with actions that
-# name no UE context (an NGAP PDU or IE list that does not decode, an
-# incomplete Config, an association coming up); the same with the
-# associations set up changed (NG Setup); a procedure's outcome o rendered by
-# N.Step.of (a routed NGAP message, a PFCP message, a timer); or a new
-# configuration or an association going down. A property Q of steps holds after every step
+# A step ends in one of five ways: the state as it was, with actions that
+# name no UE context (an NGAP PDU or IE list that does not decode, a message
+# from an association without NG Setup, an incomplete Config, an association
+# coming up); an association's UE contexts released and the associations set
+# up changed (NG Setup); a procedure's outcome o rendered by N.Step.of (a
+# routed NGAP message, a PFCP message, a timer); a new configuration; or an
+# association going down. A property Q of steps holds after every step
 # when it holds after each of them, the outcomes known only by a property ok
 # that each of them has.
 
 def Walk.Keep(-Q: N.Step() -> Type, +st: S.State) -> Type:
   @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((st, acts))
 
-# NG Setup: the associations set up change, nothing else, and the actions name no UE context.
-def Walk.Ready(-Q: N.Step() -> Type, +st: S.State) -> Type:
-  @as:Tb.Table(B.Bytes()) -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((S.State.with_assocs(st, as), acts))
+# NG Setup: the association's UE-related contexts re-initialised, then the
+# associations set up changed, with actions that name no UE context.
+def Walk.Ready(-Q: N.Step() -> Type, +st: S.State, +assoc: U32) -> Type:
+  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
 
 def Walk.Out(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State) -> Type:
   @o:N.GOut() -> ok(o) -> Q(N.Step.of(st, o))
 
 # The outcome of every NGAP message that is not NG Setup.
 def Walk.Routed(-ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes()) -> Type:
-  @kind:Nat -> @code:Nat -> @ies:List<&2, Fr.Ie> -> ok(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)))
+  @kind:Nat -> @code:Nat -> @ies:List<&2, Fr.Ie> -> {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool} -> ok(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)))
 
 # The routed outcomes: each UE procedure's on any view of its message, and
 # the N2 handover messages, which Ho.Ho.route tells apart from the rest.
@@ -95,35 +98,42 @@ def Walk.d2(-ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kin
     case False{}:
       Walk.d3(ok, st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_uplink_nas_transport(kind, code), handover, uplink, ics, release_request, release_complete, setup_response, path_switch)
 
-def Walk.setup(-Q: N.Step() -> Type, +st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st)) -> Q(N.NgSetup.of_view(st, assoc, r)):
+def Walk.setup(-Q: N.Step() -> Type, +st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc)) -> Q(R.Route.setup(st, assoc, r)):
   match r:
     case Fail{e}:
       keep(N.Ngap.bad_view(assoc), k => {==})
     case Done{+v}:
-      ready(S.Assocs.set(assoc, N.NgSetup.node(v), S.State.assocs(st), N.NgSetup.supported_view(S.State.config(st), v)), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==})
+      ready(N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==})
 
-def Walk.d1(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, b)):
+def Walk.ready(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, +eb: {S.Assocs.has(assoc, S.State.assocs(st)) == b : Bool}, keep: Walk.Keep(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b)):
+  match b:
+    case True{}:
+      out(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), routed(kind, code, ies, eb))
+    case False{}:
+      keep(N.Ngap.unhandled(assoc), k => {==})
+
+def Walk.d1(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, b)):
   match b:
     case True{}:
       Walk.setup(Q, st, assoc, V.NGSetupRequest.view(ies), keep, ready)
     case False{}:
-      out(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), routed(kind, code, ies))
+      Walk.ready(Q, ok, st, assoc, stream, kind, code, ies, entropy, S.Assocs.has(assoc, S.State.assocs(st)), {==}, keep, out, routed)
 
-def Walk.ies(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)):
+def Walk.ies(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)):
   match r:
     case Fail{err}:
       keep(N.Ngap.bad_pdu(assoc), k => {==})
     case Done{(+ies, c)}:
       Walk.d1(Q, ok, st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_ng_setup(kind, code), keep, ready, out, routed)
 
-def Walk.pdu(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_pdu(st, assoc, stream, entropy, r)):
+def Walk.pdu(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_pdu(st, assoc, stream, entropy, r)):
   match r:
     case Fail{err}:
       keep(N.Ngap.bad_pdu(assoc), k => {==})
     case Done{Fr.Pdu{kind, code, crit, value}}:
       Walk.ies(Q, ok, st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), keep, ready, out, routed)
 
-def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: Walk.Out(Q, ok, st), routed: @assoc:U32 -> @stream:U32 -> Walk.Routed(ok, st, assoc, stream, entropy), pfcp: @bytes:B.Bytes() -> ok(Gsm.Gsm.pfcp_data(st, bytes)), fired: @timer:U32 -> ok(K.Kernel.fired(st, timer))) -> Q(K.Kernel.step(st, ev, entropy)):
+def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: @assoc:U32 -> Walk.Ready(Q, st, assoc), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(R.Route.down(st, assoc)), out: Walk.Out(Q, ok, st), routed: @assoc:U32 -> @stream:U32 -> Walk.Routed(ok, st, assoc, stream, entropy), pfcp: @bytes:B.Bytes() -> ok(Gsm.Gsm.pfcp_data(st, bytes)), fired: @timer:U32 -> ok(K.Kernel.fired(st, timer))) -> Q(K.Kernel.step(st, ev, entropy)):
   match ev:
     case F.Config{len, +tlvs}:
       config(tlvs)
@@ -132,15 +142,15 @@ def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.
     case F.NgapAssocDown{assoc}:
       down(assoc)
     case F.NgapData{+assoc, +stream, len, +bytes}:
-      Walk.pdu(Q, ok, st, assoc, stream, entropy, Fr.Pdu.read(bytes), keep, ready, out, routed(assoc, stream))
+      Walk.pdu(Q, ok, st, assoc, stream, entropy, Fr.Pdu.read(bytes), keep, ready(assoc), out, routed(assoc, stream))
     case F.PfcpData{len, +bytes}:
       out(Gsm.Gsm.pfcp_data(st, bytes), pfcp(bytes))
     case F.TimerFired{+timer}:
       out(K.Kernel.fired(st, timer), fired(timer))
 
 # A property that holds after any outcome.
-def Walk.any(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: @o:N.GOut() -> Q(N.Step.of(st, o))) -> Q(K.Kernel.step(st, ev, entropy)):
-  Walk.step(Q, o => Unit, st, ev, entropy, keep, ready, config, down, o => u => out(o), a => s => kind => code => ies => Unit{}, bytes => Unit{}, timer => Unit{})
+def Walk.any(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: @assoc:U32 -> Walk.Ready(Q, st, assoc), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(R.Route.down(st, assoc)), out: @o:N.GOut() -> Q(N.Step.of(st, o))) -> Q(K.Kernel.step(st, ev, entropy)):
+  Walk.step(Q, o => Unit, st, ev, entropy, keep, ready, config, down, o => u => out(o), a => s => kind => code => ies => ea => Unit{}, bytes => Unit{}, timer => Unit{})
 
 # The N2 handover messages, walked
 # --------------------------------
@@ -229,6 +239,181 @@ def Walk.assocs(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.Stat
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       e
 
+# The route, from the bytes
+# -------------------------
+# A message other than NG Setup whose PDU and IE list read is refused when its
+# association has not completed NG Setup (amf.ng_setup.first) and routed by
+# its kind and procedure code when it has.
+
+def Rt.refused(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == False{} : Bool}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, N.Ngap.unhandled(assoc)) : N.Step()}:
+  sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{kind, code, crit, value}}, ep)
+  %sep : {R.Route.of_pdu(st, assoc, stream, entropy, _) == (st, N.Ngap.unhandled(assoc)) : N.Step()}
+  sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
+  %sei : {R.Route.of_ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, _) == (st, N.Ngap.unhandled(assoc)) : N.Step()}
+  sen = Equal.sym(Bool, N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)), False{}, en)
+  %sen : {R.Route.d1(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, _) == (st, N.Ngap.unhandled(assoc)) : N.Step()}
+  sea = Equal.sym(Bool, S.Assocs.has(assoc, S.State.assocs(st)), False{}, ea)
+  %sea : {R.Route.ready(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, _) == (st, N.Ngap.unhandled(assoc)) : N.Step()}
+  {==}
+
+def Rt.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code)))) : N.Step()}:
+  +T = N.Step.of(st, R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code))))
+  sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{kind, code, crit, value}}, ep)
+  %sep : {R.Route.of_pdu(st, assoc, stream, entropy, _) == T : N.Step()}
+  sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
+  %sei : {R.Route.of_ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, _) == T : N.Step()}
+  sen = Equal.sym(Bool, N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)), False{}, en)
+  %sen : {R.Route.d1(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, _) == T : N.Step()}
+  sea = Equal.sym(Bool, S.Assocs.has(assoc, S.State.assocs(st)), True{}, ea)
+  %sea : {R.Route.ready(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, _) == T : N.Step()}
+  {==}
+
+def Rt.split_if(-P: Type, +assoc: U32, +as: Tb.Table(B.Bytes()), +b: Bool, +eb: {S.Assocs.has(assoc, as) == b : Bool}, refused: {S.Assocs.has(assoc, as) == False{} : Bool} -> P, routed: {S.Assocs.has(assoc, as) == True{} : Bool} -> P) -> P:
+  match b:
+    case True{}:
+      routed(eb)
+    case False{}:
+      refused(eb)
+
+# Whether the association has completed NG Setup or not.
+def Rt.split(-P: Type, +assoc: U32, +as: Tb.Table(B.Bytes()), refused: {S.Assocs.has(assoc, as) == False{} : Bool} -> P, routed: {S.Assocs.has(assoc, as) == True{} : Bool} -> P) -> P:
+  Rt.split_if(P, assoc, as, S.Assocs.has(assoc, as), {==}, refused, routed)
+
+def Rt.at(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == False{} : Bool}, refused: Q((st, N.Ngap.unhandled(assoc)))) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  e = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), (st, N.Ngap.unhandled(assoc)), Rt.refused(st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, ea))
+  %e : Q(_)
+  refused
+
+# What holds of the refusal, and of the step when routed, holds of the step.
+def Rt.cases(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, refused: Q((st, N.Ngap.unhandled(assoc))), routed: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool} -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  Rt.split(Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)), assoc, S.State.assocs(st), ea => Rt.at(Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, ea, refused), routed)
+
+def Rt.keeps(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, routed: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool} -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
+  Rt.cases(x => {K.Kernel.state(x) == st : S.State}, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, {==}, routed)
+
+# What holds when the IE list does not read, when the association lacks NG
+# Setup, and of every routed outcome, holds of the step.
+def Rt.Routed(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +kind: U32, +code: U32) -> Type:
+  @ies:List<&2, Fr.Ie> -> Q(N.Step.of(st, R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code)))))
+
+def Rt.go(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}, routed: Rt.Routed(Q, st, entropy, assoc, stream, kind, code)) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  e = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), N.Step.of(st, R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code)))), Rt.routed(st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, ea))
+  %e : Q(_)
+  routed(ies)
+
+def Rt.read_if(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == r : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, bad: Q((st, N.Ngap.bad_pdu(assoc))), refused: Q((st, N.Ngap.unhandled(assoc))), routed: Rt.Routed(Q, st, entropy, assoc, stream, kind, code)) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  match r:
+    case Fail{err}:
+      sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{kind, code, crit, value}}, ep)
+      %sep : Q(R.Route.of_pdu(st, assoc, stream, entropy, _))
+      sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Fail{err}, ei)
+      %sei : Q(R.Route.of_ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, _))
+      bad
+    case Done{(+ies, +c)}:
+      Rt.cases(Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, refused, ea => Rt.go(Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, ea, routed))
+
+def Rt.read(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, bad: Q((st, N.Ngap.bad_pdu(assoc))), refused: Q((st, N.Ngap.unhandled(assoc))), routed: Rt.Routed(Q, st, entropy, assoc, stream, kind, code)) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  Rt.read_if(Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), ep, {==}, en, bad, refused, routed)
+
+# The N4 side
+# -----------
+# A transaction that moves only the N4 side (the link, the pending Session
+# Deletion Requests) and the sequence numbers keeps every context and session;
+# Up.N4.deletions gives one.
+
+def N4s.only(tx: S.Tx) -> Bool:
+  match tx:
+    case S.Keep{}:
+      True{}
+    case S.SetLink{link}:
+      True{}
+    case S.Pend{key, d}:
+      True{}
+    case S.BumpSeq{n}:
+      True{}
+    case S.Both{first, second}:
+      Bool.and(N4s.only(first), N4s.only(second))
+    case _:
+      False{}
+
+def N4s.Same(+a: S.State, +b: S.State) -> Type:
+  {S.State.ues(a) == S.State.ues(b) : Tb.Table(S.Ue)} & {S.State.sessions(a) == S.State.sessions(b) : Tb.Table(S.Session)}
+
+def N4s.trans(+a: S.State, +b: S.State, +c: S.State, ab: N4s.Same(a, b), bc: N4s.Same(b, c)) -> N4s.Same(a, c):
+  match ab:
+    case (u1, s1):
+      match bc:
+        case (u2, s2):
+          (Equal.trans(Tb.Table(S.Ue), S.State.ues(a), S.State.ues(b), S.State.ues(c), u1, u2), Equal.trans(Tb.Table(S.Session), S.State.sessions(a), S.State.sessions(b), S.State.sessions(c), s1, s2))
+
+def N4s.keeps(+tx: S.Tx, +st: S.State, +e: {N4s.only(tx) == True{} : Bool}) -> N4s.Same(S.Tx.apply(tx, st), st):
+  match tx:
+    case S.Keep{}:
+      ({==}, {==})
+    case S.SetLink{link}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          ({==}, {==})
+    case S.Pend{key, d}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          ({==}, {==})
+    case S.BumpSeq{n}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          ({==}, {==})
+    case S.Both{+first, +second}:
+      +s1 = S.Tx.apply(first, st)
+      N4s.trans(S.Tx.apply(second, s1), s1, st, N4s.keeps(second, s1, P.Bool.and_true_r(N4s.only(first), N4s.only(second), e)), N4s.keeps(first, st, P.Bool.and_true_l(N4s.only(first), N4s.only(second), e)))
+    case S.Put{key, ue}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Put{key, ue}, st), st), P.Refute.bool(e))
+    case S.Rephase{key, phase}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Rephase{key, phase}, st), st), P.Refute.bool(e))
+    case S.Del{key}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Del{key}, st), st), P.Refute.bool(e))
+    case S.PutSession{key, s}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.PutSession{key, s}, st), st), P.Refute.bool(e))
+    case S.Revar{key, v}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Revar{key, v}, st), st), P.Refute.bool(e))
+    case S.DelSession{key}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.DelSession{key}, st), st), P.Refute.bool(e))
+    case S.Subs{new}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Subs{new}, st), st), P.Refute.bool(e))
+    case S.BumpUe{key}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.BumpUe{key}, st), st), P.Refute.bool(e))
+
+def Out.tx_join(+a: N.GOut(), +b: N.GOut()) -> {N.Out.tx(N.Out.join(a, b)) == S.Both{N.Out.tx(a), N.Out.tx(b)} : S.Tx}:
+  match a:
+    case (ta, aa):
+      match b:
+        case (tb, ab):
+          {==}
+
+def N4s.join(+a: N.GOut(), +b: N.GOut(), +ea: {N4s.only(N.Out.tx(a)) == True{} : Bool}, +eb: {N4s.only(N.Out.tx(b)) == True{} : Bool}) -> {N4s.only(N.Out.tx(N.Out.join(a, b))) == True{} : Bool}:
+  e = Equal.sym(S.Tx, N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), N.Out.tx(b)}, Out.tx_join(a, b))
+  (%e : {N4s.only(_) == True{} : Bool}; P.Bool.and_intro(N4s.only(N.Out.tx(a)), N4s.only(N.Out.tx(b)), ea, eb))
+
+def N4s.delete_if(+key: U32, +s: S.Session, +seq: U32, +more: Tb.Table(S.Session), +known: Bool, h0: {N4s.only(N.Out.tx(Up.N4.deletions(more, seq))) == True{} : Bool}, h1: {N4s.only(N.Out.tx(Up.N4.deletions(more, U32.add(seq, 1)))) == True{} : Bool}) -> {N4s.only(N.Out.tx(Up.N4.delete_if(key, s, seq, q => Up.N4.deletions(more, q), known))) == True{} : Bool}:
+  match known:
+    case True{}:
+      +request = Up.N4.delete(S.Session.up_seid(s), seq)
+      N4s.join((S.Both{S.Pend{key, Some{S.Deletion{request, seq, S.Guard{0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{None{}, S.Ids.deletion(key), Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, h1)
+    case False{}:
+      h0
+
+def N4s.deletions(+rows: Tb.Table(S.Session), +seq: U32) -> {N4s.only(N.Out.tx(Up.N4.deletions(rows, seq))) == True{} : Bool}:
+  match rows:
+    case Nil{}:
+      {==}
+    case (+key, +s) <> +more:
+      N4s.delete_if(key, s, seq, more, S.Session.known(s), N4s.deletions(more, seq), N4s.deletions(more, U32.add(seq, 1)))
+
+# The state a procedure's outcome leaves is its transaction applied.
+def N4s.render(+st: S.State, +o: N.GOut()) -> {K.Kernel.state(N.Step.of(st, o)) == S.Tx.apply(N.Out.tx(o), st) : S.State}:
+  match o:
+    case (tx, acts):
+      {==}
+
 # A context looked up by key
 # --------------------------
 # N.Ue.found on N.Ue.keyed ends in its none outcome, or in go for a key m
@@ -312,12 +497,8 @@ def Pw.phase(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf
     case S.Releasing{guard}:
       fail(Ps.Ps.unknown())
 
-def Pw.ready(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +ok: Bool, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items, ts)) -> Q(Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, Ps.Ps.named(st, amf), ok)):
-  match ok:
-    case False{}:
-      fail(N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()))
-    case True{}:
-      Walk.keyed(Q, Pw.Fail(Q, assoc, stream, amf, ran, items), N.Ngap.ue_key(amf), k => Tb.Table.get(S.Ue, k, S.State.ues(st)), Ps.Ps.fail(assoc, stream, amf, ran, items, Ps.Ps.unknown()), +key => +ue => Ps.Ps.phase(st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue)), fail, f => f(Ps.Ps.unknown()), f => +key => +ue => ek => eg => Pw.phase(Q, st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue), ek, eg, f, go))
+def Pw.claim(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items, ts)) -> Q(Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, Ps.Ps.named(st, amf))):
+  Walk.keyed(Q, Pw.Fail(Q, assoc, stream, amf, ran, items), N.Ngap.ue_key(amf), k => Tb.Table.get(S.Ue, k, S.State.ues(st)), Ps.Ps.fail(assoc, stream, amf, ran, items, Ps.Ps.unknown()), +key => +ue => Ps.Ps.phase(st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue)), fail, f => f(Ps.Ps.unknown()), f => +key => +ue => ek => eg => Pw.phase(Q, st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue), ek, eg, f, go))
 
 # The N2 handover messages' checks, walked once
 # ---------------------------------------------
