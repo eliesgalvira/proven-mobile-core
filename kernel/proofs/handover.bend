@@ -12,7 +12,7 @@ import ../aper.bend as Ap
 import ../ngap/frame.bend as Fr
 import ../ngap/gen/views.bend as V
 import ../amf/route.bend as R
-import ../amf/path_switch.bend as Ps
+import ../smf/switch.bend as Sw
 import ../amf/handover.bend as Ho
 import ../LAWS.bend as L
 import ./lib.bend as P
@@ -770,7 +770,7 @@ def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +c
       +g = Tb.Table.get(S.Ue, k, ues)
       +rows = S.Sessions.of_ue(k, S.State.sessions(st))
       +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
-      +a = Ps.Ps.sessions(ts, rows, S.State.pfcp_seq(st))
+      +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
       +b : N.GOut() = (S.Put{k, v}, [])
       +more : List<&2, N.Act> = [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
       +o = N.Out.also(N.Out.join(a, b), more)
@@ -792,7 +792,7 @@ def Hp.notify_moved_phase(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue
         case S.Asked{t2}:
           Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
         case S.Acked{t2, +r, +s, +ts}:
-          Hp.complete_moved(st, assoc, k, t, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), Ps.Ps.ran_free(k, assoc, r, S.State.ues(st))), eat)
+          Hp.complete_moved(st, assoc, k, t, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), S.Ues.ran_free(k, assoc, r, S.State.ues(st))), eat)
     case S.Created{}:
       Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
     case S.Identifying{guard}:

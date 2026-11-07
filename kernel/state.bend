@@ -846,6 +846,14 @@ def Ues.sift(+s: Sieve, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
 def Ues.drop_assoc(a: U32, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
   Ues.sift(Others{a}, ues)
 
+# RAN-UE-NGAP-ID ran names no context on association assoc but the one keyed key.
+def Ues.ran_free(+key: U32, +assoc: U32, +ran: B.Bytes(), ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (+k, +v) <> more:
+      Bool.and(Bool.not(Bool.and(Bool.not(U32.is_eq(k, key)), Bool.and(U32.is_eq(Ue.assoc(v), assoc), B.bytes_eq(Ue.ran_id(v), ran)))), Ues.ran_free(key, assoc, ran, more))
+
 # The context takes the place of its key and of every context it conflicts with.
 def Ues.put(+key: U32, +u: Ue, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
   (key, u) <> Ues.sift(Clear{key, u}, ues)

@@ -10,6 +10,7 @@ import ../amf/ngap.bend as N
 import ../amf/gmm.bend as Gmm
 import ../smf/n4.bend as Up
 import ../smf/gsm.bend as Gsm
+import ../smf/switch.bend as Sw
 import ../pfcp.bend as Pf
 import ../nas/security.bend as Sec
 import ../nas/mm.bend as Mm
@@ -2208,7 +2209,7 @@ def Lw.fired(+st: S.State, +timer: U32) -> {Lv.okf(st, K.Kernel.fired(st, timer)
 # The context moves under its own key, guarded; its sessions are repointed
 # or forgotten, every action built from the context's key.
 
-def Lw.ps_session(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kk: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Ps.Ps.session(skey, s, seq, t)) == True{} : Bool}:
+def Lw.ps_session(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kk: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Sw.Sw.session(skey, s, seq, t)) == True{} : Bool}:
   match t:
     case None{}:
       Lw.gsm_forget(st, [(skey, s)], seq, Lw.one(st, skey, s, es))
@@ -2219,7 +2220,7 @@ def Lw.ps_session(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +t: Maybe<
       +y : N.Act = N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}
       Lv.leaf(st, S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Repointing{S.Guard{0}, request}}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], ek, {==})), kk)
 
-def Lw.ps_tun(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +m: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kn: {Bool.or(S.SPhase.knows(p, S.Session.known(s)), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Ps.Ps.session(skey, s, seq, Ps.Ps.tunnel(p, m))) == True{} : Bool}:
+def Lw.ps_tun(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +m: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kn: {Bool.or(S.SPhase.knows(p, S.Session.known(s)), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Sw.Sw.session(skey, s, seq, Sw.Sw.tunnel(p, m))) == True{} : Bool}:
   match p:
     case S.Creating{guard, pti, accept, request}:
       Lw.gsm_forget(st, [(skey, s)], seq, Lw.one(st, skey, s, es))
@@ -2230,9 +2231,9 @@ def Lw.ps_tun(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, 
     case S.Repointing{guard, request}:
       Lw.gsm_forget(st, [(skey, s)], seq, Lw.one(st, skey, s, es))
     case S.Active{}:
-      Lw.ps_session(st, skey, s, seq, Ps.Ps.tunnel(S.Active{}, m), es, kn)
+      Lw.ps_session(st, skey, s, seq, Sw.Sw.tunnel(S.Active{}, m), es, kn)
 
-def Lw.ps_sessions(+st: S.State, +ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq: U32, +e: {Lv.frows(rows, S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Ps.Ps.sessions(ts, rows, seq)) == True{} : Bool}:
+def Lw.ps_sessions(+st: S.State, +ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq: U32, +e: {Lv.frows(rows, S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Sw.Sw.sessions(ts, rows, seq)) == True{} : Bool}:
   match rows:
     case Nil{}:
       {==}
@@ -2243,23 +2244,23 @@ def Lw.ps_sessions(+st: S.State, +ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Sess
       hm = P.Bool.and_true_r(Lv.found(Some{(skey, s)}, ss), Lv.frows(more, ss), e)
       es = P.Bool.and_true_l(Lv.owner(S.Session.ue(s), ss), kn, hf)
       ek = P.Bool.and_true_r(Lv.owner(S.Session.ue(s), ss), kn, hf)
-      +o = Ps.Ps.session(skey, s, seq, Ps.Ps.tunnel_for(ts, s))
-      Lv.join(st, N.Out.join((S.BumpSeq{1}, []), o), Ps.Ps.sessions(ts, more, U32.add(seq, 1)), Lv.join(st, (S.BumpSeq{1}, []), o, {==}, Lw.ps_tun(st, skey, s, seq, S.Session.phase(s), Ps.Ps.find(S.Session.psi(s), ts), es, ek)), Lw.ps_sessions(st, ts, more, U32.add(seq, 1), hm))
+      +o = Sw.Sw.session(skey, s, seq, Sw.Sw.tunnel_for(ts, s))
+      Lv.join(st, N.Out.join((S.BumpSeq{1}, []), o), Sw.Sw.sessions(ts, more, U32.add(seq, 1)), Lv.join(st, (S.BumpSeq{1}, []), o, {==}, Lw.ps_tun(st, skey, s, seq, S.Session.phase(s), Sw.Sw.find(S.Session.psi(s), ts), es, ek)), Lw.ps_sessions(st, ts, more, U32.add(seq, 1), hm))
 
 def Lw.ps_go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +rows: Tb.Table(S.Session), +ok: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +er: {Lv.frows(rows, S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Ps.Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, ok)) == True{} : Bool}:
   match ok:
     case False{}:
       {==}
     case True{}:
-      +p : S.Phase = S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Ps.Ps.released(Ps.Ps.tunnels(items), rows)}
+      +p : S.Phase = S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Sw.Sw.released(Sw.Sw.path_tunnels(items), rows)}
       +v = S.Ue.moved(ue, assoc, ran, stream, p)
-      +a = Ps.Ps.sessions(Ps.Ps.tunnels(items), rows, S.State.pfcp_seq(st))
+      +a = Sw.Sw.sessions(Sw.Sw.path_tunnels(items), rows, S.State.pfcp_seq(st))
       +b : N.GOut() = (S.Put{key, v}, [])
       +ek = Lv.has_live(st, key, eh)
       hb = Lv.leaf(st, S.Put{key, v}, [], {==}, P.Bool.and_intro(Lv.keyed(st, key), Bool.and(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v)), Lv.keyed_of(st, key, ek), P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v), Lv.g_moved(ue, assoc, ran, stream, p), Lv.s_moved(ue, assoc, ran, stream, p))))
       +ts : N.Act = N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}
       +note : N.Act = N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}
-      Lv.also(st, N.Out.join(a, b), [ts, note], Lv.join(st, a, b, Lw.ps_sessions(st, Ps.Ps.tunnels(items), rows, S.State.pfcp_seq(st), er), hb), Lv.cons(st, ts, [note], ek, {==}))
+      Lv.also(st, N.Out.join(a, b), [ts, note], Lv.join(st, a, b, Lw.ps_sessions(st, Sw.Sw.path_tunnels(items), rows, S.State.pfcp_seq(st), er), hb), Lv.cons(st, ts, [note], ek, {==}))
 
 def Lw.ps_free(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ok: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.okf(st, Ps.Ps.free(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, ok)) == True{} : Bool}:
   match ok:
@@ -2267,14 +2268,14 @@ def Lw.ps_free(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B
       {==}
     case True{}:
       +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      Lw.ps_go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, Ps.Ps.any(Ps.Ps.tunnels(items), rows), eh, Lv.frows_sift(S.SOf{key}, S.State.sessions(st)))
+      Lw.ps_go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, Sw.Sw.any(Sw.Sw.path_tunnels(items), rows), eh, Lv.frows_sift(S.SOf{key}, S.State.sessions(st)))
 
 def Lw.ps_identified(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +supi: Maybe<&2, B.Digits()>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.okf(st, Ps.Ps.identified(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, supi)) == True{} : Bool}:
   match supi:
     case None{}:
       {==}
     case Some{sp}:
-      Lw.ps_free(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, Ps.Ps.ran_free(key, assoc, ran, S.State.ues(st)), eh)
+      Lw.ps_free(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ues.ran_free(key, assoc, ran, S.State.ues(st)), eh)
 
 def Lw.ps_phase(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +p: S.Phase, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.okf(st, Ps.Ps.phase(st, assoc, stream, amf, ran, items, key, ue, p)) == True{} : Bool}:
   match p:
@@ -2480,7 +2481,7 @@ def Lw.ho_ack_phase(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.U
       match leg:
         case S.Asked{t}:
           +ek = Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
-          +ts = Ho.Ho.admitted(admitted)
+          +ts = Sw.Sw.admitted(admitted)
           +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.command(key, S.Ue.ran_id(ue), ts, container)}
           +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
           +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Request Acknowledge; Handover Command sent to the source"}
@@ -2585,7 +2586,7 @@ def Lw.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Na
     case True{}:
       +rows = S.Sessions.of_ue(key, S.State.sessions(st))
       +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
-      +a = Ps.Ps.sessions(ts, rows, S.State.pfcp_seq(st))
+      +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
       +b : N.GOut() = (S.Put{key, v}, [])
       hb = Lv.leaf(st, S.Put{key, v}, [], {==}, P.Bool.and_intro(Lv.keyed(st, key), Bool.and(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v)), Lv.keyed_of(st, key, ek), P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v), Lv.g_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}), Lv.s_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))))
       +x : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}
@@ -2599,7 +2600,7 @@ def Lw.ho_notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.
         case S.Asked{t}:
           {==}
         case S.Acked{t, +r, +s, +ts}:
-          Lw.ho_complete(st, assoc, key, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), Ps.Ps.ran_free(key, assoc, r, S.State.ues(st))), ek)
+          Lw.ho_complete(st, assoc, key, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), S.Ues.ran_free(key, assoc, r, S.State.ues(st))), ek)
     case S.Created{}:
       {==}
     case S.Identifying{guard}:

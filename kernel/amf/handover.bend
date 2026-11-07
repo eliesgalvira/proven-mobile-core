@@ -9,8 +9,8 @@ import ../table.bend as Tb
 import ../state.bend as S
 import ../nas/security.bend as Sec
 import ../smf/gsm.bend as Gsm
+import ../smf/switch.bend as Sw
 import ./ngap.bend as N
-import ./path_switch.bend as Ps
 
 # N2 handover within one AMF and one UPF (TS 23.502 §4.9.1.3, TS 38.413
 # §8.4.1 to §8.4.3 and §8.4.5 to §8.4.7). The target gNB knows the UE by its
@@ -220,26 +220,11 @@ def Ho.pending(m: Maybe<&2, S.Ue>, +assoc: U32) -> Maybe<&2, S.Ue>:
 def Ho.for_target(+st: S.State, +assoc: U32, +key: U32) -> Maybe<&2, S.Ue>:
   Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc)
 
-# The tunnels of the sessions the target admitted.
-def Ho.tunnel_of(psi: U32, r: Ap.Rd(G.HandoverRequestAcknowledgeTransfer), more: List<&2, S.Tunnel>) -> List<&2, S.Tunnel>:
-  match r:
-    case Fail{e}:
-      more
-    case Done{(G.HandoverRequestAcknowledgeTransfer{dl, forwarding, security, flows, failed, drbs, x}, c)}:
-      Ps.Ps.tunnel_in(psi, Gsm.Gsm.tunnel_up(dl), more)
-
-def Ho.admitted(items: G.PDUSessionResourceAdmittedList()) -> List<&2, S.Tunnel>:
-  match items:
-    case Nil{}:
-      []
-    case G.PDUSessionResourceAdmittedItem{psi, transfer, x} <> more:
-      Ho.tunnel_of(psi, G.HandoverRequestAcknowledgeTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)}), Ho.admitted(more))
-
 # Handover Request Acknowledge: Handover Command to the source, under the completion guard.
 def Ho.ack_phase(+assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), admitted: G.PDUSessionResourceAdmittedList(), container: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:
     case S.Handover{ctx, nh, source, S.Asked{t}}:
-      +ts = Ho.admitted(admitted)
+      +ts = Sw.Sw.admitted(admitted)
       (S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), S.Acked{assoc, ran, stream, ts}}}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.command(key, S.Ue.ran_id(ue), ts, container)}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}, N.Note{F.Info{}, "NGAP: Handover Request Acknowledge; Handover Command sent to the source"}])
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
@@ -301,12 +286,12 @@ def Ho.complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ct
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
     case True{}:
       +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      N.Out.also(N.Out.join(Ps.Ps.sessions(ts, rows, S.State.pfcp_seq(st)), (S.Put{key, S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})}, [])), [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}])
+      N.Out.also(N.Out.join(Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st)), (S.Put{key, S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})}, [])), [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}])
 
 def Ho.notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:
     case S.Handover{ctx, nh, source, S.Acked{t, +r, s, ts}}:
-      Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), Ps.Ps.ran_free(key, assoc, r, S.State.ues(st))))
+      Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), S.Ues.ran_free(key, assoc, r, S.State.ues(st))))
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
 
