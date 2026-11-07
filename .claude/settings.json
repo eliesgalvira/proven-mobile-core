@@ -1,8 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(scripts/check.sh)",
-      "Bash(scripts/test-kernel.sh*)",
+      "Bash(scripts/check.nu)",
+      "Bash(scripts/test-kernel.nu*)",
       "Bash(python3 -I scripts/*)",
       "Bash(python3 -I tools/ngap-gen/*)",
       "Bash(bend *)",
