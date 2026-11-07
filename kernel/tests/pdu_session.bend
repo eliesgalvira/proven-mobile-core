@@ -228,9 +228,37 @@ def resent(+o: N.Step(), +kind: U32, +seq: U32) -> Bool:
   +p : B.Bytes() = first_pfcp(K.Kernel.frames(o))
   Bool.and(U32.is_eq(pfcp_kind(p), kind), Bool.and(U32.is_eq(pfcp_seq(p), seq), U32.is_eq(first_ms(K.Kernel.frames(o)), 3000)))
 
+# A step stops the timer with this id, how often.
+def cancel_count(actions: List<&2, F.Action>, +id: U32) -> Nat:
+  match actions:
+    case Nil{}:
+      0n
+    case F.TimerCancel{timer} <> more:
+      Nat.add(Bool.to_nat(U32.is_eq(timer, id)), cancel_count(more, id))
+    case a <> more:
+      cancel_count(more, id)
+
+def cancels(actions: List<&2, F.Action>, +id: U32) -> Bool:
+  Bool.not(Nat.is_eq(cancel_count(actions, id), 0n))
+
+# Whatever forgets a session stops its guard, so no stale timer meets a later session under the same SEID.
+def stale_guards(+msgs: List<&2, V.Vec>) -> IO(Unit):
+  do IO<Unit>:
+    +ran : B.Bytes() = A.ran_of(W.InitialUEMessage.view(A.ies_of(Fr.Pdu.read(A.hex_of(A.entry(14n, msgs), "hex")))))
+    +st1 : S.State = K.Kernel.state(step(A.registered(msgs), A.data(1, A.hex_of(A.entry(30n, msgs), "hex"))))
+    +req : B.Bytes() = first_pfcp(K.Kernel.frames(step(A.registered(msgs), A.data(1, A.hex_of(A.entry(30n, msgs), "hex")))))
+    +st2 : S.State = K.Kernel.state(step(st1, pfcp_event(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req)))))
+    +refused : N.Step() = step(st1, pfcp_event(with_cause(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req)), 73)))
+    +cpl : B.Bytes() = N.Ngap.pdu(Fr.Pdu.successful(), 41, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, []))])
+    +o_gone : N.Step() = step(K.Kernel.state(step(st1, A.data(1, A.release_request(ran)))), A.data(1, cpl))
+    C.Check.report("the UE released while its session is being created: the session's guard, 466, is stopped", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_gone)), 0n), cancels(K.Kernel.frames(o_gone), 466)))
+    C.Check.report("the association down while a session is being set up: its guard is stopped", cancels(K.Kernel.frames(step(st2, F.NgapAssocDown{1})), 466))
+    C.Check.report("eUPF refuses the Session Establishment: the session's guard is stopped once", Nat.is_eq(cancel_count(K.Kernel.frames(refused), 466), 1n))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
+    stale_guards(msgs)
     +view : Result<&2, &2, B.Err, W.InitialUEMessage.View> = W.InitialUEMessage.view(A.ies_of(Fr.Pdu.read(A.hex_of(A.entry(14n, msgs), "hex"))))
     +ran : B.Bytes() = A.ran_of(view)
     +uli : Maybe<&2, G.UserLocationInformation> = A.uli_of(view)

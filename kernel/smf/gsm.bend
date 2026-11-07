@@ -234,9 +234,9 @@ def Gsm.to_ue_m(key: U32, psi: U32, sm: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut
     case Some{+ue}:
       Gsm.to_ue_ctx(key, ue, psi, sm, S.Phase.ctx(S.Ue.phase(ue)))
 
-# A session given up: its UE told with the 5GSM message given, eUPF told, the row and guard gone.
+# A session given up: its UE told with the 5GSM message given, eUPF told, the row gone.
 def Gsm.give_up_m(+skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), N.Out.also(Gsm.forget([(skey, s)], seq), N.Guard.cancel(skey, S.SPhase.guard(S.Session.phase(s)))))
+  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), Gsm.forget([(skey, s)], seq))
 
 def Gsm.give_up(st: S.State, skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32) -> N.GOut():
   Gsm.give_up_m(skey, s, sm, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))

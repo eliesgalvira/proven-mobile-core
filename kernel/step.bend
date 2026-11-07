@@ -51,7 +51,8 @@ def Kernel.assoc_down(st: S.State, +assoc: U32) -> N.Step():
     case S.State{config, subs, assocs, ues, +sessions, +pfcp_seq, next_ue, n4}:
       +left = S.Ues.drop_assoc(assoc, ues)
       +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
-      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, S.Sessions.sift(S.SOwned{left}, sessions), U32.add(pfcp_seq, Up.N4.deletion_count(gone)), next_ue, n4}, List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}]))
+      +kept = S.Sessions.sift(S.SOwned{left}, sessions)
+      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, kept, U32.add(pfcp_seq, Up.N4.deletion_count(gone)), next_ue, n4}, List.append(&2, N.Act, List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}]), N.Gone.cancels(sessions, kept)))
 
 # A guard timer fired: a UE's, a session's, or the N4 association's (timer 0).
 def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():

@@ -1278,7 +1278,8 @@ law amf.takeover.authenticated:
 
 # GHSA-cfp8-93x2-6h9x: a context whose guard fires at the retry limit moves to
 # Releasing with a new guard; a Releasing context whose guard fires is gone with
-# its sessions, which are deleted at eUPF. A context's guard timer is its key.
+# its sessions, which are deleted at eUPF and whose guards are stopped. A
+# context's guard timer is its key.
 law amf.guard.expires:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1288,7 +1289,7 @@ law amf.guard.expires:
   for +et: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{u} : Maybe<&2, St.Ue>}
   for +eg: {St.Ue.guard(u) == Some{g} : Maybe<&2, St.Guard>}
   (({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> Empty) -> {U32.is_lt(St.Guard.retries(g), Gm.Gmm.max_retries()) == False{} : Bool} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == Some{St.Ue.with_phase(u, St.Releasing{St.Guard{0}})} : Maybe<&2, St.Ue>})
-  & ({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == None{} : Maybe<&2, St.Ue>} & ({St.Sessions.of_ue(k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == [] : Tb.Table(St.Session)} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{k}, entropy)) == List.append(&2, Ng.Act, Up.N4.deletions(St.Sessions.of_ue(k, St.State.sessions(st)), St.State.pfcp_seq(st)), [Ng.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}]) : List<&2, Ng.Act>}))
+  & ({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == None{} : Maybe<&2, St.Ue>} & ({St.Sessions.of_ue(k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == [] : Tb.Table(St.Session)} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{k}, entropy)) == List.append(&2, Ng.Act, List.append(&2, Ng.Act, Up.N4.deletions(St.Sessions.of_ue(k, St.State.sessions(st)), St.State.pfcp_seq(st)), [Ng.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}]), Ng.Gone.cancels(St.State.sessions(st), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) : List<&2, Ng.Act>}))
 
 # Every session belongs to a UE context, in the initial state and after every
 # step: whatever forgets a context forgets its sessions.
@@ -1353,6 +1354,21 @@ law state.ids.free:
   & ({St.Ids.free(St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
   & (({Tb.Table.has(St.Ue, k, St.State.ues(st)) == True{} : Bool} -> {Tb.Table.has(St.Session, k, St.State.sessions(st)) == False{} : Bool})
   & ({Tb.Table.has(St.Ue, St.N4.timer(), St.State.ues(st)) == False{} : Bool} & {Tb.Table.has(St.Session, St.N4.timer(), St.State.sessions(st)) == False{} : Bool})))))
+
+# A step that removes a session row stops that row's guard timer, its key, so
+# no stale timer can end a later session drawn under the same SEID, whatever
+# path forgets the session.
+law smf.guard.stopped:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +k: U32
+  for +s: St.Session
+  for +g: St.Guard
+  for +es: {Tb.Table.get(St.Session, k, St.State.sessions(st)) == Some{s} : Maybe<&2, St.Session>}
+  for +eg: {St.SPhase.guard(St.Session.phase(s)) == Some{g} : Maybe<&2, St.Guard>}
+  for +eh: {Tb.Table.get(St.Session, k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == None{} : Maybe<&2, St.Session>}
+  {Ng.Acts.stops(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool}
 
 # smf (ticket 19)
 # ---------------

@@ -30,6 +30,56 @@ def Bool.or_false(a: Bool, e: {Bool.or(a, False{}) == True{} : Bool}) -> {a == T
     case False{}:
       Empty.absurd({False{} == True{} : Bool}, P.Refute.bool(e))
 
+# Guards stopped
+# --------------
+# A step stops the guard of each session row it removes (N.Gone); one that
+# keeps every row stops none.
+
+def Gn.hit_present(+v: S.Session, +m: Maybe<&2, S.Session>, +b: Bool, +e: {Tb.Table.present(S.Session, m) == True{} : Bool}) -> {Tb.Table.present(S.Session, Tb.Table.hit(S.Session, v, m, b)) == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      e
+
+def Gn.has_head(+k: U32, +t: S.Session, +more: Tb.Table(S.Session)) -> {Tb.Table.has(S.Session, k, (k, t) <> more) == True{} : Bool}:
+  ek = Equal.sym(Bool, U32.is_eq(k, k), True{}, P.U32.is_eq_refl(k))
+  (%ek : {Tb.Table.present(S.Session, Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), _)) == True{} : Bool}; {==})
+
+def Gn.within(before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> Bool:
+  match before:
+    case Nil{}:
+      True{}
+    case (+k, t) <> more:
+      Bool.and(Tb.Table.has(S.Session, k, after), Gn.within(more, after))
+
+def Gn.within_cons(+before: Tb.Table(S.Session), +k0: U32, +t: S.Session, +more: Tb.Table(S.Session), +e: {Gn.within(before, more) == True{} : Bool}) -> {Gn.within(before, (k0, t) <> more) == True{} : Bool}:
+  match before:
+    case Nil{}:
+      {==}
+    case (+k, +v) <> +rest:
+      +hk = P.Bool.and_true_l(Tb.Table.has(S.Session, k, more), Gn.within(rest, more), e)
+      P.Bool.and_intro(Tb.Table.has(S.Session, k, (k0, t) <> more), Gn.within(rest, (k0, t) <> more), Gn.hit_present(t, Tb.Table.get(S.Session, k, more), U32.is_eq(k0, k), hk), Gn.within_cons(rest, k0, t, more, P.Bool.and_true_r(Tb.Table.has(S.Session, k, more), Gn.within(rest, more), e)))
+
+def Gn.self(+ss: Tb.Table(S.Session)) -> {Gn.within(ss, ss) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case (+k, +t) <> +more:
+      P.Bool.and_intro(Tb.Table.has(S.Session, k, (k, t) <> more), Gn.within(more, (k, t) <> more), Gn.has_head(k, t, more), Gn.within_cons(more, k, t, more, Gn.self(more)))
+
+def Gn.none(+before: Tb.Table(S.Session), +after: Tb.Table(S.Session), +e: {Gn.within(before, after) == True{} : Bool}) -> {N.Gone.cancels(before, after) == [] : List<&2, N.Act>}:
+  match before:
+    case Nil{}:
+      {==}
+    case (+k, +t) <> +more:
+      shk = Equal.sym(Bool, Tb.Table.has(S.Session, k, after), True{}, P.Bool.and_true_l(Tb.Table.has(S.Session, k, after), Gn.within(more, after), e))
+      (%shk : {List.append(&2, N.Act, N.Gone.row(k, t, _), N.Gone.cancels(more, after)) == [] : List<&2, N.Act>}; Gn.none(more, after, P.Bool.and_true_r(Tb.Table.has(S.Session, k, after), Gn.within(more, after), e)))
+
+# A step that keeps the session table stops no guard.
+def Gn.kept(+ss: Tb.Table(S.Session)) -> {N.Gone.cancels(ss, ss) == [] : List<&2, N.Act>}:
+  Gn.none(ss, ss, Gn.self(ss))
+
 # An undecodable PDU
 # ------------------
 
@@ -152,7 +202,8 @@ def L.amf.initial_ue.reject_leaves_state(st, entropy, assoc, stream, len, bytes,
   %sei : {R.Route.of_ies(st, assoc, stream, U32.to_nat(0), U32.to_nat(15), entropy, _) == (st, N.Ngap.bad_view(assoc)) : N.Step()}
   sev = Equal.sym(Result<&2, &2, B.Err, V.InitialUEMessage.View>, V.InitialUEMessage.view(ies), Fail{err}, ev)
   %sev : {N.Step.of(st, Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, _)) == (st, N.Ngap.bad_view(assoc)) : N.Step()}
-  {==}
+  sk = Equal.sym(List<&2, N.Act>, N.Gone.cancels(S.State.sessions(st), S.State.sessions(st)), [], Gn.kept(S.State.sessions(st)))
+  (%sk : {(st, List.append(&2, N.Act, N.Ngap.bad_view(assoc), _)) == (st, N.Ngap.bad_view(assoc)) : N.Step()}; {==})
 
 def L.ausf.res_star.full_length(av, res, e):
   match av:

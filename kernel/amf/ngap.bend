@@ -279,6 +279,21 @@ def Act.ue(a: Act) -> Maybe<&2, U32>:
     case _:
       None{}
 
+# Some action stops the timer k.
+def Act.stops(+k: U32, a: Act) -> Bool:
+  match a:
+    case TimerCancel{t}:
+      U32.is_eq(t, k)
+    case _:
+      False{}
+
+def Acts.stops(+k: U32, acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Act.stops(k, a), Acts.stops(k, more))
+
 # No action is built from the UE context keyed k.
 def Acts.spare(+k: U32, acts: List<&2, Act>) -> Bool:
   match acts:
@@ -312,12 +327,6 @@ def Ngap.any_ng_setup_response(actions: List<&2, Act>) -> Bool:
 def Step() -> Data:
   Sigma<&2, &2, S.State, _ => List<&2, Act>>
 
-# The step a procedure's outcome makes from st.
-def Step.of(st: S.State, o: GOut()) -> Step():
-  match o:
-    case (tx, acts):
-      (S.Tx.apply(tx, st), acts)
-
 # Combining outcomes: an action in front, actions after, two outcomes in order, a note alone.
 def Out.prepend(a: Act, o: GOut()) -> GOut():
   match o:
@@ -349,6 +358,30 @@ def Guard.cancel(key: U32, g: Maybe<&2, S.Guard>) -> List<&2, Act>:
       []
     case Some{guard}:
       [TimerCancel{key}]
+
+# The guard of every row a step removes from the session table stopped, its
+# timer the row's key: whatever forgets a session, no stale timer can reach a
+# later session under the same SEID.
+def Gone.row(+k: U32, +s: S.Session, kept: Bool) -> List<&2, Act>:
+  match kept:
+    case True{}:
+      []
+    case False{}:
+      Guard.cancel(k, S.SPhase.guard(S.Session.phase(s)))
+
+def Gone.cancels(before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> List<&2, Act>:
+  match before:
+    case Nil{}:
+      []
+    case (+k, +s) <> more:
+      List.append(&2, Act, Gone.row(k, s, Tb.Table.has(S.Session, k, after)), Gone.cancels(more, after))
+
+# The step a procedure's outcome makes from st.
+def Step.of(+st: S.State, o: GOut()) -> Step():
+  match o:
+    case (tx, acts):
+      +st2 = S.Tx.apply(tx, st)
+      (st2, List.append(&2, Act, acts, Gone.cancels(S.State.sessions(st), S.State.sessions(st2))))
 
 # The UE under an AMF-UE-NGAP-ID, if the association owns it under that RAN-UE-NGAP-ID.
 def Owner.check(ue: S.Ue, ok: Bool) -> Maybe<&2, S.Ue>:

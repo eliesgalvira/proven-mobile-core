@@ -804,7 +804,7 @@ def Ws.to_ue_m(+key: U32, +psi: U32, +sm: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U3
 def Ws.give_up_m(+skey: U32, +s: S.Session, +sm: B.Bytes(), +seq: U32, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.give_up_m(skey, s, sm, seq, m)) == True{} : Bool}:
   +a = Gsm.Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m)
   +f = Gsm.Gsm.forget([(skey, s)], seq)
-  Tk.sp_join(k, u, a, N.Out.also(f, N.Guard.cancel(skey, S.SPhase.guard(S.Session.phase(s)))), Ws.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m, k, u, hs), Tk.sp_also(k, u, f, N.Guard.cancel(skey, S.SPhase.guard(S.Session.phase(s))), Tk.sp_forget(k, u, [(skey, s)], seq)))
+  Tk.sp_join(k, u, a, f, Ws.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m, k, u, hs), Tk.sp_forget(k, u, [(skey, s)], seq))
 
 def Ws.abort(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +cause: U32, +seq: U32, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.abort(st, skey, s, pti, cause, seq)) == True{} : Bool}:
   Ws.give_up_m(skey, s, Gsm.Gsm.reject(S.Session.psi(s), pti, cause), seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), k, u, hs)
