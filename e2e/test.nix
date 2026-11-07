@@ -88,7 +88,19 @@ in
     step("start eUPF", upf.wait_until_succeeds, "systemctl start eupf && journalctl -u eupf -q --grep 'Starting PFCP connection'", timeout=120)
     step("start core", core.wait_until_succeeds, "systemctl start edge && journalctl -u edge -q --grep 'association with the UPF up'", timeout=120)
     step("start gnb", ran.wait_until_succeeds, "systemctl start gnb && journalctl -u gnb -q --grep 'NG Setup procedure is successful'", timeout=60)
-    step("register and establish", ran.wait_until_succeeds, "systemctl start ue && ip -4 -br addr show uesimtun0 | grep -q ' 10[.]45[.]'", timeout=90)
+    # nr-ue drops system information that arrives before it has the gNB's signal, and
+    # then waits for the gNB's next broadcast. A UE that has selected no cell after 30 s
+    # is restarted once: only cell selection between the two simulators is retried,
+    # which involves no core message beyond the NG Setup already checked.
+    ran.succeed("systemctl start ue")
+    selected = "journalctl -u ue -q --grep 'Selected cell'"
+    try:
+        ran.wait_until_succeeds(selected, timeout=30)
+    except Exception:
+        print("E2E RETRY: the UE selected no cell in 30 s; restarting it once")
+        ran.succeed("systemctl restart ue")
+        step("UE selects a cell", ran.wait_until_succeeds, selected, timeout=30)
+    step("register and establish", ran.wait_until_succeeds, "ip -4 -br addr show uesimtun0 | grep -q ' 10[.]45[.]'", timeout=90)
     print(step("ping through eUPF", ran.wait_until_succeeds, "ping -c 4 -i 0.5 -W 2 -I uesimtun0 ${ip.dn}", timeout=30))
     print("E2E PASS: registration")
 
