@@ -1154,6 +1154,7 @@ law amf.ue_context_release.owner_only:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
+  for +k: U32
   for +ran: B.Bytes()
   for +pdus: Maybe<&2, G.PDUSessionResourceListCxtRelReq()>
   for +cause: G.Cause
@@ -1165,7 +1166,8 @@ law amf.ue_context_release.owner_only:
   for +nas: B.Bytes()
   for +loc: G.UserLocationInformation
   for +ue: St.Ue
-  for +eu: {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eu: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
   for +ea: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 42, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseRequest.view(ies) == Done{GV.UEContextReleaseRequest.View{amf, ran, pdus, cause}} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
@@ -1188,6 +1190,7 @@ law amf.release.complete_forgets:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
+  for +k: U32
   for +ran: B.Bytes()
   for +uli: Maybe<&2, G.UserLocationInformation>
   for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
@@ -1196,9 +1199,10 @@ law amf.release.complete_forgets:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}
-  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
-  {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Ue>}
-  & {St.Sessions.of_ue(Ng.Ngap.of_big(amf), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == [] : Tb.Table(St.Session)}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eo: {Gm.Gmm.owner(st, assoc, k, ran) == Some{ue} : Maybe<&2, St.Ue>}
+  {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Ue>}
+  & {St.Sessions.of_ue(k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == [] : Tb.Table(St.Session)}
 
 # GHSA-7g3v-g4gp-p624: the indexes are the contexts themselves, so every entry
 # is a context and every context is indexed; what remains is that no two
@@ -1226,6 +1230,7 @@ law amf.nas.plaintext_after_security:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
+  for +k: U32
   for +ran: B.Bytes()
   for +nas: B.Bytes()
   for +uli: G.UserLocationInformation
@@ -1235,7 +1240,8 @@ law amf.nas.plaintext_after_security:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, uli}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}
-  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eo: {Gm.Gmm.owner(st, assoc, k, ran) == Some{ue} : Maybe<&2, St.Ue>}
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +ef: {N.Nas.unprotect(ctx, nas) == Fail{err} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}
@@ -1344,6 +1350,7 @@ law smf.establish.reject_leaves_state:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
+  for +k: U32
   for +ran: B.Bytes()
   for +nas: B.Bytes()
   for +uli: G.UserLocationInformation
@@ -1365,7 +1372,8 @@ law smf.establish.reject_leaves_state:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, uli}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}
-  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eo: {Gm.Gmm.owner(st, assoc, k, ran) == Some{ue} : Maybe<&2, St.Ue>}
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
@@ -1376,7 +1384,7 @@ law smf.establish.reject_leaves_state:
   for +ex: {Gs.Gsm.validate(cfg, psi, opts, sopts, Up.N4.up(st), St.State.sessions(st)) == Gs.Refuse{cause} : Gs.Check}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
   & ({St.State.pfcp_seq(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.pfcp_seq(st) : U32}
-  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}] : List<&2, Ng.Act>})
+  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), k, St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}] : List<&2, Ng.Act>})
 
 # GHSA-855g-699w-9w28: whichever later step fails, no session entry remains
 # for the PDU session, so no address, TEID or SEID is held for it, and once
@@ -1405,6 +1413,7 @@ law smf.establish.failure_releases:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
+  for +k: U32
   for +ran: B.Bytes()
   for +oks: Maybe<&2, G.PDUSessionResourceSetupListSURes()>
   for +pre: G.PDUSessionResourceFailedToSetupListSURes()
@@ -1422,7 +1431,7 @@ law smf.establish.failure_releases:
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) == None{} : Maybe<&2, St.Session>} & (({St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase} -> Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{timer}, entropy)))) & ({St.Session.phase(s) == St.Modifying{guard} : St.SPhase} -> Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{timer}, entropy))))))
   & (({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 53 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Modifying{guard} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy))))
-  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(Ng.Ngap.of_big(amf), psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
 
 # eUPF knows every session past Creating, by the UP SEID it answered with,
@@ -1451,6 +1460,7 @@ law smf.modification.rejected:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
+  for +k: U32
   for +ran: B.Bytes()
   for +nas: B.Bytes()
   for +uli: G.UserLocationInformation
@@ -1470,7 +1480,8 @@ law smf.modification.rejected:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, uli}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}
-  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eo: {Gm.Gmm.owner(st, assoc, k, ran) == Some{ue} : Maybe<&2, St.Ue>}
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
@@ -1478,7 +1489,7 @@ law smf.modification.rejected:
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.ModificationRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
-  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}] : List<&2, Ng.Act>}
+  & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), k, St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}] : List<&2, Ng.Act>}
 
 # GHSA-g97g-v8mh-wg24: the Accept every session holds while eUPF creates it,
 # its QoS rules read as the UE reads them, carries at most sixteen packet

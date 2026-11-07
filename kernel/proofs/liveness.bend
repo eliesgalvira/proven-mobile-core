@@ -1307,11 +1307,18 @@ def Lw.uplink_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +nas: B.
     case Some{+ue}:
       Lw.mm(st, key, ue, entropy, nas, Lv.owned_has(st, assoc, key, ran, ue, eo))
 
+
+def Lw.uplink_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +nas: B.Bytes(), +entropy: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.ok(st, Gmm.Gmm.uplink_key(st, assoc, ran, nas, entropy, m)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+key}:
+      Lw.uplink_ue(st, assoc, key, ran, nas, entropy, Gmm.Gmm.owner(st, assoc, key, ran), {==})
+
 def Lw.uplink(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +v: V.UplinkNASTransport.View) -> {Lv.ok(st, Gmm.Gmm.uplink(st, assoc, stream, entropy, v)) == True{} : Bool}:
   match v:
     case V.UplinkNASTransport.View{+amf_ue_ngap_id, +ran_ue_ngap_id, +nas_pdu, userlocationinformation}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Lw.uplink_ue(st, assoc, key, ran_ue_ngap_id, nas_pdu, entropy, Gmm.Gmm.owner(st, assoc, key, ran_ue_ngap_id), {==})
+      Lw.uplink_key(st, assoc, ran_ue_ngap_id, nas_pdu, entropy, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Lw.uplink_of_view(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, V.UplinkNASTransport.View>) -> {Lv.ok(st, Gmm.Gmm.uplink_of_view(st, assoc, stream, entropy, r)) == True{} : Bool}:
   match r:
@@ -1345,11 +1352,18 @@ def Lw.ics_response_ue(+st: S.State, +assoc: U32, +key: U32, +m: Maybe<&2, S.Ue>
     case Some{+ue}:
       Lw.setup_phase(st, key, ue, S.Ue.phase(ue))
 
+
+def Lw.ics_response_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.okf(st, Gmm.Gmm.ics_response_key(st, assoc, ran, m)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+key}:
+      Lw.ics_response_ue(st, assoc, key, Gmm.Gmm.owner(st, assoc, key, ran))
+
 def Lw.ics_response(+st: S.State, +assoc: U32, +v: V.InitialContextSetupResponse.View) -> {Lv.okf(st, Gmm.Gmm.ics_response(st, assoc, v)) == True{} : Bool}:
   match v:
     case V.InitialContextSetupResponse.View{+amf_ue_ngap_id, +ran_ue_ngap_id, diagnostics}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Lw.ics_response_ue(st, assoc, key, Gmm.Gmm.owner(st, assoc, key, ran_ue_ngap_id))
+      Lw.ics_response_key(st, assoc, ran_ue_ngap_id, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Lw.ics_response_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.InitialContextSetupResponse.View>) -> {Lv.okf(st, Gmm.Gmm.ics_response_of_view(st, assoc, r)) == True{} : Bool}:
   match r:
@@ -1365,11 +1379,18 @@ def Lw.release_request_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(),
     case Some{+ue}:
       Lw.release(st, key, ue, cause, Lv.has_live(st, key, Lv.owned_has(st, assoc, key, ran, ue, eo)))
 
+
+def Lw.release_request_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +cause: G.Cause, +m: Maybe<&2, U32>) -> {Lv.okf(st, Gmm.Gmm.release_request_key(st, assoc, ran, cause, m)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+key}:
+      Lw.release_request_ue(st, assoc, key, ran, cause, Gmm.Gmm.owner(st, assoc, key, ran), {==})
+
 def Lw.release_request(+st: S.State, +assoc: U32, +v: V.UEContextReleaseRequest.View) -> {Lv.okf(st, Gmm.Gmm.release_request(st, assoc, v)) == True{} : Bool}:
   match v:
     case V.UEContextReleaseRequest.View{+amf_ue_ngap_id, +ran_ue_ngap_id, pdusessionresourcelistcxtrelreq, +cause}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Lw.release_request_ue(st, assoc, key, ran_ue_ngap_id, cause, Gmm.Gmm.owner(st, assoc, key, ran_ue_ngap_id), {==})
+      Lw.release_request_key(st, assoc, ran_ue_ngap_id, cause, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Lw.release_request_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UEContextReleaseRequest.View>) -> {Lv.okf(st, Gmm.Gmm.release_request_of_view(st, assoc, r)) == True{} : Bool}:
   match r:
@@ -1386,11 +1407,18 @@ def Lw.release_complete_ue(+st: S.State, +assoc: U32, +key: U32, +m: Maybe<&2, S
       +more = List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.Note{F.Info{}, "NGAP: UE context released"}])
       Lv.also(st, Gmm.Gmm.forget(st, key), more, Lw.forget(st, key), Lv.append(st, N.Guard.cancel(S.Ue.guard(ue)), [N.Note{F.Info{}, "NGAP: UE context released"}], Lv.cancel(st, S.Ue.guard(ue)), {==}))
 
+
+def Lw.release_complete_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.okf(st, Gmm.Gmm.release_complete_key(st, assoc, ran, m)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+key}:
+      Lw.release_complete_ue(st, assoc, key, Gmm.Gmm.owner(st, assoc, key, ran))
+
 def Lw.release_complete(+st: S.State, +assoc: U32, +v: V.UEContextReleaseComplete.View) -> {Lv.okf(st, Gmm.Gmm.release_complete(st, assoc, v)) == True{} : Bool}:
   match v:
     case V.UEContextReleaseComplete.View{+amf_ue_ngap_id, +ran_ue_ngap_id, userlocationinformation, pdusessionresourcelistcxtrelcpl, diagnostics}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Lw.release_complete_ue(st, assoc, key, Gmm.Gmm.owner(st, assoc, key, ran_ue_ngap_id))
+      Lw.release_complete_key(st, assoc, ran_ue_ngap_id, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Lw.release_complete_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>) -> {Lv.okf(st, Gmm.Gmm.release_complete_of_view(st, assoc, r)) == True{} : Bool}:
   match r:
@@ -1626,11 +1654,18 @@ def Lw.setup_response_ue(+st: S.State, +assoc: U32, +key: U32, +oks: G.PDUSessio
     case Some{ue}:
       Lw.results(st, key, oks, fails)
 
+
+def Lw.setup_response_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes(), +m: Maybe<&2, U32>) -> {Lv.okf(st, Gsm.Gsm.setup_response_key(st, assoc, ran, oks, fails, m)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+key}:
+      Lw.setup_response_ue(st, assoc, key, oks, fails, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+
 def Lw.setup_response(+st: S.State, +assoc: U32, +v: V.PDUSessionResourceSetupResponse.View) -> {Lv.okf(st, Gsm.Gsm.setup_response(st, assoc, v)) == True{} : Bool}:
   match v:
     case V.PDUSessionResourceSetupResponse.View{+amf_ue_ngap_id, +ran_ue_ngap_id, +oks, +fails, diagnostics, uli}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Lw.setup_response_ue(st, assoc, key, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran_ue_ngap_id))
+      Lw.setup_response_key(st, assoc, ran_ue_ngap_id, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Lw.setup_response_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.PDUSessionResourceSetupResponse.View>) -> {Lv.okf(st, Gsm.Gsm.setup_response_of_view(st, assoc, r)) == True{} : Bool}:
   match r:

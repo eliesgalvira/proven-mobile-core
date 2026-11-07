@@ -586,11 +586,17 @@ def Gsm.setup_response_ue(st: S.State, assoc: U32, key: U32, oks: G.PDUSessionRe
     case Some{ue}:
       Gsm.results(st, key, oks, fails)
 
+def Gsm.setup_response_key(+st: S.State, +assoc: U32, ran: B.Bytes(), oks: G.PDUSessionResourceSetupListSURes(), fails: G.PDUSessionResourceFailedToSetupListSURes(), m: Maybe<&2, U32>) -> N.GOut():
+  match m:
+    case None{}:
+      (S.Keep{}, N.Ngap.unknown_ue(assoc))
+    case Some{+key}:
+      Gsm.setup_response_ue(st, assoc, key, oks, fails, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+
 def Gsm.setup_response(+st: S.State, +assoc: U32, v: V.PDUSessionResourceSetupResponse.View) -> N.GOut():
   match v:
     case V.PDUSessionResourceSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, oks, fails, diagnostics, uli}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Gsm.setup_response_ue(st, assoc, key, Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran_ue_ngap_id))
+      Gsm.setup_response_key(st, assoc, ran_ue_ngap_id, Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err, V.PDUSessionResourceSetupResponse.View>) -> N.GOut():
   match r:

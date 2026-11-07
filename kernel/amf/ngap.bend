@@ -169,6 +169,18 @@ def Ngap.of_big_go(bs: B.Bytes(), acc: U32) -> U32:
 def Ngap.of_big(bs: B.Bytes()) -> U32:
   Ngap.of_big_go(bs, 0)
 
+def Ngap.key_if(bs: B.Bytes(), fits: Bool) -> Maybe<&2, U32>:
+  match fits:
+    case True{}:
+      Some{Ngap.of_big(bs)}
+    case False{}:
+      None{}
+
+# The context key an AMF-UE-NGAP-ID names: none at 2^32 or above (five
+# octets, ngap.no_big_nat), which is never folded into 32 bits.
+def Ngap.ue_key(+bs: B.Bytes()) -> Maybe<&2, U32>:
+  Ngap.key_if(bs, Nat.is_le(List.length(&2, U32, bs), 4n))
+
 def Ngap.dl_nas_transport(key: U32, ran_id: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), 4, Fr.Criticality.ignore(), [Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(38, Fr.Criticality.reject(), G.NAS_PDU.write(nas, 0n, []))])
 

@@ -472,11 +472,17 @@ def Gmm.uplink_ue(st: S.State, assoc: U32, key: U32, nas: B.Bytes(), entropy: B.
     case Some{ue}:
       Gmm.mm(st, key, ue, entropy, nas)
 
+def Gmm.uplink_key(+st: S.State, +assoc: U32, ran: B.Bytes(), nas: B.Bytes(), entropy: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
+  match m:
+    case None{}:
+      (S.Keep{}, N.Ngap.unknown_ue(assoc))
+    case Some{+key}:
+      Gmm.uplink_ue(st, assoc, key, nas, entropy, Gmm.owner(st, assoc, key, ran))
+
 def Gmm.uplink(+st: S.State, +assoc: U32, stream: U32, entropy: B.Bytes(), v: V.UplinkNASTransport.View) -> N.GOut():
   match v:
     case V.UplinkNASTransport.View{amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, userlocationinformation}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Gmm.uplink_ue(st, assoc, key, nas_pdu, entropy, Gmm.owner(st, assoc, key, ran_ue_ngap_id))
+      Gmm.uplink_key(st, assoc, ran_ue_ngap_id, nas_pdu, entropy, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Gmm.uplink_of_view(st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), r: Result<&2, &2, B.Err, V.UplinkNASTransport.View>) -> N.GOut():
   match r:
@@ -499,11 +505,17 @@ def Gmm.ics_response_ue(st: S.State, assoc: U32, key: U32, m: Maybe<&2, S.Ue>) -
     case Some{+ue}:
       Gmm.setup_phase(st, key, ue, S.Ue.phase(ue))
 
+def Gmm.ics_response_key(+st: S.State, +assoc: U32, ran: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
+  match m:
+    case None{}:
+      (S.Keep{}, N.Ngap.unknown_ue(assoc))
+    case Some{+key}:
+      Gmm.ics_response_ue(st, assoc, key, Gmm.owner(st, assoc, key, ran))
+
 def Gmm.ics_response(+st: S.State, +assoc: U32, v: V.InitialContextSetupResponse.View) -> N.GOut():
   match v:
     case V.InitialContextSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, diagnostics}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Gmm.ics_response_ue(st, assoc, key, Gmm.owner(st, assoc, key, ran_ue_ngap_id))
+      Gmm.ics_response_key(st, assoc, ran_ue_ngap_id, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Gmm.ics_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err, V.InitialContextSetupResponse.View>) -> N.GOut():
   match r:
@@ -520,11 +532,17 @@ def Gmm.release_request_ue(st: S.State, assoc: U32, key: U32, cause: G.Cause, m:
     case Some{ue}:
       Gmm.release(st, key, ue, cause)
 
+def Gmm.release_request_key(+st: S.State, +assoc: U32, ran: B.Bytes(), cause: G.Cause, m: Maybe<&2, U32>) -> N.GOut():
+  match m:
+    case None{}:
+      (S.Keep{}, N.Ngap.unknown_ue(assoc))
+    case Some{+key}:
+      Gmm.release_request_ue(st, assoc, key, cause, Gmm.owner(st, assoc, key, ran))
+
 def Gmm.release_request(+st: S.State, +assoc: U32, v: V.UEContextReleaseRequest.View) -> N.GOut():
   match v:
     case V.UEContextReleaseRequest.View{amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcelistcxtrelreq, cause}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Gmm.release_request_ue(st, assoc, key, cause, Gmm.owner(st, assoc, key, ran_ue_ngap_id))
+      Gmm.release_request_key(st, assoc, ran_ue_ngap_id, cause, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Gmm.release_request_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err, V.UEContextReleaseRequest.View>) -> N.GOut():
   match r:
@@ -541,11 +559,17 @@ def Gmm.release_complete_ue(st: S.State, assoc: U32, key: U32, m: Maybe<&2, S.Ue
     case Some{ue}:
       N.Out.also(Gmm.forget(st, key), List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.Note{F.Info{}, "NGAP: UE context released"}]))
 
+def Gmm.release_complete_key(+st: S.State, +assoc: U32, ran: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
+  match m:
+    case None{}:
+      (S.Keep{}, N.Ngap.unknown_ue(assoc))
+    case Some{+key}:
+      Gmm.release_complete_ue(st, assoc, key, Gmm.owner(st, assoc, key, ran))
+
 def Gmm.release_complete(+st: S.State, +assoc: U32, v: V.UEContextReleaseComplete.View) -> N.GOut():
   match v:
     case V.UEContextReleaseComplete.View{amf_ue_ngap_id, ran_ue_ngap_id, userlocationinformation, pdusessionresourcelistcxtrelcpl, diagnostics}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Gmm.release_complete_ue(st, assoc, key, Gmm.owner(st, assoc, key, ran_ue_ngap_id))
+      Gmm.release_complete_key(st, assoc, ran_ue_ngap_id, N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Gmm.release_complete_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>) -> N.GOut():
   match r:
