@@ -250,15 +250,6 @@ type NodeId is Data:
   NodeV6{addr: B.Bytes()}
   NodeFqdn{name: B.Bytes()}
 
-def NodeId.valid(n: NodeId) -> Bool:
-  match n:
-    case NodeV4{addr}:
-      Nat.is_eq(List.length(&2, U32, addr), 4n)
-    case NodeV6{addr}:
-      Nat.is_eq(List.length(&2, U32, addr), 16n)
-    case NodeFqdn{name}:
-      True{}
-
 def NodeId.v4(r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, NodeId>:
   match r:
     case Fail{e}:
@@ -514,11 +505,6 @@ def Fteid.write(f: Fteid) -> B.Bytes():
 type UeIp is Data:
   UeIp{source: Bool, v4: Maybe<&2, B.Bytes()>, v6: Maybe<&2, B.Bytes()>}
 
-def UeIp.valid(u: UeIp) -> Bool:
-  match u:
-    case UeIp{source, v4, v6}:
-      Bool.and(Addr.valid(v4, 4n), Addr.valid(v6, 16n))
-
 def UeIp.of_v6(source: Bool, v4: Maybe<&2, B.Bytes()>, r: B.Read(Maybe<&2, B.Bytes()>)) -> Result<&2, &2, B.Err, UeIp>:
   match r:
     case Fail{e}:
@@ -573,11 +559,6 @@ def Ohc.v6_needed(+desc: U32) -> Bool:
 
 def Ohc.port_needed(+desc: U32) -> Bool:
   bit(desc, 3072)
-
-def Ohc.valid(o: Ohc) -> Bool:
-  match o:
-    case Ohc{desc, teid, v4, v6, port}:
-      Bool.and(Addr.valid(v4, 4n), Addr.valid(v6, 16n))
 
 def Ohc.of_port(desc: U32, teid: Maybe<&2, U32>, v4: Maybe<&2, B.Bytes()>, v6: Maybe<&2, B.Bytes()>, r: B.Read(Maybe<&2, U32>)) -> Result<&2, &2, B.Err, Ohc>:
   match r:

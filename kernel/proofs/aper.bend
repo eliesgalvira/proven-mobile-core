@@ -269,17 +269,7 @@ def U32.fits_of(+n: Nat, +bs: Ap.Bits(), e: {List.length(&2, Bool, bs) == n : Na
   se = Equal.sym(Nat, List.length(&2, Bool, bs), n, e)
   Word.high_zero_of(32n, n, List.reverse(&2, Bool, bs), (%rl : {Nat.is_le(_, n) == True{} : Bool}; (%se : {Nat.is_le(_, n) == True{} : Bool}; P.Nat.le_refl(n))))
 
-def U32.byte_fits.go(d: U32, +d2: U32, same: {d == d2 : U32}, m8: {U32.and(255, d2) == d2 : U32}) -> {Ap.U32.fits(8n, d2) == True{} : Bool}:
-  match d:
-    case U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
-      %m8 : {Ap.U32.fits(8n, _) == True{} : Bool}
-      %same : {Ap.U32.fits(8n, U32.and(255, _)) == True{} : Bool}
-      {==}
-
 # A byte fits eight bits.
-def U32.byte_fits(+b: U32, e: {B.is_byte(b) == True{} : Bool}) -> {Ap.U32.fits(8n, b) == True{} : Bool}:
-  U32.byte_fits.go(b, b, {==}, P.U32.lt256_mask8(b, e))
-
 # Constrained whole numbers
 # -------------------------
 

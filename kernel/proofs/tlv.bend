@@ -11,11 +11,6 @@ import ./bytes.bend as PB
 def Tlvs.Res() -> Data:
   Result<&2, &2, B.Err, List<&2, T.Tlv>>
 
-def Hdr.kind(h: T.Hdr) -> U32:
-  match h:
-    case T.Hdr{kind, len}:
-      kind
-
 def Hdr.len(h: T.Hdr) -> U32:
   match h:
     case T.Hdr{kind, len}:

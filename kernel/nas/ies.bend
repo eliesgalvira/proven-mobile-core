@@ -88,9 +88,6 @@ def Half.ok(v: U32, ok: Bool) -> Res(Half):
 def Ksi.read(+v: U32) -> Res(Half):
   Half.ok(v, U32.is_eq(U32.and(240, v), 0))
 
-def Ksi.write(h: Half) -> U32:
-  Half.nibble(h)
-
 # NAS security algorithms (§9.11.3.34)
 # ------------------------------------
 
@@ -158,21 +155,6 @@ def MmCap.write(c: MmCap) -> B.Bytes():
     case MmCap{flags, more}:
       flags <> more
 
-def MmCap.s1_mode(c: MmCap) -> Bool:
-  match c:
-    case MmCap{flags, more}:
-      Bit.of(flags, 1)
-
-def MmCap.ho_attach(c: MmCap) -> Bool:
-  match c:
-    case MmCap{flags, more}:
-      Bit.of(flags, 2)
-
-def MmCap.lpp(c: MmCap) -> Bool:
-  match c:
-    case MmCap{flags, more}:
-      Bit.of(flags, 4)
-
 # S-NSSAI (§9.11.2.8) and NSSAI (§9.11.3.37)
 # ------------------------------------------
 
@@ -184,32 +166,6 @@ type SNssai is Data:
   SstSd{sst: U32, sd: U32}
   SstSdMapped{sst: U32, sd: U32, msst: U32}
   SstFull{sst: U32, sd: U32, msst: U32, msd: U32}
-
-def SNssai.sst(s: SNssai) -> U32:
-  match s:
-    case Sst{sst}:
-      sst
-    case SstMapped{sst, msst}:
-      sst
-    case SstSd{sst, sd}:
-      sst
-    case SstSdMapped{sst, sd, msst}:
-      sst
-    case SstFull{sst, sd, msst, msd}:
-      sst
-
-def SNssai.sd(s: SNssai) -> Maybe<&2, U32>:
-  match s:
-    case Sst{sst}:
-      None{}
-    case SstMapped{sst, msst}:
-      None{}
-    case SstSd{sst, sd}:
-      Some{sd}
-    case SstSdMapped{sst, sd, msst}:
-      Some{sd}
-    case SstFull{sst, sd, msst, msd}:
-      Some{sd}
 
 def SNssai.read(bs: B.Bytes()) -> Res(SNssai):
   match bs:
@@ -520,13 +476,6 @@ def TaiList.write(list: List<&2, TaiPartial>) -> B.Bytes():
 # 5GS network feature support (§9.11.3.5): one to three bytes of flags.
 def NetFeature.read(bs: B.Bytes()) -> Res(B.Bytes()):
   Bytes.between(bs, 1n, 3n)
-
-def NetFeature.ims_vops_3gpp(bs: B.Bytes()) -> Bool:
-  match bs:
-    case Nil{}:
-      False{}
-    case b <> rest:
-      Bit.of(b, 1)
 
 # GPRS timer 3 (TS 24.008 §10.5.7.4a): a unit in the high three bits, a value below.
 type Timer3 is Data:
