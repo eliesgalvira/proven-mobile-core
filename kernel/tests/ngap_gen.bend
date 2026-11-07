@@ -77,8 +77,8 @@ def run(msgs: List<&2, V.Vec>) -> IO(Unit):
 def main() -> IO(Unit):
   do IO<Unit>:
     run(N.Ngap.vectors())
-    C.Check.report("a RAN-UE-NGAP-ID of 1 roundtrips", G.RAN_UE_NGAP_ID.roundtrips([0, 1]))
-    C.Check.report("a RAN-UE-NGAP-ID with a leading zero octet does not", Bool.not(G.RAN_UE_NGAP_ID.roundtrips([64, 0, 1])))
-    C.Check.report("a PLMN identity of four octets does not", Bool.not(G.PLMNIdentity.roundtrips([0, 241, 16, 0])))
-    C.Check.report("an RRC establishment cause mo-Signalling roundtrips", G.RRCEstablishmentCause.roundtrips([48]))
-    C.Check.report("a PDU session type ipv4 roundtrips", G.PDUSessionType.roundtrips([0]))
+    C.Check.report("a RAN-UE-NGAP-ID of 1 roundtrips", G.Ie.roundtrips(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read, v => G.RAN_UE_NGAP_ID.valid(v), v => G.RAN_UE_NGAP_ID.write(v, 0n, []), [0, 1]))
+    C.Check.report("a RAN-UE-NGAP-ID with a leading zero octet does not", Bool.not(G.Ie.roundtrips(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read, v => G.RAN_UE_NGAP_ID.valid(v), v => G.RAN_UE_NGAP_ID.write(v, 0n, []), [64, 0, 1])))
+    C.Check.report("a PLMN identity of four octets does not", Bool.not(G.Ie.roundtrips(G.PLMNIdentity(), G.PLMNIdentity.read, v => G.PLMNIdentity.valid(v), v => G.PLMNIdentity.write(v, 0n, []), [0, 241, 16, 0])))
+    C.Check.report("an RRC establishment cause mo-Signalling roundtrips", G.Ie.roundtrips(G.RRCEstablishmentCause(), G.RRCEstablishmentCause.read, v => G.RRCEstablishmentCause.valid(v), v => G.RRCEstablishmentCause.write(v, 0n, []), [48]))
+    C.Check.report("a PDU session type ipv4 roundtrips", G.Ie.roundtrips(G.PDUSessionType(), G.PDUSessionType.read, v => G.PDUSessionType.valid(v), v => G.PDUSessionType.write(v, 0n, []), [0]))

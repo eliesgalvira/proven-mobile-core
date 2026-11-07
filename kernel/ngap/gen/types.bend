@@ -34,18 +34,6 @@ def NGSetupRequest.after(+v: NGSetupRequest(), +rem: Nat) -> Nat:
 def NGSetupRequest.valid(+v: NGSetupRequest()) -> Bool:
   Fr.Ies.valid(v)
 
-def NGSetupRequest.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NGSetupRequest())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NGSetupRequest.valid(v), B.bytes_eq(Ap.pack(NGSetupRequest.write(v, 0n, [])), bs)))
-
-def NGSetupRequest.roundtrips(+bs: B.Bytes()) -> Bool:
-  NGSetupRequest.roundtrips.end(bs, NGSetupRequest.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PagingDRX ::= ENUMERATED { v32, v64, v128, v256, ... }
 def PagingDRX() -> Data:
   Ap.Enum
@@ -74,18 +62,6 @@ def PagingDRX.after(+v: PagingDRX(), +rem: Nat) -> Nat:
 def PagingDRX.valid(+v: PagingDRX()) -> Bool:
   Ap.Enum.valid(2n, 3, True{}, v)
 
-def PagingDRX.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PagingDRX())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PagingDRX.valid(v), B.bytes_eq(Ap.pack(PagingDRX.write(v, 0n, [])), bs)))
-
-def PagingDRX.roundtrips(+bs: B.Bytes()) -> Bool:
-  PagingDRX.roundtrips.end(bs, PagingDRX.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TAC ::= OCTET STRING (SIZE(3))
 def TAC() -> Data:
   B.Bytes()
@@ -101,18 +77,6 @@ def TAC.after(+v: TAC(), +rem: Nat) -> Nat:
 
 def TAC.valid(+v: TAC()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 3n), B.all_bytes(v))
-
-def TAC.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TAC())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TAC.valid(v), B.bytes_eq(Ap.pack(TAC.write(v, 0n, [])), bs)))
-
-def TAC.roundtrips(+bs: B.Bytes()) -> Bool:
-  TAC.roundtrips.end(bs, TAC.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PLMNIdentity ::= OCTET STRING (SIZE(3))
 def PLMNIdentity() -> Data:
@@ -130,18 +94,6 @@ def PLMNIdentity.after(+v: PLMNIdentity(), +rem: Nat) -> Nat:
 def PLMNIdentity.valid(+v: PLMNIdentity()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 3n), B.all_bytes(v))
 
-def PLMNIdentity.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PLMNIdentity())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PLMNIdentity.valid(v), B.bytes_eq(Ap.pack(PLMNIdentity.write(v, 0n, [])), bs)))
-
-def PLMNIdentity.roundtrips(+bs: B.Bytes()) -> Bool:
-  PLMNIdentity.roundtrips.end(bs, PLMNIdentity.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # SST ::= OCTET STRING (SIZE(1))
 def SST() -> Data:
   B.Bytes()
@@ -158,18 +110,6 @@ def SST.after(+v: SST(), +rem: Nat) -> Nat:
 def SST.valid(+v: SST()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 1n), B.all_bytes(v))
 
-def SST.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SST())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SST.valid(v), B.bytes_eq(Ap.pack(SST.write(v, 0n, [])), bs)))
-
-def SST.roundtrips(+bs: B.Bytes()) -> Bool:
-  SST.roundtrips.end(bs, SST.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # SD ::= OCTET STRING (SIZE(3))
 def SD() -> Data:
   B.Bytes()
@@ -185,18 +125,6 @@ def SD.after(+v: SD(), +rem: Nat) -> Nat:
 
 def SD.valid(+v: SD()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 3n), B.all_bytes(v))
-
-def SD.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SD())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SD.valid(v), B.bytes_eq(Ap.pack(SD.write(v, 0n, [])), bs)))
-
-def SD.roundtrips(+bs: B.Bytes()) -> Bool:
-  SD.roundtrips.end(bs, SD.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # S-NSSAI ::= SEQUENCE { sST SST, sD SD OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type S_NSSAI is Data:
@@ -340,18 +268,6 @@ def S_NSSAI.after(x: S_NSSAI, +rem: Nat) -> Nat:
       +r3 = S_NSSAI.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def S_NSSAI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(S_NSSAI)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(S_NSSAI.valid(v), B.bytes_eq(Ap.pack(S_NSSAI.write(v, 0n, [])), bs)))
-
-def S_NSSAI.roundtrips(+bs: B.Bytes()) -> Bool:
-  S_NSSAI.roundtrips.end(bs, S_NSSAI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # SliceSupportItem ::= SEQUENCE { s-NSSAI S-NSSAI, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type SliceSupportItem is Data:
   SliceSupportItem{s_NSSAI: S_NSSAI, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -450,18 +366,6 @@ def SliceSupportItem.after(x: SliceSupportItem, +rem: Nat) -> Nat:
       +r2 = SliceSupportItem.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def SliceSupportItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SliceSupportItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SliceSupportItem.valid(v), B.bytes_eq(Ap.pack(SliceSupportItem.write(v, 0n, [])), bs)))
-
-def SliceSupportItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  SliceSupportItem.roundtrips.end(bs, SliceSupportItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # SliceSupportList ::= SEQUENCE (SIZE(1..1024)) OF SliceSupportItem
 def SliceSupportList() -> Data:
   List<&2, SliceSupportItem>
@@ -526,18 +430,6 @@ def SliceSupportList.items_after(xs: SliceSupportList(), +rem: Nat) -> Nat:
 
 def SliceSupportList.after(+xs: SliceSupportList(), +rem: Nat) -> Nat:
   SliceSupportList.items_after(xs, Ap.Size.after(True{}, 16n, rem))
-
-def SliceSupportList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SliceSupportList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SliceSupportList.valid(v), B.bytes_eq(Ap.pack(SliceSupportList.write(v, 0n, [])), bs)))
-
-def SliceSupportList.roundtrips(+bs: B.Bytes()) -> Bool:
-  SliceSupportList.roundtrips.end(bs, SliceSupportList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # BroadcastPLMNItem ::= SEQUENCE { pLMNIdentity PLMNIdentity, tAISliceSupportList SliceSupportList, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 3 known rows> OPTIONAL, ... }
 type BroadcastPLMNItem is Data:
@@ -646,18 +538,6 @@ def BroadcastPLMNItem.after(x: BroadcastPLMNItem, +rem: Nat) -> Nat:
       +r3 = BroadcastPLMNItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def BroadcastPLMNItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(BroadcastPLMNItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(BroadcastPLMNItem.valid(v), B.bytes_eq(Ap.pack(BroadcastPLMNItem.write(v, 0n, [])), bs)))
-
-def BroadcastPLMNItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  BroadcastPLMNItem.roundtrips.end(bs, BroadcastPLMNItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # BroadcastPLMNList ::= SEQUENCE (SIZE(1..12)) OF BroadcastPLMNItem
 def BroadcastPLMNList() -> Data:
   List<&2, BroadcastPLMNItem>
@@ -722,18 +602,6 @@ def BroadcastPLMNList.items_after(xs: BroadcastPLMNList(), +rem: Nat) -> Nat:
 
 def BroadcastPLMNList.after(+xs: BroadcastPLMNList(), +rem: Nat) -> Nat:
   BroadcastPLMNList.items_after(xs, Ap.Size.after(False{}, 4n, rem))
-
-def BroadcastPLMNList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(BroadcastPLMNList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(BroadcastPLMNList.valid(v), B.bytes_eq(Ap.pack(BroadcastPLMNList.write(v, 0n, [])), bs)))
-
-def BroadcastPLMNList.roundtrips(+bs: B.Bytes()) -> Bool:
-  BroadcastPLMNList.roundtrips.end(bs, BroadcastPLMNList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # SupportedTAItem ::= SEQUENCE { tAC TAC, broadcastPLMNList BroadcastPLMNList, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 2 known rows> OPTIONAL, ... }
 type SupportedTAItem is Data:
@@ -842,18 +710,6 @@ def SupportedTAItem.after(x: SupportedTAItem, +rem: Nat) -> Nat:
       +r3 = SupportedTAItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def SupportedTAItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SupportedTAItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SupportedTAItem.valid(v), B.bytes_eq(Ap.pack(SupportedTAItem.write(v, 0n, [])), bs)))
-
-def SupportedTAItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  SupportedTAItem.roundtrips.end(bs, SupportedTAItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # SupportedTAList ::= SEQUENCE (SIZE(1..256)) OF SupportedTAItem
 def SupportedTAList() -> Data:
   List<&2, SupportedTAItem>
@@ -919,18 +775,6 @@ def SupportedTAList.items_after(xs: SupportedTAList(), +rem: Nat) -> Nat:
 def SupportedTAList.after(+xs: SupportedTAList(), +rem: Nat) -> Nat:
   SupportedTAList.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def SupportedTAList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SupportedTAList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SupportedTAList.valid(v), B.bytes_eq(Ap.pack(SupportedTAList.write(v, 0n, [])), bs)))
-
-def SupportedTAList.roundtrips(+bs: B.Bytes()) -> Bool:
-  SupportedTAList.roundtrips.end(bs, SupportedTAList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # GNB-ID-gNB-ID ::= BitStr
 def GNB_ID_gNB_ID() -> Data:
   Ap.Bits()
@@ -946,18 +790,6 @@ def GNB_ID_gNB_ID.after(+v: GNB_ID_gNB_ID(), +rem: Nat) -> Nat:
 
 def GNB_ID_gNB_ID.valid(+v: GNB_ID_gNB_ID()) -> Bool:
   Ap.BitStr.valid(22n, 10n, v)
-
-def GNB_ID_gNB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GNB_ID_gNB_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GNB_ID_gNB_ID.valid(v), B.bytes_eq(Ap.pack(GNB_ID_gNB_ID.write(v, 0n, [])), bs)))
-
-def GNB_ID_gNB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  GNB_ID_gNB_ID.roundtrips.end(bs, GNB_ID_gNB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # GNB-ID ::= CHOICE { gNB-ID BIT STRING (SIZE(22..32)), choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type GNB_ID is Data:
@@ -1017,18 +849,6 @@ def GNB_ID.after(x: GNB_ID, +rem: Nat) -> Nat:
       GNB_ID_gNB_ID.after(v, Ap.Size.after(False{}, 1n, rem))
     case GNB_ID_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
-
-def GNB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GNB_ID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GNB_ID.valid(v), B.bytes_eq(Ap.pack(GNB_ID.write(v, 0n, [])), bs)))
-
-def GNB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  GNB_ID.roundtrips.end(bs, GNB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # GlobalGNB-ID ::= SEQUENCE { pLMNIdentity PLMNIdentity, gNB-ID GNB-ID, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type GlobalGNB_ID is Data:
@@ -1137,18 +957,6 @@ def GlobalGNB_ID.after(x: GlobalGNB_ID, +rem: Nat) -> Nat:
       +r3 = GlobalGNB_ID.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def GlobalGNB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GlobalGNB_ID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GlobalGNB_ID.valid(v), B.bytes_eq(Ap.pack(GlobalGNB_ID.write(v, 0n, [])), bs)))
-
-def GlobalGNB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  GlobalGNB_ID.roundtrips.end(bs, GlobalGNB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NgENB-ID-macroNgENB-ID ::= ABits
 def NgENB_ID_macroNgENB_ID() -> Data:
   Ap.Bits()
@@ -1164,18 +972,6 @@ def NgENB_ID_macroNgENB_ID.after(+v: NgENB_ID_macroNgENB_ID(), +rem: Nat) -> Nat
 
 def NgENB_ID_macroNgENB_ID.valid(+v: NgENB_ID_macroNgENB_ID()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 20n)
-
-def NgENB_ID_macroNgENB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NgENB_ID_macroNgENB_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NgENB_ID_macroNgENB_ID.valid(v), B.bytes_eq(Ap.pack(NgENB_ID_macroNgENB_ID.write(v, 0n, [])), bs)))
-
-def NgENB_ID_macroNgENB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  NgENB_ID_macroNgENB_ID.roundtrips.end(bs, NgENB_ID_macroNgENB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # NgENB-ID-shortMacroNgENB-ID ::= ABits
 def NgENB_ID_shortMacroNgENB_ID() -> Data:
@@ -1193,18 +989,6 @@ def NgENB_ID_shortMacroNgENB_ID.after(+v: NgENB_ID_shortMacroNgENB_ID(), +rem: N
 def NgENB_ID_shortMacroNgENB_ID.valid(+v: NgENB_ID_shortMacroNgENB_ID()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 18n)
 
-def NgENB_ID_shortMacroNgENB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NgENB_ID_shortMacroNgENB_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NgENB_ID_shortMacroNgENB_ID.valid(v), B.bytes_eq(Ap.pack(NgENB_ID_shortMacroNgENB_ID.write(v, 0n, [])), bs)))
-
-def NgENB_ID_shortMacroNgENB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  NgENB_ID_shortMacroNgENB_ID.roundtrips.end(bs, NgENB_ID_shortMacroNgENB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NgENB-ID-longMacroNgENB-ID ::= ABits
 def NgENB_ID_longMacroNgENB_ID() -> Data:
   Ap.Bits()
@@ -1220,18 +1004,6 @@ def NgENB_ID_longMacroNgENB_ID.after(+v: NgENB_ID_longMacroNgENB_ID(), +rem: Nat
 
 def NgENB_ID_longMacroNgENB_ID.valid(+v: NgENB_ID_longMacroNgENB_ID()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 21n)
-
-def NgENB_ID_longMacroNgENB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NgENB_ID_longMacroNgENB_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NgENB_ID_longMacroNgENB_ID.valid(v), B.bytes_eq(Ap.pack(NgENB_ID_longMacroNgENB_ID.write(v, 0n, [])), bs)))
-
-def NgENB_ID_longMacroNgENB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  NgENB_ID_longMacroNgENB_ID.roundtrips.end(bs, NgENB_ID_longMacroNgENB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # NgENB-ID ::= CHOICE { macroNgENB-ID BIT STRING (SIZE(20)), shortMacroNgENB-ID BIT STRING (SIZE(18)), longMacroNgENB-ID BIT STRING (SIZE(21)), choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type NgENB_ID is Data:
@@ -1323,18 +1095,6 @@ def NgENB_ID.after(x: NgENB_ID, +rem: Nat) -> Nat:
       NgENB_ID_longMacroNgENB_ID.after(v, Ap.Size.after(False{}, 2n, rem))
     case NgENB_ID_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
-
-def NgENB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NgENB_ID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NgENB_ID.valid(v), B.bytes_eq(Ap.pack(NgENB_ID.write(v, 0n, [])), bs)))
-
-def NgENB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  NgENB_ID.roundtrips.end(bs, NgENB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # GlobalNgENB-ID ::= SEQUENCE { pLMNIdentity PLMNIdentity, ngENB-ID NgENB-ID, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type GlobalNgENB_ID is Data:
@@ -1443,18 +1203,6 @@ def GlobalNgENB_ID.after(x: GlobalNgENB_ID, +rem: Nat) -> Nat:
       +r3 = GlobalNgENB_ID.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def GlobalNgENB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GlobalNgENB_ID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GlobalNgENB_ID.valid(v), B.bytes_eq(Ap.pack(GlobalNgENB_ID.write(v, 0n, [])), bs)))
-
-def GlobalNgENB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  GlobalNgENB_ID.roundtrips.end(bs, GlobalNgENB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # N3IWF-ID-n3IWF-ID ::= Bits
 def N3IWF_ID_n3IWF_ID() -> Data:
   Ap.Bits()
@@ -1470,18 +1218,6 @@ def N3IWF_ID_n3IWF_ID.after(+v: N3IWF_ID_n3IWF_ID(), +rem: Nat) -> Nat:
 
 def N3IWF_ID_n3IWF_ID.valid(+v: N3IWF_ID_n3IWF_ID()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 16n)
-
-def N3IWF_ID_n3IWF_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(N3IWF_ID_n3IWF_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(N3IWF_ID_n3IWF_ID.valid(v), B.bytes_eq(Ap.pack(N3IWF_ID_n3IWF_ID.write(v, 0n, [])), bs)))
-
-def N3IWF_ID_n3IWF_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  N3IWF_ID_n3IWF_ID.roundtrips.end(bs, N3IWF_ID_n3IWF_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # N3IWF-ID ::= CHOICE { n3IWF-ID BIT STRING (SIZE(16)), choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type N3IWF_ID is Data:
@@ -1541,18 +1277,6 @@ def N3IWF_ID.after(x: N3IWF_ID, +rem: Nat) -> Nat:
       N3IWF_ID_n3IWF_ID.after(v, Ap.Size.after(False{}, 1n, rem))
     case N3IWF_ID_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
-
-def N3IWF_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(N3IWF_ID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(N3IWF_ID.valid(v), B.bytes_eq(Ap.pack(N3IWF_ID.write(v, 0n, [])), bs)))
-
-def N3IWF_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  N3IWF_ID.roundtrips.end(bs, N3IWF_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # GlobalN3IWF-ID ::= SEQUENCE { pLMNIdentity PLMNIdentity, n3IWF-ID N3IWF-ID, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type GlobalN3IWF_ID is Data:
@@ -1661,18 +1385,6 @@ def GlobalN3IWF_ID.after(x: GlobalN3IWF_ID, +rem: Nat) -> Nat:
       +r3 = GlobalN3IWF_ID.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def GlobalN3IWF_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GlobalN3IWF_ID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GlobalN3IWF_ID.valid(v), B.bytes_eq(Ap.pack(GlobalN3IWF_ID.write(v, 0n, [])), bs)))
-
-def GlobalN3IWF_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  GlobalN3IWF_ID.roundtrips.end(bs, GlobalN3IWF_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # GlobalRANNodeID ::= CHOICE { globalGNB-ID GlobalGNB-ID, globalNgENB-ID GlobalNgENB-ID, globalN3IWF-ID GlobalN3IWF-ID, choice-Extensions <ProtocolIE-SingleContainer: 3 known rows> }
 type GlobalRANNodeID is Data:
   GlobalRANNodeID_globalGNB_ID{v: GlobalGNB_ID}
@@ -1764,18 +1476,6 @@ def GlobalRANNodeID.after(x: GlobalRANNodeID, +rem: Nat) -> Nat:
     case GlobalRANNodeID_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
-def GlobalRANNodeID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GlobalRANNodeID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GlobalRANNodeID.valid(v), B.bytes_eq(Ap.pack(GlobalRANNodeID.write(v, 0n, [])), bs)))
-
-def GlobalRANNodeID.roundtrips(+bs: B.Bytes()) -> Bool:
-  GlobalRANNodeID.roundtrips.end(bs, GlobalRANNodeID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NGSetupResponse: a protocol IE container (TS 38.413 §9.2).
 def NGSetupResponse() -> Data:
   List<&2, Fr.Ie>
@@ -1802,18 +1502,6 @@ def NGSetupResponse.after(+v: NGSetupResponse(), +rem: Nat) -> Nat:
 
 def NGSetupResponse.valid(+v: NGSetupResponse()) -> Bool:
   Fr.Ies.valid(v)
-
-def NGSetupResponse.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NGSetupResponse())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NGSetupResponse.valid(v), B.bytes_eq(Ap.pack(NGSetupResponse.write(v, 0n, [])), bs)))
-
-def NGSetupResponse.roundtrips(+bs: B.Bytes()) -> Bool:
-  NGSetupResponse.roundtrips.end(bs, NGSetupResponse.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PLMNSupportItem ::= SEQUENCE { pLMNIdentity PLMNIdentity, sliceSupportList SliceSupportList, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 3 known rows> OPTIONAL, ... }
 type PLMNSupportItem is Data:
@@ -1922,18 +1610,6 @@ def PLMNSupportItem.after(x: PLMNSupportItem, +rem: Nat) -> Nat:
       +r3 = PLMNSupportItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PLMNSupportItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PLMNSupportItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PLMNSupportItem.valid(v), B.bytes_eq(Ap.pack(PLMNSupportItem.write(v, 0n, [])), bs)))
-
-def PLMNSupportItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  PLMNSupportItem.roundtrips.end(bs, PLMNSupportItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PLMNSupportList ::= SEQUENCE (SIZE(1..12)) OF PLMNSupportItem
 def PLMNSupportList() -> Data:
   List<&2, PLMNSupportItem>
@@ -1999,18 +1675,6 @@ def PLMNSupportList.items_after(xs: PLMNSupportList(), +rem: Nat) -> Nat:
 def PLMNSupportList.after(+xs: PLMNSupportList(), +rem: Nat) -> Nat:
   PLMNSupportList.items_after(xs, Ap.Size.after(False{}, 4n, rem))
 
-def PLMNSupportList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PLMNSupportList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PLMNSupportList.valid(v), B.bytes_eq(Ap.pack(PLMNSupportList.write(v, 0n, [])), bs)))
-
-def PLMNSupportList.roundtrips(+bs: B.Bytes()) -> Bool:
-  PLMNSupportList.roundtrips.end(bs, PLMNSupportList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # RelativeAMFCapacity ::= INTEGER (0..255)
 def RelativeAMFCapacity() -> Data:
   U32
@@ -2026,18 +1690,6 @@ def RelativeAMFCapacity.after(+v: RelativeAMFCapacity(), +rem: Nat) -> Nat:
 
 def RelativeAMFCapacity.valid(+v: RelativeAMFCapacity()) -> Bool:
   Ap.Int.valid(8n, 255, v)
-
-def RelativeAMFCapacity.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(RelativeAMFCapacity())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(RelativeAMFCapacity.valid(v), B.bytes_eq(Ap.pack(RelativeAMFCapacity.write(v, 0n, [])), bs)))
-
-def RelativeAMFCapacity.roundtrips(+bs: B.Bytes()) -> Bool:
-  RelativeAMFCapacity.roundtrips.end(bs, RelativeAMFCapacity.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # AMFRegionID ::= BIT STRING (SIZE(8))
 def AMFRegionID() -> Data:
@@ -2055,18 +1707,6 @@ def AMFRegionID.after(+v: AMFRegionID(), +rem: Nat) -> Nat:
 def AMFRegionID.valid(+v: AMFRegionID()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 8n)
 
-def AMFRegionID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AMFRegionID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AMFRegionID.valid(v), B.bytes_eq(Ap.pack(AMFRegionID.write(v, 0n, [])), bs)))
-
-def AMFRegionID.roundtrips(+bs: B.Bytes()) -> Bool:
-  AMFRegionID.roundtrips.end(bs, AMFRegionID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AMFSetID ::= BIT STRING (SIZE(10))
 def AMFSetID() -> Data:
   Ap.Bits()
@@ -2083,18 +1723,6 @@ def AMFSetID.after(+v: AMFSetID(), +rem: Nat) -> Nat:
 def AMFSetID.valid(+v: AMFSetID()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 10n)
 
-def AMFSetID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AMFSetID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AMFSetID.valid(v), B.bytes_eq(Ap.pack(AMFSetID.write(v, 0n, [])), bs)))
-
-def AMFSetID.roundtrips(+bs: B.Bytes()) -> Bool:
-  AMFSetID.roundtrips.end(bs, AMFSetID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AMFPointer ::= BIT STRING (SIZE(6))
 def AMFPointer() -> Data:
   Ap.Bits()
@@ -2110,18 +1738,6 @@ def AMFPointer.after(+v: AMFPointer(), +rem: Nat) -> Nat:
 
 def AMFPointer.valid(+v: AMFPointer()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 6n)
-
-def AMFPointer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AMFPointer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AMFPointer.valid(v), B.bytes_eq(Ap.pack(AMFPointer.write(v, 0n, [])), bs)))
-
-def AMFPointer.roundtrips(+bs: B.Bytes()) -> Bool:
-  AMFPointer.roundtrips.end(bs, AMFPointer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # GUAMI ::= SEQUENCE { pLMNIdentity PLMNIdentity, aMFRegionID AMFRegionID, aMFSetID AMFSetID, aMFPointer AMFPointer, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type GUAMI is Data:
@@ -2248,18 +1864,6 @@ def GUAMI.after(x: GUAMI, +rem: Nat) -> Nat:
       +r5 = GUAMI.a_iE_Extensions(iE_Extensions, r4)
       r5
 
-def GUAMI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GUAMI)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GUAMI.valid(v), B.bytes_eq(Ap.pack(GUAMI.write(v, 0n, [])), bs)))
-
-def GUAMI.roundtrips(+bs: B.Bytes()) -> Bool:
-  GUAMI.roundtrips.end(bs, GUAMI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AMFName ::= PrintableString (SIZE(1..150, ...))
 def AMFName() -> Data:
   B.Bytes()
@@ -2275,18 +1879,6 @@ def AMFName.after(+v: AMFName(), +rem: Nat) -> Nat:
 
 def AMFName.valid(+v: AMFName()) -> Bool:
   Ap.XStr.valid(1n, 149n, v)
-
-def AMFName.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AMFName())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AMFName.valid(v), B.bytes_eq(Ap.pack(AMFName.write(v, 0n, [])), bs)))
-
-def AMFName.roundtrips(+bs: B.Bytes()) -> Bool:
-  AMFName.roundtrips.end(bs, AMFName.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # ServedGUAMIItem ::= SEQUENCE { gUAMI GUAMI, backupAMFName AMFName OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type ServedGUAMIItem is Data:
@@ -2430,18 +2022,6 @@ def ServedGUAMIItem.after(x: ServedGUAMIItem, +rem: Nat) -> Nat:
       +r3 = ServedGUAMIItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def ServedGUAMIItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ServedGUAMIItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ServedGUAMIItem.valid(v), B.bytes_eq(Ap.pack(ServedGUAMIItem.write(v, 0n, [])), bs)))
-
-def ServedGUAMIItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  ServedGUAMIItem.roundtrips.end(bs, ServedGUAMIItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # ServedGUAMIList ::= SEQUENCE (SIZE(1..256)) OF ServedGUAMIItem
 def ServedGUAMIList() -> Data:
   List<&2, ServedGUAMIItem>
@@ -2507,18 +2087,6 @@ def ServedGUAMIList.items_after(xs: ServedGUAMIList(), +rem: Nat) -> Nat:
 def ServedGUAMIList.after(+xs: ServedGUAMIList(), +rem: Nat) -> Nat:
   ServedGUAMIList.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def ServedGUAMIList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ServedGUAMIList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ServedGUAMIList.valid(v), B.bytes_eq(Ap.pack(ServedGUAMIList.write(v, 0n, [])), bs)))
-
-def ServedGUAMIList.roundtrips(+bs: B.Bytes()) -> Bool:
-  ServedGUAMIList.roundtrips.end(bs, ServedGUAMIList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NGSetupFailure: a protocol IE container (TS 38.413 §9.2).
 def NGSetupFailure() -> Data:
   List<&2, Fr.Ie>
@@ -2545,18 +2113,6 @@ def NGSetupFailure.after(+v: NGSetupFailure(), +rem: Nat) -> Nat:
 
 def NGSetupFailure.valid(+v: NGSetupFailure()) -> Bool:
   Fr.Ies.valid(v)
-
-def NGSetupFailure.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NGSetupFailure())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NGSetupFailure.valid(v), B.bytes_eq(Ap.pack(NGSetupFailure.write(v, 0n, [])), bs)))
-
-def NGSetupFailure.roundtrips(+bs: B.Bytes()) -> Bool:
-  NGSetupFailure.roundtrips.end(bs, NGSetupFailure.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # CauseRadioNetwork ::= ENUMERATED { unspecified, txnrelocoverall-expiry, successful-handover, release-due-to-ngran-generated-reason, release-due-to-5gc-generated-reason, handover-cancelled, partial-handover, ho-failure-in-target-5GC-ngran-node-or-target-system, ho-target-not-allowed, tngrelocoverall-expiry, tngrelocprep-expiry, cell-not-available, unknown-targetID, no-radio-resources-available-in-target-cell, unknown-local-UE-NGAP-ID, inconsistent-remote-UE-NGAP-ID, handover-desirable-for-radio-reason, time-critical-handover, resource-optimisation-handover, reduce-load-in-serving-cell, user-inactivity, radio-connection-with-ue-lost, radio-resources-not-available, invalid-qos-combination, failure-in-radio-interface-procedure, interaction-with-other-procedure, unknown-PDU-session-ID, unkown-qos-flow-ID, multiple-PDU-session-ID-instances, multiple-qos-flow-ID-instances, encryption-and-or-integrity-protection-algorithms-not-supported, ng-intra-system-handover-triggered, ng-inter-system-handover-triggered, xn-handover-triggered, not-supported-5QI-value, ue-context-transfer, ims-voice-eps-fallback-or-rat-fallback-triggered, up-integrity-protection-not-possible, up-confidentiality-protection-not-possible, slice-not-supported, ue-in-rrc-inactive-state-not-reachable, redirection, resources-not-available-for-the-slice, ue-max-integrity-protected-data-rate-reason, release-due-to-cn-detected-mobility, ..., n26-interface-not-available, release-due-to-pre-emption, multiple-location-reporting-reference-ID-instances, rsn-not-available-for-the-up, npn-access-denied, cag-only-access-denied, insufficient-ue-capabilities, redcap-ue-not-supported, unknown-MBS-Session-ID, indicated-MBS-session-area-information-not-served-by-the-gNB, inconsistent-slice-info-for-the-session, misaligned-association-for-multicast-unicast }
 def CauseRadioNetwork() -> Data:
@@ -2745,18 +2301,6 @@ def CauseRadioNetwork.after(+v: CauseRadioNetwork(), +rem: Nat) -> Nat:
 def CauseRadioNetwork.valid(+v: CauseRadioNetwork()) -> Bool:
   Ap.Enum.valid(6n, 44, True{}, v)
 
-def CauseRadioNetwork.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CauseRadioNetwork())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CauseRadioNetwork.valid(v), B.bytes_eq(Ap.pack(CauseRadioNetwork.write(v, 0n, [])), bs)))
-
-def CauseRadioNetwork.roundtrips(+bs: B.Bytes()) -> Bool:
-  CauseRadioNetwork.roundtrips.end(bs, CauseRadioNetwork.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # CauseTransport ::= ENUMERATED { transport-resource-unavailable, unspecified, ... }
 def CauseTransport() -> Data:
   Ap.Enum
@@ -2778,18 +2322,6 @@ def CauseTransport.after(+v: CauseTransport(), +rem: Nat) -> Nat:
 
 def CauseTransport.valid(+v: CauseTransport()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
-
-def CauseTransport.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CauseTransport())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CauseTransport.valid(v), B.bytes_eq(Ap.pack(CauseTransport.write(v, 0n, [])), bs)))
-
-def CauseTransport.roundtrips(+bs: B.Bytes()) -> Bool:
-  CauseTransport.roundtrips.end(bs, CauseTransport.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # CauseNas ::= ENUMERATED { normal-release, authentication-failure, deregister, unspecified, ..., uE-not-in-PLMN-serving-area }
 def CauseNas() -> Data:
@@ -2821,18 +2353,6 @@ def CauseNas.after(+v: CauseNas(), +rem: Nat) -> Nat:
 
 def CauseNas.valid(+v: CauseNas()) -> Bool:
   Ap.Enum.valid(2n, 3, True{}, v)
-
-def CauseNas.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CauseNas())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CauseNas.valid(v), B.bytes_eq(Ap.pack(CauseNas.write(v, 0n, [])), bs)))
-
-def CauseNas.roundtrips(+bs: B.Bytes()) -> Bool:
-  CauseNas.roundtrips.end(bs, CauseNas.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # CauseProtocol ::= ENUMERATED { transfer-syntax-error, abstract-syntax-error-reject, abstract-syntax-error-ignore-and-notify, message-not-compatible-with-receiver-state, semantic-error, abstract-syntax-error-falsely-constructed-message, unspecified, ... }
 def CauseProtocol() -> Data:
@@ -2871,18 +2391,6 @@ def CauseProtocol.after(+v: CauseProtocol(), +rem: Nat) -> Nat:
 def CauseProtocol.valid(+v: CauseProtocol()) -> Bool:
   Ap.Enum.valid(3n, 6, True{}, v)
 
-def CauseProtocol.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CauseProtocol())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CauseProtocol.valid(v), B.bytes_eq(Ap.pack(CauseProtocol.write(v, 0n, [])), bs)))
-
-def CauseProtocol.roundtrips(+bs: B.Bytes()) -> Bool:
-  CauseProtocol.roundtrips.end(bs, CauseProtocol.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # CauseMisc ::= ENUMERATED { control-processing-overload, not-enough-user-plane-processing-resources, hardware-failure, om-intervention, unknown-PLMN-or-SNPN, unspecified, ... }
 def CauseMisc() -> Data:
   Ap.Enum
@@ -2916,18 +2424,6 @@ def CauseMisc.after(+v: CauseMisc(), +rem: Nat) -> Nat:
 
 def CauseMisc.valid(+v: CauseMisc()) -> Bool:
   Ap.Enum.valid(3n, 5, True{}, v)
-
-def CauseMisc.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CauseMisc())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CauseMisc.valid(v), B.bytes_eq(Ap.pack(CauseMisc.write(v, 0n, [])), bs)))
-
-def CauseMisc.roundtrips(+bs: B.Bytes()) -> Bool:
-  CauseMisc.roundtrips.end(bs, CauseMisc.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # Cause ::= CHOICE { radioNetwork CauseRadioNetwork, transport CauseTransport, nas CauseNas, protocol CauseProtocol, misc CauseMisc, choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type Cause is Data:
@@ -3052,18 +2548,6 @@ def Cause.after(x: Cause, +rem: Nat) -> Nat:
     case Cause_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 3n, rem))
 
-def Cause.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Cause)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(Cause.valid(v), B.bytes_eq(Ap.pack(Cause.write(v, 0n, [])), bs)))
-
-def Cause.roundtrips(+bs: B.Bytes()) -> Bool:
-  Cause.roundtrips.end(bs, Cause.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # InitialUEMessage: a protocol IE container (TS 38.413 §9.2).
 def InitialUEMessage() -> Data:
   List<&2, Fr.Ie>
@@ -3091,18 +2575,6 @@ def InitialUEMessage.after(+v: InitialUEMessage(), +rem: Nat) -> Nat:
 def InitialUEMessage.valid(+v: InitialUEMessage()) -> Bool:
   Fr.Ies.valid(v)
 
-def InitialUEMessage.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(InitialUEMessage())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(InitialUEMessage.valid(v), B.bytes_eq(Ap.pack(InitialUEMessage.write(v, 0n, [])), bs)))
-
-def InitialUEMessage.roundtrips(+bs: B.Bytes()) -> Bool:
-  InitialUEMessage.roundtrips.end(bs, InitialUEMessage.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # CAG-ID ::= BIT STRING (SIZE(32))
 def CAG_ID() -> Data:
   Ap.Bits()
@@ -3118,18 +2590,6 @@ def CAG_ID.after(+v: CAG_ID(), +rem: Nat) -> Nat:
 
 def CAG_ID.valid(+v: CAG_ID()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 32n)
-
-def CAG_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CAG_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CAG_ID.valid(v), B.bytes_eq(Ap.pack(CAG_ID.write(v, 0n, [])), bs)))
-
-def CAG_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  CAG_ID.roundtrips.end(bs, CAG_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # CellCAGList ::= SEQUENCE (SIZE(1..64)) OF CAG-ID
 def CellCAGList() -> Data:
@@ -3196,18 +2656,6 @@ def CellCAGList.items_after(xs: CellCAGList(), +rem: Nat) -> Nat:
 def CellCAGList.after(+xs: CellCAGList(), +rem: Nat) -> Nat:
   CellCAGList.items_after(xs, Ap.Size.after(False{}, 6n, rem))
 
-def CellCAGList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CellCAGList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CellCAGList.valid(v), B.bytes_eq(Ap.pack(CellCAGList.write(v, 0n, [])), bs)))
-
-def CellCAGList.roundtrips(+bs: B.Bytes()) -> Bool:
-  CellCAGList.roundtrips.end(bs, CellCAGList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NPN-AccessInformation ::= CHOICE { pNI-NPN-Access-Information CellCAGList, choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type NPN_AccessInformation is Data:
   NPN_AccessInformation_pNI_NPN_Access_Information{v: CellCAGList()}
@@ -3267,18 +2715,6 @@ def NPN_AccessInformation.after(x: NPN_AccessInformation, +rem: Nat) -> Nat:
     case NPN_AccessInformation_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
 
-def NPN_AccessInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NPN_AccessInformation)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NPN_AccessInformation.valid(v), B.bytes_eq(Ap.pack(NPN_AccessInformation.write(v, 0n, [])), bs)))
-
-def NPN_AccessInformation.roundtrips(+bs: B.Bytes()) -> Bool:
-  NPN_AccessInformation.roundtrips.end(bs, NPN_AccessInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # CEmodeBSupport-Indicator ::= ENUMERATED { supported, ... }
 def CEmodeBSupport_Indicator() -> Data:
   Ap.Enum
@@ -3298,18 +2734,6 @@ def CEmodeBSupport_Indicator.after(+v: CEmodeBSupport_Indicator(), +rem: Nat) ->
 def CEmodeBSupport_Indicator.valid(+v: CEmodeBSupport_Indicator()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
 
-def CEmodeBSupport_Indicator.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CEmodeBSupport_Indicator())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CEmodeBSupport_Indicator.valid(v), B.bytes_eq(Ap.pack(CEmodeBSupport_Indicator.write(v, 0n, [])), bs)))
-
-def CEmodeBSupport_Indicator.roundtrips(+bs: B.Bytes()) -> Bool:
-  CEmodeBSupport_Indicator.roundtrips.end(bs, CEmodeBSupport_Indicator.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # IABNodeIndication ::= ENUMERATED { true, ... }
 def IABNodeIndication() -> Data:
   Ap.Enum
@@ -3328,18 +2752,6 @@ def IABNodeIndication.after(+v: IABNodeIndication(), +rem: Nat) -> Nat:
 
 def IABNodeIndication.valid(+v: IABNodeIndication()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
-
-def IABNodeIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(IABNodeIndication())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(IABNodeIndication.valid(v), B.bytes_eq(Ap.pack(IABNodeIndication.write(v, 0n, [])), bs)))
-
-def IABNodeIndication.roundtrips(+bs: B.Bytes()) -> Bool:
-  IABNodeIndication.roundtrips.end(bs, IABNodeIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # AllowedNSSAI-Item ::= SEQUENCE { s-NSSAI S-NSSAI, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type AllowedNSSAI_Item is Data:
@@ -3439,18 +2851,6 @@ def AllowedNSSAI_Item.after(x: AllowedNSSAI_Item, +rem: Nat) -> Nat:
       +r2 = AllowedNSSAI_Item.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def AllowedNSSAI_Item.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AllowedNSSAI_Item)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AllowedNSSAI_Item.valid(v), B.bytes_eq(Ap.pack(AllowedNSSAI_Item.write(v, 0n, [])), bs)))
-
-def AllowedNSSAI_Item.roundtrips(+bs: B.Bytes()) -> Bool:
-  AllowedNSSAI_Item.roundtrips.end(bs, AllowedNSSAI_Item.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AllowedNSSAI ::= SEQUENCE (SIZE(1..8)) OF AllowedNSSAI-Item
 def AllowedNSSAI() -> Data:
   List<&2, AllowedNSSAI_Item>
@@ -3516,18 +2916,6 @@ def AllowedNSSAI.items_after(xs: AllowedNSSAI(), +rem: Nat) -> Nat:
 def AllowedNSSAI.after(+xs: AllowedNSSAI(), +rem: Nat) -> Nat:
   AllowedNSSAI.items_after(xs, Ap.Size.after(False{}, 3n, rem))
 
-def AllowedNSSAI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AllowedNSSAI())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AllowedNSSAI.valid(v), B.bytes_eq(Ap.pack(AllowedNSSAI.write(v, 0n, [])), bs)))
-
-def AllowedNSSAI.roundtrips(+bs: B.Bytes()) -> Bool:
-  AllowedNSSAI.roundtrips.end(bs, AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # FiveG-TMSI ::= OCTET STRING (SIZE(4))
 def FiveG_TMSI() -> Data:
   B.Bytes()
@@ -3543,18 +2931,6 @@ def FiveG_TMSI.after(+v: FiveG_TMSI(), +rem: Nat) -> Nat:
 
 def FiveG_TMSI.valid(+v: FiveG_TMSI()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 4n), B.all_bytes(v))
-
-def FiveG_TMSI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(FiveG_TMSI())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(FiveG_TMSI.valid(v), B.bytes_eq(Ap.pack(FiveG_TMSI.write(v, 0n, [])), bs)))
-
-def FiveG_TMSI.roundtrips(+bs: B.Bytes()) -> Bool:
-  FiveG_TMSI.roundtrips.end(bs, FiveG_TMSI.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # FiveG-S-TMSI ::= SEQUENCE { aMFSetID AMFSetID, aMFPointer AMFPointer, fiveG-TMSI FiveG-TMSI, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type FiveG_S_TMSI is Data:
@@ -3672,18 +3048,6 @@ def FiveG_S_TMSI.after(x: FiveG_S_TMSI, +rem: Nat) -> Nat:
       +r4 = FiveG_S_TMSI.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def FiveG_S_TMSI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(FiveG_S_TMSI)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(FiveG_S_TMSI.valid(v), B.bytes_eq(Ap.pack(FiveG_S_TMSI.write(v, 0n, [])), bs)))
-
-def FiveG_S_TMSI.roundtrips(+bs: B.Bytes()) -> Bool:
-  FiveG_S_TMSI.roundtrips.end(bs, FiveG_S_TMSI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # RRCEstablishmentCause ::= ENUMERATED { emergency, highPriorityAccess, mt-Access, mo-Signalling, mo-Data, mo-VoiceCall, mo-VideoCall, mo-SMS, mps-PriorityAccess, mcs-PriorityAccess, ..., notAvailable, mo-ExceptionData }
 def RRCEstablishmentCause() -> Data:
   Ap.Enum
@@ -3736,18 +3100,6 @@ def RRCEstablishmentCause.after(+v: RRCEstablishmentCause(), +rem: Nat) -> Nat:
 def RRCEstablishmentCause.valid(+v: RRCEstablishmentCause()) -> Bool:
   Ap.Enum.valid(4n, 9, True{}, v)
 
-def RRCEstablishmentCause.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(RRCEstablishmentCause())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(RRCEstablishmentCause.valid(v), B.bytes_eq(Ap.pack(RRCEstablishmentCause.write(v, 0n, [])), bs)))
-
-def RRCEstablishmentCause.roundtrips(+bs: B.Bytes()) -> Bool:
-  RRCEstablishmentCause.roundtrips.end(bs, RRCEstablishmentCause.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # EUTRACellIdentity ::= BIT STRING (SIZE(28))
 def EUTRACellIdentity() -> Data:
   Ap.Bits()
@@ -3763,18 +3115,6 @@ def EUTRACellIdentity.after(+v: EUTRACellIdentity(), +rem: Nat) -> Nat:
 
 def EUTRACellIdentity.valid(+v: EUTRACellIdentity()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 28n)
-
-def EUTRACellIdentity.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(EUTRACellIdentity())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(EUTRACellIdentity.valid(v), B.bytes_eq(Ap.pack(EUTRACellIdentity.write(v, 0n, [])), bs)))
-
-def EUTRACellIdentity.roundtrips(+bs: B.Bytes()) -> Bool:
-  EUTRACellIdentity.roundtrips.end(bs, EUTRACellIdentity.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # EUTRA-CGI ::= SEQUENCE { pLMNIdentity PLMNIdentity, eUTRACellIdentity EUTRACellIdentity, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type EUTRA_CGI is Data:
@@ -3883,18 +3223,6 @@ def EUTRA_CGI.after(x: EUTRA_CGI, +rem: Nat) -> Nat:
       +r3 = EUTRA_CGI.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def EUTRA_CGI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(EUTRA_CGI)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(EUTRA_CGI.valid(v), B.bytes_eq(Ap.pack(EUTRA_CGI.write(v, 0n, [])), bs)))
-
-def EUTRA_CGI.roundtrips(+bs: B.Bytes()) -> Bool:
-  EUTRA_CGI.roundtrips.end(bs, EUTRA_CGI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TAI ::= SEQUENCE { pLMNIdentity PLMNIdentity, tAC TAC, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type TAI is Data:
   TAI{pLMNIdentity: PLMNIdentity(), tAC: TAC(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -4002,18 +3330,6 @@ def TAI.after(x: TAI, +rem: Nat) -> Nat:
       +r3 = TAI.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def TAI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TAI)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TAI.valid(v), B.bytes_eq(Ap.pack(TAI.write(v, 0n, [])), bs)))
-
-def TAI.roundtrips(+bs: B.Bytes()) -> Bool:
-  TAI.roundtrips.end(bs, TAI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TimeStamp ::= OCTET STRING (SIZE(4))
 def TimeStamp() -> Data:
   B.Bytes()
@@ -4029,18 +3345,6 @@ def TimeStamp.after(+v: TimeStamp(), +rem: Nat) -> Nat:
 
 def TimeStamp.valid(+v: TimeStamp()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 4n), B.all_bytes(v))
-
-def TimeStamp.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TimeStamp())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TimeStamp.valid(v), B.bytes_eq(Ap.pack(TimeStamp.write(v, 0n, [])), bs)))
-
-def TimeStamp.roundtrips(+bs: B.Bytes()) -> Bool:
-  TimeStamp.roundtrips.end(bs, TimeStamp.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # UserLocationInformationEUTRA ::= SEQUENCE { eUTRA-CGI EUTRA-CGI, tAI TAI, timeStamp TimeStamp OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type UserLocationInformationEUTRA is Data:
@@ -4193,18 +3497,6 @@ def UserLocationInformationEUTRA.after(x: UserLocationInformationEUTRA, +rem: Na
       +r4 = UserLocationInformationEUTRA.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def UserLocationInformationEUTRA.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UserLocationInformationEUTRA)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UserLocationInformationEUTRA.valid(v), B.bytes_eq(Ap.pack(UserLocationInformationEUTRA.write(v, 0n, [])), bs)))
-
-def UserLocationInformationEUTRA.roundtrips(+bs: B.Bytes()) -> Bool:
-  UserLocationInformationEUTRA.roundtrips.end(bs, UserLocationInformationEUTRA.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NRCellIdentity ::= BIT STRING (SIZE(36))
 def NRCellIdentity() -> Data:
   Ap.Bits()
@@ -4220,18 +3512,6 @@ def NRCellIdentity.after(+v: NRCellIdentity(), +rem: Nat) -> Nat:
 
 def NRCellIdentity.valid(+v: NRCellIdentity()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 36n)
-
-def NRCellIdentity.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NRCellIdentity())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NRCellIdentity.valid(v), B.bytes_eq(Ap.pack(NRCellIdentity.write(v, 0n, [])), bs)))
-
-def NRCellIdentity.roundtrips(+bs: B.Bytes()) -> Bool:
-  NRCellIdentity.roundtrips.end(bs, NRCellIdentity.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # NR-CGI ::= SEQUENCE { pLMNIdentity PLMNIdentity, nRCellIdentity NRCellIdentity, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type NR_CGI is Data:
@@ -4339,18 +3619,6 @@ def NR_CGI.after(x: NR_CGI, +rem: Nat) -> Nat:
       +r2 = NRCellIdentity.after(nRCellIdentity, r1)
       +r3 = NR_CGI.a_iE_Extensions(iE_Extensions, r2)
       r3
-
-def NR_CGI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NR_CGI)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NR_CGI.valid(v), B.bytes_eq(Ap.pack(NR_CGI.write(v, 0n, [])), bs)))
-
-def NR_CGI.roundtrips(+bs: B.Bytes()) -> Bool:
-  NR_CGI.roundtrips.end(bs, NR_CGI.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # UserLocationInformationNR ::= SEQUENCE { nR-CGI NR-CGI, tAI TAI, timeStamp TimeStamp OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 3 known rows> OPTIONAL, ... }
 type UserLocationInformationNR is Data:
@@ -4503,18 +3771,6 @@ def UserLocationInformationNR.after(x: UserLocationInformationNR, +rem: Nat) -> 
       +r4 = UserLocationInformationNR.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def UserLocationInformationNR.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UserLocationInformationNR)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UserLocationInformationNR.valid(v), B.bytes_eq(Ap.pack(UserLocationInformationNR.write(v, 0n, [])), bs)))
-
-def UserLocationInformationNR.roundtrips(+bs: B.Bytes()) -> Bool:
-  UserLocationInformationNR.roundtrips.end(bs, UserLocationInformationNR.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TransportLayerAddress ::= BIT STRING (SIZE(1..160, ...))
 def TransportLayerAddress() -> Data:
   Ap.Bits()
@@ -4531,18 +3787,6 @@ def TransportLayerAddress.after(+v: TransportLayerAddress(), +rem: Nat) -> Nat:
 def TransportLayerAddress.valid(+v: TransportLayerAddress()) -> Bool:
   Ap.XBitStr.valid(1n, 159n, v)
 
-def TransportLayerAddress.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TransportLayerAddress())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TransportLayerAddress.valid(v), B.bytes_eq(Ap.pack(TransportLayerAddress.write(v, 0n, [])), bs)))
-
-def TransportLayerAddress.roundtrips(+bs: B.Bytes()) -> Bool:
-  TransportLayerAddress.roundtrips.end(bs, TransportLayerAddress.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PortNumber ::= OCTET STRING (SIZE(2))
 def PortNumber() -> Data:
   B.Bytes()
@@ -4558,18 +3802,6 @@ def PortNumber.after(+v: PortNumber(), +rem: Nat) -> Nat:
 
 def PortNumber.valid(+v: PortNumber()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 2n), B.all_bytes(v))
-
-def PortNumber.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PortNumber())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PortNumber.valid(v), B.bytes_eq(Ap.pack(PortNumber.write(v, 0n, [])), bs)))
-
-def PortNumber.roundtrips(+bs: B.Bytes()) -> Bool:
-  PortNumber.roundtrips.end(bs, PortNumber.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # UserLocationInformationN3IWF-with-PortNumber ::= SEQUENCE { iPAddress TransportLayerAddress, portNumber PortNumber, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type UserLocationInformationN3IWF_with_PortNumber is Data:
@@ -4678,18 +3910,6 @@ def UserLocationInformationN3IWF_with_PortNumber.after(x: UserLocationInformatio
       +r3 = UserLocationInformationN3IWF_with_PortNumber.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def UserLocationInformationN3IWF_with_PortNumber.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UserLocationInformationN3IWF_with_PortNumber)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UserLocationInformationN3IWF_with_PortNumber.valid(v), B.bytes_eq(Ap.pack(UserLocationInformationN3IWF_with_PortNumber.write(v, 0n, [])), bs)))
-
-def UserLocationInformationN3IWF_with_PortNumber.roundtrips(+bs: B.Bytes()) -> Bool:
-  UserLocationInformationN3IWF_with_PortNumber.roundtrips.end(bs, UserLocationInformationN3IWF_with_PortNumber.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UserLocationInformation ::= CHOICE { userLocationInformationEUTRA UserLocationInformationEUTRA, userLocationInformationNR UserLocationInformationNR, userLocationInformationN3IWF-with-PortNumber UserLocationInformationN3IWF-with-PortNumber, choice-Extensions <ProtocolIE-SingleContainer: 4 known rows> }
 type UserLocationInformation is Data:
   UserLocationInformation_userLocationInformationEUTRA{v: UserLocationInformationEUTRA}
@@ -4781,18 +4001,6 @@ def UserLocationInformation.after(x: UserLocationInformation, +rem: Nat) -> Nat:
     case UserLocationInformation_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
-def UserLocationInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UserLocationInformation)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UserLocationInformation.valid(v), B.bytes_eq(Ap.pack(UserLocationInformation.write(v, 0n, [])), bs)))
-
-def UserLocationInformation.roundtrips(+bs: B.Bytes()) -> Bool:
-  UserLocationInformation.roundtrips.end(bs, UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NAS-PDU ::= OCTET STRING
 def NAS_PDU() -> Data:
   B.Bytes()
@@ -4809,18 +4017,6 @@ def NAS_PDU.after(+v: NAS_PDU(), +rem: Nat) -> Nat:
 def NAS_PDU.valid(+v: NAS_PDU()) -> Bool:
   Ap.Open.valid(v)
 
-def NAS_PDU.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NAS_PDU())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NAS_PDU.valid(v), B.bytes_eq(Ap.pack(NAS_PDU.write(v, 0n, [])), bs)))
-
-def NAS_PDU.roundtrips(+bs: B.Bytes()) -> Bool:
-  NAS_PDU.roundtrips.end(bs, NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # RAN-UE-NGAP-ID ::= INTEGER (0..4294967295)
 def RAN_UE_NGAP_ID() -> Data:
   B.Bytes()
@@ -4836,18 +4032,6 @@ def RAN_UE_NGAP_ID.after(+v: RAN_UE_NGAP_ID(), +rem: Nat) -> Nat:
 
 def RAN_UE_NGAP_ID.valid(+v: RAN_UE_NGAP_ID()) -> Bool:
   Ap.Big.valid(3n, v)
-
-def RAN_UE_NGAP_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(RAN_UE_NGAP_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(RAN_UE_NGAP_ID.valid(v), B.bytes_eq(Ap.pack(RAN_UE_NGAP_ID.write(v, 0n, [])), bs)))
-
-def RAN_UE_NGAP_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  RAN_UE_NGAP_ID.roundtrips.end(bs, RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # DownlinkNASTransport: a protocol IE container (TS 38.413 §9.2).
 def DownlinkNASTransport() -> Data:
@@ -4876,18 +4060,6 @@ def DownlinkNASTransport.after(+v: DownlinkNASTransport(), +rem: Nat) -> Nat:
 def DownlinkNASTransport.valid(+v: DownlinkNASTransport()) -> Bool:
   Fr.Ies.valid(v)
 
-def DownlinkNASTransport.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DownlinkNASTransport())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DownlinkNASTransport.valid(v), B.bytes_eq(Ap.pack(DownlinkNASTransport.write(v, 0n, [])), bs)))
-
-def DownlinkNASTransport.roundtrips(+bs: B.Bytes()) -> Bool:
-  DownlinkNASTransport.roundtrips.end(bs, DownlinkNASTransport.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # BitRate ::= INTEGER (0..4000000000000, ...)
 def BitRate() -> Data:
   Ap.XBig
@@ -4903,18 +4075,6 @@ def BitRate.after(+v: BitRate(), +rem: Nat) -> Nat:
 
 def BitRate.valid(+v: BitRate()) -> Bool:
   Ap.XBig.valid(5n, v)
-
-def BitRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(BitRate())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(BitRate.valid(v), B.bytes_eq(Ap.pack(BitRate.write(v, 0n, [])), bs)))
-
-def BitRate.roundtrips(+bs: B.Bytes()) -> Bool:
-  BitRate.roundtrips.end(bs, BitRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # UEAggregateMaximumBitRate ::= SEQUENCE { uEAggregateMaximumBitRateDL BitRate, uEAggregateMaximumBitRateUL BitRate, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type UEAggregateMaximumBitRate is Data:
@@ -5023,18 +4183,6 @@ def UEAggregateMaximumBitRate.after(x: UEAggregateMaximumBitRate, +rem: Nat) -> 
       +r3 = UEAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def UEAggregateMaximumBitRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UEAggregateMaximumBitRate)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UEAggregateMaximumBitRate.valid(v), B.bytes_eq(Ap.pack(UEAggregateMaximumBitRate.write(v, 0n, [])), bs)))
-
-def UEAggregateMaximumBitRate.roundtrips(+bs: B.Bytes()) -> Bool:
-  UEAggregateMaximumBitRate.roundtrips.end(bs, UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AMF-UE-NGAP-ID ::= INTEGER (0..1099511627775)
 def AMF_UE_NGAP_ID() -> Data:
   B.Bytes()
@@ -5050,18 +4198,6 @@ def AMF_UE_NGAP_ID.after(+v: AMF_UE_NGAP_ID(), +rem: Nat) -> Nat:
 
 def AMF_UE_NGAP_ID.valid(+v: AMF_UE_NGAP_ID()) -> Bool:
   Ap.Big.valid(4n, v)
-
-def AMF_UE_NGAP_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AMF_UE_NGAP_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AMF_UE_NGAP_ID.valid(v), B.bytes_eq(Ap.pack(AMF_UE_NGAP_ID.write(v, 0n, [])), bs)))
-
-def AMF_UE_NGAP_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  AMF_UE_NGAP_ID.roundtrips.end(bs, AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # UplinkNASTransport: a protocol IE container (TS 38.413 §9.2).
 def UplinkNASTransport() -> Data:
@@ -5090,18 +4226,6 @@ def UplinkNASTransport.after(+v: UplinkNASTransport(), +rem: Nat) -> Nat:
 def UplinkNASTransport.valid(+v: UplinkNASTransport()) -> Bool:
   Fr.Ies.valid(v)
 
-def UplinkNASTransport.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UplinkNASTransport())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UplinkNASTransport.valid(v), B.bytes_eq(Ap.pack(UplinkNASTransport.write(v, 0n, [])), bs)))
-
-def UplinkNASTransport.roundtrips(+bs: B.Bytes()) -> Bool:
-  UplinkNASTransport.roundtrips.end(bs, UplinkNASTransport.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # InitialContextSetupRequest: a protocol IE container (TS 38.413 §9.2).
 def InitialContextSetupRequest() -> Data:
   List<&2, Fr.Ie>
@@ -5129,18 +4253,6 @@ def InitialContextSetupRequest.after(+v: InitialContextSetupRequest(), +rem: Nat
 def InitialContextSetupRequest.valid(+v: InitialContextSetupRequest()) -> Bool:
   Fr.Ies.valid(v)
 
-def InitialContextSetupRequest.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(InitialContextSetupRequest())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(InitialContextSetupRequest.valid(v), B.bytes_eq(Ap.pack(InitialContextSetupRequest.write(v, 0n, [])), bs)))
-
-def InitialContextSetupRequest.roundtrips(+bs: B.Bytes()) -> Bool:
-  InitialContextSetupRequest.roundtrips.end(bs, InitialContextSetupRequest.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # SecurityKey ::= BIT STRING (SIZE(256))
 def SecurityKey() -> Data:
   Ap.Bits()
@@ -5156,18 +4268,6 @@ def SecurityKey.after(+v: SecurityKey(), +rem: Nat) -> Nat:
 
 def SecurityKey.valid(+v: SecurityKey()) -> Bool:
   Nat.is_eq(List.length(&2, Bool, v), 256n)
-
-def SecurityKey.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SecurityKey())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SecurityKey.valid(v), B.bytes_eq(Ap.pack(SecurityKey.write(v, 0n, [])), bs)))
-
-def SecurityKey.roundtrips(+bs: B.Bytes()) -> Bool:
-  SecurityKey.roundtrips.end(bs, SecurityKey.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # NRencryptionAlgorithms ::= BIT STRING (SIZE(16, ...))
 def NRencryptionAlgorithms() -> Data:
@@ -5185,18 +4285,6 @@ def NRencryptionAlgorithms.after(+v: NRencryptionAlgorithms(), +rem: Nat) -> Nat
 def NRencryptionAlgorithms.valid(+v: NRencryptionAlgorithms()) -> Bool:
   Ap.XBits.valid(16n, v)
 
-def NRencryptionAlgorithms.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NRencryptionAlgorithms())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NRencryptionAlgorithms.valid(v), B.bytes_eq(Ap.pack(NRencryptionAlgorithms.write(v, 0n, [])), bs)))
-
-def NRencryptionAlgorithms.roundtrips(+bs: B.Bytes()) -> Bool:
-  NRencryptionAlgorithms.roundtrips.end(bs, NRencryptionAlgorithms.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NRintegrityProtectionAlgorithms ::= BIT STRING (SIZE(16, ...))
 def NRintegrityProtectionAlgorithms() -> Data:
   Ap.Bits()
@@ -5212,18 +4300,6 @@ def NRintegrityProtectionAlgorithms.after(+v: NRintegrityProtectionAlgorithms(),
 
 def NRintegrityProtectionAlgorithms.valid(+v: NRintegrityProtectionAlgorithms()) -> Bool:
   Ap.XBits.valid(16n, v)
-
-def NRintegrityProtectionAlgorithms.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NRintegrityProtectionAlgorithms())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NRintegrityProtectionAlgorithms.valid(v), B.bytes_eq(Ap.pack(NRintegrityProtectionAlgorithms.write(v, 0n, [])), bs)))
-
-def NRintegrityProtectionAlgorithms.roundtrips(+bs: B.Bytes()) -> Bool:
-  NRintegrityProtectionAlgorithms.roundtrips.end(bs, NRintegrityProtectionAlgorithms.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # EUTRAencryptionAlgorithms ::= BIT STRING (SIZE(16, ...))
 def EUTRAencryptionAlgorithms() -> Data:
@@ -5241,18 +4317,6 @@ def EUTRAencryptionAlgorithms.after(+v: EUTRAencryptionAlgorithms(), +rem: Nat) 
 def EUTRAencryptionAlgorithms.valid(+v: EUTRAencryptionAlgorithms()) -> Bool:
   Ap.XBits.valid(16n, v)
 
-def EUTRAencryptionAlgorithms.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(EUTRAencryptionAlgorithms())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(EUTRAencryptionAlgorithms.valid(v), B.bytes_eq(Ap.pack(EUTRAencryptionAlgorithms.write(v, 0n, [])), bs)))
-
-def EUTRAencryptionAlgorithms.roundtrips(+bs: B.Bytes()) -> Bool:
-  EUTRAencryptionAlgorithms.roundtrips.end(bs, EUTRAencryptionAlgorithms.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # EUTRAintegrityProtectionAlgorithms ::= BIT STRING (SIZE(16, ...))
 def EUTRAintegrityProtectionAlgorithms() -> Data:
   Ap.Bits()
@@ -5268,18 +4332,6 @@ def EUTRAintegrityProtectionAlgorithms.after(+v: EUTRAintegrityProtectionAlgorit
 
 def EUTRAintegrityProtectionAlgorithms.valid(+v: EUTRAintegrityProtectionAlgorithms()) -> Bool:
   Ap.XBits.valid(16n, v)
-
-def EUTRAintegrityProtectionAlgorithms.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(EUTRAintegrityProtectionAlgorithms())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(EUTRAintegrityProtectionAlgorithms.valid(v), B.bytes_eq(Ap.pack(EUTRAintegrityProtectionAlgorithms.write(v, 0n, [])), bs)))
-
-def EUTRAintegrityProtectionAlgorithms.roundtrips(+bs: B.Bytes()) -> Bool:
-  EUTRAintegrityProtectionAlgorithms.roundtrips.end(bs, EUTRAintegrityProtectionAlgorithms.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # UESecurityCapabilities ::= SEQUENCE { nRencryptionAlgorithms NRencryptionAlgorithms, nRintegrityProtectionAlgorithms NRintegrityProtectionAlgorithms, eUTRAencryptionAlgorithms EUTRAencryptionAlgorithms, eUTRAintegrityProtectionAlgorithms EUTRAintegrityProtectionAlgorithms, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type UESecurityCapabilities is Data:
@@ -5406,18 +4458,6 @@ def UESecurityCapabilities.after(x: UESecurityCapabilities, +rem: Nat) -> Nat:
       +r5 = UESecurityCapabilities.a_iE_Extensions(iE_Extensions, r4)
       r5
 
-def UESecurityCapabilities.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UESecurityCapabilities)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UESecurityCapabilities.valid(v), B.bytes_eq(Ap.pack(UESecurityCapabilities.write(v, 0n, [])), bs)))
-
-def UESecurityCapabilities.roundtrips(+bs: B.Bytes()) -> Bool:
-  UESecurityCapabilities.roundtrips.end(bs, UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # InitialContextSetupResponse: a protocol IE container (TS 38.413 §9.2).
 def InitialContextSetupResponse() -> Data:
   List<&2, Fr.Ie>
@@ -5444,18 +4484,6 @@ def InitialContextSetupResponse.after(+v: InitialContextSetupResponse(), +rem: N
 
 def InitialContextSetupResponse.valid(+v: InitialContextSetupResponse()) -> Bool:
   Fr.Ies.valid(v)
-
-def InitialContextSetupResponse.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(InitialContextSetupResponse())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(InitialContextSetupResponse.valid(v), B.bytes_eq(Ap.pack(InitialContextSetupResponse.write(v, 0n, [])), bs)))
-
-def InitialContextSetupResponse.roundtrips(+bs: B.Bytes()) -> Bool:
-  InitialContextSetupResponse.roundtrips.end(bs, InitialContextSetupResponse.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # InitialContextSetupFailure: a protocol IE container (TS 38.413 §9.2).
 def InitialContextSetupFailure() -> Data:
@@ -5484,18 +4512,6 @@ def InitialContextSetupFailure.after(+v: InitialContextSetupFailure(), +rem: Nat
 def InitialContextSetupFailure.valid(+v: InitialContextSetupFailure()) -> Bool:
   Fr.Ies.valid(v)
 
-def InitialContextSetupFailure.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(InitialContextSetupFailure())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(InitialContextSetupFailure.valid(v), B.bytes_eq(Ap.pack(InitialContextSetupFailure.write(v, 0n, [])), bs)))
-
-def InitialContextSetupFailure.roundtrips(+bs: B.Bytes()) -> Bool:
-  InitialContextSetupFailure.roundtrips.end(bs, InitialContextSetupFailure.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UEContextReleaseRequest: a protocol IE container (TS 38.413 §9.2).
 def UEContextReleaseRequest() -> Data:
   List<&2, Fr.Ie>
@@ -5523,18 +4539,6 @@ def UEContextReleaseRequest.after(+v: UEContextReleaseRequest(), +rem: Nat) -> N
 def UEContextReleaseRequest.valid(+v: UEContextReleaseRequest()) -> Bool:
   Fr.Ies.valid(v)
 
-def UEContextReleaseRequest.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UEContextReleaseRequest())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UEContextReleaseRequest.valid(v), B.bytes_eq(Ap.pack(UEContextReleaseRequest.write(v, 0n, [])), bs)))
-
-def UEContextReleaseRequest.roundtrips(+bs: B.Bytes()) -> Bool:
-  UEContextReleaseRequest.roundtrips.end(bs, UEContextReleaseRequest.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionID ::= INTEGER (0..255)
 def PDUSessionID() -> Data:
   U32
@@ -5550,18 +4554,6 @@ def PDUSessionID.after(+v: PDUSessionID(), +rem: Nat) -> Nat:
 
 def PDUSessionID.valid(+v: PDUSessionID()) -> Bool:
   Ap.Int.valid(8n, 255, v)
-
-def PDUSessionID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionID.valid(v), B.bytes_eq(Ap.pack(PDUSessionID.write(v, 0n, [])), bs)))
-
-def PDUSessionID.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionID.roundtrips.end(bs, PDUSessionID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceItemCxtRelReq ::= SEQUENCE { pDUSessionID PDUSessionID, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceItemCxtRelReq is Data:
@@ -5661,18 +4653,6 @@ def PDUSessionResourceItemCxtRelReq.after(x: PDUSessionResourceItemCxtRelReq, +r
       +r2 = PDUSessionResourceItemCxtRelReq.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def PDUSessionResourceItemCxtRelReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceItemCxtRelReq)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceItemCxtRelReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceItemCxtRelReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceItemCxtRelReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceItemCxtRelReq.roundtrips.end(bs, PDUSessionResourceItemCxtRelReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceListCxtRelReq ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceItemCxtRelReq
 def PDUSessionResourceListCxtRelReq() -> Data:
   List<&2, PDUSessionResourceItemCxtRelReq>
@@ -5738,18 +4718,6 @@ def PDUSessionResourceListCxtRelReq.items_after(xs: PDUSessionResourceListCxtRel
 def PDUSessionResourceListCxtRelReq.after(+xs: PDUSessionResourceListCxtRelReq(), +rem: Nat) -> Nat:
   PDUSessionResourceListCxtRelReq.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceListCxtRelReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceListCxtRelReq())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceListCxtRelReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceListCxtRelReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceListCxtRelReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceListCxtRelReq.roundtrips.end(bs, PDUSessionResourceListCxtRelReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UEContextReleaseCommand: a protocol IE container (TS 38.413 §9.2).
 def UEContextReleaseCommand() -> Data:
   List<&2, Fr.Ie>
@@ -5776,18 +4744,6 @@ def UEContextReleaseCommand.after(+v: UEContextReleaseCommand(), +rem: Nat) -> N
 
 def UEContextReleaseCommand.valid(+v: UEContextReleaseCommand()) -> Bool:
   Fr.Ies.valid(v)
-
-def UEContextReleaseCommand.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UEContextReleaseCommand())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UEContextReleaseCommand.valid(v), B.bytes_eq(Ap.pack(UEContextReleaseCommand.write(v, 0n, [])), bs)))
-
-def UEContextReleaseCommand.roundtrips(+bs: B.Bytes()) -> Bool:
-  UEContextReleaseCommand.roundtrips.end(bs, UEContextReleaseCommand.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # UE-NGAP-ID-pair ::= SEQUENCE { aMF-UE-NGAP-ID AMF-UE-NGAP-ID, rAN-UE-NGAP-ID RAN-UE-NGAP-ID, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type UE_NGAP_ID_pair is Data:
@@ -5896,18 +4852,6 @@ def UE_NGAP_ID_pair.after(x: UE_NGAP_ID_pair, +rem: Nat) -> Nat:
       +r3 = UE_NGAP_ID_pair.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def UE_NGAP_ID_pair.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UE_NGAP_ID_pair)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UE_NGAP_ID_pair.valid(v), B.bytes_eq(Ap.pack(UE_NGAP_ID_pair.write(v, 0n, [])), bs)))
-
-def UE_NGAP_ID_pair.roundtrips(+bs: B.Bytes()) -> Bool:
-  UE_NGAP_ID_pair.roundtrips.end(bs, UE_NGAP_ID_pair.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UE-NGAP-IDs ::= CHOICE { uE-NGAP-ID-pair UE-NGAP-ID-pair, aMF-UE-NGAP-ID AMF-UE-NGAP-ID, choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type UE_NGAP_IDs is Data:
   UE_NGAP_IDs_uE_NGAP_ID_pair{v: UE_NGAP_ID_pair}
@@ -5983,18 +4927,6 @@ def UE_NGAP_IDs.after(x: UE_NGAP_IDs, +rem: Nat) -> Nat:
     case UE_NGAP_IDs_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
-def UE_NGAP_IDs.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UE_NGAP_IDs)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UE_NGAP_IDs.valid(v), B.bytes_eq(Ap.pack(UE_NGAP_IDs.write(v, 0n, [])), bs)))
-
-def UE_NGAP_IDs.roundtrips(+bs: B.Bytes()) -> Bool:
-  UE_NGAP_IDs.roundtrips.end(bs, UE_NGAP_IDs.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UEContextReleaseComplete: a protocol IE container (TS 38.413 §9.2).
 def UEContextReleaseComplete() -> Data:
   List<&2, Fr.Ie>
@@ -6021,18 +4953,6 @@ def UEContextReleaseComplete.after(+v: UEContextReleaseComplete(), +rem: Nat) ->
 
 def UEContextReleaseComplete.valid(+v: UEContextReleaseComplete()) -> Bool:
   Fr.Ies.valid(v)
-
-def UEContextReleaseComplete.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UEContextReleaseComplete())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UEContextReleaseComplete.valid(v), B.bytes_eq(Ap.pack(UEContextReleaseComplete.write(v, 0n, [])), bs)))
-
-def UEContextReleaseComplete.roundtrips(+bs: B.Bytes()) -> Bool:
-  UEContextReleaseComplete.roundtrips.end(bs, UEContextReleaseComplete.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceItemCxtRelCpl ::= SEQUENCE { pDUSessionID PDUSessionID, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type PDUSessionResourceItemCxtRelCpl is Data:
@@ -6132,18 +5052,6 @@ def PDUSessionResourceItemCxtRelCpl.after(x: PDUSessionResourceItemCxtRelCpl, +r
       +r2 = PDUSessionResourceItemCxtRelCpl.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def PDUSessionResourceItemCxtRelCpl.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceItemCxtRelCpl)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceItemCxtRelCpl.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceItemCxtRelCpl.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceItemCxtRelCpl.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceItemCxtRelCpl.roundtrips.end(bs, PDUSessionResourceItemCxtRelCpl.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceListCxtRelCpl ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceItemCxtRelCpl
 def PDUSessionResourceListCxtRelCpl() -> Data:
   List<&2, PDUSessionResourceItemCxtRelCpl>
@@ -6209,18 +5117,6 @@ def PDUSessionResourceListCxtRelCpl.items_after(xs: PDUSessionResourceListCxtRel
 def PDUSessionResourceListCxtRelCpl.after(+xs: PDUSessionResourceListCxtRelCpl(), +rem: Nat) -> Nat:
   PDUSessionResourceListCxtRelCpl.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceListCxtRelCpl.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceListCxtRelCpl())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceListCxtRelCpl.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceListCxtRelCpl.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceListCxtRelCpl.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceListCxtRelCpl.roundtrips.end(bs, PDUSessionResourceListCxtRelCpl.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupRequest: a protocol IE container (TS 38.413 §9.2).
 def PDUSessionResourceSetupRequest() -> Data:
   List<&2, Fr.Ie>
@@ -6248,18 +5144,6 @@ def PDUSessionResourceSetupRequest.after(+v: PDUSessionResourceSetupRequest(), +
 def PDUSessionResourceSetupRequest.valid(+v: PDUSessionResourceSetupRequest()) -> Bool:
   Fr.Ies.valid(v)
 
-def PDUSessionResourceSetupRequest.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupRequest())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupRequest.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupRequest.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupRequest.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupRequest.roundtrips.end(bs, PDUSessionResourceSetupRequest.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupItemSUReq-pDUSessionResourceSetupRequestTransfer ::= Open
 def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer() -> Data:
   B.Bytes()
@@ -6275,18 +5159,6 @@ def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.afte
 
 def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.valid(+v: PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.roundtrips.end(bs, PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceSetupItemSUReq ::= SEQUENCE { pDUSessionID PDUSessionID, pDUSessionNAS-PDU NAS-PDU OPTIONAL, s-NSSAI S-NSSAI, pDUSessionResourceSetupRequestTransfer OCTET STRING (CONTAINING PDUSessionResourceSetupRequestTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type PDUSessionResourceSetupItemSUReq is Data:
@@ -6448,18 +5320,6 @@ def PDUSessionResourceSetupItemSUReq.after(x: PDUSessionResourceSetupItemSUReq, 
       +r5 = PDUSessionResourceSetupItemSUReq.a_iE_Extensions(iE_Extensions, r4)
       r5
 
-def PDUSessionResourceSetupItemSUReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemSUReq)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemSUReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemSUReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupItemSUReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupItemSUReq.roundtrips.end(bs, PDUSessionResourceSetupItemSUReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupListSUReq ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceSetupItemSUReq
 def PDUSessionResourceSetupListSUReq() -> Data:
   List<&2, PDUSessionResourceSetupItemSUReq>
@@ -6525,18 +5385,6 @@ def PDUSessionResourceSetupListSUReq.items_after(xs: PDUSessionResourceSetupList
 def PDUSessionResourceSetupListSUReq.after(+xs: PDUSessionResourceSetupListSUReq(), +rem: Nat) -> Nat:
   PDUSessionResourceSetupListSUReq.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceSetupListSUReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupListSUReq())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupListSUReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupListSUReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupListSUReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupListSUReq.roundtrips.end(bs, PDUSessionResourceSetupListSUReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupRequestTransfer: a protocol IE container (TS 38.413 §9.2).
 def PDUSessionResourceSetupRequestTransfer() -> Data:
   List<&2, Fr.Ie>
@@ -6564,18 +5412,6 @@ def PDUSessionResourceSetupRequestTransfer.after(+v: PDUSessionResourceSetupRequ
 def PDUSessionResourceSetupRequestTransfer.valid(+v: PDUSessionResourceSetupRequestTransfer()) -> Bool:
   Fr.Ies.valid(v)
 
-def PDUSessionResourceSetupRequestTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupRequestTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupRequestTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupRequestTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupRequestTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupRequestTransfer.roundtrips.end(bs, PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowIdentifier ::= INTEGER (0..63, ...)
 def QosFlowIdentifier() -> Data:
   Ap.XInt
@@ -6591,18 +5427,6 @@ def QosFlowIdentifier.after(+v: QosFlowIdentifier(), +rem: Nat) -> Nat:
 
 def QosFlowIdentifier.valid(+v: QosFlowIdentifier()) -> Bool:
   Ap.XInt.valid(6n, 63, v)
-
-def QosFlowIdentifier.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowIdentifier())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowIdentifier.valid(v), B.bytes_eq(Ap.pack(QosFlowIdentifier.write(v, 0n, [])), bs)))
-
-def QosFlowIdentifier.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowIdentifier.roundtrips.end(bs, QosFlowIdentifier.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # FiveQI ::= INTEGER (0..255, ...)
 def FiveQI() -> Data:
@@ -6620,18 +5444,6 @@ def FiveQI.after(+v: FiveQI(), +rem: Nat) -> Nat:
 def FiveQI.valid(+v: FiveQI()) -> Bool:
   Ap.XInt.valid(8n, 255, v)
 
-def FiveQI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(FiveQI())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(FiveQI.valid(v), B.bytes_eq(Ap.pack(FiveQI.write(v, 0n, [])), bs)))
-
-def FiveQI.roundtrips(+bs: B.Bytes()) -> Bool:
-  FiveQI.roundtrips.end(bs, FiveQI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PriorityLevelQos ::= INTEGER (1..127, ...)
 def PriorityLevelQos() -> Data:
   Ap.XInt
@@ -6647,18 +5459,6 @@ def PriorityLevelQos.after(+v: PriorityLevelQos(), +rem: Nat) -> Nat:
 
 def PriorityLevelQos.valid(+v: PriorityLevelQos()) -> Bool:
   Ap.XInt.valid(7n, 126, v)
-
-def PriorityLevelQos.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PriorityLevelQos())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PriorityLevelQos.valid(v), B.bytes_eq(Ap.pack(PriorityLevelQos.write(v, 0n, [])), bs)))
-
-def PriorityLevelQos.roundtrips(+bs: B.Bytes()) -> Bool:
-  PriorityLevelQos.roundtrips.end(bs, PriorityLevelQos.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # AveragingWindow ::= INTEGER (0..4095, ...)
 def AveragingWindow() -> Data:
@@ -6676,18 +5476,6 @@ def AveragingWindow.after(+v: AveragingWindow(), +rem: Nat) -> Nat:
 def AveragingWindow.valid(+v: AveragingWindow()) -> Bool:
   Ap.XInt.valid(16n, 4095, v)
 
-def AveragingWindow.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AveragingWindow())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AveragingWindow.valid(v), B.bytes_eq(Ap.pack(AveragingWindow.write(v, 0n, [])), bs)))
-
-def AveragingWindow.roundtrips(+bs: B.Bytes()) -> Bool:
-  AveragingWindow.roundtrips.end(bs, AveragingWindow.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # MaximumDataBurstVolume ::= INTEGER (0..4095, ...)
 def MaximumDataBurstVolume() -> Data:
   Ap.XInt
@@ -6703,18 +5491,6 @@ def MaximumDataBurstVolume.after(+v: MaximumDataBurstVolume(), +rem: Nat) -> Nat
 
 def MaximumDataBurstVolume.valid(+v: MaximumDataBurstVolume()) -> Bool:
   Ap.XInt.valid(16n, 4095, v)
-
-def MaximumDataBurstVolume.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(MaximumDataBurstVolume())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(MaximumDataBurstVolume.valid(v), B.bytes_eq(Ap.pack(MaximumDataBurstVolume.write(v, 0n, [])), bs)))
-
-def MaximumDataBurstVolume.roundtrips(+bs: B.Bytes()) -> Bool:
-  MaximumDataBurstVolume.roundtrips.end(bs, MaximumDataBurstVolume.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # NonDynamic5QIDescriptor ::= SEQUENCE { fiveQI FiveQI, priorityLevelQos PriorityLevelQos OPTIONAL, averagingWindow AveragingWindow OPTIONAL, maximumDataBurstVolume MaximumDataBurstVolume OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 2 known rows> OPTIONAL, ... }
 type NonDynamic5QIDescriptor is Data:
@@ -6946,18 +5722,6 @@ def NonDynamic5QIDescriptor.after(x: NonDynamic5QIDescriptor, +rem: Nat) -> Nat:
       +r5 = NonDynamic5QIDescriptor.a_iE_Extensions(iE_Extensions, r4)
       r5
 
-def NonDynamic5QIDescriptor.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NonDynamic5QIDescriptor)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NonDynamic5QIDescriptor.valid(v), B.bytes_eq(Ap.pack(NonDynamic5QIDescriptor.write(v, 0n, [])), bs)))
-
-def NonDynamic5QIDescriptor.roundtrips(+bs: B.Bytes()) -> Bool:
-  NonDynamic5QIDescriptor.roundtrips.end(bs, NonDynamic5QIDescriptor.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PacketDelayBudget ::= INTEGER (0..1023, ...)
 def PacketDelayBudget() -> Data:
   Ap.XInt
@@ -6973,18 +5737,6 @@ def PacketDelayBudget.after(+v: PacketDelayBudget(), +rem: Nat) -> Nat:
 
 def PacketDelayBudget.valid(+v: PacketDelayBudget()) -> Bool:
   Ap.XInt.valid(16n, 1023, v)
-
-def PacketDelayBudget.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PacketDelayBudget())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PacketDelayBudget.valid(v), B.bytes_eq(Ap.pack(PacketDelayBudget.write(v, 0n, [])), bs)))
-
-def PacketDelayBudget.roundtrips(+bs: B.Bytes()) -> Bool:
-  PacketDelayBudget.roundtrips.end(bs, PacketDelayBudget.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PacketErrorRate-pERScalar ::= XInt
 def PacketErrorRate_pERScalar() -> Data:
@@ -7002,18 +5754,6 @@ def PacketErrorRate_pERScalar.after(+v: PacketErrorRate_pERScalar(), +rem: Nat) 
 def PacketErrorRate_pERScalar.valid(+v: PacketErrorRate_pERScalar()) -> Bool:
   Ap.XInt.valid(4n, 9, v)
 
-def PacketErrorRate_pERScalar.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PacketErrorRate_pERScalar())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PacketErrorRate_pERScalar.valid(v), B.bytes_eq(Ap.pack(PacketErrorRate_pERScalar.write(v, 0n, [])), bs)))
-
-def PacketErrorRate_pERScalar.roundtrips(+bs: B.Bytes()) -> Bool:
-  PacketErrorRate_pERScalar.roundtrips.end(bs, PacketErrorRate_pERScalar.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PacketErrorRate-pERExponent ::= XInt
 def PacketErrorRate_pERExponent() -> Data:
   Ap.XInt
@@ -7029,18 +5769,6 @@ def PacketErrorRate_pERExponent.after(+v: PacketErrorRate_pERExponent(), +rem: N
 
 def PacketErrorRate_pERExponent.valid(+v: PacketErrorRate_pERExponent()) -> Bool:
   Ap.XInt.valid(4n, 9, v)
-
-def PacketErrorRate_pERExponent.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PacketErrorRate_pERExponent())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PacketErrorRate_pERExponent.valid(v), B.bytes_eq(Ap.pack(PacketErrorRate_pERExponent.write(v, 0n, [])), bs)))
-
-def PacketErrorRate_pERExponent.roundtrips(+bs: B.Bytes()) -> Bool:
-  PacketErrorRate_pERExponent.roundtrips.end(bs, PacketErrorRate_pERExponent.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PacketErrorRate ::= SEQUENCE { pERScalar INTEGER (0..9, ...), pERExponent INTEGER (0..9, ...), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PacketErrorRate is Data:
@@ -7149,18 +5877,6 @@ def PacketErrorRate.after(x: PacketErrorRate, +rem: Nat) -> Nat:
       +r3 = PacketErrorRate.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PacketErrorRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PacketErrorRate)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PacketErrorRate.valid(v), B.bytes_eq(Ap.pack(PacketErrorRate.write(v, 0n, [])), bs)))
-
-def PacketErrorRate.roundtrips(+bs: B.Bytes()) -> Bool:
-  PacketErrorRate.roundtrips.end(bs, PacketErrorRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DelayCritical ::= ENUMERATED { delay-critical, non-delay-critical, ... }
 def DelayCritical() -> Data:
   Ap.Enum
@@ -7182,18 +5898,6 @@ def DelayCritical.after(+v: DelayCritical(), +rem: Nat) -> Nat:
 
 def DelayCritical.valid(+v: DelayCritical()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
-
-def DelayCritical.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DelayCritical())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DelayCritical.valid(v), B.bytes_eq(Ap.pack(DelayCritical.write(v, 0n, [])), bs)))
-
-def DelayCritical.roundtrips(+bs: B.Bytes()) -> Bool:
-  DelayCritical.roundtrips.end(bs, DelayCritical.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # Dynamic5QIDescriptor ::= SEQUENCE { priorityLevelQos PriorityLevelQos, packetDelayBudget PacketDelayBudget, packetErrorRate PacketErrorRate, fiveQI FiveQI OPTIONAL, delayCritical DelayCritical OPTIONAL, averagingWindow AveragingWindow OPTIONAL, maximumDataBurstVolume MaximumDataBurstVolume OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 3 known rows> OPTIONAL, ... }
 type Dynamic5QIDescriptor is Data:
@@ -7487,18 +6191,6 @@ def Dynamic5QIDescriptor.after(x: Dynamic5QIDescriptor, +rem: Nat) -> Nat:
       +r8 = Dynamic5QIDescriptor.a_iE_Extensions(iE_Extensions, r7)
       r8
 
-def Dynamic5QIDescriptor.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Dynamic5QIDescriptor)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(Dynamic5QIDescriptor.valid(v), B.bytes_eq(Ap.pack(Dynamic5QIDescriptor.write(v, 0n, [])), bs)))
-
-def Dynamic5QIDescriptor.roundtrips(+bs: B.Bytes()) -> Bool:
-  Dynamic5QIDescriptor.roundtrips.end(bs, Dynamic5QIDescriptor.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosCharacteristics ::= CHOICE { nonDynamic5QI NonDynamic5QIDescriptor, dynamic5QI Dynamic5QIDescriptor, choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type QosCharacteristics is Data:
   QosCharacteristics_nonDynamic5QI{v: NonDynamic5QIDescriptor}
@@ -7574,18 +6266,6 @@ def QosCharacteristics.after(x: QosCharacteristics, +rem: Nat) -> Nat:
     case QosCharacteristics_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
-def QosCharacteristics.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosCharacteristics)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosCharacteristics.valid(v), B.bytes_eq(Ap.pack(QosCharacteristics.write(v, 0n, [])), bs)))
-
-def QosCharacteristics.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosCharacteristics.roundtrips.end(bs, QosCharacteristics.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PriorityLevelARP ::= INTEGER (1..15)
 def PriorityLevelARP() -> Data:
   U32
@@ -7605,18 +6285,6 @@ def PriorityLevelARP.after(+v: PriorityLevelARP(), +rem: Nat) -> Nat:
 
 def PriorityLevelARP.valid(+v: PriorityLevelARP()) -> Bool:
   Ap.Int.valid(4n, 14, v)
-
-def PriorityLevelARP.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PriorityLevelARP())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PriorityLevelARP.valid(v), B.bytes_eq(Ap.pack(PriorityLevelARP.write(v, 0n, [])), bs)))
-
-def PriorityLevelARP.roundtrips(+bs: B.Bytes()) -> Bool:
-  PriorityLevelARP.roundtrips.end(bs, PriorityLevelARP.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # Pre-emptionCapability ::= ENUMERATED { shall-not-trigger-pre-emption, may-trigger-pre-emption, ... }
 def Pre_emptionCapability() -> Data:
@@ -7640,18 +6308,6 @@ def Pre_emptionCapability.after(+v: Pre_emptionCapability(), +rem: Nat) -> Nat:
 def Pre_emptionCapability.valid(+v: Pre_emptionCapability()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
 
-def Pre_emptionCapability.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Pre_emptionCapability())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(Pre_emptionCapability.valid(v), B.bytes_eq(Ap.pack(Pre_emptionCapability.write(v, 0n, [])), bs)))
-
-def Pre_emptionCapability.roundtrips(+bs: B.Bytes()) -> Bool:
-  Pre_emptionCapability.roundtrips.end(bs, Pre_emptionCapability.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # Pre-emptionVulnerability ::= ENUMERATED { not-pre-emptable, pre-emptable, ... }
 def Pre_emptionVulnerability() -> Data:
   Ap.Enum
@@ -7673,18 +6329,6 @@ def Pre_emptionVulnerability.after(+v: Pre_emptionVulnerability(), +rem: Nat) ->
 
 def Pre_emptionVulnerability.valid(+v: Pre_emptionVulnerability()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
-
-def Pre_emptionVulnerability.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Pre_emptionVulnerability())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(Pre_emptionVulnerability.valid(v), B.bytes_eq(Ap.pack(Pre_emptionVulnerability.write(v, 0n, [])), bs)))
-
-def Pre_emptionVulnerability.roundtrips(+bs: B.Bytes()) -> Bool:
-  Pre_emptionVulnerability.roundtrips.end(bs, Pre_emptionVulnerability.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # AllocationAndRetentionPriority ::= SEQUENCE { priorityLevelARP PriorityLevelARP, pre-emptionCapability Pre-emptionCapability, pre-emptionVulnerability Pre-emptionVulnerability, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type AllocationAndRetentionPriority is Data:
@@ -7802,18 +6446,6 @@ def AllocationAndRetentionPriority.after(x: AllocationAndRetentionPriority, +rem
       +r4 = AllocationAndRetentionPriority.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def AllocationAndRetentionPriority.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AllocationAndRetentionPriority)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AllocationAndRetentionPriority.valid(v), B.bytes_eq(Ap.pack(AllocationAndRetentionPriority.write(v, 0n, [])), bs)))
-
-def AllocationAndRetentionPriority.roundtrips(+bs: B.Bytes()) -> Bool:
-  AllocationAndRetentionPriority.roundtrips.end(bs, AllocationAndRetentionPriority.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NotificationControl ::= ENUMERATED { notification-requested, ... }
 def NotificationControl() -> Data:
   Ap.Enum
@@ -7833,18 +6465,6 @@ def NotificationControl.after(+v: NotificationControl(), +rem: Nat) -> Nat:
 def NotificationControl.valid(+v: NotificationControl()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
 
-def NotificationControl.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NotificationControl())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NotificationControl.valid(v), B.bytes_eq(Ap.pack(NotificationControl.write(v, 0n, [])), bs)))
-
-def NotificationControl.roundtrips(+bs: B.Bytes()) -> Bool:
-  NotificationControl.roundtrips.end(bs, NotificationControl.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PacketLossRate ::= INTEGER (0..1000, ...)
 def PacketLossRate() -> Data:
   Ap.XInt
@@ -7860,18 +6480,6 @@ def PacketLossRate.after(+v: PacketLossRate(), +rem: Nat) -> Nat:
 
 def PacketLossRate.valid(+v: PacketLossRate()) -> Bool:
   Ap.XInt.valid(16n, 1000, v)
-
-def PacketLossRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PacketLossRate())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PacketLossRate.valid(v), B.bytes_eq(Ap.pack(PacketLossRate.write(v, 0n, [])), bs)))
-
-def PacketLossRate.roundtrips(+bs: B.Bytes()) -> Bool:
-  PacketLossRate.roundtrips.end(bs, PacketLossRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # GBR-QosInformation ::= SEQUENCE { maximumFlowBitRateDL BitRate, maximumFlowBitRateUL BitRate, guaranteedFlowBitRateDL BitRate, guaranteedFlowBitRateUL BitRate, notificationControl NotificationControl OPTIONAL, maximumPacketLossRateDL PacketLossRate OPTIONAL, maximumPacketLossRateUL PacketLossRate OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type GBR_QosInformation is Data:
@@ -8130,18 +6738,6 @@ def GBR_QosInformation.after(x: GBR_QosInformation, +rem: Nat) -> Nat:
       +r8 = GBR_QosInformation.a_iE_Extensions(iE_Extensions, r7)
       r8
 
-def GBR_QosInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GBR_QosInformation)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GBR_QosInformation.valid(v), B.bytes_eq(Ap.pack(GBR_QosInformation.write(v, 0n, [])), bs)))
-
-def GBR_QosInformation.roundtrips(+bs: B.Bytes()) -> Bool:
-  GBR_QosInformation.roundtrips.end(bs, GBR_QosInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # ReflectiveQosAttribute ::= ENUMERATED { subject-to, ... }
 def ReflectiveQosAttribute() -> Data:
   Ap.Enum
@@ -8161,18 +6757,6 @@ def ReflectiveQosAttribute.after(+v: ReflectiveQosAttribute(), +rem: Nat) -> Nat
 def ReflectiveQosAttribute.valid(+v: ReflectiveQosAttribute()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
 
-def ReflectiveQosAttribute.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ReflectiveQosAttribute())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ReflectiveQosAttribute.valid(v), B.bytes_eq(Ap.pack(ReflectiveQosAttribute.write(v, 0n, [])), bs)))
-
-def ReflectiveQosAttribute.roundtrips(+bs: B.Bytes()) -> Bool:
-  ReflectiveQosAttribute.roundtrips.end(bs, ReflectiveQosAttribute.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AdditionalQosFlowInformation ::= ENUMERATED { more-likely, ... }
 def AdditionalQosFlowInformation() -> Data:
   Ap.Enum
@@ -8191,18 +6775,6 @@ def AdditionalQosFlowInformation.after(+v: AdditionalQosFlowInformation(), +rem:
 
 def AdditionalQosFlowInformation.valid(+v: AdditionalQosFlowInformation()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
-
-def AdditionalQosFlowInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AdditionalQosFlowInformation())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AdditionalQosFlowInformation.valid(v), B.bytes_eq(Ap.pack(AdditionalQosFlowInformation.write(v, 0n, [])), bs)))
-
-def AdditionalQosFlowInformation.roundtrips(+bs: B.Bytes()) -> Bool:
-  AdditionalQosFlowInformation.roundtrips.end(bs, AdditionalQosFlowInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # QosFlowLevelQosParameters ::= SEQUENCE { qosCharacteristics QosCharacteristics, allocationAndRetentionPriority AllocationAndRetentionPriority, gBR-QosInformation GBR-QosInformation OPTIONAL, reflectiveQosAttribute ReflectiveQosAttribute OPTIONAL, additionalQosFlowInformation AdditionalQosFlowInformation OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 2 known rows> OPTIONAL, ... }
 type QosFlowLevelQosParameters is Data:
@@ -8443,18 +7015,6 @@ def QosFlowLevelQosParameters.after(x: QosFlowLevelQosParameters, +rem: Nat) -> 
       +r6 = QosFlowLevelQosParameters.a_iE_Extensions(iE_Extensions, r5)
       r6
 
-def QosFlowLevelQosParameters.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowLevelQosParameters)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowLevelQosParameters.valid(v), B.bytes_eq(Ap.pack(QosFlowLevelQosParameters.write(v, 0n, [])), bs)))
-
-def QosFlowLevelQosParameters.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowLevelQosParameters.roundtrips.end(bs, QosFlowLevelQosParameters.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # E-RAB-ID ::= INTEGER (0..15, ...)
 def E_RAB_ID() -> Data:
   Ap.XInt
@@ -8470,18 +7030,6 @@ def E_RAB_ID.after(+v: E_RAB_ID(), +rem: Nat) -> Nat:
 
 def E_RAB_ID.valid(+v: E_RAB_ID()) -> Bool:
   Ap.XInt.valid(4n, 15, v)
-
-def E_RAB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(E_RAB_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(E_RAB_ID.valid(v), B.bytes_eq(Ap.pack(E_RAB_ID.write(v, 0n, [])), bs)))
-
-def E_RAB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  E_RAB_ID.roundtrips.end(bs, E_RAB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # QosFlowSetupRequestItem ::= SEQUENCE { qosFlowIdentifier QosFlowIdentifier, qosFlowLevelQosParameters QosFlowLevelQosParameters, e-RAB-ID E-RAB-ID OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 2 known rows> OPTIONAL, ... }
 type QosFlowSetupRequestItem is Data:
@@ -8634,18 +7182,6 @@ def QosFlowSetupRequestItem.after(x: QosFlowSetupRequestItem, +rem: Nat) -> Nat:
       +r4 = QosFlowSetupRequestItem.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def QosFlowSetupRequestItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowSetupRequestItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowSetupRequestItem.valid(v), B.bytes_eq(Ap.pack(QosFlowSetupRequestItem.write(v, 0n, [])), bs)))
-
-def QosFlowSetupRequestItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowSetupRequestItem.roundtrips.end(bs, QosFlowSetupRequestItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowSetupRequestList ::= SEQUENCE (SIZE(1..64)) OF QosFlowSetupRequestItem
 def QosFlowSetupRequestList() -> Data:
   List<&2, QosFlowSetupRequestItem>
@@ -8711,18 +7247,6 @@ def QosFlowSetupRequestList.items_after(xs: QosFlowSetupRequestList(), +rem: Nat
 def QosFlowSetupRequestList.after(+xs: QosFlowSetupRequestList(), +rem: Nat) -> Nat:
   QosFlowSetupRequestList.items_after(xs, Ap.Size.after(False{}, 6n, rem))
 
-def QosFlowSetupRequestList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowSetupRequestList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowSetupRequestList.valid(v), B.bytes_eq(Ap.pack(QosFlowSetupRequestList.write(v, 0n, [])), bs)))
-
-def QosFlowSetupRequestList.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowSetupRequestList.roundtrips.end(bs, QosFlowSetupRequestList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionType ::= ENUMERATED { ipv4, ipv6, ipv4v6, ethernet, unstructured, ... }
 def PDUSessionType() -> Data:
   Ap.Enum
@@ -8754,18 +7278,6 @@ def PDUSessionType.after(+v: PDUSessionType(), +rem: Nat) -> Nat:
 def PDUSessionType.valid(+v: PDUSessionType()) -> Bool:
   Ap.Enum.valid(3n, 4, True{}, v)
 
-def PDUSessionType.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionType())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionType.valid(v), B.bytes_eq(Ap.pack(PDUSessionType.write(v, 0n, [])), bs)))
-
-def PDUSessionType.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionType.roundtrips.end(bs, PDUSessionType.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # GTP-TEID ::= OCTET STRING (SIZE(4))
 def GTP_TEID() -> Data:
   B.Bytes()
@@ -8781,18 +7293,6 @@ def GTP_TEID.after(+v: GTP_TEID(), +rem: Nat) -> Nat:
 
 def GTP_TEID.valid(+v: GTP_TEID()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 4n), B.all_bytes(v))
-
-def GTP_TEID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GTP_TEID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GTP_TEID.valid(v), B.bytes_eq(Ap.pack(GTP_TEID.write(v, 0n, [])), bs)))
-
-def GTP_TEID.roundtrips(+bs: B.Bytes()) -> Bool:
-  GTP_TEID.roundtrips.end(bs, GTP_TEID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # GTPTunnel ::= SEQUENCE { transportLayerAddress TransportLayerAddress, gTP-TEID GTP-TEID, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type GTPTunnel is Data:
@@ -8901,18 +7401,6 @@ def GTPTunnel.after(x: GTPTunnel, +rem: Nat) -> Nat:
       +r3 = GTPTunnel.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def GTPTunnel.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(GTPTunnel)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(GTPTunnel.valid(v), B.bytes_eq(Ap.pack(GTPTunnel.write(v, 0n, [])), bs)))
-
-def GTPTunnel.roundtrips(+bs: B.Bytes()) -> Bool:
-  GTPTunnel.roundtrips.end(bs, GTPTunnel.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UPTransportLayerInformation ::= CHOICE { gTPTunnel GTPTunnel, choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type UPTransportLayerInformation is Data:
   UPTransportLayerInformation_gTPTunnel{v: GTPTunnel}
@@ -8971,18 +7459,6 @@ def UPTransportLayerInformation.after(x: UPTransportLayerInformation, +rem: Nat)
       GTPTunnel.after(v, Ap.Size.after(False{}, 1n, rem))
     case UPTransportLayerInformation_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 1n, rem))
-
-def UPTransportLayerInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UPTransportLayerInformation)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UPTransportLayerInformation.valid(v), B.bytes_eq(Ap.pack(UPTransportLayerInformation.write(v, 0n, [])), bs)))
-
-def UPTransportLayerInformation.roundtrips(+bs: B.Bytes()) -> Bool:
-  UPTransportLayerInformation.roundtrips.end(bs, UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionAggregateMaximumBitRate ::= SEQUENCE { pDUSessionAggregateMaximumBitRateDL BitRate, pDUSessionAggregateMaximumBitRateUL BitRate, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionAggregateMaximumBitRate is Data:
@@ -9091,18 +7567,6 @@ def PDUSessionAggregateMaximumBitRate.after(x: PDUSessionAggregateMaximumBitRate
       +r3 = PDUSessionAggregateMaximumBitRate.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionAggregateMaximumBitRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionAggregateMaximumBitRate)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionAggregateMaximumBitRate.valid(v), B.bytes_eq(Ap.pack(PDUSessionAggregateMaximumBitRate.write(v, 0n, [])), bs)))
-
-def PDUSessionAggregateMaximumBitRate.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionAggregateMaximumBitRate.roundtrips.end(bs, PDUSessionAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupResponse: a protocol IE container (TS 38.413 §9.2).
 def PDUSessionResourceSetupResponse() -> Data:
   List<&2, Fr.Ie>
@@ -9130,18 +7594,6 @@ def PDUSessionResourceSetupResponse.after(+v: PDUSessionResourceSetupResponse(),
 def PDUSessionResourceSetupResponse.valid(+v: PDUSessionResourceSetupResponse()) -> Bool:
   Fr.Ies.valid(v)
 
-def PDUSessionResourceSetupResponse.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupResponse())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupResponse.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupResponse.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupResponse.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupResponse.roundtrips.end(bs, PDUSessionResourceSetupResponse.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceFailedToSetupItemSURes-pDUSessionResourceSetupUnsuccessfulTransfer ::= Open
 def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer() -> Data:
   B.Bytes()
@@ -9157,18 +7609,6 @@ def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessful
 
 def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(+v: PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceFailedToSetupItemSURes ::= SEQUENCE { pDUSessionID PDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer OCTET STRING (CONTAINING PDUSessionResourceSetupUnsuccessfulTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceFailedToSetupItemSURes is Data:
@@ -9277,18 +7717,6 @@ def PDUSessionResourceFailedToSetupItemSURes.after(x: PDUSessionResourceFailedTo
       +r3 = PDUSessionResourceFailedToSetupItemSURes.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceFailedToSetupItemSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemSURes)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemSURes.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupItemSURes.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupItemSURes.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceFailedToSetupListSURes ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceFailedToSetupItemSURes
 def PDUSessionResourceFailedToSetupListSURes() -> Data:
   List<&2, PDUSessionResourceFailedToSetupItemSURes>
@@ -9354,18 +7782,6 @@ def PDUSessionResourceFailedToSetupListSURes.items_after(xs: PDUSessionResourceF
 def PDUSessionResourceFailedToSetupListSURes.after(+xs: PDUSessionResourceFailedToSetupListSURes(), +rem: Nat) -> Nat:
   PDUSessionResourceFailedToSetupListSURes.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceFailedToSetupListSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupListSURes())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupListSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupListSURes.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupListSURes.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupListSURes.roundtrips.end(bs, PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # ProcedureCode ::= INTEGER (0..255)
 def ProcedureCode() -> Data:
   U32
@@ -9381,18 +7797,6 @@ def ProcedureCode.after(+v: ProcedureCode(), +rem: Nat) -> Nat:
 
 def ProcedureCode.valid(+v: ProcedureCode()) -> Bool:
   Ap.Int.valid(8n, 255, v)
-
-def ProcedureCode.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ProcedureCode())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ProcedureCode.valid(v), B.bytes_eq(Ap.pack(ProcedureCode.write(v, 0n, [])), bs)))
-
-def ProcedureCode.roundtrips(+bs: B.Bytes()) -> Bool:
-  ProcedureCode.roundtrips.end(bs, ProcedureCode.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # TriggeringMessage ::= ENUMERATED { initiating-message, successful-outcome, unsuccessful-outcome }
 def TriggeringMessage() -> Data:
@@ -9419,18 +7823,6 @@ def TriggeringMessage.after(+v: TriggeringMessage(), +rem: Nat) -> Nat:
 def TriggeringMessage.valid(+v: TriggeringMessage()) -> Bool:
   Ap.Enum.valid(2n, 2, False{}, v)
 
-def TriggeringMessage.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TriggeringMessage())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TriggeringMessage.valid(v), B.bytes_eq(Ap.pack(TriggeringMessage.write(v, 0n, [])), bs)))
-
-def TriggeringMessage.roundtrips(+bs: B.Bytes()) -> Bool:
-  TriggeringMessage.roundtrips.end(bs, TriggeringMessage.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # Criticality ::= ENUMERATED { reject, ignore, notify }
 def Criticality() -> Data:
   Ap.Enum
@@ -9456,18 +7848,6 @@ def Criticality.after(+v: Criticality(), +rem: Nat) -> Nat:
 def Criticality.valid(+v: Criticality()) -> Bool:
   Ap.Enum.valid(2n, 2, False{}, v)
 
-def Criticality.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(Criticality())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(Criticality.valid(v), B.bytes_eq(Ap.pack(Criticality.write(v, 0n, [])), bs)))
-
-def Criticality.roundtrips(+bs: B.Bytes()) -> Bool:
-  Criticality.roundtrips.end(bs, Criticality.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # ProtocolIE-ID ::= INTEGER (0..65535)
 def ProtocolIE_ID() -> Data:
   U32
@@ -9483,18 +7863,6 @@ def ProtocolIE_ID.after(+v: ProtocolIE_ID(), +rem: Nat) -> Nat:
 
 def ProtocolIE_ID.valid(+v: ProtocolIE_ID()) -> Bool:
   Ap.Int.valid(16n, 65535, v)
-
-def ProtocolIE_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ProtocolIE_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ProtocolIE_ID.valid(v), B.bytes_eq(Ap.pack(ProtocolIE_ID.write(v, 0n, [])), bs)))
-
-def ProtocolIE_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  ProtocolIE_ID.roundtrips.end(bs, ProtocolIE_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # TypeOfError ::= ENUMERATED { not-understood, missing, ... }
 def TypeOfError() -> Data:
@@ -9517,18 +7885,6 @@ def TypeOfError.after(+v: TypeOfError(), +rem: Nat) -> Nat:
 
 def TypeOfError.valid(+v: TypeOfError()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
-
-def TypeOfError.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TypeOfError())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TypeOfError.valid(v), B.bytes_eq(Ap.pack(TypeOfError.write(v, 0n, [])), bs)))
-
-def TypeOfError.roundtrips(+bs: B.Bytes()) -> Bool:
-  TypeOfError.roundtrips.end(bs, TypeOfError.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # CriticalityDiagnostics-IE-Item ::= SEQUENCE { iECriticality Criticality, iE-ID ProtocolIE-ID, typeOfError TypeOfError, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type CriticalityDiagnostics_IE_Item is Data:
@@ -9646,18 +8002,6 @@ def CriticalityDiagnostics_IE_Item.after(x: CriticalityDiagnostics_IE_Item, +rem
       +r4 = CriticalityDiagnostics_IE_Item.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def CriticalityDiagnostics_IE_Item.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CriticalityDiagnostics_IE_Item)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CriticalityDiagnostics_IE_Item.valid(v), B.bytes_eq(Ap.pack(CriticalityDiagnostics_IE_Item.write(v, 0n, [])), bs)))
-
-def CriticalityDiagnostics_IE_Item.roundtrips(+bs: B.Bytes()) -> Bool:
-  CriticalityDiagnostics_IE_Item.roundtrips.end(bs, CriticalityDiagnostics_IE_Item.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # CriticalityDiagnostics-IE-List ::= SEQUENCE (SIZE(1..256)) OF CriticalityDiagnostics-IE-Item
 def CriticalityDiagnostics_IE_List() -> Data:
   List<&2, CriticalityDiagnostics_IE_Item>
@@ -9722,18 +8066,6 @@ def CriticalityDiagnostics_IE_List.items_after(xs: CriticalityDiagnostics_IE_Lis
 
 def CriticalityDiagnostics_IE_List.after(+xs: CriticalityDiagnostics_IE_List(), +rem: Nat) -> Nat:
   CriticalityDiagnostics_IE_List.items_after(xs, Ap.Size.after(True{}, 8n, rem))
-
-def CriticalityDiagnostics_IE_List.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CriticalityDiagnostics_IE_List())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CriticalityDiagnostics_IE_List.valid(v), B.bytes_eq(Ap.pack(CriticalityDiagnostics_IE_List.write(v, 0n, [])), bs)))
-
-def CriticalityDiagnostics_IE_List.roundtrips(+bs: B.Bytes()) -> Bool:
-  CriticalityDiagnostics_IE_List.roundtrips.end(bs, CriticalityDiagnostics_IE_List.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # CriticalityDiagnostics ::= SEQUENCE { procedureCode ProcedureCode OPTIONAL, triggeringMessage TriggeringMessage OPTIONAL, procedureCriticality Criticality OPTIONAL, iEsCriticalityDiagnostics CriticalityDiagnostics-IE-List OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type CriticalityDiagnostics is Data:
@@ -10000,18 +8332,6 @@ def CriticalityDiagnostics.after(x: CriticalityDiagnostics, +rem: Nat) -> Nat:
       +r5 = CriticalityDiagnostics.a_iE_Extensions(iE_Extensions, r4)
       r5
 
-def CriticalityDiagnostics.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(CriticalityDiagnostics)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(CriticalityDiagnostics.valid(v), B.bytes_eq(Ap.pack(CriticalityDiagnostics.write(v, 0n, [])), bs)))
-
-def CriticalityDiagnostics.roundtrips(+bs: B.Bytes()) -> Bool:
-  CriticalityDiagnostics.roundtrips.end(bs, CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupUnsuccessfulTransfer ::= SEQUENCE { cause Cause, criticalityDiagnostics CriticalityDiagnostics OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceSetupUnsuccessfulTransfer is Data:
   PDUSessionResourceSetupUnsuccessfulTransfer{cause: Cause, criticalityDiagnostics: Maybe<&2, CriticalityDiagnostics>, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -10154,18 +8474,6 @@ def PDUSessionResourceSetupUnsuccessfulTransfer.after(x: PDUSessionResourceSetup
       +r3 = PDUSessionResourceSetupUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupUnsuccessfulTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupUnsuccessfulTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupUnsuccessfulTransfer.roundtrips.end(bs, PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupItemSURes-pDUSessionResourceSetupResponseTransfer ::= Open
 def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer() -> Data:
   B.Bytes()
@@ -10181,18 +8489,6 @@ def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.aft
 
 def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(+v: PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrips.end(bs, PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceSetupItemSURes ::= SEQUENCE { pDUSessionID PDUSessionID, pDUSessionResourceSetupResponseTransfer OCTET STRING (CONTAINING PDUSessionResourceSetupResponseTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceSetupItemSURes is Data:
@@ -10301,18 +8597,6 @@ def PDUSessionResourceSetupItemSURes.after(x: PDUSessionResourceSetupItemSURes, 
       +r3 = PDUSessionResourceSetupItemSURes.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceSetupItemSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemSURes)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemSURes.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupItemSURes.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupItemSURes.roundtrips.end(bs, PDUSessionResourceSetupItemSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupListSURes ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceSetupItemSURes
 def PDUSessionResourceSetupListSURes() -> Data:
   List<&2, PDUSessionResourceSetupItemSURes>
@@ -10378,18 +8662,6 @@ def PDUSessionResourceSetupListSURes.items_after(xs: PDUSessionResourceSetupList
 def PDUSessionResourceSetupListSURes.after(+xs: PDUSessionResourceSetupListSURes(), +rem: Nat) -> Nat:
   PDUSessionResourceSetupListSURes.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceSetupListSURes.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupListSURes())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupListSURes.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupListSURes.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupListSURes.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupListSURes.roundtrips.end(bs, PDUSessionResourceSetupListSURes.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AssociatedQosFlowItem-qosFlowMappingIndication ::= Enum
 def AssociatedQosFlowItem_qosFlowMappingIndication() -> Data:
   Ap.Enum
@@ -10411,18 +8683,6 @@ def AssociatedQosFlowItem_qosFlowMappingIndication.after(+v: AssociatedQosFlowIt
 
 def AssociatedQosFlowItem_qosFlowMappingIndication.valid(+v: AssociatedQosFlowItem_qosFlowMappingIndication()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
-
-def AssociatedQosFlowItem_qosFlowMappingIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AssociatedQosFlowItem_qosFlowMappingIndication())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AssociatedQosFlowItem_qosFlowMappingIndication.valid(v), B.bytes_eq(Ap.pack(AssociatedQosFlowItem_qosFlowMappingIndication.write(v, 0n, [])), bs)))
-
-def AssociatedQosFlowItem_qosFlowMappingIndication.roundtrips(+bs: B.Bytes()) -> Bool:
-  AssociatedQosFlowItem_qosFlowMappingIndication.roundtrips.end(bs, AssociatedQosFlowItem_qosFlowMappingIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # AssociatedQosFlowItem ::= SEQUENCE { qosFlowIdentifier QosFlowIdentifier, qosFlowMappingIndication ENUMERATED { ul, dl, ... } OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type AssociatedQosFlowItem is Data:
@@ -10566,18 +8826,6 @@ def AssociatedQosFlowItem.after(x: AssociatedQosFlowItem, +rem: Nat) -> Nat:
       +r3 = AssociatedQosFlowItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def AssociatedQosFlowItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AssociatedQosFlowItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AssociatedQosFlowItem.valid(v), B.bytes_eq(Ap.pack(AssociatedQosFlowItem.write(v, 0n, [])), bs)))
-
-def AssociatedQosFlowItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  AssociatedQosFlowItem.roundtrips.end(bs, AssociatedQosFlowItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # AssociatedQosFlowList ::= SEQUENCE (SIZE(1..64)) OF AssociatedQosFlowItem
 def AssociatedQosFlowList() -> Data:
   List<&2, AssociatedQosFlowItem>
@@ -10642,18 +8890,6 @@ def AssociatedQosFlowList.items_after(xs: AssociatedQosFlowList(), +rem: Nat) ->
 
 def AssociatedQosFlowList.after(+xs: AssociatedQosFlowList(), +rem: Nat) -> Nat:
   AssociatedQosFlowList.items_after(xs, Ap.Size.after(False{}, 6n, rem))
-
-def AssociatedQosFlowList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(AssociatedQosFlowList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(AssociatedQosFlowList.valid(v), B.bytes_eq(Ap.pack(AssociatedQosFlowList.write(v, 0n, [])), bs)))
-
-def AssociatedQosFlowList.roundtrips(+bs: B.Bytes()) -> Bool:
-  AssociatedQosFlowList.roundtrips.end(bs, AssociatedQosFlowList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # QosFlowPerTNLInformation ::= SEQUENCE { uPTransportLayerInformation UPTransportLayerInformation, associatedQosFlowList AssociatedQosFlowList, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type QosFlowPerTNLInformation is Data:
@@ -10762,18 +8998,6 @@ def QosFlowPerTNLInformation.after(x: QosFlowPerTNLInformation, +rem: Nat) -> Na
       +r3 = QosFlowPerTNLInformation.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def QosFlowPerTNLInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowPerTNLInformation)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowPerTNLInformation.valid(v), B.bytes_eq(Ap.pack(QosFlowPerTNLInformation.write(v, 0n, [])), bs)))
-
-def QosFlowPerTNLInformation.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowPerTNLInformation.roundtrips.end(bs, QosFlowPerTNLInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowPerTNLInformationItem ::= SEQUENCE { qosFlowPerTNLInformation QosFlowPerTNLInformation, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type QosFlowPerTNLInformationItem is Data:
   QosFlowPerTNLInformationItem{qosFlowPerTNLInformation: QosFlowPerTNLInformation, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -10872,18 +9096,6 @@ def QosFlowPerTNLInformationItem.after(x: QosFlowPerTNLInformationItem, +rem: Na
       +r2 = QosFlowPerTNLInformationItem.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def QosFlowPerTNLInformationItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowPerTNLInformationItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowPerTNLInformationItem.valid(v), B.bytes_eq(Ap.pack(QosFlowPerTNLInformationItem.write(v, 0n, [])), bs)))
-
-def QosFlowPerTNLInformationItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowPerTNLInformationItem.roundtrips.end(bs, QosFlowPerTNLInformationItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowPerTNLInformationList ::= SEQUENCE (SIZE(1..3)) OF QosFlowPerTNLInformationItem
 def QosFlowPerTNLInformationList() -> Data:
   List<&2, QosFlowPerTNLInformationItem>
@@ -10949,18 +9161,6 @@ def QosFlowPerTNLInformationList.items_after(xs: QosFlowPerTNLInformationList(),
 def QosFlowPerTNLInformationList.after(+xs: QosFlowPerTNLInformationList(), +rem: Nat) -> Nat:
   QosFlowPerTNLInformationList.items_after(xs, Ap.Size.after(False{}, 2n, rem))
 
-def QosFlowPerTNLInformationList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowPerTNLInformationList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowPerTNLInformationList.valid(v), B.bytes_eq(Ap.pack(QosFlowPerTNLInformationList.write(v, 0n, [])), bs)))
-
-def QosFlowPerTNLInformationList.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowPerTNLInformationList.roundtrips.end(bs, QosFlowPerTNLInformationList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # IntegrityProtectionResult ::= ENUMERATED { performed, not-performed, ... }
 def IntegrityProtectionResult() -> Data:
   Ap.Enum
@@ -10983,18 +9183,6 @@ def IntegrityProtectionResult.after(+v: IntegrityProtectionResult(), +rem: Nat) 
 def IntegrityProtectionResult.valid(+v: IntegrityProtectionResult()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
 
-def IntegrityProtectionResult.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(IntegrityProtectionResult())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(IntegrityProtectionResult.valid(v), B.bytes_eq(Ap.pack(IntegrityProtectionResult.write(v, 0n, [])), bs)))
-
-def IntegrityProtectionResult.roundtrips(+bs: B.Bytes()) -> Bool:
-  IntegrityProtectionResult.roundtrips.end(bs, IntegrityProtectionResult.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # ConfidentialityProtectionResult ::= ENUMERATED { performed, not-performed, ... }
 def ConfidentialityProtectionResult() -> Data:
   Ap.Enum
@@ -11016,18 +9204,6 @@ def ConfidentialityProtectionResult.after(+v: ConfidentialityProtectionResult(),
 
 def ConfidentialityProtectionResult.valid(+v: ConfidentialityProtectionResult()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
-
-def ConfidentialityProtectionResult.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ConfidentialityProtectionResult())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ConfidentialityProtectionResult.valid(v), B.bytes_eq(Ap.pack(ConfidentialityProtectionResult.write(v, 0n, [])), bs)))
-
-def ConfidentialityProtectionResult.roundtrips(+bs: B.Bytes()) -> Bool:
-  ConfidentialityProtectionResult.roundtrips.end(bs, ConfidentialityProtectionResult.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # SecurityResult ::= SEQUENCE { integrityProtectionResult IntegrityProtectionResult, confidentialityProtectionResult ConfidentialityProtectionResult, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type SecurityResult is Data:
@@ -11136,18 +9312,6 @@ def SecurityResult.after(x: SecurityResult, +rem: Nat) -> Nat:
       +r3 = SecurityResult.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def SecurityResult.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SecurityResult)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SecurityResult.valid(v), B.bytes_eq(Ap.pack(SecurityResult.write(v, 0n, [])), bs)))
-
-def SecurityResult.roundtrips(+bs: B.Bytes()) -> Bool:
-  SecurityResult.roundtrips.end(bs, SecurityResult.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowWithCauseItem ::= SEQUENCE { qosFlowIdentifier QosFlowIdentifier, cause Cause, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type QosFlowWithCauseItem is Data:
   QosFlowWithCauseItem{qosFlowIdentifier: QosFlowIdentifier(), cause: Cause, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -11255,18 +9419,6 @@ def QosFlowWithCauseItem.after(x: QosFlowWithCauseItem, +rem: Nat) -> Nat:
       +r3 = QosFlowWithCauseItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def QosFlowWithCauseItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowWithCauseItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowWithCauseItem.valid(v), B.bytes_eq(Ap.pack(QosFlowWithCauseItem.write(v, 0n, [])), bs)))
-
-def QosFlowWithCauseItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowWithCauseItem.roundtrips.end(bs, QosFlowWithCauseItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowListWithCause ::= SEQUENCE (SIZE(1..64)) OF QosFlowWithCauseItem
 def QosFlowListWithCause() -> Data:
   List<&2, QosFlowWithCauseItem>
@@ -11331,18 +9483,6 @@ def QosFlowListWithCause.items_after(xs: QosFlowListWithCause(), +rem: Nat) -> N
 
 def QosFlowListWithCause.after(+xs: QosFlowListWithCause(), +rem: Nat) -> Nat:
   QosFlowListWithCause.items_after(xs, Ap.Size.after(False{}, 6n, rem))
-
-def QosFlowListWithCause.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowListWithCause())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowListWithCause.valid(v), B.bytes_eq(Ap.pack(QosFlowListWithCause.write(v, 0n, [])), bs)))
-
-def QosFlowListWithCause.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowListWithCause.roundtrips.end(bs, QosFlowListWithCause.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceSetupResponseTransfer ::= SEQUENCE { dLQosFlowPerTNLInformation QosFlowPerTNLInformation, additionalDLQosFlowPerTNLInformation QosFlowPerTNLInformationList OPTIONAL, securityResult SecurityResult OPTIONAL, qosFlowFailedToSetupList QosFlowListWithCause OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 7 known rows> OPTIONAL, ... }
 type PDUSessionResourceSetupResponseTransfer is Data:
@@ -11574,18 +9714,6 @@ def PDUSessionResourceSetupResponseTransfer.after(x: PDUSessionResourceSetupResp
       +r5 = PDUSessionResourceSetupResponseTransfer.a_iE_Extensions(iE_Extensions, r4)
       r5
 
-def PDUSessionResourceSetupResponseTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupResponseTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupResponseTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupResponseTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupResponseTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupResponseTransfer.roundtrips.end(bs, PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # ErrorIndication: a protocol IE container (TS 38.413 §9.2).
 def ErrorIndication() -> Data:
   List<&2, Fr.Ie>
@@ -11612,18 +9740,6 @@ def ErrorIndication.after(+v: ErrorIndication(), +rem: Nat) -> Nat:
 
 def ErrorIndication.valid(+v: ErrorIndication()) -> Bool:
   Fr.Ies.valid(v)
-
-def ErrorIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ErrorIndication())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ErrorIndication.valid(v), B.bytes_eq(Ap.pack(ErrorIndication.write(v, 0n, [])), bs)))
-
-def ErrorIndication.roundtrips(+bs: B.Bytes()) -> Bool:
-  ErrorIndication.roundtrips.end(bs, ErrorIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PathSwitchRequest: a protocol IE container (TS 38.413 §9.2).
 def PathSwitchRequest() -> Data:
@@ -11652,18 +9768,6 @@ def PathSwitchRequest.after(+v: PathSwitchRequest(), +rem: Nat) -> Nat:
 def PathSwitchRequest.valid(+v: PathSwitchRequest()) -> Bool:
   Fr.Ies.valid(v)
 
-def PathSwitchRequest.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PathSwitchRequest())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PathSwitchRequest.valid(v), B.bytes_eq(Ap.pack(PathSwitchRequest.write(v, 0n, [])), bs)))
-
-def PathSwitchRequest.roundtrips(+bs: B.Bytes()) -> Bool:
-  PathSwitchRequest.roundtrips.end(bs, PathSwitchRequest.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceFailedToSetupItemPSReq-pathSwitchRequestSetupFailedTransfer ::= Open
 def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer() -> Data:
   B.Bytes()
@@ -11679,18 +9783,6 @@ def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfe
 
 def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.valid(+v: PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceFailedToSetupItemPSReq ::= SEQUENCE { pDUSessionID PDUSessionID, pathSwitchRequestSetupFailedTransfer OCTET STRING (CONTAINING PathSwitchRequestSetupFailedTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceFailedToSetupItemPSReq is Data:
@@ -11799,18 +9891,6 @@ def PDUSessionResourceFailedToSetupItemPSReq.after(x: PDUSessionResourceFailedTo
       +r3 = PDUSessionResourceFailedToSetupItemPSReq.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceFailedToSetupItemPSReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemPSReq)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemPSReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemPSReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupItemPSReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupItemPSReq.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemPSReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceFailedToSetupListPSReq ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceFailedToSetupItemPSReq
 def PDUSessionResourceFailedToSetupListPSReq() -> Data:
   List<&2, PDUSessionResourceFailedToSetupItemPSReq>
@@ -11875,18 +9955,6 @@ def PDUSessionResourceFailedToSetupListPSReq.items_after(xs: PDUSessionResourceF
 
 def PDUSessionResourceFailedToSetupListPSReq.after(+xs: PDUSessionResourceFailedToSetupListPSReq(), +rem: Nat) -> Nat:
   PDUSessionResourceFailedToSetupListPSReq.items_after(xs, Ap.Size.after(True{}, 8n, rem))
-
-def PDUSessionResourceFailedToSetupListPSReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupListPSReq())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupListPSReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupListPSReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupListPSReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupListPSReq.roundtrips.end(bs, PDUSessionResourceFailedToSetupListPSReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PathSwitchRequestSetupFailedTransfer ::= SEQUENCE { cause Cause, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PathSwitchRequestSetupFailedTransfer is Data:
@@ -11986,18 +10054,6 @@ def PathSwitchRequestSetupFailedTransfer.after(x: PathSwitchRequestSetupFailedTr
       +r2 = PathSwitchRequestSetupFailedTransfer.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def PathSwitchRequestSetupFailedTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PathSwitchRequestSetupFailedTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PathSwitchRequestSetupFailedTransfer.valid(v), B.bytes_eq(Ap.pack(PathSwitchRequestSetupFailedTransfer.write(v, 0n, [])), bs)))
-
-def PathSwitchRequestSetupFailedTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PathSwitchRequestSetupFailedTransfer.roundtrips.end(bs, PathSwitchRequestSetupFailedTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceToBeSwitchedDLItem-pathSwitchRequestTransfer ::= Open
 def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer() -> Data:
   B.Bytes()
@@ -12013,18 +10069,6 @@ def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.after(+v: PDU
 
 def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.valid(+v: PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.roundtrips.end(bs, PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceToBeSwitchedDLItem ::= SEQUENCE { pDUSessionID PDUSessionID, pathSwitchRequestTransfer OCTET STRING (CONTAINING PathSwitchRequestTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceToBeSwitchedDLItem is Data:
@@ -12133,18 +10177,6 @@ def PDUSessionResourceToBeSwitchedDLItem.after(x: PDUSessionResourceToBeSwitched
       +r3 = PDUSessionResourceToBeSwitchedDLItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceToBeSwitchedDLItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceToBeSwitchedDLItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceToBeSwitchedDLItem.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceToBeSwitchedDLItem.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceToBeSwitchedDLItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceToBeSwitchedDLItem.roundtrips.end(bs, PDUSessionResourceToBeSwitchedDLItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceToBeSwitchedDLList ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceToBeSwitchedDLItem
 def PDUSessionResourceToBeSwitchedDLList() -> Data:
   List<&2, PDUSessionResourceToBeSwitchedDLItem>
@@ -12210,18 +10242,6 @@ def PDUSessionResourceToBeSwitchedDLList.items_after(xs: PDUSessionResourceToBeS
 def PDUSessionResourceToBeSwitchedDLList.after(+xs: PDUSessionResourceToBeSwitchedDLList(), +rem: Nat) -> Nat:
   PDUSessionResourceToBeSwitchedDLList.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceToBeSwitchedDLList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceToBeSwitchedDLList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceToBeSwitchedDLList.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceToBeSwitchedDLList.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceToBeSwitchedDLList.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceToBeSwitchedDLList.roundtrips.end(bs, PDUSessionResourceToBeSwitchedDLList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DL-NGU-TNLInformationReused ::= ENUMERATED { true, ... }
 def DL_NGU_TNLInformationReused() -> Data:
   Ap.Enum
@@ -12240,18 +10260,6 @@ def DL_NGU_TNLInformationReused.after(+v: DL_NGU_TNLInformationReused(), +rem: N
 
 def DL_NGU_TNLInformationReused.valid(+v: DL_NGU_TNLInformationReused()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
-
-def DL_NGU_TNLInformationReused.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DL_NGU_TNLInformationReused())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DL_NGU_TNLInformationReused.valid(v), B.bytes_eq(Ap.pack(DL_NGU_TNLInformationReused.write(v, 0n, [])), bs)))
-
-def DL_NGU_TNLInformationReused.roundtrips(+bs: B.Bytes()) -> Bool:
-  DL_NGU_TNLInformationReused.roundtrips.end(bs, DL_NGU_TNLInformationReused.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # IntegrityProtectionIndication ::= ENUMERATED { required, preferred, not-needed, ... }
 def IntegrityProtectionIndication() -> Data:
@@ -12278,18 +10286,6 @@ def IntegrityProtectionIndication.after(+v: IntegrityProtectionIndication(), +re
 def IntegrityProtectionIndication.valid(+v: IntegrityProtectionIndication()) -> Bool:
   Ap.Enum.valid(2n, 2, True{}, v)
 
-def IntegrityProtectionIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(IntegrityProtectionIndication())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(IntegrityProtectionIndication.valid(v), B.bytes_eq(Ap.pack(IntegrityProtectionIndication.write(v, 0n, [])), bs)))
-
-def IntegrityProtectionIndication.roundtrips(+bs: B.Bytes()) -> Bool:
-  IntegrityProtectionIndication.roundtrips.end(bs, IntegrityProtectionIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # ConfidentialityProtectionIndication ::= ENUMERATED { required, preferred, not-needed, ... }
 def ConfidentialityProtectionIndication() -> Data:
   Ap.Enum
@@ -12315,18 +10311,6 @@ def ConfidentialityProtectionIndication.after(+v: ConfidentialityProtectionIndic
 def ConfidentialityProtectionIndication.valid(+v: ConfidentialityProtectionIndication()) -> Bool:
   Ap.Enum.valid(2n, 2, True{}, v)
 
-def ConfidentialityProtectionIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(ConfidentialityProtectionIndication())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(ConfidentialityProtectionIndication.valid(v), B.bytes_eq(Ap.pack(ConfidentialityProtectionIndication.write(v, 0n, [])), bs)))
-
-def ConfidentialityProtectionIndication.roundtrips(+bs: B.Bytes()) -> Bool:
-  ConfidentialityProtectionIndication.roundtrips.end(bs, ConfidentialityProtectionIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # MaximumIntegrityProtectedDataRate ::= ENUMERATED { bitrate64kbs, maximum-UE-rate, ... }
 def MaximumIntegrityProtectedDataRate() -> Data:
   Ap.Enum
@@ -12348,18 +10332,6 @@ def MaximumIntegrityProtectedDataRate.after(+v: MaximumIntegrityProtectedDataRat
 
 def MaximumIntegrityProtectedDataRate.valid(+v: MaximumIntegrityProtectedDataRate()) -> Bool:
   Ap.Enum.valid(1n, 1, True{}, v)
-
-def MaximumIntegrityProtectedDataRate.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(MaximumIntegrityProtectedDataRate())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(MaximumIntegrityProtectedDataRate.valid(v), B.bytes_eq(Ap.pack(MaximumIntegrityProtectedDataRate.write(v, 0n, [])), bs)))
-
-def MaximumIntegrityProtectedDataRate.roundtrips(+bs: B.Bytes()) -> Bool:
-  MaximumIntegrityProtectedDataRate.roundtrips.end(bs, MaximumIntegrityProtectedDataRate.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # SecurityIndication ::= SEQUENCE { integrityProtectionIndication IntegrityProtectionIndication, confidentialityProtectionIndication ConfidentialityProtectionIndication, maximumIntegrityProtectedDataRate-UL MaximumIntegrityProtectedDataRate OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type SecurityIndication is Data:
@@ -12512,18 +10484,6 @@ def SecurityIndication.after(x: SecurityIndication, +rem: Nat) -> Nat:
       +r4 = SecurityIndication.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def SecurityIndication.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SecurityIndication)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SecurityIndication.valid(v), B.bytes_eq(Ap.pack(SecurityIndication.write(v, 0n, [])), bs)))
-
-def SecurityIndication.roundtrips(+bs: B.Bytes()) -> Bool:
-  SecurityIndication.roundtrips.end(bs, SecurityIndication.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UserPlaneSecurityInformation ::= SEQUENCE { securityResult SecurityResult, securityIndication SecurityIndication, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type UserPlaneSecurityInformation is Data:
   UserPlaneSecurityInformation{securityResult: SecurityResult, securityIndication: SecurityIndication, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -12631,18 +10591,6 @@ def UserPlaneSecurityInformation.after(x: UserPlaneSecurityInformation, +rem: Na
       +r3 = UserPlaneSecurityInformation.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def UserPlaneSecurityInformation.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UserPlaneSecurityInformation)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UserPlaneSecurityInformation.valid(v), B.bytes_eq(Ap.pack(UserPlaneSecurityInformation.write(v, 0n, [])), bs)))
-
-def UserPlaneSecurityInformation.roundtrips(+bs: B.Bytes()) -> Bool:
-  UserPlaneSecurityInformation.roundtrips.end(bs, UserPlaneSecurityInformation.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowAcceptedItem ::= SEQUENCE { qosFlowIdentifier QosFlowIdentifier, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type QosFlowAcceptedItem is Data:
   QosFlowAcceptedItem{qosFlowIdentifier: QosFlowIdentifier(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -12741,18 +10689,6 @@ def QosFlowAcceptedItem.after(x: QosFlowAcceptedItem, +rem: Nat) -> Nat:
       +r2 = QosFlowAcceptedItem.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def QosFlowAcceptedItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowAcceptedItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowAcceptedItem.valid(v), B.bytes_eq(Ap.pack(QosFlowAcceptedItem.write(v, 0n, [])), bs)))
-
-def QosFlowAcceptedItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowAcceptedItem.roundtrips.end(bs, QosFlowAcceptedItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowAcceptedList ::= SEQUENCE (SIZE(1..64)) OF QosFlowAcceptedItem
 def QosFlowAcceptedList() -> Data:
   List<&2, QosFlowAcceptedItem>
@@ -12817,18 +10753,6 @@ def QosFlowAcceptedList.items_after(xs: QosFlowAcceptedList(), +rem: Nat) -> Nat
 
 def QosFlowAcceptedList.after(+xs: QosFlowAcceptedList(), +rem: Nat) -> Nat:
   QosFlowAcceptedList.items_after(xs, Ap.Size.after(False{}, 6n, rem))
-
-def QosFlowAcceptedList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowAcceptedList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowAcceptedList.valid(v), B.bytes_eq(Ap.pack(QosFlowAcceptedList.write(v, 0n, [])), bs)))
-
-def QosFlowAcceptedList.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowAcceptedList.roundtrips.end(bs, QosFlowAcceptedList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PathSwitchRequestTransfer ::= SEQUENCE { dL-NGU-UP-TNLInformation UPTransportLayerInformation, dL-NGU-TNLInformationReused DL-NGU-TNLInformationReused OPTIONAL, userPlaneSecurityInformation UserPlaneSecurityInformation OPTIONAL, qosFlowAcceptedList QosFlowAcceptedList, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 7 known rows> OPTIONAL, ... }
 type PathSwitchRequestTransfer is Data:
@@ -13025,18 +10949,6 @@ def PathSwitchRequestTransfer.after(x: PathSwitchRequestTransfer, +rem: Nat) -> 
       +r5 = PathSwitchRequestTransfer.a_iE_Extensions(iE_Extensions, r4)
       r5
 
-def PathSwitchRequestTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PathSwitchRequestTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PathSwitchRequestTransfer.valid(v), B.bytes_eq(Ap.pack(PathSwitchRequestTransfer.write(v, 0n, [])), bs)))
-
-def PathSwitchRequestTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PathSwitchRequestTransfer.roundtrips.end(bs, PathSwitchRequestTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PathSwitchRequestAcknowledge: a protocol IE container (TS 38.413 §9.2).
 def PathSwitchRequestAcknowledge() -> Data:
   List<&2, Fr.Ie>
@@ -13064,18 +10976,6 @@ def PathSwitchRequestAcknowledge.after(+v: PathSwitchRequestAcknowledge(), +rem:
 def PathSwitchRequestAcknowledge.valid(+v: PathSwitchRequestAcknowledge()) -> Bool:
   Fr.Ies.valid(v)
 
-def PathSwitchRequestAcknowledge.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PathSwitchRequestAcknowledge())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PathSwitchRequestAcknowledge.valid(v), B.bytes_eq(Ap.pack(PathSwitchRequestAcknowledge.write(v, 0n, [])), bs)))
-
-def PathSwitchRequestAcknowledge.roundtrips(+bs: B.Bytes()) -> Bool:
-  PathSwitchRequestAcknowledge.roundtrips.end(bs, PathSwitchRequestAcknowledge.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceReleasedItemPSAck-pathSwitchRequestUnsuccessfulTransfer ::= Open
 def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer() -> Data:
   B.Bytes()
@@ -13091,18 +10991,6 @@ def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.af
 
 def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.valid(+v: PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.roundtrips.end(bs, PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceReleasedItemPSAck ::= SEQUENCE { pDUSessionID PDUSessionID, pathSwitchRequestUnsuccessfulTransfer OCTET STRING (CONTAINING PathSwitchRequestUnsuccessfulTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceReleasedItemPSAck is Data:
@@ -13211,18 +11099,6 @@ def PDUSessionResourceReleasedItemPSAck.after(x: PDUSessionResourceReleasedItemP
       +r3 = PDUSessionResourceReleasedItemPSAck.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceReleasedItemPSAck.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceReleasedItemPSAck)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceReleasedItemPSAck.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceReleasedItemPSAck.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceReleasedItemPSAck.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceReleasedItemPSAck.roundtrips.end(bs, PDUSessionResourceReleasedItemPSAck.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceReleasedListPSAck ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceReleasedItemPSAck
 def PDUSessionResourceReleasedListPSAck() -> Data:
   List<&2, PDUSessionResourceReleasedItemPSAck>
@@ -13287,18 +11163,6 @@ def PDUSessionResourceReleasedListPSAck.items_after(xs: PDUSessionResourceReleas
 
 def PDUSessionResourceReleasedListPSAck.after(+xs: PDUSessionResourceReleasedListPSAck(), +rem: Nat) -> Nat:
   PDUSessionResourceReleasedListPSAck.items_after(xs, Ap.Size.after(True{}, 8n, rem))
-
-def PDUSessionResourceReleasedListPSAck.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceReleasedListPSAck())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceReleasedListPSAck.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceReleasedListPSAck.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceReleasedListPSAck.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceReleasedListPSAck.roundtrips.end(bs, PDUSessionResourceReleasedListPSAck.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PathSwitchRequestUnsuccessfulTransfer ::= SEQUENCE { cause Cause, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PathSwitchRequestUnsuccessfulTransfer is Data:
@@ -13398,18 +11262,6 @@ def PathSwitchRequestUnsuccessfulTransfer.after(x: PathSwitchRequestUnsuccessful
       +r2 = PathSwitchRequestUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def PathSwitchRequestUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PathSwitchRequestUnsuccessfulTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PathSwitchRequestUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PathSwitchRequestUnsuccessfulTransfer.write(v, 0n, [])), bs)))
-
-def PathSwitchRequestUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PathSwitchRequestUnsuccessfulTransfer.roundtrips.end(bs, PathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSwitchedItem-pathSwitchRequestAcknowledgeTransfer ::= Open
 def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer() -> Data:
   B.Bytes()
@@ -13425,18 +11277,6 @@ def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.after(+v
 
 def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.valid(+v: PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.roundtrips.end(bs, PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceSwitchedItem ::= SEQUENCE { pDUSessionID PDUSessionID, pathSwitchRequestAcknowledgeTransfer OCTET STRING (CONTAINING PathSwitchRequestAcknowledgeTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type PDUSessionResourceSwitchedItem is Data:
@@ -13545,18 +11385,6 @@ def PDUSessionResourceSwitchedItem.after(x: PDUSessionResourceSwitchedItem, +rem
       +r3 = PDUSessionResourceSwitchedItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceSwitchedItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSwitchedItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSwitchedItem.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSwitchedItem.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSwitchedItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSwitchedItem.roundtrips.end(bs, PDUSessionResourceSwitchedItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSwitchedList ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceSwitchedItem
 def PDUSessionResourceSwitchedList() -> Data:
   List<&2, PDUSessionResourceSwitchedItem>
@@ -13621,18 +11449,6 @@ def PDUSessionResourceSwitchedList.items_after(xs: PDUSessionResourceSwitchedLis
 
 def PDUSessionResourceSwitchedList.after(+xs: PDUSessionResourceSwitchedList(), +rem: Nat) -> Nat:
   PDUSessionResourceSwitchedList.items_after(xs, Ap.Size.after(True{}, 8n, rem))
-
-def PDUSessionResourceSwitchedList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSwitchedList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSwitchedList.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSwitchedList.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSwitchedList.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSwitchedList.roundtrips.end(bs, PDUSessionResourceSwitchedList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PathSwitchRequestAcknowledgeTransfer ::= SEQUENCE { uL-NGU-UP-TNLInformation UPTransportLayerInformation OPTIONAL, securityIndication SecurityIndication OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 4 known rows> OPTIONAL, ... }
 type PathSwitchRequestAcknowledgeTransfer is Data:
@@ -13811,18 +11627,6 @@ def PathSwitchRequestAcknowledgeTransfer.after(x: PathSwitchRequestAcknowledgeTr
       +r3 = PathSwitchRequestAcknowledgeTransfer.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PathSwitchRequestAcknowledgeTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PathSwitchRequestAcknowledgeTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PathSwitchRequestAcknowledgeTransfer.valid(v), B.bytes_eq(Ap.pack(PathSwitchRequestAcknowledgeTransfer.write(v, 0n, [])), bs)))
-
-def PathSwitchRequestAcknowledgeTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PathSwitchRequestAcknowledgeTransfer.roundtrips.end(bs, PathSwitchRequestAcknowledgeTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # NextHopChainingCount ::= INTEGER (0..7)
 def NextHopChainingCount() -> Data:
   U32
@@ -13838,18 +11642,6 @@ def NextHopChainingCount.after(+v: NextHopChainingCount(), +rem: Nat) -> Nat:
 
 def NextHopChainingCount.valid(+v: NextHopChainingCount()) -> Bool:
   Ap.Int.valid(3n, 7, v)
-
-def NextHopChainingCount.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(NextHopChainingCount())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(NextHopChainingCount.valid(v), B.bytes_eq(Ap.pack(NextHopChainingCount.write(v, 0n, [])), bs)))
-
-def NextHopChainingCount.roundtrips(+bs: B.Bytes()) -> Bool:
-  NextHopChainingCount.roundtrips.end(bs, NextHopChainingCount.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # SecurityContext ::= SEQUENCE { nextHopChainingCount NextHopChainingCount, nextHopNH SecurityKey, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type SecurityContext is Data:
@@ -13958,18 +11750,6 @@ def SecurityContext.after(x: SecurityContext, +rem: Nat) -> Nat:
       +r3 = SecurityContext.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def SecurityContext.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SecurityContext)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SecurityContext.valid(v), B.bytes_eq(Ap.pack(SecurityContext.write(v, 0n, [])), bs)))
-
-def SecurityContext.roundtrips(+bs: B.Bytes()) -> Bool:
-  SecurityContext.roundtrips.end(bs, SecurityContext.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PathSwitchRequestFailure: a protocol IE container (TS 38.413 §9.2).
 def PathSwitchRequestFailure() -> Data:
   List<&2, Fr.Ie>
@@ -13997,18 +11777,6 @@ def PathSwitchRequestFailure.after(+v: PathSwitchRequestFailure(), +rem: Nat) ->
 def PathSwitchRequestFailure.valid(+v: PathSwitchRequestFailure()) -> Bool:
   Fr.Ies.valid(v)
 
-def PathSwitchRequestFailure.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PathSwitchRequestFailure())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PathSwitchRequestFailure.valid(v), B.bytes_eq(Ap.pack(PathSwitchRequestFailure.write(v, 0n, [])), bs)))
-
-def PathSwitchRequestFailure.roundtrips(+bs: B.Bytes()) -> Bool:
-  PathSwitchRequestFailure.roundtrips.end(bs, PathSwitchRequestFailure.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceReleasedItemPSFail-pathSwitchRequestUnsuccessfulTransfer ::= Open
 def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer() -> Data:
   B.Bytes()
@@ -14024,18 +11792,6 @@ def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.a
 
 def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.valid(+v: PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.roundtrips.end(bs, PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceReleasedItemPSFail ::= SEQUENCE { pDUSessionID PDUSessionID, pathSwitchRequestUnsuccessfulTransfer OCTET STRING (CONTAINING PathSwitchRequestUnsuccessfulTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceReleasedItemPSFail is Data:
@@ -14144,18 +11900,6 @@ def PDUSessionResourceReleasedItemPSFail.after(x: PDUSessionResourceReleasedItem
       +r3 = PDUSessionResourceReleasedItemPSFail.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceReleasedItemPSFail.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceReleasedItemPSFail)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceReleasedItemPSFail.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceReleasedItemPSFail.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceReleasedItemPSFail.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceReleasedItemPSFail.roundtrips.end(bs, PDUSessionResourceReleasedItemPSFail.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceReleasedListPSFail ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceReleasedItemPSFail
 def PDUSessionResourceReleasedListPSFail() -> Data:
   List<&2, PDUSessionResourceReleasedItemPSFail>
@@ -14221,18 +11965,6 @@ def PDUSessionResourceReleasedListPSFail.items_after(xs: PDUSessionResourceRelea
 def PDUSessionResourceReleasedListPSFail.after(+xs: PDUSessionResourceReleasedListPSFail(), +rem: Nat) -> Nat:
   PDUSessionResourceReleasedListPSFail.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceReleasedListPSFail.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceReleasedListPSFail())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceReleasedListPSFail.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceReleasedListPSFail.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceReleasedListPSFail.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceReleasedListPSFail.roundtrips.end(bs, PDUSessionResourceReleasedListPSFail.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # HandoverRequired: a protocol IE container (TS 38.413 §9.2).
 def HandoverRequired() -> Data:
   List<&2, Fr.Ie>
@@ -14260,18 +11992,6 @@ def HandoverRequired.after(+v: HandoverRequired(), +rem: Nat) -> Nat:
 def HandoverRequired.valid(+v: HandoverRequired()) -> Bool:
   Fr.Ies.valid(v)
 
-def HandoverRequired.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverRequired())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverRequired.valid(v), B.bytes_eq(Ap.pack(HandoverRequired.write(v, 0n, [])), bs)))
-
-def HandoverRequired.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverRequired.roundtrips.end(bs, HandoverRequired.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # SourceToTarget-TransparentContainer ::= OCTET STRING
 def SourceToTarget_TransparentContainer() -> Data:
   B.Bytes()
@@ -14288,18 +12008,6 @@ def SourceToTarget_TransparentContainer.after(+v: SourceToTarget_TransparentCont
 def SourceToTarget_TransparentContainer.valid(+v: SourceToTarget_TransparentContainer()) -> Bool:
   Ap.Open.valid(v)
 
-def SourceToTarget_TransparentContainer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(SourceToTarget_TransparentContainer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(SourceToTarget_TransparentContainer.valid(v), B.bytes_eq(Ap.pack(SourceToTarget_TransparentContainer.write(v, 0n, [])), bs)))
-
-def SourceToTarget_TransparentContainer.roundtrips(+bs: B.Bytes()) -> Bool:
-  SourceToTarget_TransparentContainer.roundtrips.end(bs, SourceToTarget_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceItemHORqd-handoverRequiredTransfer ::= Open
 def PDUSessionResourceItemHORqd_handoverRequiredTransfer() -> Data:
   B.Bytes()
@@ -14315,18 +12023,6 @@ def PDUSessionResourceItemHORqd_handoverRequiredTransfer.after(+v: PDUSessionRes
 
 def PDUSessionResourceItemHORqd_handoverRequiredTransfer.valid(+v: PDUSessionResourceItemHORqd_handoverRequiredTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceItemHORqd_handoverRequiredTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceItemHORqd_handoverRequiredTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceItemHORqd_handoverRequiredTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceItemHORqd_handoverRequiredTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceItemHORqd_handoverRequiredTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceItemHORqd_handoverRequiredTransfer.roundtrips.end(bs, PDUSessionResourceItemHORqd_handoverRequiredTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceItemHORqd ::= SEQUENCE { pDUSessionID PDUSessionID, handoverRequiredTransfer OCTET STRING (CONTAINING HandoverRequiredTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceItemHORqd is Data:
@@ -14435,18 +12131,6 @@ def PDUSessionResourceItemHORqd.after(x: PDUSessionResourceItemHORqd, +rem: Nat)
       +r3 = PDUSessionResourceItemHORqd.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceItemHORqd.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceItemHORqd)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceItemHORqd.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceItemHORqd.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceItemHORqd.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceItemHORqd.roundtrips.end(bs, PDUSessionResourceItemHORqd.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceListHORqd ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceItemHORqd
 def PDUSessionResourceListHORqd() -> Data:
   List<&2, PDUSessionResourceItemHORqd>
@@ -14512,18 +12196,6 @@ def PDUSessionResourceListHORqd.items_after(xs: PDUSessionResourceListHORqd(), +
 def PDUSessionResourceListHORqd.after(+xs: PDUSessionResourceListHORqd(), +rem: Nat) -> Nat:
   PDUSessionResourceListHORqd.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceListHORqd.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceListHORqd())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceListHORqd.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceListHORqd.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceListHORqd.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceListHORqd.roundtrips.end(bs, PDUSessionResourceListHORqd.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DirectForwardingPathAvailability ::= ENUMERATED { direct-path-available, ... }
 def DirectForwardingPathAvailability() -> Data:
   Ap.Enum
@@ -14542,18 +12214,6 @@ def DirectForwardingPathAvailability.after(+v: DirectForwardingPathAvailability(
 
 def DirectForwardingPathAvailability.valid(+v: DirectForwardingPathAvailability()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
-
-def DirectForwardingPathAvailability.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DirectForwardingPathAvailability())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DirectForwardingPathAvailability.valid(v), B.bytes_eq(Ap.pack(DirectForwardingPathAvailability.write(v, 0n, [])), bs)))
-
-def DirectForwardingPathAvailability.roundtrips(+bs: B.Bytes()) -> Bool:
-  DirectForwardingPathAvailability.roundtrips.end(bs, DirectForwardingPathAvailability.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # HandoverRequiredTransfer ::= SEQUENCE { directForwardingPathAvailability DirectForwardingPathAvailability OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type HandoverRequiredTransfer is Data:
@@ -14688,18 +12348,6 @@ def HandoverRequiredTransfer.after(x: HandoverRequiredTransfer, +rem: Nat) -> Na
       +r2 = HandoverRequiredTransfer.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def HandoverRequiredTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverRequiredTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverRequiredTransfer.valid(v), B.bytes_eq(Ap.pack(HandoverRequiredTransfer.write(v, 0n, [])), bs)))
-
-def HandoverRequiredTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverRequiredTransfer.roundtrips.end(bs, HandoverRequiredTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TargetRANNodeID ::= SEQUENCE { globalRANNodeID GlobalRANNodeID, selectedTAI TAI, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type TargetRANNodeID is Data:
   TargetRANNodeID{globalRANNodeID: GlobalRANNodeID, selectedTAI: TAI, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -14807,18 +12455,6 @@ def TargetRANNodeID.after(x: TargetRANNodeID, +rem: Nat) -> Nat:
       +r3 = TargetRANNodeID.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def TargetRANNodeID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TargetRANNodeID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TargetRANNodeID.valid(v), B.bytes_eq(Ap.pack(TargetRANNodeID.write(v, 0n, [])), bs)))
-
-def TargetRANNodeID.roundtrips(+bs: B.Bytes()) -> Bool:
-  TargetRANNodeID.roundtrips.end(bs, TargetRANNodeID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # EPS-TAC ::= OCTET STRING (SIZE(2))
 def EPS_TAC() -> Data:
   B.Bytes()
@@ -14834,18 +12470,6 @@ def EPS_TAC.after(+v: EPS_TAC(), +rem: Nat) -> Nat:
 
 def EPS_TAC.valid(+v: EPS_TAC()) -> Bool:
   Bool.and(Nat.is_eq(List.length(&2, U32, v), 2n), B.all_bytes(v))
-
-def EPS_TAC.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(EPS_TAC())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(EPS_TAC.valid(v), B.bytes_eq(Ap.pack(EPS_TAC.write(v, 0n, [])), bs)))
-
-def EPS_TAC.roundtrips(+bs: B.Bytes()) -> Bool:
-  EPS_TAC.roundtrips.end(bs, EPS_TAC.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # EPS-TAI ::= SEQUENCE { pLMNIdentity PLMNIdentity, ePS-TAC EPS-TAC, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type EPS_TAI is Data:
@@ -14954,18 +12578,6 @@ def EPS_TAI.after(x: EPS_TAI, +rem: Nat) -> Nat:
       +r3 = EPS_TAI.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def EPS_TAI.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(EPS_TAI)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(EPS_TAI.valid(v), B.bytes_eq(Ap.pack(EPS_TAI.write(v, 0n, [])), bs)))
-
-def EPS_TAI.roundtrips(+bs: B.Bytes()) -> Bool:
-  EPS_TAI.roundtrips.end(bs, EPS_TAI.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TargeteNB-ID ::= SEQUENCE { globalENB-ID GlobalNgENB-ID, selected-EPS-TAI EPS-TAI, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type TargeteNB_ID is Data:
   TargeteNB_ID{globalENB_ID: GlobalNgENB_ID, selected_EPS_TAI: EPS_TAI, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
@@ -15073,18 +12685,6 @@ def TargeteNB_ID.after(x: TargeteNB_ID, +rem: Nat) -> Nat:
       +r3 = TargeteNB_ID.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def TargeteNB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TargeteNB_ID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TargeteNB_ID.valid(v), B.bytes_eq(Ap.pack(TargeteNB_ID.write(v, 0n, [])), bs)))
-
-def TargeteNB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  TargeteNB_ID.roundtrips.end(bs, TargeteNB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TargetID ::= CHOICE { targetRANNodeID TargetRANNodeID, targeteNB-ID TargeteNB-ID, choice-Extensions <ProtocolIE-SingleContainer: 2 known rows> }
 type TargetID is Data:
   TargetID_targetRANNodeID{v: TargetRANNodeID}
@@ -15160,18 +12760,6 @@ def TargetID.after(x: TargetID, +rem: Nat) -> Nat:
     case TargetID_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
 
-def TargetID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TargetID)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TargetID.valid(v), B.bytes_eq(Ap.pack(TargetID.write(v, 0n, [])), bs)))
-
-def TargetID.roundtrips(+bs: B.Bytes()) -> Bool:
-  TargetID.roundtrips.end(bs, TargetID.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # HandoverType ::= ENUMERATED { intra5gs, fivegs-to-eps, eps-to-5gs, ..., fivegs-to-utran }
 def HandoverType() -> Data:
   Ap.Enum
@@ -15200,18 +12788,6 @@ def HandoverType.after(+v: HandoverType(), +rem: Nat) -> Nat:
 def HandoverType.valid(+v: HandoverType()) -> Bool:
   Ap.Enum.valid(2n, 2, True{}, v)
 
-def HandoverType.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverType())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverType.valid(v), B.bytes_eq(Ap.pack(HandoverType.write(v, 0n, [])), bs)))
-
-def HandoverType.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverType.roundtrips.end(bs, HandoverType.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # HandoverRequest: a protocol IE container (TS 38.413 §9.2).
 def HandoverRequest() -> Data:
   List<&2, Fr.Ie>
@@ -15239,18 +12815,6 @@ def HandoverRequest.after(+v: HandoverRequest(), +rem: Nat) -> Nat:
 def HandoverRequest.valid(+v: HandoverRequest()) -> Bool:
   Fr.Ies.valid(v)
 
-def HandoverRequest.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverRequest())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverRequest.valid(v), B.bytes_eq(Ap.pack(HandoverRequest.write(v, 0n, [])), bs)))
-
-def HandoverRequest.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverRequest.roundtrips.end(bs, HandoverRequest.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupItemHOReq-handoverRequestTransfer ::= Open
 def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer() -> Data:
   B.Bytes()
@@ -15266,18 +12830,6 @@ def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.after(+v: PDUSessio
 
 def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.valid(+v: PDUSessionResourceSetupItemHOReq_handoverRequestTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemHOReq_handoverRequestTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.roundtrips.end(bs, PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceSetupItemHOReq ::= SEQUENCE { pDUSessionID PDUSessionID, s-NSSAI S-NSSAI, handoverRequestTransfer OCTET STRING (CONTAINING PDUSessionResourceSetupRequestTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type PDUSessionResourceSetupItemHOReq is Data:
@@ -15395,18 +12947,6 @@ def PDUSessionResourceSetupItemHOReq.after(x: PDUSessionResourceSetupItemHOReq, 
       +r4 = PDUSessionResourceSetupItemHOReq.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def PDUSessionResourceSetupItemHOReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupItemHOReq)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupItemHOReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupItemHOReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupItemHOReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupItemHOReq.roundtrips.end(bs, PDUSessionResourceSetupItemHOReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceSetupListHOReq ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceSetupItemHOReq
 def PDUSessionResourceSetupListHOReq() -> Data:
   List<&2, PDUSessionResourceSetupItemHOReq>
@@ -15472,18 +13012,6 @@ def PDUSessionResourceSetupListHOReq.items_after(xs: PDUSessionResourceSetupList
 def PDUSessionResourceSetupListHOReq.after(+xs: PDUSessionResourceSetupListHOReq(), +rem: Nat) -> Nat:
   PDUSessionResourceSetupListHOReq.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceSetupListHOReq.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceSetupListHOReq())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceSetupListHOReq.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceSetupListHOReq.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceSetupListHOReq.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceSetupListHOReq.roundtrips.end(bs, PDUSessionResourceSetupListHOReq.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # HandoverRequestAcknowledge: a protocol IE container (TS 38.413 §9.2).
 def HandoverRequestAcknowledge() -> Data:
   List<&2, Fr.Ie>
@@ -15511,18 +13039,6 @@ def HandoverRequestAcknowledge.after(+v: HandoverRequestAcknowledge(), +rem: Nat
 def HandoverRequestAcknowledge.valid(+v: HandoverRequestAcknowledge()) -> Bool:
   Fr.Ies.valid(v)
 
-def HandoverRequestAcknowledge.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverRequestAcknowledge())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverRequestAcknowledge.valid(v), B.bytes_eq(Ap.pack(HandoverRequestAcknowledge.write(v, 0n, [])), bs)))
-
-def HandoverRequestAcknowledge.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverRequestAcknowledge.roundtrips.end(bs, HandoverRequestAcknowledge.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # TargetToSource-TransparentContainer ::= OCTET STRING
 def TargetToSource_TransparentContainer() -> Data:
   B.Bytes()
@@ -15539,18 +13055,6 @@ def TargetToSource_TransparentContainer.after(+v: TargetToSource_TransparentCont
 def TargetToSource_TransparentContainer.valid(+v: TargetToSource_TransparentContainer()) -> Bool:
   Ap.Open.valid(v)
 
-def TargetToSource_TransparentContainer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(TargetToSource_TransparentContainer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(TargetToSource_TransparentContainer.valid(v), B.bytes_eq(Ap.pack(TargetToSource_TransparentContainer.write(v, 0n, [])), bs)))
-
-def TargetToSource_TransparentContainer.roundtrips(+bs: B.Bytes()) -> Bool:
-  TargetToSource_TransparentContainer.roundtrips.end(bs, TargetToSource_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceFailedToSetupItemHOAck-handoverResourceAllocationUnsuccessfulTransfer ::= Open
 def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer() -> Data:
   B.Bytes()
@@ -15566,18 +13070,6 @@ def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccess
 
 def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.valid(+v: PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceFailedToSetupItemHOAck ::= SEQUENCE { pDUSessionID PDUSessionID, handoverResourceAllocationUnsuccessfulTransfer OCTET STRING (CONTAINING HandoverResourceAllocationUnsuccessfulTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceFailedToSetupItemHOAck is Data:
@@ -15686,18 +13178,6 @@ def PDUSessionResourceFailedToSetupItemHOAck.after(x: PDUSessionResourceFailedTo
       +r3 = PDUSessionResourceFailedToSetupItemHOAck.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceFailedToSetupItemHOAck.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupItemHOAck)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupItemHOAck.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupItemHOAck.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupItemHOAck.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupItemHOAck.roundtrips.end(bs, PDUSessionResourceFailedToSetupItemHOAck.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceFailedToSetupListHOAck ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceFailedToSetupItemHOAck
 def PDUSessionResourceFailedToSetupListHOAck() -> Data:
   List<&2, PDUSessionResourceFailedToSetupItemHOAck>
@@ -15762,18 +13242,6 @@ def PDUSessionResourceFailedToSetupListHOAck.items_after(xs: PDUSessionResourceF
 
 def PDUSessionResourceFailedToSetupListHOAck.after(+xs: PDUSessionResourceFailedToSetupListHOAck(), +rem: Nat) -> Nat:
   PDUSessionResourceFailedToSetupListHOAck.items_after(xs, Ap.Size.after(True{}, 8n, rem))
-
-def PDUSessionResourceFailedToSetupListHOAck.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceFailedToSetupListHOAck())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceFailedToSetupListHOAck.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceFailedToSetupListHOAck.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceFailedToSetupListHOAck.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceFailedToSetupListHOAck.roundtrips.end(bs, PDUSessionResourceFailedToSetupListHOAck.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # HandoverResourceAllocationUnsuccessfulTransfer ::= SEQUENCE { cause Cause, criticalityDiagnostics CriticalityDiagnostics OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type HandoverResourceAllocationUnsuccessfulTransfer is Data:
@@ -15917,18 +13385,6 @@ def HandoverResourceAllocationUnsuccessfulTransfer.after(x: HandoverResourceAllo
       +r3 = HandoverResourceAllocationUnsuccessfulTransfer.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def HandoverResourceAllocationUnsuccessfulTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverResourceAllocationUnsuccessfulTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverResourceAllocationUnsuccessfulTransfer.valid(v), B.bytes_eq(Ap.pack(HandoverResourceAllocationUnsuccessfulTransfer.write(v, 0n, [])), bs)))
-
-def HandoverResourceAllocationUnsuccessfulTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverResourceAllocationUnsuccessfulTransfer.roundtrips.end(bs, HandoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceAdmittedItem-handoverRequestAcknowledgeTransfer ::= Open
 def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer() -> Data:
   B.Bytes()
@@ -15944,18 +13400,6 @@ def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.after(+v: 
 
 def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.valid(+v: PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.roundtrips.end(bs, PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceAdmittedItem ::= SEQUENCE { pDUSessionID PDUSessionID, handoverRequestAcknowledgeTransfer OCTET STRING (CONTAINING HandoverRequestAcknowledgeTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceAdmittedItem is Data:
@@ -16064,18 +13508,6 @@ def PDUSessionResourceAdmittedItem.after(x: PDUSessionResourceAdmittedItem, +rem
       +r3 = PDUSessionResourceAdmittedItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceAdmittedItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceAdmittedItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceAdmittedItem.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceAdmittedItem.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceAdmittedItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceAdmittedItem.roundtrips.end(bs, PDUSessionResourceAdmittedItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceAdmittedList ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceAdmittedItem
 def PDUSessionResourceAdmittedList() -> Data:
   List<&2, PDUSessionResourceAdmittedItem>
@@ -16141,18 +13573,6 @@ def PDUSessionResourceAdmittedList.items_after(xs: PDUSessionResourceAdmittedLis
 def PDUSessionResourceAdmittedList.after(+xs: PDUSessionResourceAdmittedList(), +rem: Nat) -> Nat:
   PDUSessionResourceAdmittedList.items_after(xs, Ap.Size.after(True{}, 8n, rem))
 
-def PDUSessionResourceAdmittedList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceAdmittedList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceAdmittedList.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceAdmittedList.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceAdmittedList.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceAdmittedList.roundtrips.end(bs, PDUSessionResourceAdmittedList.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DataForwardingAccepted ::= ENUMERATED { data-forwarding-accepted, ... }
 def DataForwardingAccepted() -> Data:
   Ap.Enum
@@ -16171,18 +13591,6 @@ def DataForwardingAccepted.after(+v: DataForwardingAccepted(), +rem: Nat) -> Nat
 
 def DataForwardingAccepted.valid(+v: DataForwardingAccepted()) -> Bool:
   Ap.Enum.valid(0n, 0, True{}, v)
-
-def DataForwardingAccepted.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DataForwardingAccepted())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DataForwardingAccepted.valid(v), B.bytes_eq(Ap.pack(DataForwardingAccepted.write(v, 0n, [])), bs)))
-
-def DataForwardingAccepted.roundtrips(+bs: B.Bytes()) -> Bool:
-  DataForwardingAccepted.roundtrips.end(bs, DataForwardingAccepted.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # QosFlowItemWithDataForwarding ::= SEQUENCE { qosFlowIdentifier QosFlowIdentifier, dataForwardingAccepted DataForwardingAccepted OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type QosFlowItemWithDataForwarding is Data:
@@ -16326,18 +13734,6 @@ def QosFlowItemWithDataForwarding.after(x: QosFlowItemWithDataForwarding, +rem: 
       +r3 = QosFlowItemWithDataForwarding.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def QosFlowItemWithDataForwarding.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowItemWithDataForwarding)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowItemWithDataForwarding.valid(v), B.bytes_eq(Ap.pack(QosFlowItemWithDataForwarding.write(v, 0n, [])), bs)))
-
-def QosFlowItemWithDataForwarding.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowItemWithDataForwarding.roundtrips.end(bs, QosFlowItemWithDataForwarding.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowListWithDataForwarding ::= SEQUENCE (SIZE(1..64)) OF QosFlowItemWithDataForwarding
 def QosFlowListWithDataForwarding() -> Data:
   List<&2, QosFlowItemWithDataForwarding>
@@ -16403,18 +13799,6 @@ def QosFlowListWithDataForwarding.items_after(xs: QosFlowListWithDataForwarding(
 def QosFlowListWithDataForwarding.after(+xs: QosFlowListWithDataForwarding(), +rem: Nat) -> Nat:
   QosFlowListWithDataForwarding.items_after(xs, Ap.Size.after(False{}, 6n, rem))
 
-def QosFlowListWithDataForwarding.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowListWithDataForwarding())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowListWithDataForwarding.valid(v), B.bytes_eq(Ap.pack(QosFlowListWithDataForwarding.write(v, 0n, [])), bs)))
-
-def QosFlowListWithDataForwarding.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowListWithDataForwarding.roundtrips.end(bs, QosFlowListWithDataForwarding.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DRB-ID ::= INTEGER (1..32, ...)
 def DRB_ID() -> Data:
   Ap.XInt
@@ -16430,18 +13814,6 @@ def DRB_ID.after(+v: DRB_ID(), +rem: Nat) -> Nat:
 
 def DRB_ID.valid(+v: DRB_ID()) -> Bool:
   Ap.XInt.valid(5n, 31, v)
-
-def DRB_ID.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRB_ID())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRB_ID.valid(v), B.bytes_eq(Ap.pack(DRB_ID.write(v, 0n, [])), bs)))
-
-def DRB_ID.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRB_ID.roundtrips.end(bs, DRB_ID.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # DataForwardingResponseDRBItem ::= SEQUENCE { dRB-ID DRB-ID, dLForwardingUP-TNLInformation UPTransportLayerInformation OPTIONAL, uLForwardingUP-TNLInformation UPTransportLayerInformation OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type DataForwardingResponseDRBItem is Data:
@@ -16629,18 +14001,6 @@ def DataForwardingResponseDRBItem.after(x: DataForwardingResponseDRBItem, +rem: 
       +r4 = DataForwardingResponseDRBItem.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def DataForwardingResponseDRBItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DataForwardingResponseDRBItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DataForwardingResponseDRBItem.valid(v), B.bytes_eq(Ap.pack(DataForwardingResponseDRBItem.write(v, 0n, [])), bs)))
-
-def DataForwardingResponseDRBItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  DataForwardingResponseDRBItem.roundtrips.end(bs, DataForwardingResponseDRBItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DataForwardingResponseDRBList ::= SEQUENCE (SIZE(1..32)) OF DataForwardingResponseDRBItem
 def DataForwardingResponseDRBList() -> Data:
   List<&2, DataForwardingResponseDRBItem>
@@ -16705,18 +14065,6 @@ def DataForwardingResponseDRBList.items_after(xs: DataForwardingResponseDRBList(
 
 def DataForwardingResponseDRBList.after(+xs: DataForwardingResponseDRBList(), +rem: Nat) -> Nat:
   DataForwardingResponseDRBList.items_after(xs, Ap.Size.after(False{}, 5n, rem))
-
-def DataForwardingResponseDRBList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DataForwardingResponseDRBList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DataForwardingResponseDRBList.valid(v), B.bytes_eq(Ap.pack(DataForwardingResponseDRBList.write(v, 0n, [])), bs)))
-
-def DataForwardingResponseDRBList.roundtrips(+bs: B.Bytes()) -> Bool:
-  DataForwardingResponseDRBList.roundtrips.end(bs, DataForwardingResponseDRBList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # HandoverRequestAcknowledgeTransfer ::= SEQUENCE { dL-NGU-UP-TNLInformation UPTransportLayerInformation, dLForwardingUP-TNLInformation UPTransportLayerInformation OPTIONAL, securityResult SecurityResult OPTIONAL, qosFlowSetupResponseList QosFlowListWithDataForwarding, qosFlowFailedToSetupList QosFlowListWithCause OPTIONAL, dataForwardingResponseDRBList DataForwardingResponseDRBList OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 8 known rows> OPTIONAL, ... }
 type HandoverRequestAcknowledgeTransfer is Data:
@@ -17001,18 +14349,6 @@ def HandoverRequestAcknowledgeTransfer.after(x: HandoverRequestAcknowledgeTransf
       +r7 = HandoverRequestAcknowledgeTransfer.a_iE_Extensions(iE_Extensions, r6)
       r7
 
-def HandoverRequestAcknowledgeTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverRequestAcknowledgeTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverRequestAcknowledgeTransfer.valid(v), B.bytes_eq(Ap.pack(HandoverRequestAcknowledgeTransfer.write(v, 0n, [])), bs)))
-
-def HandoverRequestAcknowledgeTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverRequestAcknowledgeTransfer.roundtrips.end(bs, HandoverRequestAcknowledgeTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # HandoverFailure: a protocol IE container (TS 38.413 §9.2).
 def HandoverFailure() -> Data:
   List<&2, Fr.Ie>
@@ -17039,18 +14375,6 @@ def HandoverFailure.after(+v: HandoverFailure(), +rem: Nat) -> Nat:
 
 def HandoverFailure.valid(+v: HandoverFailure()) -> Bool:
   Fr.Ies.valid(v)
-
-def HandoverFailure.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverFailure())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverFailure.valid(v), B.bytes_eq(Ap.pack(HandoverFailure.write(v, 0n, [])), bs)))
-
-def HandoverFailure.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverFailure.roundtrips.end(bs, HandoverFailure.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # HandoverCommand: a protocol IE container (TS 38.413 §9.2).
 def HandoverCommand() -> Data:
@@ -17079,18 +14403,6 @@ def HandoverCommand.after(+v: HandoverCommand(), +rem: Nat) -> Nat:
 def HandoverCommand.valid(+v: HandoverCommand()) -> Bool:
   Fr.Ies.valid(v)
 
-def HandoverCommand.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverCommand())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverCommand.valid(v), B.bytes_eq(Ap.pack(HandoverCommand.write(v, 0n, [])), bs)))
-
-def HandoverCommand.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverCommand.roundtrips.end(bs, HandoverCommand.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceHandoverItem-handoverCommandTransfer ::= Open
 def PDUSessionResourceHandoverItem_handoverCommandTransfer() -> Data:
   B.Bytes()
@@ -17106,18 +14418,6 @@ def PDUSessionResourceHandoverItem_handoverCommandTransfer.after(+v: PDUSessionR
 
 def PDUSessionResourceHandoverItem_handoverCommandTransfer.valid(+v: PDUSessionResourceHandoverItem_handoverCommandTransfer()) -> Bool:
   Ap.Open.valid(v)
-
-def PDUSessionResourceHandoverItem_handoverCommandTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceHandoverItem_handoverCommandTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceHandoverItem_handoverCommandTransfer.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceHandoverItem_handoverCommandTransfer.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceHandoverItem_handoverCommandTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceHandoverItem_handoverCommandTransfer.roundtrips.end(bs, PDUSessionResourceHandoverItem_handoverCommandTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # PDUSessionResourceHandoverItem ::= SEQUENCE { pDUSessionID PDUSessionID, handoverCommandTransfer OCTET STRING (CONTAINING HandoverCommandTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type PDUSessionResourceHandoverItem is Data:
@@ -17226,18 +14526,6 @@ def PDUSessionResourceHandoverItem.after(x: PDUSessionResourceHandoverItem, +rem
       +r3 = PDUSessionResourceHandoverItem.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def PDUSessionResourceHandoverItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceHandoverItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceHandoverItem.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceHandoverItem.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceHandoverItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceHandoverItem.roundtrips.end(bs, PDUSessionResourceHandoverItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # PDUSessionResourceHandoverList ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceHandoverItem
 def PDUSessionResourceHandoverList() -> Data:
   List<&2, PDUSessionResourceHandoverItem>
@@ -17302,18 +14590,6 @@ def PDUSessionResourceHandoverList.items_after(xs: PDUSessionResourceHandoverLis
 
 def PDUSessionResourceHandoverList.after(+xs: PDUSessionResourceHandoverList(), +rem: Nat) -> Nat:
   PDUSessionResourceHandoverList.items_after(xs, Ap.Size.after(True{}, 8n, rem))
-
-def PDUSessionResourceHandoverList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(PDUSessionResourceHandoverList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(PDUSessionResourceHandoverList.valid(v), B.bytes_eq(Ap.pack(PDUSessionResourceHandoverList.write(v, 0n, [])), bs)))
-
-def PDUSessionResourceHandoverList.roundtrips(+bs: B.Bytes()) -> Bool:
-  PDUSessionResourceHandoverList.roundtrips.end(bs, PDUSessionResourceHandoverList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # QosFlowToBeForwardedItem ::= SEQUENCE { qosFlowIdentifier QosFlowIdentifier, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type QosFlowToBeForwardedItem is Data:
@@ -17413,18 +14689,6 @@ def QosFlowToBeForwardedItem.after(x: QosFlowToBeForwardedItem, +rem: Nat) -> Na
       +r2 = QosFlowToBeForwardedItem.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def QosFlowToBeForwardedItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowToBeForwardedItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowToBeForwardedItem.valid(v), B.bytes_eq(Ap.pack(QosFlowToBeForwardedItem.write(v, 0n, [])), bs)))
-
-def QosFlowToBeForwardedItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowToBeForwardedItem.roundtrips.end(bs, QosFlowToBeForwardedItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # QosFlowToBeForwardedList ::= SEQUENCE (SIZE(1..64)) OF QosFlowToBeForwardedItem
 def QosFlowToBeForwardedList() -> Data:
   List<&2, QosFlowToBeForwardedItem>
@@ -17489,18 +14753,6 @@ def QosFlowToBeForwardedList.items_after(xs: QosFlowToBeForwardedList(), +rem: N
 
 def QosFlowToBeForwardedList.after(+xs: QosFlowToBeForwardedList(), +rem: Nat) -> Nat:
   QosFlowToBeForwardedList.items_after(xs, Ap.Size.after(False{}, 6n, rem))
-
-def QosFlowToBeForwardedList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(QosFlowToBeForwardedList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(QosFlowToBeForwardedList.valid(v), B.bytes_eq(Ap.pack(QosFlowToBeForwardedList.write(v, 0n, [])), bs)))
-
-def QosFlowToBeForwardedList.roundtrips(+bs: B.Bytes()) -> Bool:
-  QosFlowToBeForwardedList.roundtrips.end(bs, QosFlowToBeForwardedList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # HandoverCommandTransfer ::= SEQUENCE { dLForwardingUP-TNLInformation UPTransportLayerInformation OPTIONAL, qosFlowToBeForwardedList QosFlowToBeForwardedList OPTIONAL, dataForwardingResponseDRBList DataForwardingResponseDRBList OPTIONAL, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 5 known rows> OPTIONAL, ... }
 type HandoverCommandTransfer is Data:
@@ -17723,18 +14975,6 @@ def HandoverCommandTransfer.after(x: HandoverCommandTransfer, +rem: Nat) -> Nat:
       +r4 = HandoverCommandTransfer.a_iE_Extensions(iE_Extensions, r3)
       r4
 
-def HandoverCommandTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverCommandTransfer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverCommandTransfer.valid(v), B.bytes_eq(Ap.pack(HandoverCommandTransfer.write(v, 0n, [])), bs)))
-
-def HandoverCommandTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverCommandTransfer.roundtrips.end(bs, HandoverCommandTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # HandoverPreparationFailure: a protocol IE container (TS 38.413 §9.2).
 def HandoverPreparationFailure() -> Data:
   List<&2, Fr.Ie>
@@ -17761,18 +15001,6 @@ def HandoverPreparationFailure.after(+v: HandoverPreparationFailure(), +rem: Nat
 
 def HandoverPreparationFailure.valid(+v: HandoverPreparationFailure()) -> Bool:
   Fr.Ies.valid(v)
-
-def HandoverPreparationFailure.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverPreparationFailure())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverPreparationFailure.valid(v), B.bytes_eq(Ap.pack(HandoverPreparationFailure.write(v, 0n, [])), bs)))
-
-def HandoverPreparationFailure.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverPreparationFailure.roundtrips.end(bs, HandoverPreparationFailure.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # HandoverNotify: a protocol IE container (TS 38.413 §9.2).
 def HandoverNotify() -> Data:
@@ -17801,18 +15029,6 @@ def HandoverNotify.after(+v: HandoverNotify(), +rem: Nat) -> Nat:
 def HandoverNotify.valid(+v: HandoverNotify()) -> Bool:
   Fr.Ies.valid(v)
 
-def HandoverNotify.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverNotify())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverNotify.valid(v), B.bytes_eq(Ap.pack(HandoverNotify.write(v, 0n, [])), bs)))
-
-def HandoverNotify.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverNotify.roundtrips.end(bs, HandoverNotify.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # HandoverCancel: a protocol IE container (TS 38.413 §9.2).
 def HandoverCancel() -> Data:
   List<&2, Fr.Ie>
@@ -17839,18 +15055,6 @@ def HandoverCancel.after(+v: HandoverCancel(), +rem: Nat) -> Nat:
 
 def HandoverCancel.valid(+v: HandoverCancel()) -> Bool:
   Fr.Ies.valid(v)
-
-def HandoverCancel.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverCancel())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverCancel.valid(v), B.bytes_eq(Ap.pack(HandoverCancel.write(v, 0n, [])), bs)))
-
-def HandoverCancel.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverCancel.roundtrips.end(bs, HandoverCancel.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # HandoverCancelAcknowledge: a protocol IE container (TS 38.413 §9.2).
 def HandoverCancelAcknowledge() -> Data:
@@ -17879,18 +15083,6 @@ def HandoverCancelAcknowledge.after(+v: HandoverCancelAcknowledge(), +rem: Nat) 
 def HandoverCancelAcknowledge.valid(+v: HandoverCancelAcknowledge()) -> Bool:
   Fr.Ies.valid(v)
 
-def HandoverCancelAcknowledge.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(HandoverCancelAcknowledge())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(HandoverCancelAcknowledge.valid(v), B.bytes_eq(Ap.pack(HandoverCancelAcknowledge.write(v, 0n, [])), bs)))
-
-def HandoverCancelAcknowledge.roundtrips(+bs: B.Bytes()) -> Bool:
-  HandoverCancelAcknowledge.roundtrips.end(bs, HandoverCancelAcknowledge.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # UplinkRANStatusTransfer: a protocol IE container (TS 38.413 §9.2).
 def UplinkRANStatusTransfer() -> Data:
   List<&2, Fr.Ie>
@@ -17918,18 +15110,6 @@ def UplinkRANStatusTransfer.after(+v: UplinkRANStatusTransfer(), +rem: Nat) -> N
 def UplinkRANStatusTransfer.valid(+v: UplinkRANStatusTransfer()) -> Bool:
   Fr.Ies.valid(v)
 
-def UplinkRANStatusTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(UplinkRANStatusTransfer())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(UplinkRANStatusTransfer.valid(v), B.bytes_eq(Ap.pack(UplinkRANStatusTransfer.write(v, 0n, [])), bs)))
-
-def UplinkRANStatusTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  UplinkRANStatusTransfer.roundtrips.end(bs, UplinkRANStatusTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # COUNTValueForPDCP-SN12-pDCP-SN12 ::= AInt
 def COUNTValueForPDCP_SN12_pDCP_SN12() -> Data:
   U32
@@ -17946,18 +15126,6 @@ def COUNTValueForPDCP_SN12_pDCP_SN12.after(+v: COUNTValueForPDCP_SN12_pDCP_SN12(
 def COUNTValueForPDCP_SN12_pDCP_SN12.valid(+v: COUNTValueForPDCP_SN12_pDCP_SN12()) -> Bool:
   Ap.Int.valid(16n, 4095, v)
 
-def COUNTValueForPDCP_SN12_pDCP_SN12.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(COUNTValueForPDCP_SN12_pDCP_SN12())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(COUNTValueForPDCP_SN12_pDCP_SN12.valid(v), B.bytes_eq(Ap.pack(COUNTValueForPDCP_SN12_pDCP_SN12.write(v, 0n, [])), bs)))
-
-def COUNTValueForPDCP_SN12_pDCP_SN12.roundtrips(+bs: B.Bytes()) -> Bool:
-  COUNTValueForPDCP_SN12_pDCP_SN12.roundtrips.end(bs, COUNTValueForPDCP_SN12_pDCP_SN12.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # COUNTValueForPDCP-SN12-hFN-PDCP-SN12 ::= Big
 def COUNTValueForPDCP_SN12_hFN_PDCP_SN12() -> Data:
   B.Bytes()
@@ -17973,18 +15141,6 @@ def COUNTValueForPDCP_SN12_hFN_PDCP_SN12.after(+v: COUNTValueForPDCP_SN12_hFN_PD
 
 def COUNTValueForPDCP_SN12_hFN_PDCP_SN12.valid(+v: COUNTValueForPDCP_SN12_hFN_PDCP_SN12()) -> Bool:
   Ap.Big.valid(2n, v)
-
-def COUNTValueForPDCP_SN12_hFN_PDCP_SN12.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(COUNTValueForPDCP_SN12_hFN_PDCP_SN12())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(COUNTValueForPDCP_SN12_hFN_PDCP_SN12.valid(v), B.bytes_eq(Ap.pack(COUNTValueForPDCP_SN12_hFN_PDCP_SN12.write(v, 0n, [])), bs)))
-
-def COUNTValueForPDCP_SN12_hFN_PDCP_SN12.roundtrips(+bs: B.Bytes()) -> Bool:
-  COUNTValueForPDCP_SN12_hFN_PDCP_SN12.roundtrips.end(bs, COUNTValueForPDCP_SN12_hFN_PDCP_SN12.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # COUNTValueForPDCP-SN12 ::= SEQUENCE { pDCP-SN12 INTEGER (0..4095), hFN-PDCP-SN12 INTEGER (0..1048575), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type COUNTValueForPDCP_SN12 is Data:
@@ -18093,18 +15249,6 @@ def COUNTValueForPDCP_SN12.after(x: COUNTValueForPDCP_SN12, +rem: Nat) -> Nat:
       +r3 = COUNTValueForPDCP_SN12.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def COUNTValueForPDCP_SN12.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(COUNTValueForPDCP_SN12)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(COUNTValueForPDCP_SN12.valid(v), B.bytes_eq(Ap.pack(COUNTValueForPDCP_SN12.write(v, 0n, [])), bs)))
-
-def COUNTValueForPDCP_SN12.roundtrips(+bs: B.Bytes()) -> Bool:
-  COUNTValueForPDCP_SN12.roundtrips.end(bs, COUNTValueForPDCP_SN12.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DRBStatusUL12-receiveStatusOfUL-PDCP-SDUs ::= BitStr
 def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs() -> Data:
   Ap.Bits()
@@ -18120,18 +15264,6 @@ def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.after(+v: DRBStatusUL12_receiveSta
 
 def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.valid(+v: DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs()) -> Bool:
   Ap.BitStr.valid(1n, 2047n, v)
-
-def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.valid(v), B.bytes_eq(Ap.pack(DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.write(v, 0n, [])), bs)))
-
-def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.roundtrips.end(bs, DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # DRBStatusUL12 ::= SEQUENCE { uL-COUNTValue COUNTValueForPDCP-SN12, receiveStatusOfUL-PDCP-SDUs BIT STRING (SIZE(1..2048)) OPTIONAL, iE-Extension <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type DRBStatusUL12 is Data:
@@ -18275,18 +15407,6 @@ def DRBStatusUL12.after(x: DRBStatusUL12, +rem: Nat) -> Nat:
       +r3 = DRBStatusUL12.a_iE_Extension(iE_Extension, r2)
       r3
 
-def DRBStatusUL12.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusUL12)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusUL12.valid(v), B.bytes_eq(Ap.pack(DRBStatusUL12.write(v, 0n, [])), bs)))
-
-def DRBStatusUL12.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusUL12.roundtrips.end(bs, DRBStatusUL12.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # COUNTValueForPDCP-SN18-pDCP-SN18 ::= Big
 def COUNTValueForPDCP_SN18_pDCP_SN18() -> Data:
   B.Bytes()
@@ -18303,18 +15423,6 @@ def COUNTValueForPDCP_SN18_pDCP_SN18.after(+v: COUNTValueForPDCP_SN18_pDCP_SN18(
 def COUNTValueForPDCP_SN18_pDCP_SN18.valid(+v: COUNTValueForPDCP_SN18_pDCP_SN18()) -> Bool:
   Ap.Big.valid(2n, v)
 
-def COUNTValueForPDCP_SN18_pDCP_SN18.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(COUNTValueForPDCP_SN18_pDCP_SN18())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(COUNTValueForPDCP_SN18_pDCP_SN18.valid(v), B.bytes_eq(Ap.pack(COUNTValueForPDCP_SN18_pDCP_SN18.write(v, 0n, [])), bs)))
-
-def COUNTValueForPDCP_SN18_pDCP_SN18.roundtrips(+bs: B.Bytes()) -> Bool:
-  COUNTValueForPDCP_SN18_pDCP_SN18.roundtrips.end(bs, COUNTValueForPDCP_SN18_pDCP_SN18.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # COUNTValueForPDCP-SN18-hFN-PDCP-SN18 ::= AInt
 def COUNTValueForPDCP_SN18_hFN_PDCP_SN18() -> Data:
   U32
@@ -18330,18 +15438,6 @@ def COUNTValueForPDCP_SN18_hFN_PDCP_SN18.after(+v: COUNTValueForPDCP_SN18_hFN_PD
 
 def COUNTValueForPDCP_SN18_hFN_PDCP_SN18.valid(+v: COUNTValueForPDCP_SN18_hFN_PDCP_SN18()) -> Bool:
   Ap.Int.valid(16n, 16383, v)
-
-def COUNTValueForPDCP_SN18_hFN_PDCP_SN18.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(COUNTValueForPDCP_SN18_hFN_PDCP_SN18())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(COUNTValueForPDCP_SN18_hFN_PDCP_SN18.valid(v), B.bytes_eq(Ap.pack(COUNTValueForPDCP_SN18_hFN_PDCP_SN18.write(v, 0n, [])), bs)))
-
-def COUNTValueForPDCP_SN18_hFN_PDCP_SN18.roundtrips(+bs: B.Bytes()) -> Bool:
-  COUNTValueForPDCP_SN18_hFN_PDCP_SN18.roundtrips.end(bs, COUNTValueForPDCP_SN18_hFN_PDCP_SN18.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # COUNTValueForPDCP-SN18 ::= SEQUENCE { pDCP-SN18 INTEGER (0..262143), hFN-PDCP-SN18 INTEGER (0..16383), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type COUNTValueForPDCP_SN18 is Data:
@@ -18450,18 +15546,6 @@ def COUNTValueForPDCP_SN18.after(x: COUNTValueForPDCP_SN18, +rem: Nat) -> Nat:
       +r3 = COUNTValueForPDCP_SN18.a_iE_Extensions(iE_Extensions, r2)
       r3
 
-def COUNTValueForPDCP_SN18.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(COUNTValueForPDCP_SN18)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(COUNTValueForPDCP_SN18.valid(v), B.bytes_eq(Ap.pack(COUNTValueForPDCP_SN18.write(v, 0n, [])), bs)))
-
-def COUNTValueForPDCP_SN18.roundtrips(+bs: B.Bytes()) -> Bool:
-  COUNTValueForPDCP_SN18.roundtrips.end(bs, COUNTValueForPDCP_SN18.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DRBStatusUL18-receiveStatusOfUL-PDCP-SDUs ::= WBitStr
 def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs() -> Data:
   Ap.Bits()
@@ -18477,18 +15561,6 @@ def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.after(+v: DRBStatusUL18_receiveSta
 
 def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.valid(+v: DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs()) -> Bool:
   Ap.WBitStr.valid(1n, 131071n, v)
-
-def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.valid(v), B.bytes_eq(Ap.pack(DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.write(v, 0n, [])), bs)))
-
-def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.roundtrips.end(bs, DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # DRBStatusUL18 ::= SEQUENCE { uL-COUNTValue COUNTValueForPDCP-SN18, receiveStatusOfUL-PDCP-SDUs BIT STRING (SIZE(1..131072)) OPTIONAL, iE-Extension <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type DRBStatusUL18 is Data:
@@ -18632,18 +15704,6 @@ def DRBStatusUL18.after(x: DRBStatusUL18, +rem: Nat) -> Nat:
       +r3 = DRBStatusUL18.a_iE_Extension(iE_Extension, r2)
       r3
 
-def DRBStatusUL18.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusUL18)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusUL18.valid(v), B.bytes_eq(Ap.pack(DRBStatusUL18.write(v, 0n, [])), bs)))
-
-def DRBStatusUL18.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusUL18.roundtrips.end(bs, DRBStatusUL18.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DRBStatusUL ::= CHOICE { dRBStatusUL12 DRBStatusUL12, dRBStatusUL18 DRBStatusUL18, choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type DRBStatusUL is Data:
   DRBStatusUL_dRBStatusUL12{v: DRBStatusUL12}
@@ -18718,18 +15778,6 @@ def DRBStatusUL.after(x: DRBStatusUL, +rem: Nat) -> Nat:
       DRBStatusUL18.after(v, Ap.Size.after(False{}, 2n, rem))
     case DRBStatusUL_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
-
-def DRBStatusUL.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusUL)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusUL.valid(v), B.bytes_eq(Ap.pack(DRBStatusUL.write(v, 0n, [])), bs)))
-
-def DRBStatusUL.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusUL.roundtrips.end(bs, DRBStatusUL.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # DRBStatusDL12 ::= SEQUENCE { dL-COUNTValue COUNTValueForPDCP-SN12, iE-Extension <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type DRBStatusDL12 is Data:
@@ -18829,18 +15877,6 @@ def DRBStatusDL12.after(x: DRBStatusDL12, +rem: Nat) -> Nat:
       +r2 = DRBStatusDL12.a_iE_Extension(iE_Extension, r1)
       r2
 
-def DRBStatusDL12.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusDL12)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusDL12.valid(v), B.bytes_eq(Ap.pack(DRBStatusDL12.write(v, 0n, [])), bs)))
-
-def DRBStatusDL12.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusDL12.roundtrips.end(bs, DRBStatusDL12.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DRBStatusDL18 ::= SEQUENCE { dL-COUNTValue COUNTValueForPDCP-SN18, iE-Extension <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type DRBStatusDL18 is Data:
   DRBStatusDL18{dL_COUNTValue: COUNTValueForPDCP_SN18, iE_Extension: Maybe<&2, List<&2, Fr.Ie>>}
@@ -18939,18 +15975,6 @@ def DRBStatusDL18.after(x: DRBStatusDL18, +rem: Nat) -> Nat:
       +r2 = DRBStatusDL18.a_iE_Extension(iE_Extension, r1)
       r2
 
-def DRBStatusDL18.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusDL18)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusDL18.valid(v), B.bytes_eq(Ap.pack(DRBStatusDL18.write(v, 0n, [])), bs)))
-
-def DRBStatusDL18.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusDL18.roundtrips.end(bs, DRBStatusDL18.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DRBStatusDL ::= CHOICE { dRBStatusDL12 DRBStatusDL12, dRBStatusDL18 DRBStatusDL18, choice-Extensions <ProtocolIE-SingleContainer: 0 known rows> }
 type DRBStatusDL is Data:
   DRBStatusDL_dRBStatusDL12{v: DRBStatusDL12}
@@ -19025,18 +16049,6 @@ def DRBStatusDL.after(x: DRBStatusDL, +rem: Nat) -> Nat:
       DRBStatusDL18.after(v, Ap.Size.after(False{}, 2n, rem))
     case DRBStatusDL_choice_Extensions{v}:
       Fr.Ie.after(Ap.Size.after(False{}, 2n, rem))
-
-def DRBStatusDL.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBStatusDL)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBStatusDL.valid(v), B.bytes_eq(Ap.pack(DRBStatusDL.write(v, 0n, [])), bs)))
-
-def DRBStatusDL.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBStatusDL.roundtrips.end(bs, DRBStatusDL.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # DRBsSubjectToStatusTransferItem ::= SEQUENCE { dRB-ID DRB-ID, dRBStatusUL DRBStatusUL, dRBStatusDL DRBStatusDL, iE-Extension <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
 type DRBsSubjectToStatusTransferItem is Data:
@@ -19154,18 +16166,6 @@ def DRBsSubjectToStatusTransferItem.after(x: DRBsSubjectToStatusTransferItem, +r
       +r4 = DRBsSubjectToStatusTransferItem.a_iE_Extension(iE_Extension, r3)
       r4
 
-def DRBsSubjectToStatusTransferItem.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBsSubjectToStatusTransferItem)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBsSubjectToStatusTransferItem.valid(v), B.bytes_eq(Ap.pack(DRBsSubjectToStatusTransferItem.write(v, 0n, [])), bs)))
-
-def DRBsSubjectToStatusTransferItem.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBsSubjectToStatusTransferItem.roundtrips.end(bs, DRBsSubjectToStatusTransferItem.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DRBsSubjectToStatusTransferList ::= SEQUENCE (SIZE(1..32)) OF DRBsSubjectToStatusTransferItem
 def DRBsSubjectToStatusTransferList() -> Data:
   List<&2, DRBsSubjectToStatusTransferItem>
@@ -19230,18 +16230,6 @@ def DRBsSubjectToStatusTransferList.items_after(xs: DRBsSubjectToStatusTransferL
 
 def DRBsSubjectToStatusTransferList.after(+xs: DRBsSubjectToStatusTransferList(), +rem: Nat) -> Nat:
   DRBsSubjectToStatusTransferList.items_after(xs, Ap.Size.after(False{}, 5n, rem))
-
-def DRBsSubjectToStatusTransferList.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DRBsSubjectToStatusTransferList())) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DRBsSubjectToStatusTransferList.valid(v), B.bytes_eq(Ap.pack(DRBsSubjectToStatusTransferList.write(v, 0n, [])), bs)))
-
-def DRBsSubjectToStatusTransferList.roundtrips(+bs: B.Bytes()) -> Bool:
-  DRBsSubjectToStatusTransferList.roundtrips.end(bs, DRBsSubjectToStatusTransferList.read(Ap.Cur{0n, Ap.unpack(bs)}))
 
 # RANStatusTransfer-TransparentContainer ::= SEQUENCE { dRBsSubjectToStatusTransferList DRBsSubjectToStatusTransferList, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
 type RANStatusTransfer_TransparentContainer is Data:
@@ -19341,18 +16329,6 @@ def RANStatusTransfer_TransparentContainer.after(x: RANStatusTransfer_Transparen
       +r2 = RANStatusTransfer_TransparentContainer.a_iE_Extensions(iE_Extensions, r1)
       r2
 
-def RANStatusTransfer_TransparentContainer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(RANStatusTransfer_TransparentContainer)) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(RANStatusTransfer_TransparentContainer.valid(v), B.bytes_eq(Ap.pack(RANStatusTransfer_TransparentContainer.write(v, 0n, [])), bs)))
-
-def RANStatusTransfer_TransparentContainer.roundtrips(+bs: B.Bytes()) -> Bool:
-  RANStatusTransfer_TransparentContainer.roundtrips.end(bs, RANStatusTransfer_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(bs)}))
-
 # DownlinkRANStatusTransfer: a protocol IE container (TS 38.413 §9.2).
 def DownlinkRANStatusTransfer() -> Data:
   List<&2, Fr.Ie>
@@ -19380,473 +16356,471 @@ def DownlinkRANStatusTransfer.after(+v: DownlinkRANStatusTransfer(), +rem: Nat) 
 def DownlinkRANStatusTransfer.valid(+v: DownlinkRANStatusTransfer()) -> Bool:
   Fr.Ies.valid(v)
 
-def DownlinkRANStatusTransfer.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd(DownlinkRANStatusTransfer())) -> Bool:
+def Ie.roundtrips.end(-A: Data, valid: A -> Bool, write: A -> Ap.Bits(), +bs: B.Bytes(), r: Result<&2, &2, B.Err, A>) -> Bool:
   match r:
     case Fail{e}:
       False{}
-    case Done{(+v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Bool.and(Ap.Tail.zero(bits), Bool.and(DownlinkRANStatusTransfer.valid(v), B.bytes_eq(Ap.pack(DownlinkRANStatusTransfer.write(v, 0n, [])), bs)))
+    case Done{+v}:
+      Bool.and(valid(v), B.bytes_eq(Ap.pack(write(v)), bs))
 
-def DownlinkRANStatusTransfer.roundtrips(+bs: B.Bytes()) -> Bool:
-  DownlinkRANStatusTransfer.roundtrips.end(bs, DownlinkRANStatusTransfer.read(Ap.Cur{0n, Ap.unpack(bs)}))
+def Ie.roundtrips(-A: Data, read: Ap.Cur -> Ap.Rd(A), valid: A -> Bool, write: A -> Ap.Bits(), +bs: B.Bytes()) -> Bool:
+  Ie.roundtrips.end(A, valid, write, bs, Fr.View.exact(A, read(Ap.Cur{0n, Ap.unpack(bs)})))
 
 def DownlinkNASTransport.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 48n:
-      Some{AMFName.roundtrips(value)}
+      Some{Ie.roundtrips(AMFName(), AMFName.read, v => AMFName.valid(v), v => AMFName.write(v, 0n, []), value)}
     case 38n:
-      Some{NAS_PDU.roundtrips(value)}
+      Some{Ie.roundtrips(NAS_PDU(), NAS_PDU.read, v => NAS_PDU.valid(v), v => NAS_PDU.write(v, 0n, []), value)}
     case 110n:
-      Some{UEAggregateMaximumBitRate.roundtrips(value)}
+      Some{Ie.roundtrips(UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.read, v => UEAggregateMaximumBitRate.valid(v), v => UEAggregateMaximumBitRate.write(v, 0n, []), value)}
     case 0n:
-      Some{AllowedNSSAI.roundtrips(value)}
+      Some{Ie.roundtrips(AllowedNSSAI(), AllowedNSSAI.read, v => AllowedNSSAI.valid(v), v => AllowedNSSAI.write(v, 0n, []), value)}
     case _:
       None{}
 
 def DownlinkRANStatusTransfer.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 84n:
-      Some{RANStatusTransfer_TransparentContainer.roundtrips(value)}
+      Some{Ie.roundtrips(RANStatusTransfer_TransparentContainer, RANStatusTransfer_TransparentContainer.read, v => RANStatusTransfer_TransparentContainer.valid(v), v => RANStatusTransfer_TransparentContainer.write(v, 0n, []), value)}
     case _:
       None{}
 
 def ErrorIndication.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case 26n:
-      Some{FiveG_S_TMSI.roundtrips(value)}
+      Some{Ie.roundtrips(FiveG_S_TMSI, FiveG_S_TMSI.read, v => FiveG_S_TMSI.valid(v), v => FiveG_S_TMSI.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverCancel.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverCancelAcknowledge.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverCommand.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 29n:
-      Some{HandoverType.roundtrips(value)}
+      Some{Ie.roundtrips(HandoverType(), HandoverType.read, v => HandoverType.valid(v), v => HandoverType.write(v, 0n, []), value)}
     case 59n:
-      Some{PDUSessionResourceHandoverList.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceHandoverList(), PDUSessionResourceHandoverList.read, v => PDUSessionResourceHandoverList.valid(v), v => PDUSessionResourceHandoverList.write(v, 0n, []), value)}
     case 106n:
-      Some{TargetToSource_TransparentContainer.roundtrips(value)}
+      Some{Ie.roundtrips(TargetToSource_TransparentContainer(), TargetToSource_TransparentContainer.read, v => TargetToSource_TransparentContainer.valid(v), v => TargetToSource_TransparentContainer.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverFailure.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverNotify.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 121n:
-      Some{UserLocationInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UserLocationInformation, UserLocationInformation.read, v => UserLocationInformation.valid(v), v => UserLocationInformation.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverPreparationFailure.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 29n:
-      Some{HandoverType.roundtrips(value)}
+      Some{Ie.roundtrips(HandoverType(), HandoverType.read, v => HandoverType.valid(v), v => HandoverType.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case 110n:
-      Some{UEAggregateMaximumBitRate.roundtrips(value)}
+      Some{Ie.roundtrips(UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.read, v => UEAggregateMaximumBitRate.valid(v), v => UEAggregateMaximumBitRate.write(v, 0n, []), value)}
     case 119n:
-      Some{UESecurityCapabilities.roundtrips(value)}
+      Some{Ie.roundtrips(UESecurityCapabilities, UESecurityCapabilities.read, v => UESecurityCapabilities.valid(v), v => UESecurityCapabilities.write(v, 0n, []), value)}
     case 93n:
-      Some{SecurityContext.roundtrips(value)}
+      Some{Ie.roundtrips(SecurityContext, SecurityContext.read, v => SecurityContext.valid(v), v => SecurityContext.write(v, 0n, []), value)}
     case 37n:
-      Some{NAS_PDU.roundtrips(value)}
+      Some{Ie.roundtrips(NAS_PDU(), NAS_PDU.read, v => NAS_PDU.valid(v), v => NAS_PDU.write(v, 0n, []), value)}
     case 73n:
-      Some{PDUSessionResourceSetupListHOReq.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceSetupListHOReq(), PDUSessionResourceSetupListHOReq.read, v => PDUSessionResourceSetupListHOReq.valid(v), v => PDUSessionResourceSetupListHOReq.write(v, 0n, []), value)}
     case 0n:
-      Some{AllowedNSSAI.roundtrips(value)}
+      Some{Ie.roundtrips(AllowedNSSAI(), AllowedNSSAI.read, v => AllowedNSSAI.valid(v), v => AllowedNSSAI.write(v, 0n, []), value)}
     case 101n:
-      Some{SourceToTarget_TransparentContainer.roundtrips(value)}
+      Some{Ie.roundtrips(SourceToTarget_TransparentContainer(), SourceToTarget_TransparentContainer.read, v => SourceToTarget_TransparentContainer.valid(v), v => SourceToTarget_TransparentContainer.write(v, 0n, []), value)}
     case 28n:
-      Some{GUAMI.roundtrips(value)}
+      Some{Ie.roundtrips(GUAMI, GUAMI.read, v => GUAMI.valid(v), v => GUAMI.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverRequestAcknowledge.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 53n:
-      Some{PDUSessionResourceAdmittedList.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceAdmittedList(), PDUSessionResourceAdmittedList.read, v => PDUSessionResourceAdmittedList.valid(v), v => PDUSessionResourceAdmittedList.write(v, 0n, []), value)}
     case 56n:
-      Some{PDUSessionResourceFailedToSetupListHOAck.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceFailedToSetupListHOAck(), PDUSessionResourceFailedToSetupListHOAck.read, v => PDUSessionResourceFailedToSetupListHOAck.valid(v), v => PDUSessionResourceFailedToSetupListHOAck.write(v, 0n, []), value)}
     case 106n:
-      Some{TargetToSource_TransparentContainer.roundtrips(value)}
+      Some{Ie.roundtrips(TargetToSource_TransparentContainer(), TargetToSource_TransparentContainer.read, v => TargetToSource_TransparentContainer.valid(v), v => TargetToSource_TransparentContainer.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case 259n:
-      Some{NPN_AccessInformation.roundtrips(value)}
+      Some{Ie.roundtrips(NPN_AccessInformation, NPN_AccessInformation.read, v => NPN_AccessInformation.valid(v), v => NPN_AccessInformation.write(v, 0n, []), value)}
     case _:
       None{}
 
 def HandoverRequired.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 29n:
-      Some{HandoverType.roundtrips(value)}
+      Some{Ie.roundtrips(HandoverType(), HandoverType.read, v => HandoverType.valid(v), v => HandoverType.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case 105n:
-      Some{TargetID.roundtrips(value)}
+      Some{Ie.roundtrips(TargetID, TargetID.read, v => TargetID.valid(v), v => TargetID.write(v, 0n, []), value)}
     case 22n:
-      Some{DirectForwardingPathAvailability.roundtrips(value)}
+      Some{Ie.roundtrips(DirectForwardingPathAvailability(), DirectForwardingPathAvailability.read, v => DirectForwardingPathAvailability.valid(v), v => DirectForwardingPathAvailability.write(v, 0n, []), value)}
     case 61n:
-      Some{PDUSessionResourceListHORqd.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceListHORqd(), PDUSessionResourceListHORqd.read, v => PDUSessionResourceListHORqd.valid(v), v => PDUSessionResourceListHORqd.write(v, 0n, []), value)}
     case 101n:
-      Some{SourceToTarget_TransparentContainer.roundtrips(value)}
+      Some{Ie.roundtrips(SourceToTarget_TransparentContainer(), SourceToTarget_TransparentContainer.read, v => SourceToTarget_TransparentContainer.valid(v), v => SourceToTarget_TransparentContainer.write(v, 0n, []), value)}
     case _:
       None{}
 
 def InitialContextSetupFailure.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def InitialContextSetupRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 48n:
-      Some{AMFName.roundtrips(value)}
+      Some{Ie.roundtrips(AMFName(), AMFName.read, v => AMFName.valid(v), v => AMFName.write(v, 0n, []), value)}
     case 110n:
-      Some{UEAggregateMaximumBitRate.roundtrips(value)}
+      Some{Ie.roundtrips(UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.read, v => UEAggregateMaximumBitRate.valid(v), v => UEAggregateMaximumBitRate.write(v, 0n, []), value)}
     case 28n:
-      Some{GUAMI.roundtrips(value)}
+      Some{Ie.roundtrips(GUAMI, GUAMI.read, v => GUAMI.valid(v), v => GUAMI.write(v, 0n, []), value)}
     case 0n:
-      Some{AllowedNSSAI.roundtrips(value)}
+      Some{Ie.roundtrips(AllowedNSSAI(), AllowedNSSAI.read, v => AllowedNSSAI.valid(v), v => AllowedNSSAI.write(v, 0n, []), value)}
     case 119n:
-      Some{UESecurityCapabilities.roundtrips(value)}
+      Some{Ie.roundtrips(UESecurityCapabilities, UESecurityCapabilities.read, v => UESecurityCapabilities.valid(v), v => UESecurityCapabilities.write(v, 0n, []), value)}
     case 94n:
-      Some{SecurityKey.roundtrips(value)}
+      Some{Ie.roundtrips(SecurityKey(), SecurityKey.read, v => SecurityKey.valid(v), v => SecurityKey.write(v, 0n, []), value)}
     case 38n:
-      Some{NAS_PDU.roundtrips(value)}
+      Some{Ie.roundtrips(NAS_PDU(), NAS_PDU.read, v => NAS_PDU.valid(v), v => NAS_PDU.write(v, 0n, []), value)}
     case _:
       None{}
 
 def InitialContextSetupResponse.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def InitialUEMessage.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 38n:
-      Some{NAS_PDU.roundtrips(value)}
+      Some{Ie.roundtrips(NAS_PDU(), NAS_PDU.read, v => NAS_PDU.valid(v), v => NAS_PDU.write(v, 0n, []), value)}
     case 121n:
-      Some{UserLocationInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UserLocationInformation, UserLocationInformation.read, v => UserLocationInformation.valid(v), v => UserLocationInformation.write(v, 0n, []), value)}
     case 90n:
-      Some{RRCEstablishmentCause.roundtrips(value)}
+      Some{Ie.roundtrips(RRCEstablishmentCause(), RRCEstablishmentCause.read, v => RRCEstablishmentCause.valid(v), v => RRCEstablishmentCause.write(v, 0n, []), value)}
     case 26n:
-      Some{FiveG_S_TMSI.roundtrips(value)}
+      Some{Ie.roundtrips(FiveG_S_TMSI, FiveG_S_TMSI.read, v => FiveG_S_TMSI.valid(v), v => FiveG_S_TMSI.write(v, 0n, []), value)}
     case 3n:
-      Some{AMFSetID.roundtrips(value)}
+      Some{Ie.roundtrips(AMFSetID(), AMFSetID.read, v => AMFSetID.valid(v), v => AMFSetID.write(v, 0n, []), value)}
     case 0n:
-      Some{AllowedNSSAI.roundtrips(value)}
+      Some{Ie.roundtrips(AllowedNSSAI(), AllowedNSSAI.read, v => AllowedNSSAI.valid(v), v => AllowedNSSAI.write(v, 0n, []), value)}
     case 174n:
-      Some{PLMNIdentity.roundtrips(value)}
+      Some{Ie.roundtrips(PLMNIdentity(), PLMNIdentity.read, v => PLMNIdentity.valid(v), v => PLMNIdentity.write(v, 0n, []), value)}
     case 201n:
-      Some{IABNodeIndication.roundtrips(value)}
+      Some{Ie.roundtrips(IABNodeIndication(), IABNodeIndication.read, v => IABNodeIndication.valid(v), v => IABNodeIndication.write(v, 0n, []), value)}
     case 224n:
-      Some{CEmodeBSupport_Indicator.roundtrips(value)}
+      Some{Ie.roundtrips(CEmodeBSupport_Indicator(), CEmodeBSupport_Indicator.read, v => CEmodeBSupport_Indicator.valid(v), v => CEmodeBSupport_Indicator.write(v, 0n, []), value)}
     case 259n:
-      Some{NPN_AccessInformation.roundtrips(value)}
+      Some{Ie.roundtrips(NPN_AccessInformation, NPN_AccessInformation.read, v => NPN_AccessInformation.valid(v), v => NPN_AccessInformation.write(v, 0n, []), value)}
     case _:
       None{}
 
 def NGSetupFailure.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def NGSetupRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 27n:
-      Some{GlobalRANNodeID.roundtrips(value)}
+      Some{Ie.roundtrips(GlobalRANNodeID, GlobalRANNodeID.read, v => GlobalRANNodeID.valid(v), v => GlobalRANNodeID.write(v, 0n, []), value)}
     case 102n:
-      Some{SupportedTAList.roundtrips(value)}
+      Some{Ie.roundtrips(SupportedTAList(), SupportedTAList.read, v => SupportedTAList.valid(v), v => SupportedTAList.write(v, 0n, []), value)}
     case 21n:
-      Some{PagingDRX.roundtrips(value)}
+      Some{Ie.roundtrips(PagingDRX(), PagingDRX.read, v => PagingDRX.valid(v), v => PagingDRX.write(v, 0n, []), value)}
     case _:
       None{}
 
 def NGSetupResponse.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 1n:
-      Some{AMFName.roundtrips(value)}
+      Some{Ie.roundtrips(AMFName(), AMFName.read, v => AMFName.valid(v), v => AMFName.write(v, 0n, []), value)}
     case 96n:
-      Some{ServedGUAMIList.roundtrips(value)}
+      Some{Ie.roundtrips(ServedGUAMIList(), ServedGUAMIList.read, v => ServedGUAMIList.valid(v), v => ServedGUAMIList.write(v, 0n, []), value)}
     case 86n:
-      Some{RelativeAMFCapacity.roundtrips(value)}
+      Some{Ie.roundtrips(RelativeAMFCapacity(), RelativeAMFCapacity.read, v => RelativeAMFCapacity.valid(v), v => RelativeAMFCapacity.write(v, 0n, []), value)}
     case 80n:
-      Some{PLMNSupportList.roundtrips(value)}
+      Some{Ie.roundtrips(PLMNSupportList(), PLMNSupportList.read, v => PLMNSupportList.valid(v), v => PLMNSupportList.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def PDUSessionResourceSetupRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 38n:
-      Some{NAS_PDU.roundtrips(value)}
+      Some{Ie.roundtrips(NAS_PDU(), NAS_PDU.read, v => NAS_PDU.valid(v), v => NAS_PDU.write(v, 0n, []), value)}
     case 74n:
-      Some{PDUSessionResourceSetupListSUReq.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceSetupListSUReq(), PDUSessionResourceSetupListSUReq.read, v => PDUSessionResourceSetupListSUReq.valid(v), v => PDUSessionResourceSetupListSUReq.write(v, 0n, []), value)}
     case 110n:
-      Some{UEAggregateMaximumBitRate.roundtrips(value)}
+      Some{Ie.roundtrips(UEAggregateMaximumBitRate, UEAggregateMaximumBitRate.read, v => UEAggregateMaximumBitRate.valid(v), v => UEAggregateMaximumBitRate.write(v, 0n, []), value)}
     case _:
       None{}
 
 def PDUSessionResourceSetupRequestTransfer.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 130n:
-      Some{PDUSessionAggregateMaximumBitRate.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionAggregateMaximumBitRate, PDUSessionAggregateMaximumBitRate.read, v => PDUSessionAggregateMaximumBitRate.valid(v), v => PDUSessionAggregateMaximumBitRate.write(v, 0n, []), value)}
     case 139n:
-      Some{UPTransportLayerInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UPTransportLayerInformation, UPTransportLayerInformation.read, v => UPTransportLayerInformation.valid(v), v => UPTransportLayerInformation.write(v, 0n, []), value)}
     case 134n:
-      Some{PDUSessionType.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionType(), PDUSessionType.read, v => PDUSessionType.valid(v), v => PDUSessionType.write(v, 0n, []), value)}
     case 138n:
-      Some{SecurityIndication.roundtrips(value)}
+      Some{Ie.roundtrips(SecurityIndication, SecurityIndication.read, v => SecurityIndication.valid(v), v => SecurityIndication.write(v, 0n, []), value)}
     case 136n:
-      Some{QosFlowSetupRequestList.roundtrips(value)}
+      Some{Ie.roundtrips(QosFlowSetupRequestList(), QosFlowSetupRequestList.read, v => QosFlowSetupRequestList.valid(v), v => QosFlowSetupRequestList.write(v, 0n, []), value)}
     case 22n:
-      Some{DirectForwardingPathAvailability.roundtrips(value)}
+      Some{Ie.roundtrips(DirectForwardingPathAvailability(), DirectForwardingPathAvailability.read, v => DirectForwardingPathAvailability.valid(v), v => DirectForwardingPathAvailability.write(v, 0n, []), value)}
     case 195n:
-      Some{UPTransportLayerInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UPTransportLayerInformation, UPTransportLayerInformation.read, v => UPTransportLayerInformation.valid(v), v => UPTransportLayerInformation.write(v, 0n, []), value)}
     case _:
       None{}
 
 def PDUSessionResourceSetupResponse.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 75n:
-      Some{PDUSessionResourceSetupListSURes.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceSetupListSURes(), PDUSessionResourceSetupListSURes.read, v => PDUSessionResourceSetupListSURes.valid(v), v => PDUSessionResourceSetupListSURes.write(v, 0n, []), value)}
     case 58n:
-      Some{PDUSessionResourceFailedToSetupListSURes.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceFailedToSetupListSURes(), PDUSessionResourceFailedToSetupListSURes.read, v => PDUSessionResourceFailedToSetupListSURes.valid(v), v => PDUSessionResourceFailedToSetupListSURes.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case 121n:
-      Some{UserLocationInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UserLocationInformation, UserLocationInformation.read, v => UserLocationInformation.valid(v), v => UserLocationInformation.write(v, 0n, []), value)}
     case _:
       None{}
 
 def PathSwitchRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 100n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 121n:
-      Some{UserLocationInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UserLocationInformation, UserLocationInformation.read, v => UserLocationInformation.valid(v), v => UserLocationInformation.write(v, 0n, []), value)}
     case 119n:
-      Some{UESecurityCapabilities.roundtrips(value)}
+      Some{Ie.roundtrips(UESecurityCapabilities, UESecurityCapabilities.read, v => UESecurityCapabilities.valid(v), v => UESecurityCapabilities.write(v, 0n, []), value)}
     case 76n:
-      Some{PDUSessionResourceToBeSwitchedDLList.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceToBeSwitchedDLList(), PDUSessionResourceToBeSwitchedDLList.read, v => PDUSessionResourceToBeSwitchedDLList.valid(v), v => PDUSessionResourceToBeSwitchedDLList.write(v, 0n, []), value)}
     case 57n:
-      Some{PDUSessionResourceFailedToSetupListPSReq.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceFailedToSetupListPSReq(), PDUSessionResourceFailedToSetupListPSReq.read, v => PDUSessionResourceFailedToSetupListPSReq.valid(v), v => PDUSessionResourceFailedToSetupListPSReq.write(v, 0n, []), value)}
     case 237n:
-      Some{RRCEstablishmentCause.roundtrips(value)}
+      Some{Ie.roundtrips(RRCEstablishmentCause(), RRCEstablishmentCause.read, v => RRCEstablishmentCause.valid(v), v => RRCEstablishmentCause.write(v, 0n, []), value)}
     case _:
       None{}
 
 def PathSwitchRequestAcknowledge.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 119n:
-      Some{UESecurityCapabilities.roundtrips(value)}
+      Some{Ie.roundtrips(UESecurityCapabilities, UESecurityCapabilities.read, v => UESecurityCapabilities.valid(v), v => UESecurityCapabilities.write(v, 0n, []), value)}
     case 93n:
-      Some{SecurityContext.roundtrips(value)}
+      Some{Ie.roundtrips(SecurityContext, SecurityContext.read, v => SecurityContext.valid(v), v => SecurityContext.write(v, 0n, []), value)}
     case 77n:
-      Some{PDUSessionResourceSwitchedList.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceSwitchedList(), PDUSessionResourceSwitchedList.read, v => PDUSessionResourceSwitchedList.valid(v), v => PDUSessionResourceSwitchedList.write(v, 0n, []), value)}
     case 68n:
-      Some{PDUSessionResourceReleasedListPSAck.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceReleasedListPSAck(), PDUSessionResourceReleasedListPSAck.read, v => PDUSessionResourceReleasedListPSAck.valid(v), v => PDUSessionResourceReleasedListPSAck.write(v, 0n, []), value)}
     case 0n:
-      Some{AllowedNSSAI.roundtrips(value)}
+      Some{Ie.roundtrips(AllowedNSSAI(), AllowedNSSAI.read, v => AllowedNSSAI.valid(v), v => AllowedNSSAI.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def PathSwitchRequestFailure.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 69n:
-      Some{PDUSessionResourceReleasedListPSFail.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceReleasedListPSFail(), PDUSessionResourceReleasedListPSFail.read, v => PDUSessionResourceReleasedListPSFail.valid(v), v => PDUSessionResourceReleasedListPSFail.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def UEContextReleaseCommand.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 114n:
-      Some{UE_NGAP_IDs.roundtrips(value)}
+      Some{Ie.roundtrips(UE_NGAP_IDs, UE_NGAP_IDs.read, v => UE_NGAP_IDs.valid(v), v => UE_NGAP_IDs.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case _:
       None{}
 
 def UEContextReleaseComplete.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 121n:
-      Some{UserLocationInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UserLocationInformation, UserLocationInformation.read, v => UserLocationInformation.valid(v), v => UserLocationInformation.write(v, 0n, []), value)}
     case 60n:
-      Some{PDUSessionResourceListCxtRelCpl.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceListCxtRelCpl(), PDUSessionResourceListCxtRelCpl.read, v => PDUSessionResourceListCxtRelCpl.valid(v), v => PDUSessionResourceListCxtRelCpl.write(v, 0n, []), value)}
     case 19n:
-      Some{CriticalityDiagnostics.roundtrips(value)}
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
     case _:
       None{}
 
 def UEContextReleaseRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 133n:
-      Some{PDUSessionResourceListCxtRelReq.roundtrips(value)}
+      Some{Ie.roundtrips(PDUSessionResourceListCxtRelReq(), PDUSessionResourceListCxtRelReq.read, v => PDUSessionResourceListCxtRelReq.valid(v), v => PDUSessionResourceListCxtRelReq.write(v, 0n, []), value)}
     case 15n:
-      Some{Cause.roundtrips(value)}
+      Some{Ie.roundtrips(Cause, Cause.read, v => Cause.valid(v), v => Cause.write(v, 0n, []), value)}
     case _:
       None{}
 
 def UplinkNASTransport.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 38n:
-      Some{NAS_PDU.roundtrips(value)}
+      Some{Ie.roundtrips(NAS_PDU(), NAS_PDU.read, v => NAS_PDU.valid(v), v => NAS_PDU.write(v, 0n, []), value)}
     case 121n:
-      Some{UserLocationInformation.roundtrips(value)}
+      Some{Ie.roundtrips(UserLocationInformation, UserLocationInformation.read, v => UserLocationInformation.valid(v), v => UserLocationInformation.write(v, 0n, []), value)}
     case _:
       None{}
 
 def UplinkRANStatusTransfer.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
-      Some{AMF_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
     case 85n:
-      Some{RAN_UE_NGAP_ID.roundtrips(value)}
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
     case 84n:
-      Some{RANStatusTransfer_TransparentContainer.roundtrips(value)}
+      Some{Ie.roundtrips(RANStatusTransfer_TransparentContainer, RANStatusTransfer_TransparentContainer.read, v => RANStatusTransfer_TransparentContainer.valid(v), v => RANStatusTransfer_TransparentContainer.write(v, 0n, []), value)}
     case _:
       None{}
 

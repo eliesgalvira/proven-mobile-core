@@ -5,8 +5,8 @@
 
 Writes OUT_DIR/types.bend: for every type in the tier M+R closure a datatype
 (or alias), `T.read`, `T.write`, `T.after` and `T.valid`, built on
-kernel/aper.bend and kernel/ngap/frame.bend; plus `T.roundtrips` and the
-per-message IE dispatch used by the tests. views.bend holds one view per
+kernel/aper.bend and kernel/ngap/frame.bend; plus the per-message IE
+dispatch the tests use to roundtrip IE values. views.bend holds one view per
 message; laws.bend and proofs.bend (gen_proofs.py) the codec laws of every
 type with their proofs; show.bend (gen_show.py) the normal form oracle.py
 compares with pycrate. The generator is untrusted: the checker judges what
@@ -269,25 +269,9 @@ class Gen:
             for d in self.types[name].deps:
                 emit(d)
             getattr(self, "emit_" + self.types[name].kind)(self.types[name])
-            self.emit_roundtrips(self.types[name])
 
         for name in self.order:
             emit(name)
-
-    def emit_roundtrips(self, t):
-        b, d = t.bend, self.data(t.name)
-        self.out(f"def {b}.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd({d})) -> Bool:")
-        self.out("  match r:")
-        self.out("    case Fail{e}:")
-        self.out("      False{}")
-        self.out("    case Done{(+v, c)}:")
-        self.out("      match c:")
-        self.out("        case Ap.Cur{rem, bits}:")
-        self.out(f"          Bool.and(Ap.Tail.zero(bits), Bool.and({self.valid(t.name, 'v')}, B.bytes_eq(Ap.pack({self.write(t.name, 'v', '0n', '[]')}), bs)))")
-        self.out()
-        self.out(f"def {b}.roundtrips(+bs: B.Bytes()) -> Bool:")
-        self.out(f"  {b}.roundtrips.end(bs, {self.read(t.name, 'Ap.Cur{0n, Ap.unpack(bs)}')})")
-        self.out()
 
     def prim_exprs(self, t):
         a = t.args
@@ -730,19 +714,24 @@ class Gen:
     def emit_dispatch(self):
         """Per-message IE check used by the tests: does the value of a known IE id roundtrip?
         Ie.check picks the message from the PDU kind and procedure code."""
-        names = M.ie_names()
-        for msg, rows in sorted(self.messages.items()):
-            b = self.types[msg].bend
-            self.out(f"def {b}.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:")
+        fns = "valid: A -> Bool, write: A -> Ap.Bits(), +bs: B.Bytes()"
+        self.out(f"def Ie.roundtrips.end(-A: Data, {fns}, r: Result<&2, &2, B.Err, A>) -> Bool:")
+        self.out("  match r:")
+        self.out("    case Fail{e}:")
+        self.out("      False{}")
+        self.out("    case Done{+v}:")
+        self.out("      Bool.and(valid(v), B.bytes_eq(Ap.pack(write(v)), bs))")
+        self.out()
+        self.out(f"def Ie.roundtrips(-A: Data, read: Ap.Cur -> Ap.Rd(A), {fns}) -> Bool:")
+        self.out("  Ie.roundtrips.end(A, valid, write, bs, Fr.View.exact(A, read(Ap.Cur{0n, Ap.unpack(bs)})))")
+        self.out()
+        for msg in sorted(self.messages):
+            self.out(f"def {self.types[msg].bend}.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:")
             self.out("  match id:")
-            seen = set()
-            for row in rows:
-                tname = M.ref_name(M.row_type(row))
-                if tname is None or tname not in self.types or row["id"] in seen:
-                    continue
-                seen.add(row["id"])
-                self.out(f"    case {row['id']}n:")
-                self.out(f"      Some{{{self.types[tname].bend}.roundtrips(value)}}")
+            for iid, _, tname, _ in self.view_rows(msg):
+                b = self.types[tname].bend
+                self.out(f"    case {iid}n:")
+                self.out(f"      Some{{Ie.roundtrips({self.data(tname)}, {b}.read, v => {b}.valid(v), v => {b}.write(v, 0n, []), value)}}")
             self.out("    case _:")
             self.out("      None{}")
             self.out()
