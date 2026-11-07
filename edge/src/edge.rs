@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::thread;
 use std::time::Instant;
 
@@ -149,26 +149,43 @@ impl Edge {
     }
 }
 
+/// The first id after `last`, wrapping from u32::MAX to 1, that `live` does
+/// not hold; of `live.len() + 1` candidates one is free.
+fn draw<T>(last: u32, live: &HashMap<u32, T>) -> Option<u32> {
+    std::iter::successors(Some(last), |id| Some(id.checked_add(1).unwrap_or(1)))
+        .skip(1)
+        .take(live.len() + 1)
+        .find(|id| !live.contains_key(id))
+}
+
+/// Accepts gNB associations. An id stays taken while anything holds its
+/// association: the Up message, the loop's map or the reader, which sends its
+/// last message before letting go. So no message of an old association can
+/// follow the Up of a new one with the same id.
 pub fn spawn_n2(listener: sctp::Listener, tx: Sender<Msg>) {
     thread::spawn(move || {
-        let mut next = 1u32;
+        let mut last = 0;
+        let mut live: HashMap<u32, Weak<sctp::Assoc>> = HashMap::new();
         loop {
-            match listener.accept() {
-                Ok(assoc) => {
-                    let id = next;
-                    next += 1;
-                    let assoc = Arc::new(assoc);
-                    if tx.send(Msg::Up(id, assoc.clone())).is_err() {
-                        return;
-                    }
-                    let tx = tx.clone();
-                    thread::spawn(move || read_assoc(id, assoc, tx));
-                }
+            let assoc = match listener.accept() {
+                Ok(assoc) => Arc::new(assoc),
                 Err(e) => {
                     let _ = tx.send(Msg::Fatal(format!("N2 accept: {e}")));
                     return;
                 }
+            };
+            live.retain(|_, a| a.strong_count() > 0);
+            let Some(id) = draw(last, &live) else {
+                eprintln!("edge: N2 association refused: every id is taken");
+                continue;
+            };
+            last = id;
+            live.insert(id, Arc::downgrade(&assoc));
+            if tx.send(Msg::Up(id, assoc.clone())).is_err() {
+                return;
             }
+            let tx = tx.clone();
+            thread::spawn(move || read_assoc(id, assoc, tx));
         }
     });
 }
@@ -224,4 +241,18 @@ pub fn run(config: &Config) -> Result<(), Error> {
     spawn_n4(udp, tx);
     eprintln!("edge: N2 on {}:{N2_PORT}, N4 on {}:{N4_PORT} to {upf}", config.n2.address, config.n4.smf);
     Err(edge.serve(&rx))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn association_ids_skip_live_ones_and_wrap_past_the_top() {
+        let live = |ids: &[u32]| ids.iter().map(|&id| (id, ())).collect::<HashMap<_, _>>();
+        assert_eq!(draw(0, &live(&[])), Some(1));
+        assert_eq!(draw(1, &live(&[2, 3])), Some(4));
+        assert_eq!(draw(u32::MAX, &live(&[])), Some(1));
+        assert_eq!(draw(u32::MAX - 1, &live(&[u32::MAX, 1])), Some(2));
+    }
 }
