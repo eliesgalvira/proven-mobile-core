@@ -570,11 +570,6 @@ def Rel.forget_gone(+skey: U32, +s: S.Session, +seq: U32, +more: List<&2, N.Act>
     case S.State{config, subs, assocs, ues, +sessions, pfcp_seq, next_ue, n4}:
       SDel.get(skey, sessions)
 
-# A session forgotten, whatever else the answer carries.
-def Rel.forget(+skey: U32, +s: S.Session, +seq: U32, +more: List<&2, N.Act>) -> Rel.Spec(N.Out.also(Gsm.Gsm.forget([(skey, s)], seq), more), skey, s):
-  (st2 => Rel.forget_gone(skey, s, seq, more, st2), k => Del.app_l(s, Up.N4.deletions([(skey, s)], seq), more, Del.one(skey, s, seq, k)))
-
-# What comes before a release does not undo it.
 def Rel.join_r(+a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Session, h: Rel.Spec(b, skey, s)) -> Rel.Spec(N.Out.join(a, b), skey, s):
   match a:
     case (+ta, +aa):
@@ -684,12 +679,6 @@ def Fail.gone(+r: N.Step(), +skey: U32, +s: S.Session, h: Rel.Law(r, skey, s)) -
   (g, d) = h
   g
 
-# The deletion of a session the UPF knows.
-def Fail.del(+r: N.Step(), +skey: U32, +s: S.Session, h: Rel.Law(r, skey, s), +k: {S.Session.known(s) == True{} : Bool}) -> Up.N4.deleted(s, K.Kernel.actions(r)):
-  (g, d) = h
-  d(k)
-
-# The release, with the deletion of a session the UPF knows.
 def Fail.known(+r: N.Step(), +skey: U32, +s: S.Session, h: Rel.Law(r, skey, s), +k: {S.Session.known(s) == True{} : Bool}) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(r))) == None{} : Maybe<&2, S.Session>} & Up.N4.deleted(s, K.Kernel.actions(r)):
   (g, d) = h
   (g, d(k))

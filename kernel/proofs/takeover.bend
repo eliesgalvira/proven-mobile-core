@@ -28,7 +28,6 @@ import ../amf/handover.bend as Ho
 import ../LAWS.bend as L
 import ./lib.bend as P
 import ./walk.bend as PW
-import ./kernel.bend as PK
 
 # Proof of amf.takeover.authenticated (ticket 32). A transaction keeps the row
 # of another association's context unless it puts a context that conflicts
@@ -342,11 +341,6 @@ def Tk.ok_join(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +a: N.GOut(), +b: N.GOut
       match b:
         case (tb, ab):
           h
-
-def Tk.sp_also(+k: U32, +u: S.Ue, +o: N.GOut(), +more: List<&2, N.Act>, +h: {Tk.sp(k, u, o) == True{} : Bool}) -> {Tk.sp(k, u, N.Out.also(o, more)) == True{} : Bool}:
-  match o:
-    case (tx, acts):
-      h
 
 def Tk.sp_join(+k: U32, +u: S.Ue, +a: N.GOut(), +b: N.GOut(), +ha: {Tk.sp(k, u, a) == True{} : Bool}, +hb: {Tk.sp(k, u, b) == True{} : Bool}) -> {Tk.sp(k, u, N.Out.join(a, b)) == True{} : Bool}:
   match a:
