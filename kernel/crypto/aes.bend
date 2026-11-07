@@ -42,7 +42,7 @@ def Aes.sbox() -> List<&2, U32>:
    140, 161, 137, 13, 191, 230, 66, 104, 65, 153, 45, 15, 176, 84, 187, 22]
 
 # The S-box as a tree a byte indexes by its bits, high bit first; one is
-# built per key schedule and per block.
+# built per key and shared by its schedule and every block it encrypts.
 type Aes.Sbox is Data:
   SLeaf{v: U32}
   SNode{lo: Aes.Sbox, hi: Aes.Sbox}
@@ -125,9 +125,13 @@ def Aes.expand(+t: Aes.Sbox, n: Nat, +k: Aes.Block, +rcon: U32) -> List<&2, Aes.
     case 1n+p:
       k <> Aes.expand(t, p, Aes.next_key(t, k, rcon), Aes.xtime(rcon))
 
-# The eleven round keys of AES-128.
-def Aes.round_keys(key: List<&2, U32>) -> List<&2, Aes.Block>:
-  Aes.expand(Aes.table(), 10n, Aes.block_of(key), 1)
+# A key ready to encrypt with: the S-box tree and the eleven round keys of AES-128.
+type Aes.Keys is Data:
+  Keys{table: Aes.Sbox, rounds: List<&2, Aes.Block>}
+
+def Aes.round_keys(key: List<&2, U32>) -> Aes.Keys:
+  +t = Aes.table()
+  Keys{t, Aes.expand(t, 10n, Aes.block_of(key), 1)}
 
 def Aes.rounds(+t: Aes.Sbox, rks: List<&2, Aes.Block>, st: Aes.Block) -> Aes.Block:
   match rks:
@@ -138,12 +142,12 @@ def Aes.rounds(+t: Aes.Sbox, rks: List<&2, Aes.Block>, st: Aes.Block) -> Aes.Blo
     case k <> more:
       Aes.rounds(t, more, Aes.xor(Aes.mix_columns(Aes.shift_rows(Aes.sub_bytes(t, st))), k))
 
-def Aes.encrypt(rks: List<&2, Aes.Block>, blk: Aes.Block) -> Aes.Block:
-  match rks:
-    case Nil{}:
+def Aes.encrypt(ks: Aes.Keys, blk: Aes.Block) -> Aes.Block:
+  match ks:
+    case Keys{t, Nil{}}:
       blk
-    case k0 <> rest:
-      Aes.rounds(Aes.table(), rest, Aes.xor(blk, k0))
+    case Keys{t, k0 <> rest}:
+      Aes.rounds(t, rest, Aes.xor(blk, k0))
 
 def aes128(key: List<&2, U32>, block: List<&2, U32>) -> List<&2, U32>:
   Aes.to_bytes(Aes.encrypt(Aes.round_keys(key), Aes.block_of(block)))

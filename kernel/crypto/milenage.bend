@@ -45,7 +45,7 @@ def milenage.opc(key: List<&2, U32>, +op: List<&2, U32>) -> List<&2, U32>:
 # One run for a key, OPc and RAND: the key schedule, OPc and TEMP =
 # E_K(RAND xor OPc), computed once for every output.
 type Milenage.Run is Data:
-  Run{rks: List<&2, A.Aes.Block>, opc: A.Aes.Block, temp: A.Aes.Block}
+  Run{rks: A.Aes.Keys, opc: A.Aes.Block, temp: A.Aes.Block}
 
 def milenage.run(key: List<&2, U32>, opc: List<&2, U32>, rand: List<&2, U32>) -> Milenage.Run:
   +rks = A.Aes.round_keys(key)

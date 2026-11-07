@@ -27,12 +27,12 @@ def Cmac.pad(+bs: List<&2, U32>) -> List<&2, U32>:
 def Cmac.zero_pad(+bs: List<&2, U32>) -> List<&2, U32>:
   List.append(&2, U32, bs, List.replicate(U32, Nat.sub(16n, List.length(&2, U32, bs)), 0))
 
-def Cmac.finish(rks: List<&2, A.Aes.Block>, x: A.Aes.Block, last: A.Aes.Block, k: A.Aes.Block) -> List<&2, U32>:
+def Cmac.finish(rks: A.Aes.Keys, x: A.Aes.Block, last: A.Aes.Block, k: A.Aes.Block) -> List<&2, U32>:
   A.Aes.to_bytes(A.Aes.encrypt(rks, A.Aes.xor(A.Aes.xor(x, last), k)))
 
 # `cur` is the block before `rest`: complete and last (k_last), followed by
 # more blocks, or followed by a partial last block (padded with `pad`, k_part).
-def Cmac.go(~pad: List<&2, U32> -> List<&2, U32>, rest: List<&2, U32>, +rks: List<&2, A.Aes.Block>, x: A.Aes.Block, cur: A.Aes.Block, k_last: A.Aes.Block, k_part: A.Aes.Block) -> List<&2, U32>:
+def Cmac.go(~pad: List<&2, U32> -> List<&2, U32>, rest: List<&2, U32>, +rks: A.Aes.Keys, x: A.Aes.Block, cur: A.Aes.Block, k_last: A.Aes.Block, k_part: A.Aes.Block) -> List<&2, U32>:
   match rest:
     case Nil{}:
       Cmac.finish(rks, x, cur, k_last)
@@ -41,7 +41,7 @@ def Cmac.go(~pad: List<&2, U32> -> List<&2, U32>, rest: List<&2, U32>, +rks: Lis
     case short:
       Cmac.finish(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad(short)), k_part)
 
-def Cmac.start(~pad: List<&2, U32> -> List<&2, U32>, msg: List<&2, U32>, +rks: List<&2, A.Aes.Block>, k_last: A.Aes.Block, k_part: A.Aes.Block) -> List<&2, U32>:
+def Cmac.start(~pad: List<&2, U32> -> List<&2, U32>, msg: List<&2, U32>, +rks: A.Aes.Keys, k_last: A.Aes.Block, k_part: A.Aes.Block) -> List<&2, U32>:
   match msg:
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> b14 <> b15 <> rest:
       Cmac.go(~pad, rest, rks, A.Aes.zero(), A.Blk{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}, k_last, k_part)
