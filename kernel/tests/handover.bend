@@ -44,7 +44,7 @@ def nh_phase(p: S.Phase) -> U32:
   match p:
     case S.Registered{ctx, nh}:
       nh_ncc(nh)
-    case S.Handover{g, ctx, nh, leg}:
+    case S.Handover{g, ctx, nh, source, leg}:
       nh_ncc(nh)
     case _:
       99
@@ -73,6 +73,16 @@ def ack_ran(r: Result<&2, &2, B.Err, W.HandoverRequestAcknowledge.View>) -> B.By
       ran
     case _:
       []
+
+# How many UE Context Release Commands a step sends on an association.
+def releases_on(+assoc: U32, actions: List<&2, F.Action>) -> Nat:
+  match actions:
+    case Nil{}:
+      0n
+    case F.NgapSend{+a, stream, len, +bytes} <> more:
+      Nat.add(Pc.Bool.to_nat(Bool.and(U32.is_eq(a, assoc), H.is_pdu(bytes, 0, 41))), releases_on(assoc, more))
+    case x <> more:
+      releases_on(assoc, more)
 
 # The hand-built Handover Request Acknowledge names target RAN-UE-NGAP-ID 3.
 def hand_ran() -> B.Bytes():
@@ -144,3 +154,20 @@ def main() -> IO(Unit):
     C.Check.report("the hand-built Uplink RAN Status Transfer before the acknowledgement: nothing sent, nothing changed", Bool.and(Nat.is_eq(sends(H.step(st1, H.on(2, H.hand("UplinkRANStatusTransfer", hands)))), 0n), H.unchanged(st1, H.step(st1, H.on(2, H.hand("UplinkRANStatusTransfer", hands))))))
     +o_hn : N.Step() = H.step(st_hack, H.on(1, H.with_ie(85, G.RAN_UE_NGAP_ID.write(hand_ran(), 0n, []), ours(H.hex(msgs, 77n)))))
     C.Check.report("Handover Notify after the hand-built acknowledgement: the UE on gNB 1, its session repointed to the admitted tunnel", Bool.and(U32.is_eq(H.ue_on(K.Kernel.state(o_hn)), 1), B.bytes_eq(Pc.body(84, Pc.inside(11, Pc.inside(10, Pc.pfcp_ies(Pc.first_pfcp(K.Kernel.frames(o_hn)))))), [1, 0, 0, 0, 0, 3, 10, 33, 0, 30])))
+    C.Check.report("a Path Switch Request from gNB 1 for the UE in handover: Path Switch Request Failure, nothing changed", Bool.and(H.is_pdu(H.sent_on(1, K.Kernel.frames(H.step(st1, H.on(1, H.hex(msgs, 51n))))), 2, 25), Bool.and(H.unchanged(st1, H.step(st1, H.on(1, H.hex(msgs, 51n)))), A.phase_is(K.Kernel.state(H.step(st1, H.on(1, H.hex(msgs, 51n)))), "handover"))))
+    +ran2 : B.Bytes() = H.ran_of(A.ue1(st))
+    +nas : B.Bytes() = H.with_ie(85, G.RAN_UE_NGAP_ID.write(ran2, 0n, []), H.hex(msgs, 33n))
+    C.Check.report("an Uplink NAS Transport from the owner during the handover: ignored, nothing sent", Bool.and(H.unchanged(st1, H.step(st1, H.on(2, nas))), Nat.is_eq(sends(H.step(st1, H.on(2, nas))), 0n)))
+    +o_tdown : N.Step() = H.step(st1, F.NgapAssocDown{1})
+    +st_tdown : S.State = K.Kernel.state(o_tdown)
+    C.Check.report("the target's association goes down before its acknowledgement: Handover Preparation Failure to gNB 2, the UE registered there, the guard stopped", Bool.and(H.is_pdu(H.sent_on(2, K.Kernel.frames(o_tdown)), 2, 12), Bool.and(A.phase_is(st_tdown, "registered"), Bool.and(U32.is_eq(H.ue_on(st_tdown), 2), Pc.cancels(K.Kernel.frames(o_tdown), 1)))))
+    +st_back : S.State = H.after(H.after(st_tdown, F.NgapAssocUp{1}), H.on(1, H.hex(msgs, 8n)))
+    C.Check.report("a new association under the target's id afterwards: its acknowledgement ignored", ignored(st_back, 1, H.step(st_back, H.on(1, ours(H.hex(msgs, 61n))))))
+    +o_tdown2 : N.Step() = H.step(st2, F.NgapAssocDown{1})
+    C.Check.report("the target's association goes down after its acknowledgement: the UE registered on gNB 2, the guard stopped", Bool.and(A.phase_is(K.Kernel.state(o_tdown2), "registered"), Bool.and(U32.is_eq(H.ue_on(K.Kernel.state(o_tdown2)), 2), Pc.cancels(K.Kernel.frames(o_tdown2), 1))))
+    +o_sdown : N.Step() = H.step(st2, F.NgapAssocDown{2})
+    C.Check.report("the source's association goes down during the handover: the UE gone, gNB 1 told to release it", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_sdown)), 0n), Nat.is_eq(releases_on(1, K.Kernel.frames(o_sdown)), 1n)))
+    +o_rel : N.Step() = H.step(st2, H.on(2, A.release_request(ran2)))
+    C.Check.report("the owner releases the UE during the handover: Release Command to gNB 2 and to gNB 1, the UE releasing", Bool.and(Nat.is_eq(releases_on(2, K.Kernel.frames(o_rel)), 1n), Bool.and(Nat.is_eq(releases_on(1, K.Kernel.frames(o_rel)), 1n), A.phase_is(K.Kernel.state(o_rel), "releasing"))))
+    +o_rel1 : N.Step() = H.step(st1, H.on(2, A.release_request(ran2)))
+    C.Check.report("the owner releases the UE before the acknowledgement: gNB 1 told to release by AMF-UE-NGAP-ID", Bool.and(Nat.is_eq(releases_on(1, K.Kernel.frames(o_rel1)), 1n), A.phase_is(K.Kernel.state(o_rel1), "releasing")))

@@ -10,6 +10,7 @@ import ./ausf.bend as Au
 import ./amf/ngap.bend as N
 import ./amf/gmm.bend as Gmm
 import ./amf/route.bend as R
+import ./amf/handover.bend as Ho
 
 # The step function (docs/spec/milestone-1.md § The step function): total and
 # pure; every law about a procedure is a law about it.
@@ -46,13 +47,19 @@ def Kernel.assoc_up(st: S.State, assoc: U32) -> N.Step():
 
 # An association going down releases every UE it owned, their sessions at the
 # UPF included, and stops the guards of the sessions gone.
-def Kernel.assoc_down(st: S.State, +assoc: U32) -> N.Step():
+def Kernel.drop(st: S.State, +assoc: U32) -> N.Step():
   match st:
     case S.State{config, subs, assocs, ues, +sessions, +pfcp_seq, next_ue, n4}:
       +left = S.Ues.drop_assoc(assoc, ues)
       +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
       +kept = S.Sessions.sift(S.SOwned{left}, sessions)
       (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, kept, U32.add(pfcp_seq, Up.N4.deletion_count(gone)), next_ue, n4}, List.append(&2, N.Act, List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}]), N.Gone.cancels(gone, [])))
+
+# First the N2 handovers it takes part in end (Ho.Ho.down), then its UEs go.
+def Kernel.assoc_down(+st: S.State, +assoc: U32) -> N.Step():
+  +s1 = N.Step.of(st, Ho.Ho.down(st, assoc))
+  +s2 = Kernel.drop(Kernel.state(s1), assoc)
+  (Kernel.state(s2), List.append(&2, N.Act, Kernel.actions(s1), Kernel.actions(s2)))
 
 # A guard timer fired: a UE's, a session's, or the N4 association's (timer 0).
 def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():

@@ -89,20 +89,23 @@ def Gmm.evict(victims: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session), +seq: U32
       (S.Keep{}, [])
     case (+key, +v) <> more:
       +gone = S.Sessions.of_ue(key, sessions)
-      N.Out.join(N.Out.prepend(N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), N.Ngap.nas_cause(G.CauseNas.deregister())}, (S.BumpSeq{Up.N4.deletion_count(gone)}, Up.N4.deletions(gone, seq))), Gmm.evict(more, sessions, U32.add(seq, Up.N4.deletion_count(gone))))
+      +cause = N.Ngap.nas_cause(G.CauseNas.deregister())
+      N.Out.join(N.Out.prepend(N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), cause}, (S.BumpSeq{Up.N4.deletion_count(gone)}, List.append(&2, N.Act, Up.N4.deletions(gone, seq), Ho.Ho.leg_drop(key, S.Ue.phase(v), cause)))), Gmm.evict(more, sessions, U32.add(seq, Up.N4.deletion_count(gone))))
 
 # The one write of a context's identity: it takes its place, and every live
 # context it conflicts with (the same SUPI, 5G-TMSI or RAN id on the
-# association) goes with its sessions, which are deleted at the UPF. A SUPI enters a context
+# association) goes with its sessions, which are deleted at the UPF, and with
+# the target of its pending handover, released. A SUPI enters a context
 # only once 5G-AKA has verified it (Gmm.secure) and a 5G-TMSI is drawn free
 # (Gmm.tmsi), so another gNB's UE is taken over only after authentication.
 def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
   N.Out.join((S.Put{key, ue}, []), Gmm.evict(S.Ues.evicted(key, ue, S.State.ues(st)), S.State.sessions(st), S.State.pfcp_seq(st)))
 
 # UE Context Release Command; the context waits, releasing, for the gNB, and
-# its guard, started again, bounds the wait.
-def Gmm.release(+st: S.State, +key: U32, +ue: S.Ue, cause: G.Cause) -> N.GOut():
-  N.Out.prepend(N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.also(Gmm.place(st, key, S.Ue.with_phase(ue, S.Releasing{S.Guard{0}})), [N.TimerStart{Some{key}, key, N.Ue.guard_ms()}]))
+# its guard, started again, bounds the wait; the target of its pending
+# handover is released.
+def Gmm.release(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause) -> N.GOut():
+  N.Out.prepend(N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.also(Gmm.place(st, key, S.Ue.with_phase(ue, S.Releasing{S.Guard{0}})), N.TimerStart{Some{key}, key, N.Ue.guard_ms()} <> Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause)))
 
 # A 5GMM reject, then release.
 def Gmm.refuse(st: S.State, +key: U32, +ue: S.Ue, nas: B.Bytes()) -> N.GOut():
@@ -575,8 +578,8 @@ def Gmm.release_complete_ue(+st: S.State, assoc: U32, +key: U32, m: Maybe<&2, S.
   match m:
     case None{}:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{ue}:
-      N.Out.also(Gmm.forget(st, key), List.append(&2, N.Act, N.Guard.cancel(key, S.Ue.guard(ue)), [N.Note{F.Info{}, "NGAP: UE context released"}]))
+    case Some{+ue}:
+      N.Out.also(Gmm.forget(st, key), List.append(&2, N.Act, N.Guard.cancel(key, S.Ue.guard(ue)), List.append(&2, N.Act, Ho.Ho.leg_drop(key, S.Ue.phase(ue), N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified())), [N.Note{F.Info{}, "NGAP: UE context released"}])))
 
 def Gmm.release_complete_key(+st: S.State, +assoc: U32, ran: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
   match m:
@@ -627,7 +630,7 @@ def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
       (S.Keep{}, [])
     case S.Switching{guard, ctx, nh, released}:
       Gmm.release(st, key, ue, N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))
-    case S.Handover{+guard, ctx, nh, leg}:
+    case S.Handover{+guard, ctx, nh, source, leg}:
       Ho.Ho.expired(key, ue, ctx, nh, leg, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
     case S.Releasing{guard}:
       N.Out.also(Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}])

@@ -209,7 +209,7 @@ type Phase is Data:
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
   Registered{ctx: N.Nas.Ctx, nh: Nh}
   Switching{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, released: List<&2, U32>}
-  Handover{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, leg: Leg}
+  Handover{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, source: U32, leg: Leg}
   Releasing{guard: Guard}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
@@ -228,7 +228,7 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       None{}
     case Switching{guard, ctx, nh, released}:
       Some{guard}
-    case Handover{guard, ctx, nh, leg}:
+    case Handover{guard, ctx, nh, source, leg}:
       Some{guard}
     case Releasing{guard}:
       Some{guard}
@@ -259,8 +259,8 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       Registered{ctx, nh}
     case Switching{guard, ctx, nh, released}:
       Switching{g, ctx, nh, released}
-    case Handover{guard, ctx, nh, leg}:
-      Handover{g, ctx, nh, leg}
+    case Handover{guard, ctx, nh, source, leg}:
+      Handover{g, ctx, nh, source, leg}
     case Releasing{guard}:
       Releasing{g}
 
@@ -275,8 +275,6 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
       Some{ctx}
     case Switching{guard, ctx, nh, released}:
       Some{ctx}
-    case Handover{guard, ctx, nh, leg}:
-      Some{ctx}
     case _:
       None{}
 
@@ -290,18 +288,37 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
       Registered{c, nh}
     case Switching{guard, ctx, nh, released}:
       Switching{guard, c, nh, released}
-    case Handover{guard, ctx, nh, leg}:
-      Handover{guard, c, nh, leg}
     case other:
       other
 
 # The target of the N2 handover pending, if any.
 def Phase.pending(p: Phase) -> Maybe<&2, U32>:
   match p:
-    case Handover{guard, ctx, nh, leg}:
+    case Handover{guard, ctx, nh, source, leg}:
       Some{Leg.target(leg)}
     case _:
       None{}
+
+def Phase.idle(p: Phase) -> Bool:
+  Bool.not(Tb.Table.present(U32, Phase.pending(p)))
+
+# A UE in N2 handover keeps its NAS security context, but no NAS message is
+# read while the target takes it over.
+def Phase.secured(p: Phase) -> Bool:
+  match p:
+    case Handover{guard, ctx, nh, source, leg}:
+      True{}
+    case other:
+      Tb.Table.present(N.Nas.Ctx, Phase.ctx(other))
+
+# A pending handover belongs to association a when a is the source it started
+# from and not its target.
+def Phase.owned_by(p: Phase, +a: U32) -> Bool:
+  match p:
+    case Handover{guard, ctx, nh, +source, leg}:
+      Bool.and(U32.is_eq(a, source), Bool.not(U32.is_eq(Leg.target(leg), source)))
+    case _:
+      True{}
 
 # A UE context: the NGAP association that owns it, its RAN-UE-NGAP-ID there,
 # the stream its InitialUEMessage arrived on, its SUPI once authenticated and
@@ -389,6 +406,18 @@ def Ue.moved(u: Ue, a: U32, r: B.Bytes(), s: U32, p: Phase) -> Ue:
   match u:
     case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       Ue{a, r, s, supi, tmsi, reg, ngksi, p, last_dl}
+
+# The context is owned by the source of its pending handover, if any.
+def Ue.single(+u: Ue) -> Bool:
+  Phase.owned_by(Ue.phase(u), Ue.assoc(u))
+
+# The phase p belongs to the context m, if any.
+def Ue.fits(p: Phase, m: Maybe<&2, Ue>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{w}:
+      Phase.owned_by(p, Ue.assoc(w))
 
 def Ue.pending(m: Maybe<&2, Ue>) -> Maybe<&2, U32>:
   match m:
@@ -712,7 +741,7 @@ def Ues.has_tmsi(+t: U32, ues: Tb.Table(Ue)) -> Bool:
 # Some context with this SUPI holds a NAS security context, which exists only
 # once 5G-AKA has verified the SUPI.
 def Ue.secures(+u: Ue, s: Maybe<&2, B.Digits()>) -> Bool:
-  Bool.and(Maybe.same_bytes(Ue.supi(u), s), Tb.Table.present(N.Nas.Ctx, Phase.ctx(Ue.phase(u))))
+  Bool.and(Maybe.same_bytes(Ue.supi(u), s), Phase.secured(Ue.phase(u)))
 
 def Ues.secured(+s: Maybe<&2, B.Digits()>, ues: Tb.Table(Ue)) -> Bool:
   match ues:
@@ -728,6 +757,22 @@ def Ues.unique(ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (+key, +u) <> +more:
       Bool.and(Ues.clear(key, u, more), Ues.unique(more))
+
+# Every context with a pending handover is owned by its source.
+def Ues.single(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, +u) <> more:
+      Bool.and(Ue.single(u), Ues.single(more))
+
+# Every context with a pending handover waits under its guard.
+def Ues.timed(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, +u) <> more:
+      Bool.and(Bool.or(Phase.idle(Ue.phase(u)), Tb.Table.present(Guard, Ue.guard(u))), Ues.timed(more))
 
 # Every context is registered or waits under its guard.
 def Ues.guarded(ues: Tb.Table(Ue)) -> Bool:

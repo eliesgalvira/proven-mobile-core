@@ -84,7 +84,7 @@ def Pw.phase(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf
       Pw.identified(Q, st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ue.supi(ue), ek, fail, go)
     case S.Switching{guard, ctx, nh, released}:
       fail(Ps.Ps.unknown())
-    case S.Handover{guard, ctx, nh, leg}:
+    case S.Handover{guard, ctx, nh, source, leg}:
       fail(Ps.Ps.unknown())
     case S.Releasing{guard}:
       fail(Ps.Ps.unknown())
