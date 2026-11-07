@@ -4,7 +4,7 @@ Audited at commit 657e746 on `loop/m1`, 2026-11-02, re-audited by the owner on 2
 
 | Check | Result |
 |---|---|
-| `scripts/test-kernel.sh --strict` | every `kernel/tests/*.bend` passes, 722 checks, nothing skipped (ticket 35) |
+| `scripts/test-kernel.sh --strict` | every `kernel/tests/*.bend` passes, 725 checks, nothing skipped (ticket 35) |
 | `python3 -I scripts/acceptance.py --strict` | 32 laws required (the 23 in-scope advisories and the laws tickets name), 0 failures (ticket 35) |
 | `bend kernel/PROOF.bend` and `--verdict` | ALL PROOFS CHECK; 142 laws in `kernel/LAWS.bend` (ticket 35) plus 471 generated NGAP laws in `kernel/ngap/gen/laws.bend` |
 | `scripts/check.sh` | passes (see `loop/progress.md`) |
