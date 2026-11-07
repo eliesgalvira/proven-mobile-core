@@ -24,6 +24,7 @@ import ../ngap/gen/views.bend as V
 import ../amf/route.bend as R
 import ../LAWS.bend as L
 import ./lib.bend as P
+import ./walk.bend as PW
 import ./kernel.bend as PK
 
 # Proof of amf.takeover.authenticated (ticket 32). A transaction keeps the row
@@ -1623,78 +1624,8 @@ def W.setup_response_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err
 
 # The router
 
-def W.d7(+st: S.State, +assoc: U32, +ies: List<&2, Fr.Ie>, +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), R.Route.d7(st, assoc, ies, ok)):
-  match ok:
-    case True{}:
-      W.setup_response_of_view(st, assoc, V.PDUSessionResourceSetupResponse.view(ies), k, u, eu, eun, ea)
-    case False{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
-def W.d6(+st: S.State, +assoc: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), R.Route.d6(st, assoc, kind, code, ies, ok)):
-  match ok:
-    case True{}:
-      W.release_complete_of_view(st, assoc, V.UEContextReleaseComplete.view(ies), k, u, eu, eun, ea)
-    case False{}:
-      W.d7(st, assoc, ies, N.Ngap.is_procedure(kind, code, 1n, 29n), k, u, eu, eun, ea)
-
-def W.d5(+st: S.State, +assoc: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), R.Route.d5(st, assoc, kind, code, ies, ok)):
-  match ok:
-    case True{}:
-      W.release_request_of_view(st, assoc, V.UEContextReleaseRequest.view(ies), k, u, eu, eun, ea)
-    case False{}:
-      W.d6(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 1n, 41n), k, u, eu, eun, ea)
-
-def W.d4(+st: S.State, +assoc: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), R.Route.d4(st, assoc, kind, code, ies, ok)):
-  match ok:
-    case True{}:
-      W.ics_of_view(st, assoc, V.InitialContextSetupResponse.view(ies), k, u, eu, eun, ea)
-    case False{}:
-      W.d5(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 0n, 42n), k, u, eu, eun, ea)
-
-def W.d3(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), R.Route.d3(st, assoc, stream, kind, code, ies, entropy, ok)):
-  match ok:
-    case True{}:
-      W.uplink_of_view(st, assoc, stream, entropy, V.UplinkNASTransport.view(ies), k, u, eu, eun, ea)
-    case False{}:
-      W.d4(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 1n, 14n), k, u, eu, eun, ea)
-
-def W.d2(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), R.Route.d2(st, assoc, stream, kind, code, ies, entropy, ok)):
-  match ok:
-    case True{}:
-      W.initial_of_view(st, assoc, stream, entropy, V.InitialUEMessage.view(ies), k, u, eu, eun, ea)
-    case False{}:
-      W.d3(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 46n), k, u, eu, eun, ea)
-
-def W.ng_setup(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Kept(k, u, S.State.ues(K.Kernel.state(N.NgSetup.of_view(st, assoc, r)))):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{v}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
-def W.d1(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(K.Kernel.state(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, ok)))):
-  match ok:
-    case True{}:
-      W.ng_setup(st, assoc, V.NGSetupRequest.view(ies), k, u, eu)
-    case False{}:
-      +o = R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n))
-      se = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), Tk.ues(Tk.tx(o), S.State.ues(st)), Tk.render(st, o))
-      %se : Tk.Kept(k, u, _)
-      W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n), k, u, eu, eun, ea)
-
-def W.ies(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(K.Kernel.state(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)))):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{(+ies, c)}:
-      W.d1(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 21n), k, u, eu, eun, ea)
-
-def W.pdu(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, r)))):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{Fr.Pdu{+kind, +code, crit, +value}}:
-      W.ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), k, u, eu, eun, ea)
+def W.d2(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), R.Route.d2(st, assoc, stream, kind, code, ies, entropy, b)):
+  PW.Walk.d2(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, kind, code, ies, entropy, b, Tk.kept_get(k, u, S.State.ues(st), eu), +r => W.initial_of_view(st, assoc, stream, entropy, r, k, u, eu, eun, ea), +r => W.uplink_of_view(st, assoc, stream, entropy, r, k, u, eu, eun, ea), +r => W.ics_of_view(st, assoc, r, k, u, eu, eun, ea), +r => W.release_request_of_view(st, assoc, r, k, u, eu, eun, ea), +r => W.release_complete_of_view(st, assoc, r, k, u, eu, eun, ea), +r => W.setup_response_of_view(st, assoc, r, k, u, eu, eun, ea))
 
 def Tk.removed(+k: U32, +u: S.Ue, +x: Tb.Table(S.Ue), eg: {Tb.Table.get(S.Ue, k, x) == Some{u} : Maybe<&2, S.Ue>} -> Empty, w: Tk.Kept(k, u, x)) -> {S.Ues.secured(S.Ue.supi(u), x) == True{} : Bool}:
   match w:
@@ -1703,6 +1634,10 @@ def Tk.removed(+k: U32, +u: S.Ue, +x: Tb.Table(S.Ue), eg: {Tb.Table.get(S.Ue, k,
     case Inr{e}:
       e
 
+def Tk.out(+st: S.State, +o: N.GOut(), +k: U32, +u: S.Ue, w: Tk.Ok(k, u, S.State.ues(st), o)) -> Tk.Kept(k, u, S.State.ues(K.Kernel.state(N.Step.of(st, o)))):
+  se = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), Tk.ues(Tk.tx(o), S.State.ues(st)), Tk.render(st, o))
+  (%se : Tk.Kept(k, u, _); w)
+
 def L.amf.takeover.authenticated(st, entropy, assoc, stream, len, bytes, k, u, e, eu, ea, eg):
   +x = S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
-  Tk.removed(k, u, x, eg, W.pdu(st, assoc, stream, entropy, Fr.Pdu.read(bytes), k, u, eu, e, ea))
+  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => Tk.kept_get(k, u, S.State.ues(st), eu), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n), k, u, eu, e, ea)))

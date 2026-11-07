@@ -28,6 +28,7 @@ import ../LAWS.bend as L
 import ./lib.bend as P
 import ./kernel.bend as PK
 import ./takeover.bend as PT
+import ./walk.bend as PW
 
 # Proofs of the liveness laws (ticket 33) and of amf.ng_setup.requires_supported_plmn.
 
@@ -1926,47 +1927,15 @@ def Lw.fired(+st: S.State, +timer: U32) -> {Lv.okf(st, K.Kernel.fired(st, timer)
 # NGAP
 # ----
 
-def Lw.d7(+st: S.State, +assoc: U32, +ies: List<&2, Fr.Ie>, +ok: Bool) -> {Lv.ok(st, R.Route.d7(st, assoc, ies, ok)) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Lv.ok_of(st, Gsm.Gsm.setup_response_of_view(st, assoc, V.PDUSessionResourceSetupResponse.view(ies)), Lw.setup_response_of_view(st, assoc, V.PDUSessionResourceSetupResponse.view(ies)))
-    case False{}:
-      {==}
+def Lw.d2(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool) -> {Lv.ok(st, R.Route.d2(st, assoc, stream, kind, code, ies, entropy, b)) == True{} : Bool}:
+  PW.Walk.d2(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, stream, kind, code, ies, entropy, b, {==}, +r => Lv.ok_of(st, Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, r), Lw.initial_of_view(st, assoc, stream, entropy, r)), +r => Lw.uplink_of_view(st, assoc, stream, entropy, r), +r => Lv.ok_of(st, Gmm.Gmm.ics_response_of_view(st, assoc, r), Lw.ics_response_of_view(st, assoc, r)), +r => Lv.ok_of(st, Gmm.Gmm.release_request_of_view(st, assoc, r), Lw.release_request_of_view(st, assoc, r)), +r => Lv.ok_of(st, Gmm.Gmm.release_complete_of_view(st, assoc, r), Lw.release_complete_of_view(st, assoc, r)), +r => Lv.ok_of(st, Gsm.Gsm.setup_response_of_view(st, assoc, r), Lw.setup_response_of_view(st, assoc, r)))
 
-def Lw.d6(+st: S.State, +assoc: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +ok: Bool) -> {Lv.ok(st, R.Route.d6(st, assoc, kind, code, ies, ok)) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Lv.ok_of(st, Gmm.Gmm.release_complete_of_view(st, assoc, V.UEContextReleaseComplete.view(ies)), Lw.release_complete_of_view(st, assoc, V.UEContextReleaseComplete.view(ies)))
-    case False{}:
-      Lw.d7(st, assoc, ies, N.Ngap.is_procedure(kind, code, 1n, 29n))
+def Lv.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32) -> PW.Walk.Routed(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, stream, entropy):
+  +kind => +code => +ies => Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n))
 
-def Lw.d5(+st: S.State, +assoc: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +ok: Bool) -> {Lv.ok(st, R.Route.d5(st, assoc, kind, code, ies, ok)) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Lv.ok_of(st, Gmm.Gmm.release_request_of_view(st, assoc, V.UEContextReleaseRequest.view(ies)), Lw.release_request_of_view(st, assoc, V.UEContextReleaseRequest.view(ies)))
-    case False{}:
-      Lw.d6(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 1n, 41n))
-
-def Lw.d4(+st: S.State, +assoc: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +ok: Bool) -> {Lv.ok(st, R.Route.d4(st, assoc, kind, code, ies, ok)) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Lv.ok_of(st, Gmm.Gmm.ics_response_of_view(st, assoc, V.InitialContextSetupResponse.view(ies)), Lw.ics_response_of_view(st, assoc, V.InitialContextSetupResponse.view(ies)))
-    case False{}:
-      Lw.d5(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 0n, 42n))
-
-def Lw.d3(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool) -> {Lv.ok(st, R.Route.d3(st, assoc, stream, kind, code, ies, entropy, ok)) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Lw.uplink_of_view(st, assoc, stream, entropy, V.UplinkNASTransport.view(ies))
-    case False{}:
-      Lw.d4(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 1n, 14n))
-
-def Lw.d2(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool) -> {Lv.ok(st, R.Route.d2(st, assoc, stream, kind, code, ies, entropy, ok)) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Lv.ok_of(st, Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, V.InitialUEMessage.view(ies)), Lw.initial_of_view(st, assoc, stream, entropy, V.InitialUEMessage.view(ies)))
-    case False{}:
-      Lw.d3(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 46n))
+# Every procedure's outcome is ok (Lw).
+def Lv.walk(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: PW.Walk.Keep(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), up: @assoc:U32 -> Q(K.Kernel.assoc_up(st, assoc)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: PW.Walk.Out(Q, o => {Lv.ok(st, o) == True{} : Bool}, st)) -> Q(K.Kernel.step(st, ev, entropy)):
+  PW.Walk.step(Q, o => {Lv.ok(st, o) == True{} : Bool}, st, ev, entropy, keep, config, up, down, out, +a => +s => Lv.routed(st, entropy, a, s), +bytes => Lv.ok_of(st, Gsm.Gsm.pfcp_data(st, bytes), Lw.pfcp_data(st, bytes)), +timer => Lv.ok_of(st, K.Kernel.fired(st, timer), Lw.fired(st, timer)))
 
 
 # Steps
@@ -2183,35 +2152,6 @@ def Lv.spare_of(+st: S.State, +as: List<&2, N.Act>, +k: U32, +h: {Lv.acts(st, as
 # Every event
 # -----------
 
-def Lv.setup_spare(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, +k: U32) -> {N.Acts.spare(k, K.Kernel.actions(N.NgSetup.of_view(st, assoc, r))) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{v}:
-      {==}
-
-def Lv.d1_spare(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool, +k: U32, +eo: {S.Sessions.owned(S.State.sessions(st), S.State.ues(st)) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == None{} : Maybe<&2, S.Ue>}, +en: {S.Maybe.same_u32(S.State.fresh(st), Some{k}) == False{} : Bool}) -> {N.Acts.spare(k, K.Kernel.actions(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, ok))) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Lv.setup_spare(st, assoc, V.NGSetupRequest.view(ies), k)
-    case False{}:
-      +o = R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n))
-      Lv.spare_of(st, K.Kernel.actions(N.Step.of(st, o)), k, Lv.step_acts(st, o, Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n))), eo, eg, en)
-
-def Lv.ies_spare(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), +k: U32, +eo: {S.Sessions.owned(S.State.sessions(st), S.State.ues(st)) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == None{} : Maybe<&2, S.Ue>}, +en: {S.Maybe.same_u32(S.State.fresh(st), Some{k}) == False{} : Bool}) -> {N.Acts.spare(k, K.Kernel.actions(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r))) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      {==}
-    case Done{(+ies, c)}:
-      Lv.d1_spare(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 21n), k, eo, eg, en)
-
-def Lv.pdu_spare(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, +k: U32, +eo: {S.Sessions.owned(S.State.sessions(st), S.State.ues(st)) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == None{} : Maybe<&2, S.Ue>}, +en: {S.Maybe.same_u32(S.State.fresh(st), Some{k}) == False{} : Bool}) -> {N.Acts.spare(k, K.Kernel.actions(R.Route.of_pdu(st, assoc, stream, entropy, r))) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      {==}
-    case Done{Fr.Pdu{kind, code, crit, value}}:
-      Lv.ies_spare(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), k, eo, eg, en)
-
 # The guards a step stops name no UE either.
 def Lv.spare_app(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +hx: {N.Acts.spare(k, xs) == True{} : Bool}, +hy: {N.Acts.spare(k, ys) == True{} : Bool}) -> {N.Acts.spare(k, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
   match xs:
@@ -2278,92 +2218,25 @@ def Lv.down_owned(+st: S.State, +assoc: U32) -> {S.Sessions.owned(S.State.sessio
     case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
       Lv.owned_owned(S.Ues.drop_assoc(assoc, ues), sessions)
 
-def Lv.step_spare(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +k: U32, +eo: {S.Sessions.owned(S.State.sessions(st), S.State.ues(st)) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == None{} : Maybe<&2, S.Ue>}, +en: {S.Maybe.same_u32(S.State.fresh(st), Some{k}) == False{} : Bool}) -> {N.Acts.spare(k, K.Kernel.actions(K.Kernel.step(st, ev, entropy))) == True{} : Bool}:
-  match ev:
-    case F.Config{len, +tlvs}:
-      Lv.config_spare(S.Cfg.complete(tlvs), st, tlvs, entropy, k)
-    case F.NgapAssocUp{assoc}:
-      Lv.up_spare(st, assoc, k)
-    case F.NgapAssocDown{+assoc}:
-      Lv.down_spare(st, assoc, k, eo, eg, en)
-    case F.NgapData{+assoc, +stream, len, +bytes}:
-      Lv.pdu_spare(st, assoc, stream, entropy, Fr.Pdu.read(bytes), k, eo, eg, en)
-    case F.PfcpData{len, +bytes}:
-      Lv.spare_of(st, K.Kernel.actions(N.Step.of(st, Gsm.Gsm.pfcp_data(st, bytes))), k, Lv.step_acts(st, Gsm.Gsm.pfcp_data(st, bytes), Lv.ok_of(st, Gsm.Gsm.pfcp_data(st, bytes), Lw.pfcp_data(st, bytes))), eo, eg, en)
-    case F.TimerFired{+timer}:
-      Lv.spare_of(st, K.Kernel.actions(N.Step.of(st, K.Kernel.fired(st, timer))), k, Lv.step_acts(st, K.Kernel.fired(st, timer), Lv.ok_of(st, K.Kernel.fired(st, timer), Lw.fired(st, timer))), eo, eg, en)
-
 # Invariants of every step
 # ------------------------
 # A property of the context and session tables that every transaction a UE
 # procedure may run keeps, and that an association going down keeps, holds
-# after every step: Config, an association going up and NG Setup leave both
-# tables as they were.
+# after every step (PW.Walk).
 
 def Inv.Tx(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st0: S.State) -> Type:
   @tx:S.Tx -> @st:S.State -> {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool} -> {Lv.homed(st0, tx, S.State.ues(st)) == True{} : Bool} -> {inv(S.State.ues(S.Tx.apply(tx, st)), S.State.sessions(S.Tx.apply(tx, st))) == True{} : Bool}
 
-def Inv.out(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +o: N.GOut(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st), +h: {Lv.ok(st, o) == True{} : Bool}) -> {inv(S.State.ues(K.Kernel.state(N.Step.of(st, o))), S.State.sessions(K.Kernel.state(N.Step.of(st, o)))) == True{} : Bool}:
+def Inv.out(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +o: N.GOut(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st), +h: {Lv.ok(st, o) == True{} : Bool}) -> PW.Walk.Tables(inv, N.Step.of(st, o)):
   match o:
     case (+tx, +acts):
       t(tx, st, e, P.Bool.and_true_r(Lv.acts(st, acts), Lv.homed(st, tx, S.State.ues(st)), h))
 
-def Inv.setup(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}) -> {inv(S.State.ues(K.Kernel.state(N.NgSetup.of_view(st, assoc, r))), S.State.sessions(K.Kernel.state(N.NgSetup.of_view(st, assoc, r)))) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      e
-    case Done{v}:
-      e
+def Inv.step(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st), down: @a:U32 -> PW.Walk.Tables(inv, K.Kernel.assoc_down(st, a))) -> {inv(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))) == True{} : Bool}:
+  Lv.walk(o => PW.Walk.Tables(inv, o), st, ev, entropy, acts => h => e, +tlvs => PW.Walk.config(inv, S.Cfg.complete(tlvs), st, tlvs, entropy, e), a => PW.Walk.up(inv, st, a, e), down, +o => h => Inv.out(inv, st, o, e, t, h))
 
-def Inv.d1(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool, +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st)) -> {inv(S.State.ues(K.Kernel.state(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, ok))), S.State.sessions(K.Kernel.state(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, ok)))) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Inv.setup(inv, st, assoc, V.NGSetupRequest.view(ies), e)
-    case False{}:
-      Inv.out(inv, st, R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n)), e, t, Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n)))
-
-def Inv.ies(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st)) -> {inv(S.State.ues(K.Kernel.state(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r))), S.State.sessions(K.Kernel.state(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)))) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      e
-    case Done{(+ies, c)}:
-      Inv.d1(inv, st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 21n), e, t)
-
-def Inv.pdu(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st)) -> {inv(S.State.ues(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, r))), S.State.sessions(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, r)))) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      e
-    case Done{Fr.Pdu{kind, code, crit, value}}:
-      Inv.ies(inv, st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), e, t)
-
-def Inv.config(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}) -> {inv(S.State.ues(K.Kernel.state(K.Kernel.config(complete, st, tlvs, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.config(complete, st, tlvs, entropy)))) == True{} : Bool}:
-  match complete:
-    case False{}:
-      e
-    case True{}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-
-def Inv.up(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +assoc: U32, +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}) -> {inv(S.State.ues(K.Kernel.state(K.Kernel.assoc_up(st, assoc))), S.State.sessions(K.Kernel.state(K.Kernel.assoc_up(st, assoc)))) == True{} : Bool}:
-  match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-      e
-
-def Inv.step(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st), down: @a:U32 -> {inv(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, a))), S.State.sessions(K.Kernel.state(K.Kernel.assoc_down(st, a)))) == True{} : Bool}) -> {inv(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))) == True{} : Bool}:
-  match ev:
-    case F.Config{len, +tlvs}:
-      Inv.config(inv, S.Cfg.complete(tlvs), st, tlvs, entropy, e)
-    case F.NgapAssocUp{assoc}:
-      Inv.up(inv, st, assoc, e)
-    case F.NgapAssocDown{assoc}:
-      down(assoc)
-    case F.NgapData{+assoc, +stream, len, +bytes}:
-      Inv.pdu(inv, st, assoc, stream, entropy, Fr.Pdu.read(bytes), e, t)
-    case F.PfcpData{len, +bytes}:
-      Inv.out(inv, st, Gsm.Gsm.pfcp_data(st, bytes), e, t, Lv.ok_of(st, Gsm.Gsm.pfcp_data(st, bytes), Lw.pfcp_data(st, bytes)))
-    case F.TimerFired{+timer}:
-      Inv.out(inv, st, K.Kernel.fired(st, timer), e, t, Lv.ok_of(st, K.Kernel.fired(st, timer), Lw.fired(st, timer)))
+def L.amf.indexes.unique(st, ev, entropy, e):
+  ({==}, Inv.step(ues => ss => S.Ues.unique(ues), st, ev, entropy, e, tx => st2 => e2 => h => PK.Tx.unique(tx, st2, e2), a => PK.Down.unique(st, a, e)))
 
 def L.amf.sessions.owned(st, ev, entropy, e):
   ({==}, Inv.step(ues => ss => S.Sessions.owned(ss, ues), st, ev, entropy, e, tx => st2 => e2 => h => Lv.owned_tx(st, tx, st2, e2, h), a => Lv.down_owned(st, a)))
@@ -2821,34 +2694,6 @@ def Gs.of(+st: S.State, +o: N.GOut(), +k: U32, +s: S.Session, +g: S.Guard, +es: 
     case (+tx, +acts):
       Gs.stops_app(k, acts, N.Gone.cancels(S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), Gs.gone(S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st)), k, s, g, es, eg, eh))
 
-def Gs.setup(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, +k: U32, +s: S.Session, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(N.NgSetup.of_view(st, assoc, r)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(N.NgSetup.of_view(st, assoc, r))) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      Empty.absurd({N.Acts.stops(k, K.Kernel.actions(N.NgSetup.of_view(st, assoc, Fail{e}))) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh))
-    case Done{v}:
-      Empty.absurd({N.Acts.stops(k, K.Kernel.actions(N.NgSetup.of_view(st, assoc, Done{v}))) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh))
-
-def Gs.d1(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +ok: Bool, +k: U32, +s: S.Session, +g: S.Guard, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, ok)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, ok))) == True{} : Bool}:
-  match ok:
-    case True{}:
-      Gs.setup(st, assoc, V.NGSetupRequest.view(ies), k, s, es, eh)
-    case False{}:
-      Gs.of(st, R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n)), k, s, g, es, eg, eh)
-
-def Gs.ies(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), +k: U32, +s: S.Session, +g: S.Guard, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r))) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      Empty.absurd({N.Acts.stops(k, K.Kernel.actions(R.Route.of_ies(st, assoc, stream, kind, code, entropy, Fail{err}))) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh))
-    case Done{(+ies, c)}:
-      Gs.d1(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 21n), k, s, g, es, eg, eh)
-
-def Gs.pdu(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, +k: U32, +s: S.Session, +g: S.Guard, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(R.Route.of_pdu(st, assoc, stream, entropy, r)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(R.Route.of_pdu(st, assoc, stream, entropy, r))) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      Empty.absurd({N.Acts.stops(k, K.Kernel.actions(R.Route.of_pdu(st, assoc, stream, entropy, Fail{err}))) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh))
-    case Done{Fr.Pdu{kind, code, crit, value}}:
-      Gs.ies(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), k, s, g, es, eg, eh)
-
 def Gs.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +k: U32, +s: S.Session, +g: S.Guard, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(K.Kernel.config(complete, st, tlvs, entropy)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(K.Kernel.config(complete, st, tlvs, entropy))) == True{} : Bool}:
   match complete:
     case False{}:
@@ -2874,26 +2719,10 @@ def Gs.down(+st: S.State, +assoc: U32, +k: U32, +s: S.Session, +g: S.Guard, +es:
       Gs.stops_app(k, xs, N.Gone.cancels(sessions, kept), Gs.gone(sessions, kept, k, s, g, es, eg, eh))
 
 def L.smf.guard.stopped(st, ev, entropy, k, s, g, es, eg, eh):
-  match ev:
-    case F.Config{len, +tlvs}:
-      Gs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, s, g, es, eg, eh)
-    case F.NgapAssocUp{+assoc}:
-      Gs.up(st, assoc, k, s, es, eh)
-    case F.NgapAssocDown{+assoc}:
-      Gs.down(st, assoc, k, s, g, es, eg, eh)
-    case F.NgapData{+assoc, +stream, len, +bytes}:
-      Gs.pdu(st, assoc, stream, entropy, Fr.Pdu.read(bytes), k, s, g, es, eg, eh)
-    case F.PfcpData{len, +bytes}:
-      Gs.of(st, Gsm.Gsm.pfcp_data(st, bytes), k, s, g, es, eg, eh)
-    case F.TimerFired{+timer}:
-      Gs.of(st, K.Kernel.fired(st, timer), k, s, g, es, eg, eh)
+  PW.Walk.any(o => {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(o))) == None{} : Maybe<&2, S.Session>} -> {N.Acts.stops(k, K.Kernel.actions(o)) == True{} : Bool}, st, ev, entropy, acts => h => eh => Empty.absurd({N.Acts.stops(k, acts) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh)), +tlvs => eh => Gs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, s, g, es, eg, eh), +a => eh => Gs.up(st, a, k, s, es, eh), +a => eh => Gs.down(st, a, k, s, g, es, eg, eh), +o => eh => Gs.of(st, o, k, s, g, es, eg, eh))(eh)
 
 def L.amf.release.forgets_ue(st, ev, entropy, k, eo, eg, en):
-  Lv.step_spare(st, ev, entropy, k, eo, eg, en)
-# NG Setup answers only a supported request
-# -----------------------------------------
-# Every other path of the NgapData step is a UE procedure, and no action of
-# a UE procedure is an NG Setup Response.
+  Lv.walk(o => {N.Acts.spare(k, K.Kernel.actions(o)) == True{} : Bool}, st, ev, entropy, acts => h => h(k), +tlvs => Lv.config_spare(S.Cfg.complete(tlvs), st, tlvs, entropy, k), a => Lv.up_spare(st, a, k), a => Lv.down_spare(st, a, k, eo, eg, en), +o => h => Lv.spare_of(st, K.Kernel.actions(N.Step.of(st, o)), k, Lv.step_acts(st, o, h), eo, eg, en))
 
 def Req.answer(cfg: S.Cfg, +assoc: U32, b: Bool, e: {N.Ngap.is_ng_setup_response(N.Setup{assoc, N.NgSetup.answer(cfg, b)}) == True{} : Bool}) -> {b == True{} : Bool}:
   match b:
