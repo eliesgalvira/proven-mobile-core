@@ -115,11 +115,10 @@ class Type:
 class Pseudo(Type):
     """A generic container kernel/ngap/frame.bend codes once, its laws in kernel/LAWS.bend."""
     mod = ""
-    kind = "pseudo"
 
     def __init__(self, name, bend, data, short):
         super().__init__(name)
-        self.bend, self.data = bend, data
+        self.bend, self.data, self.kind = bend, data, short.lower()
         self.law, self.sx, self.show = f"L.ngap.{short.lower()}", f"PF.{short}.sx", f"{short}.show"
 
     def base(self):
@@ -161,7 +160,7 @@ class Gen:
     def sort(self):
         """g.topo: every type after the types it needs, as Bend wants them defined."""
         self.topo = []
-        done = {t for t in self.types.values() if t.kind == "pseudo"}
+        done = {t for t in self.types.values() if isinstance(t, Pseudo)}
 
         def place(t):
             if t not in done:
@@ -833,13 +832,18 @@ class Gen:
         return "\n".join(self.lines).rstrip() + "\n"
 
 
-def main():
-    asn, out = sys.argv[1], pathlib.Path(sys.argv[2])
+def build(asn):
+    """The Gen of the milestone message set (tiers M and R), its types visited and sorted."""
     M.compile_dir(asn)
     g = Gen()
     for name in M.closure(M.MESSAGES + M.TRANSFERS, "R"):
         g.visit(name, M.find(name))
     g.sort()
+    return g
+
+
+def main():
+    g, out = build(sys.argv[1]), pathlib.Path(sys.argv[2])
     g.out("import Base")
     g.out("import ../../bytes.bend as B")
     g.out("import ../../aper.bend as Ap")

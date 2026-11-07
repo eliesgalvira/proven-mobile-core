@@ -19,7 +19,6 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/ngap-gen"))
 import gen  # noqa: E402
 import gen_show  # noqa: E402
-import ngap_model as M  # noqa: E402
 from pycrate_asn1c.asnproc import generate_modules  # noqa: E402
 from pycrate_asn1c.generator import PycrateGenerator  # noqa: E402
 
@@ -58,33 +57,38 @@ class Normal:
     def raw_ie(self, d, key):
         return f"{d['id']}/{CRIT[d['criticality']]}/{self.octets(d[key]).hex()}"
 
-    def show(self, val, name):
-        if name == "EXTS":
-            return "[" + "".join("," + self.raw_ie(d, "extensionValue") for d in val) + "]"
-        if name == "IE":
-            return self.raw_ie(val, "value")
-        t = self.g.types[name]
-        if t.kind == "alias":
-            return self.alias(t, val)
-        if t.kind == "record":
-            return "{" + ",".join(self.show(val[asn], ft) if asn in val else "-" for asn, (_, ft, _) in zip(t.asn_fields, t.fields)) + "}"
-        if t.kind == "choice":
-            j = t.asn_alts.index(val[0])
-            return f"{j}:" + self.show(val[1], t.alts[j][1])
-        if t.kind == "list":
-            return "[" + "".join("," + self.show(x, t.item) for x in val) + "]"
-        known = {iid: tn for iid, _, tn, _ in self.g.view_rows(name)}
+    def show(self, val, t):
+        return getattr(self, t.kind)(t, val)
+
+    def exts(self, t, val):
+        return "[" + "".join("," + self.raw_ie(d, "extensionValue") for d in val) + "]"
+
+    def ie(self, t, val):
+        return self.raw_ie(val, "value")
+
+    def record(self, t, val):
+        return "{" + ",".join(self.show(val[asn], ft) if asn in val else "-" for asn, (_, ft, _) in zip(t.asn_fields, t.fields)) + "}"
+
+    def choice(self, t, val):
+        j = t.asn_alts.index(val[0])
+        return f"{j}:" + self.show(val[1], t.alts[j][1])
+
+    def list(self, t, val):
+        return "[" + "".join("," + self.show(x, t.item) for x in val) + "]"
+
+    def message(self, t, val):
+        known = {iid: tn for iid, _, tn, _ in self.g.view_rows(t.name)}
         out = []
         for d in val["protocolIEs"]:
             tn, v = d["value"]
-            shown = self.show(v, tn) if d["id"] in known and known[d["id"]] == tn else self.octets(d["value"]).hex()
+            shown = self.show(v, known[d["id"]]) if d["id"] in known and known[d["id"]].name == tn else self.octets(d["value"]).hex()
             out.append(f",{d['id']}/{CRIT[d['criticality']]}/{shown}")
         return "[" + "".join(out) + "]"
 
     def alias(self, t, val):
         p = t.prim
         if t.contains is not None:
-            return self.show(val[1], t.contains)
+            return self.show(val[1], self.g.types[t.contains])
         if p in ("Int", "AInt"):
             return str(val)
         if p in ("XInt", "XBig"):
@@ -121,10 +125,7 @@ def ours(tmp):
 
 
 def main():
-    M.compile_dir(str(ROOT / "tools/ngap-gen/asn"))
-    g = gen.Gen()
-    for name in M.closure(M.MESSAGES + M.TRANSFERS, "R"):
-        g.visit(name, M.find(name))
+    g = gen.build(str(ROOT / "tools/ngap-gen/asn"))
     messages = [m for f in VECTORS for m in json.loads((ROOT / f).read_text())["messages"] if m["protocol"] == "NGAP"]
     with tempfile.TemporaryDirectory() as tmp:
         objs = runtime(tmp)
@@ -148,7 +149,7 @@ def main():
             if pdu.to_aper() != raw:
                 print(f"FAIL {m['message']}: the octets are not pycrate's encoding of its jer value")
                 status = 1
-        expected = f"{KIND[kind]}/{body['procedureCode']}/{CRIT[body['criticality']]}/" + normal.show(body["value"][1], body["value"][0])
+        expected = f"{KIND[kind]}/{body['procedureCode']}/{CRIT[body['criticality']]}/" + normal.show(body["value"][1], g.types[body["value"][0]])
         if name != m["message"] or theirs_line != expected:
             status = 1
             print(f"FAIL {m['message']} ({where})\n  pycrate: {expected}\n  ours:    {theirs_line}")
