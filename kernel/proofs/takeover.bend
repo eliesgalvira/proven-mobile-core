@@ -897,8 +897,11 @@ def W.release(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +k: U32, +u: 
   +b : N.GOut() = (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.TimerStart{Some{key}, S.State.next_timer(st), Gmm.Gmm.guard_ms()}]))
   Tk.ok_prepend(k, u, S.State.ues(st), N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.join(Gmm.Gmm.place(st, key, ur), b), Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ur), b, Tk.place(k, u, st, key, ur, eu, Tk.h_phase(ue, S.Releasing{S.Guard{S.State.next_timer(st), 0}}, u, h2))))
 
+def W.refuse(+st: S.State, +key: U32, +ue: S.Ue, +nas: B.Bytes(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.refuse(st, key, ue, nas)) == True{} : Bool}:
+  Tk.ok_prepend(k, u, S.State.ues(st), Gmm.Gmm.dl(key, ue, nas), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2))
+
 def W.reject(+st: S.State, +key: U32, +ue: S.Ue, +cause: U32, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.reject(st, key, ue, cause)) == True{} : Bool}:
-  Tk.ok_prepend(k, u, S.State.ues(st), Gmm.Gmm.dl(key, ue, Gmm.Gmm.registration_reject(cause)), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2))
+  W.refuse(st, key, ue, Gmm.Gmm.registration_reject(cause), k, u, eu, h2)
 
 def W.auth_reject(+st: S.State, +key: U32, +ue: S.Ue, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.auth_reject(st, key, ue)) == True{} : Bool}:
   Tk.ok_prepend(k, u, S.State.ues(st), Gmm.Gmm.dl(key, ue, Gmm.Gmm.authentication_reject()), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure())), W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure()), k, u, eu, h2))
@@ -957,8 +960,12 @@ def W.register(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ra
     case Fail{e}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Done{+id}:
-      +fresh : S.Ue = S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}
+      +fresh : S.Ue = Gmm.Gmm.fresh(assoc, ran, stream, nas)
       Tk.ok_join(k, u, S.State.ues(st), (S.BumpUe{}, []), Gmm.Gmm.proceed(st, S.State.next_ue(st), fresh, Gmm.Gmm.start_of(id), entropy), W.proceed(st, S.State.next_ue(st), fresh, Gmm.Gmm.start_of(id), entropy, k, u, eu, Tk.fresh(assoc, ran, stream, nas, u, ea)))
+
+def W.serve(+st: S.State, +assoc: U32, +stream: U32, +ran: B.Bytes(), +nas: B.Bytes(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.serve(st, assoc, stream, ran, nas)) == True{} : Bool}:
+  +fresh : S.Ue = Gmm.Gmm.fresh(assoc, ran, stream, nas)
+  Tk.ok_join(k, u, S.State.ues(st), (S.BumpUe{}, []), Gmm.Gmm.refuse(st, S.State.next_ue(st), fresh, Gmm.Gmm.service_reject()), W.refuse(st, S.State.next_ue(st), fresh, Gmm.Gmm.service_reject(), k, u, eu, Tk.fresh(assoc, ran, stream, nas, u, ea)))
 
 def W.initial_mm(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ran: B.Bytes(), +nas: B.Bytes(), +m: Mm.Mm, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.initial_mm(st, assoc, stream, entropy, ran, nas, m)) == True{} : Bool}:
   match m:
@@ -1002,6 +1009,10 @@ def W.initial_mm(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case Mm.DlNasTransport{}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
+        case Mm.ServiceRequest{}:
+          W.serve(st, assoc, stream, ran, nas, k, u, eu, ea)
+        case Mm.ServiceReject{}:
+          Tk.kept_get(k, u, S.State.ues(st), eu)
 
 def W.initial_nas(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ran: B.Bytes(), +nas: B.Bytes(), +r: Result<&2, &2, B.Err, Mm.Mm>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.initial_nas(st, assoc, stream, entropy, ran, nas, r)) == True{} : Bool}:
   match r:
@@ -1013,7 +1024,7 @@ def W.initial_nas(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), 
 def W.initial(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +v: V.InitialUEMessage.View, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.initial(st, assoc, stream, entropy, v)) == True{} : Bool}:
   match v:
     case V.InitialUEMessage.View{+ran_ue_ngap_id, +nas_pdu, userlocationinformation, rrcestablishmentcause, fiveg_s_tmsi, amfsetid, allowednssai, selectedplmnidentity, iabnodeindication, cemodebsupport_indicator, npn_accessinformation}:
-      W.initial_nas(st, assoc, stream, entropy, ran_ue_ngap_id, nas_pdu, Mm.Mm.read(nas_pdu), k, u, eu, eun, ea)
+      W.initial_nas(st, assoc, stream, entropy, ran_ue_ngap_id, Gmm.Gmm.unprotected(nas_pdu), Mm.Mm.read(Gmm.Gmm.unprotected(nas_pdu)), k, u, eu, eun, ea)
 
 def W.initial_of_view(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, V.InitialUEMessage.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, r)) == True{} : Bool}:
   match r:
@@ -1199,6 +1210,10 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Mm.DlNasTransport{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
+    case Mm.ServiceRequest{}:
+      Tk.kept_get(k, u, S.State.ues(st), eu)
+    case Mm.ServiceReject{}:
+      Tk.kept_get(k, u, S.State.ues(st), eu)
 
 def W.plain(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Mm.Mm>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.plain(st, key, ue, entropy, r)) == True{} : Bool}:
   match r:
@@ -1353,6 +1368,10 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
     case Mm.DlNasTransport{}:
+      W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
+    case Mm.ServiceRequest{}:
+      W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
+    case Mm.ServiceReject{}:
       W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
 
 def W.protected(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Sec.Nas.Count, +ctx: Sec.Nas.Ctx, +r: Result<&2, &2, B.Err, Mm.Mm>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}, +h2: {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {Tk.ok(k, u, S.State.ues(st), Gmm.Gmm.protected(st, key, ue, entropy, count, ctx, r)) == True{} : Bool}:

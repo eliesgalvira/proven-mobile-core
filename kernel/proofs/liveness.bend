@@ -808,8 +808,11 @@ def Lw.release(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +ek: {Lv.liv
   Lv.prepend(st, rel, N.Out.join(Gmm.Gmm.place(st, key, ur), (S.BumpTimer{}, as)), ek, Lv.join(st, Gmm.Gmm.place(st, key, ur), (S.BumpTimer{}, as), Lw.place(st, key, ur, Lv.g_phase(ue, S.Releasing{S.Guard{S.State.next_timer(st), 0}})), Lv.leaf(st, S.BumpTimer{}, as, Lv.append(st, N.Guard.cancel(S.Ue.guard(ue)), [ts], Lv.cancel(st, S.Ue.guard(ue)), Lv.cons(st, ts, [], ek, {==})), {==})))
 
 
+def Lw.refuse(+st: S.State, +key: U32, +ue: S.Ue, +nas: B.Bytes(), +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.refuse(st, key, ue, nas)) == True{} : Bool}:
+  Lv.prepend(st, Gmm.Gmm.dl(key, ue, nas), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), ek, Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek))
+
 def Lw.reject(+st: S.State, +key: U32, +ue: S.Ue, +cause: U32, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.reject(st, key, ue, cause)) == True{} : Bool}:
-  Lv.prepend(st, Gmm.Gmm.dl(key, ue, Gmm.Gmm.registration_reject(cause)), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), ek, Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek))
+  Lw.refuse(st, key, ue, Gmm.Gmm.registration_reject(cause), ek)
 
 def Lw.auth_reject(+st: S.State, +key: U32, +ue: S.Ue, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.auth_reject(st, key, ue)) == True{} : Bool}:
   Lv.prepend(st, Gmm.Gmm.dl(key, ue, Gmm.Gmm.authentication_reject()), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure())), ek, Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure()), ek))
@@ -875,8 +878,12 @@ def Lw.register(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r
     case Fail{e}:
       {==}
     case Done{+id}:
-      +fresh : S.Ue = S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}
+      +fresh : S.Ue = Gmm.Gmm.fresh(assoc, ran, stream, nas)
       Lv.join(st, (S.BumpUe{}, []), Gmm.Gmm.proceed(st, S.State.next_ue(st), fresh, Gmm.Gmm.start_of(id), entropy), {==}, Lw.proceed(st, S.State.next_ue(st), fresh, Gmm.Gmm.start_of(id), entropy, Lv.next_live(st)))
+
+def Lw.serve(+st: S.State, +assoc: U32, +stream: U32, +ran: B.Bytes(), +nas: B.Bytes()) -> {Lv.okf(st, Gmm.Gmm.serve(st, assoc, stream, ran, nas)) == True{} : Bool}:
+  +fresh : S.Ue = Gmm.Gmm.fresh(assoc, ran, stream, nas)
+  Lv.join(st, (S.BumpUe{}, []), Gmm.Gmm.refuse(st, S.State.next_ue(st), fresh, Gmm.Gmm.service_reject()), {==}, Lw.refuse(st, S.State.next_ue(st), fresh, Gmm.Gmm.service_reject(), Lv.next_live(st)))
 
 
 def Lw.initial_mm(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ran: B.Bytes(), +nas: B.Bytes(), +m: Mm.Mm) -> {Lv.okf(st, Gmm.Gmm.initial_mm(st, assoc, stream, entropy, ran, nas, m)) == True{} : Bool}:
@@ -921,6 +928,10 @@ def Lw.initial_mm(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), 
           {==}
         case Mm.DlNasTransport{}:
           {==}
+        case Mm.ServiceRequest{}:
+          Lw.serve(st, assoc, stream, ran, nas)
+        case Mm.ServiceReject{}:
+          {==}
 
 def Lw.initial_nas(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ran: B.Bytes(), +nas: B.Bytes(), +r: Result<&2, &2, B.Err, Mm.Mm>) -> {Lv.okf(st, Gmm.Gmm.initial_nas(st, assoc, stream, entropy, ran, nas, r)) == True{} : Bool}:
   match r:
@@ -932,7 +943,7 @@ def Lw.initial_nas(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(),
 def Lw.initial(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +v: V.InitialUEMessage.View) -> {Lv.okf(st, Gmm.Gmm.initial(st, assoc, stream, entropy, v)) == True{} : Bool}:
   match v:
     case V.InitialUEMessage.View{+ran_ue_ngap_id, +nas_pdu, userlocationinformation, rrcestablishmentcause, fiveg_s_tmsi, amfsetid, allowednssai, selectedplmnidentity, iabnodeindication, cemodebsupport_indicator, npn_accessinformation}:
-      Lw.initial_nas(st, assoc, stream, entropy, ran_ue_ngap_id, nas_pdu, Mm.Mm.read(nas_pdu))
+      Lw.initial_nas(st, assoc, stream, entropy, ran_ue_ngap_id, Gmm.Gmm.unprotected(nas_pdu), Mm.Mm.read(Gmm.Gmm.unprotected(nas_pdu)))
 
 def Lw.initial_of_view(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, V.InitialUEMessage.View>) -> {Lv.okf(st, Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, r)) == True{} : Bool}:
   match r:
@@ -1120,6 +1131,10 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
       {==}
     case Mm.DlNasTransport{}:
       {==}
+    case Mm.ServiceRequest{}:
+      {==}
+    case Mm.ServiceReject{}:
+      {==}
 
 def Lw.plain(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Mm.Mm>, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.plain(st, key, ue, entropy, r)) == True{} : Bool}:
   match r:
@@ -1279,6 +1294,10 @@ def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: S
         case S.Releasing{guard}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
     case Mm.DlNasTransport{}:
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
+    case Mm.ServiceRequest{}:
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
+    case Mm.ServiceReject{}:
       Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
 
 def Lw.protected(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Sec.Nas.Count, +ctx: Sec.Nas.Ctx, +r: Result<&2, &2, B.Err, Mm.Mm>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}) -> {Lv.ok(st, Gmm.Gmm.protected(st, key, ue, entropy, count, ctx, r)) == True{} : Bool}:

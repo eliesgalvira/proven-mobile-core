@@ -46,6 +46,10 @@ def Gmm.identity_request() -> B.Bytes():
 def Gmm.registration_reject(cause: U32) -> B.Bytes():
   Gmm.nas(Mm.RegistrationReject{}, [I.FByte{cause}], [])
 
+# #9, UE identity cannot be derived by the network: the UE registers again.
+def Gmm.service_reject() -> B.Bytes():
+  Gmm.nas(Mm.ServiceReject{}, [I.FByte{9}], [])
+
 def Gmm.authentication_reject() -> B.Bytes():
   Gmm.nas(Mm.AuthenticationReject{}, [], [])
 
@@ -116,8 +120,12 @@ def Gmm.release(+st: S.State, +key: U32, +ue: S.Ue, cause: G.Cause) -> N.GOut():
   +timer = S.State.next_timer(st)
   N.Out.prepend(N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.Out.join(Gmm.place(st, key, S.Ue.with_phase(ue, S.Releasing{S.Guard{timer, 0}})), (S.BumpTimer{}, List.append(&2, N.Act, N.Guard.cancel(S.Ue.guard(ue)), [N.TimerStart{Some{key}, timer, Gmm.guard_ms()}]))))
 
+# A 5GMM reject, then release.
+def Gmm.refuse(st: S.State, +key: U32, +ue: S.Ue, nas: B.Bytes()) -> N.GOut():
+  N.Out.prepend(Gmm.dl(key, ue, nas), Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())))
+
 def Gmm.reject(st: S.State, +key: U32, +ue: S.Ue, cause: U32) -> N.GOut():
-  N.Out.prepend(Gmm.dl(key, ue, Gmm.registration_reject(cause)), Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())))
+  Gmm.refuse(st, key, ue, Gmm.registration_reject(cause))
 
 def Gmm.auth_reject(st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
   N.Out.prepend(Gmm.dl(key, ue, Gmm.authentication_reject()), Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure())))
@@ -191,19 +199,29 @@ def Gmm.proceed(st: S.State, key: U32, ue: S.Ue, how: Start, entropy: B.Bytes())
       Gmm.reject(st, key, ue, 7)
 
 # A new context, owned by the association, keyed by a fresh AMF-UE-NGAP-ID.
+def Gmm.fresh(assoc: U32, ran: B.Bytes(), stream: U32, nas: B.Bytes()) -> S.Ue:
+  S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}
+
 def Gmm.register(+st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), ran: B.Bytes(), nas: B.Bytes(), r: Mi.MobileId.Res()) -> N.GOut():
   match r:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_nas(assoc))
     case Done{id}:
-      N.Out.join((S.BumpUe{}, []), Gmm.proceed(st, S.State.next_ue(st), S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}, Gmm.start_of(id), entropy))
+      N.Out.join((S.BumpUe{}, []), Gmm.proceed(st, S.State.next_ue(st), Gmm.fresh(assoc, ran, stream, nas), Gmm.start_of(id), entropy))
 
-def Gmm.initial_mm(st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), ran: B.Bytes(), nas: B.Bytes(), m: Mm.Mm) -> N.GOut():
+# A Service Request finds no context, as there is no CM-IDLE: the UE is told
+# to register again.
+def Gmm.serve(+st: S.State, assoc: U32, stream: U32, ran: B.Bytes(), nas: B.Bytes()) -> N.GOut():
+  N.Out.join((S.BumpUe{}, []), Gmm.refuse(st, S.State.next_ue(st), Gmm.fresh(assoc, ran, stream, nas), Gmm.service_reject()))
+
+def Gmm.initial_mm(+st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), ran: B.Bytes(), nas: B.Bytes(), m: Mm.Mm) -> N.GOut():
   match m:
     case Mm.Mm{mt, fields, opts}:
       match mt:
         case Mm.RegistrationRequest{}:
           Gmm.register(st, assoc, stream, entropy, ran, nas, Mi.MobileId.read(I.Fields.lve2(fields)))
+        case Mm.ServiceRequest{}:
+          Gmm.serve(st, assoc, stream, ran, nas)
         case _:
           (S.Keep{}, N.Ngap.bad_nas(assoc))
 
@@ -214,11 +232,25 @@ def Gmm.initial_nas(st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), ra
     case Done{m}:
       Gmm.initial_mm(st, assoc, stream, entropy, ran, nas, m)
 
-# InitialUEMessage: a context is created only once its Registration Request parses.
+# A returning UE protects its initial message with a security context the AMF
+# no longer holds (security header type 1): it is read without verification
+# (TS 24.501 §4.4.6) and leads to identification and authentication anew.
+def Gmm.unprotected(nas: B.Bytes()) -> B.Bytes():
+  match nas:
+    case 126 <> 1 <> m0 <> m1 <> m2 <> m3 <> sqn <> plain:
+      plain
+    case _:
+      nas
+
+def Gmm.initial_plain(st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), ran: B.Bytes(), +nas: B.Bytes()) -> N.GOut():
+  Gmm.initial_nas(st, assoc, stream, entropy, ran, nas, Mm.Mm.read(nas))
+
+# InitialUEMessage: a context is created only once its Registration Request or
+# Service Request parses.
 def Gmm.initial(st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), v: V.InitialUEMessage.View) -> N.GOut():
   match v:
-    case V.InitialUEMessage.View{ran_ue_ngap_id, +nas_pdu, userlocationinformation, rrcestablishmentcause, fiveg_s_tmsi, amfsetid, allowednssai, selectedplmnidentity, iabnodeindication, cemodebsupport_indicator, npn_accessinformation}:
-      Gmm.initial_nas(st, assoc, stream, entropy, ran_ue_ngap_id, nas_pdu, Mm.Mm.read(nas_pdu))
+    case V.InitialUEMessage.View{ran_ue_ngap_id, nas_pdu, userlocationinformation, rrcestablishmentcause, fiveg_s_tmsi, amfsetid, allowednssai, selectedplmnidentity, iabnodeindication, cemodebsupport_indicator, npn_accessinformation}:
+      Gmm.initial_plain(st, assoc, stream, entropy, ran_ue_ngap_id, Gmm.unprotected(nas_pdu))
 
 def Gmm.initial_of_view(st: S.State, assoc: U32, stream: U32, entropy: B.Bytes(), r: Result<&2, &2, B.Err, V.InitialUEMessage.View>) -> N.GOut():
   match r:

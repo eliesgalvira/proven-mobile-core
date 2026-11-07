@@ -97,6 +97,10 @@ def Type.code8(t: Mm.Mm.Type) -> {U32.and(255, Mm.Mm.Type.code(t)) == Mm.Mm.Type
       {==}
     case Mm.DlNasTransport{}:
       {==}
+    case Mm.ServiceRequest{}:
+      {==}
+    case Mm.ServiceReject{}:
+      {==}
 
 def Type.of_code(t: Mm.Mm.Type) -> {Mm.Mm.Type.of(Mm.Mm.Type.code(t)) == Some{t} : Maybe<&2, Mm.Mm.Type>}:
   match t:
@@ -137,6 +141,10 @@ def Type.of_code(t: Mm.Mm.Type) -> {Mm.Mm.Type.of(Mm.Mm.Type.code(t)) == Some{t}
     case Mm.UlNasTransport{}:
       {==}
     case Mm.DlNasTransport{}:
+      {==}
+    case Mm.ServiceRequest{}:
+      {==}
+    case Mm.ServiceReject{}:
       {==}
 
 # Length prefixes
@@ -963,6 +971,24 @@ def Opts.sx(+t: List<&2, I.Rule>, +fuel: Nat, +bs: B.Bytes(), +opts: List<&2, I.
       Opts.sx_iei(t, f, iei, r, opts, B.fits8(iei), {==}, e, ab, left => opts2 => e2 => ab2 => Opts.sx(t, f, left, opts2, e2, ab2))
 
 # The type table inverts: a recognised code is the type's code.
+def Type.inv20(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 77) == hit : Bool}, +e: {Mm.Mm.Type.of20.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.ServiceReject{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 77, P.U32.eq_of_is_eq(b, 77, ev))
+    case False{}:
+      Empty.absurd({Mm.Mm.Type.code(mt) == b : U32}, P.Refute.none_some(Mm.Mm.Type, mt, e))
+
+def Type.inv19(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 76) == hit : Bool}, +e: {Mm.Mm.Type.of19.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
+  match hit:
+    case True{}:
+      em = Equal.cong(Maybe<&2, Mm.Mm.Type>, Mm.Mm.Type, x => P.Maybe.value(Mm.Mm.Type, x, mt), Some{Mm.ServiceRequest{}}, Some{mt}, e)
+      %em : {Mm.Mm.Type.code(_) == b : U32}
+      Equal.sym(U32, b, 76, P.U32.eq_of_is_eq(b, 76, ev))
+    case False{}:
+      Type.inv20(b, mt, U32.is_eq(b, 77), {==}, e)
+
 def Type.inv18(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 104) == hit : Bool}, +e: {Mm.Mm.Type.of18.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
   match hit:
     case True{}:
@@ -970,7 +996,7 @@ def Type.inv18(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 104) == h
       %em : {Mm.Mm.Type.code(_) == b : U32}
       Equal.sym(U32, b, 104, P.U32.eq_of_is_eq(b, 104, ev))
     case False{}:
-      Empty.absurd({Mm.Mm.Type.code(mt) == b : U32}, P.Refute.none_some(Mm.Mm.Type, mt, e))
+      Type.inv19(b, mt, U32.is_eq(b, 76), {==}, e)
 
 def Type.inv17(+b: U32, +mt: Mm.Mm.Type, hit: Bool, +ev: {U32.is_eq(b, 103) == hit : Bool}, +e: {Mm.Mm.Type.of17.pick(b, hit) == Some{mt} : Maybe<&2, Mm.Mm.Type>}) -> {Mm.Mm.Type.code(mt) == b : U32}:
   match hit:
