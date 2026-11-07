@@ -1483,12 +1483,16 @@ law smf.ip_pool.unique:
   {St.Sessions.unique(St.State.sessions(St.State.initial())) == True{} : Bool}
   & {St.Sessions.unique(St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
 
-# The same invariant, read for the TEID: a session clear of the others shares no TEID with them.
+# No two sessions of a table where Sessions.unique holds (every table a step
+# reaches, smf.ip_pool.unique) share an uplink TEID.
 law smf.teid.unique:
-  for +key: U32
-  for +s: St.Session
-  for +k: U32
-  for +t: St.Session
-  for +more: Tb.Table(St.Session)
-  for +e: {St.Sessions.clear(key, s, (k, t) <> more) == True{} : Bool}
-  {U32.is_eq(St.Session.teid(s), St.Session.teid(t)) == False{} : Bool}
+  for +ss: Tb.Table(St.Session)
+  for +k1: U32
+  for +s1: St.Session
+  for +k2: U32
+  for +s2: St.Session
+  for +e: {St.Sessions.unique(ss) == True{} : Bool}
+  for +e1: {Tb.Table.get(St.Session, k1, ss) == Some{s1} : Maybe<&2, St.Session>}
+  for +e2: {Tb.Table.get(St.Session, k2, ss) == Some{s2} : Maybe<&2, St.Session>}
+  for +ne: {U32.is_eq(k1, k2) == False{} : Bool}
+  {U32.is_eq(St.Session.teid(s1), St.Session.teid(s2)) == False{} : Bool}
