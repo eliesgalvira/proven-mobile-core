@@ -7,6 +7,7 @@ import ./plmn.bend as P
 import ./ausf.bend as Au
 import ./nas/security.bend as N
 import ./nas/sm.bend as Sm
+import ./crypto/kdf.bend as Kd
 
 # The kernel state (docs/spec/milestone-1.md § The step function): one record.
 # Each UE context is owned by one row keyed by AMF-UE-NGAP-ID; everything else
@@ -155,6 +156,21 @@ def Guard.retries(g: Guard) -> U32:
     case Guard{retries}:
       retries
 
+# The AMF's NH chain (TS 33.501 §6.9.2.1.1): the KAMF it hangs from and the
+# latest {NH, NCC} pair, the only one kept.
+type Nh is Data:
+  Nh{k_amf: B.Bytes(), nh: B.Bytes(), ncc: U32}
+
+def Nh.next(c: Nh) -> Nh:
+  match c:
+    case Nh{+k_amf, nh, ncc}:
+      Nh{k_amf, Kd.kdf.nh(k_amf, nh), U32.mod(U32.add(ncc, 1), 8)}
+
+# At initial setup KgNB is a virtual NH with NCC 0, and the AMF keeps the
+# first NH, NCC 1, unsent: the first pair a target gNB gets has NCC 2.
+def Nh.initial(k_amf: B.Bytes(), k_gnb: B.Bytes()) -> Nh:
+  Nh.next(Nh{k_amf, k_gnb, 0})
+
 # Where a UE is in registration. Every phase but Registered carries the guard
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
 # security mode, T3550 setting up the context, and the wait for the gNB's UE
@@ -168,8 +184,8 @@ type Phase is Data:
   Identifying{guard: Guard}
   Authenticating{guard: Guard, av: Au.Av, resynced: Bool, supi: B.Digits()}
   SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
-  ContextSetup{guard: Guard, ctx: N.Nas.Ctx, response: Bool, complete: Bool}
-  Registered{ctx: N.Nas.Ctx}
+  ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
+  Registered{ctx: N.Nas.Ctx, nh: Nh}
   Releasing{guard: Guard}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
@@ -182,9 +198,9 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       Some{guard}
     case SecurityMode{guard, ctx, k_amf}:
       Some{guard}
-    case ContextSetup{guard, ctx, response, complete}:
+    case ContextSetup{guard, ctx, nh, response, complete}:
       Some{guard}
-    case Registered{ctx}:
+    case Registered{ctx, nh}:
       None{}
     case Releasing{guard}:
       Some{guard}
@@ -194,7 +210,7 @@ def Phase.guarded(p: Phase) -> Bool:
   match p:
     case Created{}:
       False{}
-    case Registered{ctx}:
+    case Registered{ctx, nh}:
       True{}
     case other:
       Tb.Table.present(Guard, Phase.guard(other))
@@ -209,10 +225,10 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       Authenticating{g, av, resynced, supi}
     case SecurityMode{guard, ctx, k_amf}:
       SecurityMode{g, ctx, k_amf}
-    case ContextSetup{guard, ctx, response, complete}:
-      ContextSetup{g, ctx, response, complete}
-    case Registered{ctx}:
-      Registered{ctx}
+    case ContextSetup{guard, ctx, nh, response, complete}:
+      ContextSetup{g, ctx, nh, response, complete}
+    case Registered{ctx, nh}:
+      Registered{ctx, nh}
     case Releasing{guard}:
       Releasing{g}
 
@@ -221,9 +237,9 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
   match p:
     case SecurityMode{guard, ctx, k_amf}:
       Some{ctx}
-    case ContextSetup{guard, ctx, response, complete}:
+    case ContextSetup{guard, ctx, nh, response, complete}:
       Some{ctx}
-    case Registered{ctx}:
+    case Registered{ctx, nh}:
       Some{ctx}
     case _:
       None{}
@@ -232,10 +248,10 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
   match p:
     case SecurityMode{guard, ctx, k_amf}:
       SecurityMode{guard, c, k_amf}
-    case ContextSetup{guard, ctx, response, complete}:
-      ContextSetup{guard, c, response, complete}
-    case Registered{ctx}:
-      Registered{c}
+    case ContextSetup{guard, ctx, nh, response, complete}:
+      ContextSetup{guard, c, nh, response, complete}
+    case Registered{ctx, nh}:
+      Registered{c, nh}
     case other:
       other
 

@@ -9,8 +9,9 @@ import ../crypto/ctr.bend as CT
 import ../crypto/cmac.bend as M
 import ../crypto/milenage.bend as Mil
 import ../crypto/kdf.bend as K
+import ../state.bend as St
 
-# Proofs of the crypto laws (tickets 04 to 08).
+# Proofs of the crypto laws (tickets 04 to 08, and 26's NH chain).
 
 # Serialising any state writes eight words of four bytes.
 def Sha256.serialize_len(st: S.Sha256.State) -> {List.length(&2, U32, S.Sha256.serialize(st)) == 32n : Nat}:
@@ -329,3 +330,9 @@ def L.kdf.length(key, fc, ps, ck, ik, snn, sqn_xor_ak, rand, res, res_star, k_au
    (Kdf.last16_len(K.kdf(k_amf, 105, [[1], [alg]]), Kdf.len(k_amf, 105, [[1], [alg]])),
    (Kdf.last16_len(K.kdf(k_amf, 105, [[2], [alg]]), Kdf.len(k_amf, 105, [[2], [alg]])),
    Kdf.len(k_amf, 110, [B.write_u32(count, []), [1]])))))))))
+
+def L.kdf.nh.length(k_amf, sync):
+  Kdf.len(k_amf, 111, [sync])
+
+def L.amf.ncc.chain(k_amf, nh, ncc, k_gnb):
+  ({==}, {==})

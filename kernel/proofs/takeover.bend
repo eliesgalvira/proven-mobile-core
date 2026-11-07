@@ -1160,9 +1160,9 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           W.response(st, key, ue, av, supi, I.Opts.find(I.Iei.authentication_response_parameter(), opts), k, u, eu, h2)
         case S.SecurityMode{guard, old, k_amf}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1178,9 +1178,9 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           W.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(I.Iei.authentication_failure_parameter(), opts), entropy, k, u, eu, h2)
         case S.SecurityMode{guard, old, k_amf}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1196,9 +1196,9 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.SecurityMode{guard, old, k_amf}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Releasing{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1231,10 +1231,11 @@ def W.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: S
     case Some{+c} Some{+tmsi}:
       +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
       +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.registration_accept(c, tmsi))
-      +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), False{}, False{}}
+      +k_gnb = Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count))
+      +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), S.Nh.initial(k_amf, k_gnb), False{}, False{}}
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi)
       ht = Tmsi.apart(tmsi, S.State.ues(st), k, u, P.Bool.not_true(S.Ues.has_tmsi(tmsi, S.State.ues(st)), hm), eu)
-      Tk.ok_also(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), [N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.Gmm.caps(ue2), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(p)}, N.TimerStart{Some{key}, key, Gmm.Gmm.guard_ms()}], Tk.place(k, u, st, key, ue2, eu, Tk.k1(k, key, ue, u, h2), Tk.h_tmsi(ue, ph, Sec.Nas.Protected.msg(p), reg, tmsi, u, Tk.k2(k, key, ue, u, h2), ht)))
+      Tk.ok_also(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), [N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.Gmm.caps(ue2), k_gnb, Sec.Nas.Protected.msg(p)}, N.TimerStart{Some{key}, key, Gmm.Gmm.guard_ms()}], Tk.place(k, u, st, key, ue2, eu, Tk.k1(k, key, ue, u, h2), Tk.h_tmsi(ue, ph, Sec.Nas.Protected.msg(p), reg, tmsi, u, Tk.k2(k, key, ue, u, h2), ht)))
     case Some{c} None{}:
       W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2)
     case None{} Some{t}:
@@ -1242,15 +1243,15 @@ def W.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: S
     case None{} None{}:
       W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2)
 
-def W.setup_done(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +response: Bool, +complete: Bool, +both: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.setup_done(st, key, ue, guard, ctx, response, complete, both)):
+def W.setup_done(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +both: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.setup_done(st, key, ue, guard, ctx, nh, response, complete, both)):
   match both:
     case True{}:
-      Tk.ok_sp(k, u, S.State.ues(st), (S.Rephase{key, S.Registered{ctx}}, [N.TimerCancel{key}, N.Note{F.Info{}, "5GMM: UE registered"}]), eu, Tk.sp_rephase(k, u, key, S.Registered{ctx}, h1))
+      Tk.ok_sp(k, u, S.State.ues(st), (S.Rephase{key, S.Registered{ctx, nh}}, [N.TimerCancel{key}, N.Note{F.Info{}, "5GMM: UE registered"}]), eu, Tk.sp_rephase(k, u, key, S.Registered{ctx, nh}, h1))
     case False{}:
-      Tk.ok_sp(k, u, S.State.ues(st), (S.Rephase{key, S.ContextSetup{guard, ctx, response, complete}}, []), eu, Tk.sp_rephase(k, u, key, S.ContextSetup{guard, ctx, response, complete}, h1))
+      Tk.ok_sp(k, u, S.State.ues(st), (S.Rephase{key, S.ContextSetup{guard, ctx, nh, response, complete}}, []), eu, Tk.sp_rephase(k, u, key, S.ContextSetup{guard, ctx, nh, response, complete}, h1))
 
-def W.setup_step(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +response: Bool, +complete: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.setup_step(st, key, ue, guard, ctx, response, complete)):
-  W.setup_done(st, key, ue, guard, ctx, response, complete, Bool.and(response, complete), k, u, eu, h1)
+def W.setup_step(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.setup_step(st, key, ue, guard, ctx, nh, response, complete)):
+  W.setup_done(st, key, ue, guard, ctx, nh, response, complete, Bool.and(response, complete), k, u, eu, h1)
 
 def W.dereg_answer(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +switch_off: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Row.conflicts(key, ue, k, u) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.dereg_answer(st, key, ue, ctx, switch_off)):
   match switch_off:
@@ -1278,9 +1279,9 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.SecurityMode{guard, old, k_amf}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.ContextSetup{+guard, old, +response, complete}:
-          W.setup_step(st, key, ue, guard, ctx, response, True{}, k, u, eu, h1)
-        case S.Registered{old}:
+        case S.ContextSetup{+guard, old, nh, +response, complete}:
+          W.setup_step(st, key, ue, guard, ctx, nh, response, True{}, k, u, eu, h1)
+        case S.Registered{old, nh}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1296,9 +1297,9 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.SecurityMode{guard, old, k_amf}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           W.deregister(st, key, ue, ctx, I.Fields.byte1(fields), k, u, eu, h2)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           W.deregister(st, key, ue, ctx, I.Fields.byte1(fields), k, u, eu, h2)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1330,9 +1331,9 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.SecurityMode{guard, old, +k_amf}:
           W.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n)), k, u, eu, h2, Tmsi.free(S.State.ues(st), List.drop(&2, U32, entropy, 16n)))
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1346,9 +1347,9 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.SecurityMode{guard, old, k_amf}:
           W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1364,9 +1365,9 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.SecurityMode{guard, old, k_amf}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Tk.ok_sp(k, u, S.State.ues(st), Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy), eu, Ws.ul_transport(st, key, ue, ctx, fields, opts, entropy, k, u, h1))
         case S.Releasing{guard}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1440,9 +1441,9 @@ def W.setup_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: 
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.SecurityMode{guard, old, k_amf}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{+guard, +ctx, response, +complete}:
-      W.setup_step(st, key, ue, guard, ctx, True{}, complete, k, u, eu, h1)
-    case S.Registered{old}:
+    case S.ContextSetup{+guard, +ctx, nh, response, +complete}:
+      W.setup_step(st, key, ue, guard, ctx, nh, True{}, complete, k, u, eu, h1)
+    case S.Registered{old, nh}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Releasing{guard}:
       Tk.kept_get(k, u, S.State.ues(st), eu)

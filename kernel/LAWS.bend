@@ -186,6 +186,27 @@ law kdf.length:
   & ({List.length(&2, U32, K.kdf.k_nas_int(k_amf, alg)) == 16n : Nat}
   & {List.length(&2, U32, K.kdf.k_gnb(k_amf, count)) == 32n : Nat})))))))
 
+# NH and NCC (ticket 26)
+# ----------------------
+
+law kdf.nh.length:
+  for +k_amf: B.Bytes()
+  for +sync: B.Bytes()
+  {List.length(&2, U32, K.kdf.nh(k_amf, sync)) == 32n : Nat}
+
+# TS 33.501 §6.9.2.1.1: a new {NH, NCC} pair chains NH from the stored NH
+# under the same KAMF, and NCC is the stored NCC plus 1 modulo 8. The stored
+# pair at initial setup is the first step from KgNB, a virtual NH with NCC 0.
+# A UE keeps only its latest pair and `St.Nh.next` takes no NH of its own, so
+# a derivation from an older NH can't be represented.
+law amf.ncc.chain:
+  for +k_amf: B.Bytes()
+  for +nh: B.Bytes()
+  for +ncc: U32
+  for +k_gnb: B.Bytes()
+  {St.Nh.next(St.Nh{k_amf, nh, ncc}) == St.Nh{k_amf, K.kdf.nh(k_amf, nh), U32.mod(U32.add(ncc, 1), 8)} : St.Nh}
+  & {St.Nh.initial(k_amf, k_gnb) == St.Nh{k_amf, K.kdf.nh(k_amf, k_gnb), 1} : St.Nh}
+
 # Advisory GHSA-f9c2-535p-3mwc: the serving network name the AUSF derives keys
 # with, built from the configured PLMN, is never empty: every configuration the
 # kernel holds is valid (kernel.config.valid).
@@ -1448,6 +1469,7 @@ law smf.establish.reject_leaves_state:
   for +count: N.Nas.Count
   for +ctx2: N.Nas.Ctx
   for +old: N.Nas.Ctx
+  for +nh: St.Nh
   for +fields: List<&2, I.Field>
   for +opts: List<&2, I.Ie>
   for +psi: U32
@@ -1464,7 +1486,7 @@ law smf.establish.reject_leaves_state:
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
-  for +er: {St.Ue.phase(ue) == St.Registered{old} : St.Phase}
+  for +er: {St.Ue.phase(ue) == St.Registered{old, nh} : St.Phase}
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.EstablishmentRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   for +ef: {St.State.config(st) == Some{cfg} : Maybe<&2, St.Cfg>}
@@ -1557,6 +1579,7 @@ law smf.modification.rejected:
   for +count: N.Nas.Count
   for +ctx2: N.Nas.Ctx
   for +old: N.Nas.Ctx
+  for +nh: St.Nh
   for +fields: List<&2, I.Field>
   for +opts: List<&2, I.Ie>
   for +psi: U32
@@ -1571,7 +1594,7 @@ law smf.modification.rejected:
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
-  for +er: {St.Ue.phase(ue) == St.Registered{old} : St.Phase}
+  for +er: {St.Ue.phase(ue) == St.Registered{old, nh} : St.Phase}
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.ModificationRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
