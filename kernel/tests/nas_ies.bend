@@ -100,9 +100,6 @@ def valid(r: Mi.MobileId.Res()) -> Bool:
     case Done{id}:
       Mi.MobileId.valid(id)
 
-def fails(r: Mi.MobileId.Res()) -> Bool:
-  Result.is_fail(&2, &2, B.Err, Mi.MobileId, r)
-
 def identity(+name: String, +bs: List<&2, U32>, shape: Mi.MobileId.Res() -> Bool) -> IO(Unit):
   do IO<Unit>:
     C.Check.report(name ++ " decodes", shape(Mi.MobileId.read(bs)))
@@ -117,12 +114,12 @@ def mobile_identity() -> IO(Unit):
     identity("a 5G-S-TMSI", [244, 0, 64, 192, 0, 4, 207], r => is_s_tmsi(r))
     identity("no identity", [0], r => is_no_id(r))
     identity("an IMEI", [75, 9, 81, 36, 48, 50, 87, 129], r => is_imei(r, [4, 9, 0, 1, 5, 4, 2, 0, 3, 2, 3, 7, 5, 1, 8]))
-    C.Check.report("an IMEISV flagged odd is rejected", fails(Mi.MobileId.read([77, 115, 128, 97, 33, 133, 97, 81, 241])))
-    C.Check.report("an IMEISV with 17 digits is rejected", fails(Mi.MobileId.read([69, 115, 128, 97, 33, 133, 97, 81, 241, 241])))
-    C.Check.report("a 5G-GUTI short of its TMSI is rejected", fails(Mi.MobileId.read([242, 0, 241, 16, 2, 0, 64, 192, 0])))
-    C.Check.report("a 5G-GUTI with a trailing byte is rejected", fails(Mi.MobileId.read([242, 0, 241, 16, 2, 0, 64, 192, 0, 4, 207, 0])))
-    C.Check.report("an empty identity is Short", fails(Mi.MobileId.read([])))
-    C.Check.report("a MAC address identity is Unsupported", fails(Mi.MobileId.read([6, 1, 2, 3, 4, 5, 6])))
+    C.Check.report("an IMEISV flagged odd is rejected", C.Check.fails(Mi.MobileId, Mi.MobileId.read([77, 115, 128, 97, 33, 133, 97, 81, 241])))
+    C.Check.report("an IMEISV with 17 digits is rejected", C.Check.fails(Mi.MobileId, Mi.MobileId.read([69, 115, 128, 97, 33, 133, 97, 81, 241, 241])))
+    C.Check.report("a 5G-GUTI short of its TMSI is rejected", C.Check.fails(Mi.MobileId, Mi.MobileId.read([242, 0, 241, 16, 2, 0, 64, 192, 0])))
+    C.Check.report("a 5G-GUTI with a trailing byte is rejected", C.Check.fails(Mi.MobileId, Mi.MobileId.read([242, 0, 241, 16, 2, 0, 64, 192, 0, 4, 207, 0])))
+    C.Check.report("an empty identity is Short", C.Check.fails(Mi.MobileId, Mi.MobileId.read([])))
+    C.Check.report("a MAC address identity is Unsupported", C.Check.fails(Mi.MobileId, Mi.MobileId.read([6, 1, 2, 3, 4, 5, 6])))
 
 # A one-octet IE (T1) with this whole byte is present.
 # Expected shapes
@@ -198,13 +195,6 @@ def bytes_len(r: B.Res(List<&2, U32>), n: Nat) -> Bool:
   match r:
     case Done{+bs}:
       Nat.is_eq(List.length(&2, U32, bs), n)
-    case Fail{e}:
-      False{}
-
-def u32_is(r: B.Res(U32), v: U32) -> Bool:
-  match r:
-    case Done{+x}:
-      U32.is_eq(x, v)
     case Fail{e}:
       False{}
 
@@ -310,7 +300,7 @@ def typed_ies() -> IO(Unit):
     C.Check.report("Security mode command: the algorithms byte re-encodes", U32.is_eq(E.SecAlgs.write(E.SecAlgs.of(N.Nas.first_byte(field(smc, 0n)))), N.Nas.first_byte(field(smc, 0n))))
     C.Check.report("Security mode command: ngKSI 0", ksi_is(E.Ksi.read(N.Nas.first_byte(field(smc, 1n))), False{}, 0))
     C.Check.report("Security mode command: replayed UE security capability", seccap_is(E.SecCap.read(field(smc, 2n)), field(smc, 2n)))
-    C.Check.report("Security mode command: IMEISV requested", Bool.and(N.Nas.has_t1(M.Mm.opts(smc), 225), u32_is(E.ImeisvRequest.read(1), 1)))
+    C.Check.report("Security mode command: IMEISV requested", Bool.and(N.Nas.has_t1(M.Mm.opts(smc), 225), N.Nas.u32_is(E.ImeisvRequest.read(1), 1)))
     C.Check.report("Security mode command: additional security information asks for the retransmitted request", addsec_is(E.AddSecInfo.read(opt(smc, 54)), False{}, True{}, opt(smc, 54)))
     +complete : M.Mm = msg(23n)
     C.Check.report("Security mode complete: the NAS message container holds the Registration request", container_is(E.Container.read(opt(complete, 113)), opt(complete, 113)))
@@ -325,22 +315,22 @@ def typed_ies() -> IO(Unit):
     C.Check.report("Registration accept: network feature support has two bytes", bytes_len(E.NetFeature.read(opt(accept, 33)), 2n))
     C.Check.report("Registration accept: T3512 is 18 units of 10 hours", timer_is(E.Timer3.read(opt(accept, 94)), 4, 18, opt(accept, 94)))
     +ul : M.Mm = msg(31n)
-    C.Check.report("UL NAS transport: payload container type N1 SM", u32_is(E.ContainerType.read(N.Nas.first_byte(field(ul, 0n))), 1))
+    C.Check.report("UL NAS transport: payload container type N1 SM", N.Nas.u32_is(E.ContainerType.read(N.Nas.first_byte(field(ul, 0n))), 1))
     C.Check.report("UL NAS transport: payload container is the 5GSM message", Bool.and(Nat.is_eq(List.length(&2, U32, field(ul, 1n)), 21n), U32.is_eq(N.Nas.first_byte(field(ul, 1n)), 46)))
-    C.Check.report("UL NAS transport: PDU session 1", u32_is(E.PduSessionId.read(opt(ul, 18)), 1))
-    C.Check.report("UL NAS transport: initial request", Bool.and(N.Nas.has_t1(M.Mm.opts(ul), 129), u32_is(E.RequestType.read(1), 1)))
+    C.Check.report("UL NAS transport: PDU session 1", N.Nas.u32_is(E.PduSessionId.read(opt(ul, 18)), 1))
+    C.Check.report("UL NAS transport: initial request", Bool.and(N.Nas.has_t1(M.Mm.opts(ul), 129), N.Nas.u32_is(E.RequestType.read(1), 1)))
     C.Check.report("UL NAS transport: S-NSSAI SST 1", snssai_is_sst1(E.SNssai.read(opt(ul, 34)), opt(ul, 34)))
     C.Check.report("UL NAS transport: DNN internet", dnn_is(E.Dnn.read(opt(ul, 37)), opt(ul, 37)))
     +config : M.Mm = msg(34n)
     C.Check.report("Configuration update: full network name in UCS2", name_is(E.NetName.read(opt(config, 67)), 20n, opt(config, 67)))
     C.Check.report("Configuration update: short network name in UCS2", name_is(E.NetName.read(opt(config, 69)), 10n, opt(config, 69)))
-    C.Check.report("Configuration update: local time zone", u32_is(E.TimeZone.read(opt(config, 70)), 0))
+    C.Check.report("Configuration update: local time zone", N.Nas.u32_is(E.TimeZone.read(opt(config, 70)), 0))
     C.Check.report("Configuration update: universal time and time zone", bytes_len(E.TimeZoneTime.read(opt(config, 71)), 7n))
-    C.Check.report("Configuration update: no daylight saving", u32_is(E.Dst.read(opt(config, 73)), 0))
+    C.Check.report("Configuration update: no daylight saving", N.Nas.u32_is(E.Dst.read(opt(config, 73)), 0))
     +dl : M.Mm = msg(38n)
-    C.Check.report("DL NAS transport: payload container type N1 SM", u32_is(E.ContainerType.read(N.Nas.first_byte(field(dl, 0n))), 1))
+    C.Check.report("DL NAS transport: payload container type N1 SM", N.Nas.u32_is(E.ContainerType.read(N.Nas.first_byte(field(dl, 0n))), 1))
     C.Check.report("DL NAS transport: payload container is the 5GSM message", Bool.and(Nat.is_eq(List.length(&2, U32, field(dl, 1n)), 64n), U32.is_eq(N.Nas.first_byte(field(dl, 1n)), 46)))
-    C.Check.report("DL NAS transport: PDU session 1", u32_is(E.PduSessionId.read(opt(dl, 18)), 1))
+    C.Check.report("DL NAS transport: PDU session 1", N.Nas.u32_is(E.PduSessionId.read(opt(dl, 18)), 1))
     C.Check.report("an S-NSSAI with SD and mapped values", snssai_full(E.SNssai.read([1, 1, 1, 2, 2, 4, 4, 4]), [1, 1, 1, 2, 2, 4, 4, 4]))
     C.Check.report("a three-byte S-NSSAI is rejected", C.Check.fails(E.SNssai, E.SNssai.read([1, 2, 3])))
     C.Check.report("a two-byte registration result is rejected", C.Check.fails(E.RegResult, E.RegResult.read([1, 0])))

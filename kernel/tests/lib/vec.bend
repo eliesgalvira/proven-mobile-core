@@ -123,6 +123,14 @@ def Vec.bytes(v: Vec) -> List<&2, U32>:
   Vec.hex(Vec.text(v))
 
 # The bytes of a hex field, and of the "value" of a field.
+# The bytes of a captured message under "hex" when hit holds, or rest.
+def Vec.hex_if(+m: Vec, hit: Bool, rest: Maybe<&2, List<&2, U32>>) -> Maybe<&2, List<&2, U32>>:
+  match hit:
+    case True{}:
+      Some{Vec.bytes(Vec.field(m, "hex"))}
+    case False{}:
+      rest
+
 def Vec.bytes_at(v: Vec, +key: String) -> List<&2, U32>:
   Vec.bytes(Vec.field(v, key))
 

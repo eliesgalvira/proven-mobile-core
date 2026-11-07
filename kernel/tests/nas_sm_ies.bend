@@ -140,13 +140,6 @@ def rate_is(r: B.Res(Q.MaxRate)) -> Bool:
     case Fail{e}:
       False{}
 
-def u32_is(r: B.Res(U32), v: U32) -> Bool:
-  match r:
-    case Done{+x}:
-      U32.is_eq(x, v)
-    case Fail{e}:
-      False{}
-
 def bytes_is(r: B.Res(List<&2, U32>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+x}:
@@ -174,8 +167,8 @@ def main() -> IO(Unit):
   do IO<Unit>:
     +req : S.Sm = msg(32n)
     C.Check.report("Establishment request: integrity protection maximum data rate is full rate", rate_is(Q.MaxRate.of(List.append(&2, U32, field(req, 0n), field(req, 1n)))))
-    C.Check.report("Establishment request: PDU session type IPv4", Bool.and(N.Nas.has_t1(S.Sm.opts(req), 145), u32_is(Q.Nibble3.read(1), 1)))
-    C.Check.report("Establishment request: SSC mode 1", Bool.and(N.Nas.has_t1(S.Sm.opts(req), 161), u32_is(Q.Nibble3.read(1), 1)))
+    C.Check.report("Establishment request: PDU session type IPv4", Bool.and(N.Nas.has_t1(S.Sm.opts(req), 145), N.Nas.u32_is(Q.Nibble3.read(1), 1)))
+    C.Check.report("Establishment request: SSC mode 1", Bool.and(N.Nas.has_t1(S.Sm.opts(req), 161), N.Nas.u32_is(Q.Nibble3.read(1), 1)))
     C.Check.report("Establishment request: 5GSM capability", bytes_is(Q.SmCap.read(opt(req, 40)), [0]))
     C.Check.report("Establishment request: ePCO asks for an IP address and a DNS server", epco_req(Q.Epco.read(opt(req, 123)), opt(req, 123)))
     +acc : S.Sm = msg(39n)

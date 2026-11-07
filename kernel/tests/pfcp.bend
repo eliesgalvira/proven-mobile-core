@@ -42,17 +42,10 @@ def run(msgs: List<&2, V.Vec>) -> IO(Unit):
         one(m, V.Vec.text(V.Vec.field(m, "protocol")))
         run(rest)
 
-def keep(+m: V.Vec, hit: Bool, rest: Maybe<&2, B.Bytes()>) -> Maybe<&2, B.Bytes()>:
-  match hit:
-    case True{}:
-      Some{V.Vec.bytes(V.Vec.field(m, "hex"))}
-    case False{}:
-      rest
-
 def first_pick(+m: V.Vec, kind: Nat, protocol: String, mt: Nat, rest: Maybe<&2, B.Bytes()>) -> Maybe<&2, B.Bytes()>:
   match protocol:
     case "PFCP":
-      keep(m, Nat.is_eq(mt, kind), rest)
+      V.Vec.hex_if(m, Nat.is_eq(mt, kind), rest)
     case _:
       rest
 

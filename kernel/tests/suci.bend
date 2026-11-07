@@ -30,9 +30,6 @@ def suci_is(r: Result<&2, &2, B.Err, Su.Suci>, routing: B.Digits(), scheme: U32,
     case Done{Su.Suci{plmn, ri, sc, kid, out}}:
       Bool.and(Bool.and(B.bytes_eq(ri, routing), Bool.and(U32.is_eq(sc, scheme), U32.is_eq(kid, key_id))), B.bytes_eq(out, output))
 
-def fails(r: Result<&2, &2, B.Err, B.Digits()>) -> Bool:
-  Result.is_fail(&2, &2, B.Err, B.Digits(), r)
-
 def spec_case(+c: V.Vec, section: String) -> IO(Unit):
   match section:
     case "C.4.2.1":
@@ -44,8 +41,8 @@ def spec_case(+c: V.Vec, section: String) -> IO(Unit):
         C.Check.report("C.4.3.1 Profile A MSIN", digits_is(Su.Suci.deconceal_a(key, output), [0, 0, 1, 0, 0, 2, 0, 8, 6]))
         C.Check.report("C.4.3.1 Profile A keys", C.Check.bytes_eq(Su.Suci.keys(key, output), List.append(&2, U32, V.Vec.bytes_at(c, "eph_enc_key"), List.append(&2, U32, V.Vec.bytes_at(c, "icb"), V.Vec.bytes_at(c, "eph_mac_key")))))
         C.Check.report("C.4.3.1 Profile A MAC tag", C.Check.bytes_eq(Su.Suci.tag(key, output), V.Vec.bytes_at(c, "mac_tag")))
-        C.Check.report("C.4.3.1 a flipped MAC bit is rejected", fails(Su.Suci.deconceal_a(key, List.append(&2, U32, List.take(&2, U32, output, 44n), U32.xor(1, Maybe.default(&2, U32, List.get(&2, U32, output, 44n), 0)) <> List.drop(&2, U32, output, 45n)))))
-        C.Check.report("C.4.3.1 a short output is rejected", fails(Su.Suci.deconceal_a(key, List.take(&2, U32, output, 40n))))
+        C.Check.report("C.4.3.1 a flipped MAC bit is rejected", C.Check.fails(B.Digits(), Su.Suci.deconceal_a(key, List.append(&2, U32, List.take(&2, U32, output, 44n), U32.xor(1, Maybe.default(&2, U32, List.get(&2, U32, output, 44n), 0)) <> List.drop(&2, U32, output, 45n)))))
+        C.Check.report("C.4.3.1 a short output is rejected", C.Check.fails(B.Digits(), Su.Suci.deconceal_a(key, List.take(&2, U32, output, 40n))))
     case _:
       IO.pure(Unit, Unit{})
 

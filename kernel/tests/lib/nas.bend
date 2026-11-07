@@ -1,4 +1,5 @@
 import Base
+import ../../bytes.bend as B
 import ../../nas/ie.bend as I
 
 # NAS fields and optional IEs as bytes, for the NAS tests.
@@ -25,6 +26,13 @@ def Nas.first_byte(bs: List<&2, U32>) -> U32:
       0
     case b <> rest:
       b
+
+def Nas.u32_is(r: B.Res(U32), v: U32) -> Bool:
+  match r:
+    case Done{+x}:
+      U32.is_eq(x, v)
+    case Fail{e}:
+      False{}
 
 def Nas.has_t1(ies: List<&2, I.Ie>, +byte: U32) -> Bool:
   match ies:

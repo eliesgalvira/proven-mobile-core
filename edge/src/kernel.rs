@@ -70,15 +70,14 @@ impl Process {
     /// holds, whose bytes, if it writes any, are passed on to ours.
     pub fn spawn(path: &str, port: u16, exited: impl FnOnce() + Send + 'static) -> io::Result<(Process, Link)> {
         let mut child = Command::new(path).arg(port.to_string()).stdin(Stdio::null()).stdout(Stdio::piped()).spawn()?;
-        if let Some(mut out) = child.stdout.take() {
-            std::thread::spawn(move || {
-                let mut buf = [0u8; 4096];
-                while let Ok(n @ 1..) = out.read(&mut buf) {
-                    let _ = io::stdout().write_all(&buf[..n]);
-                }
-                exited();
-            });
-        }
+        let mut out = child.stdout.take().expect("the kernel's stdout is piped");
+        std::thread::spawn(move || {
+            let mut buf = [0u8; 4096];
+            while let Ok(n @ 1..) = out.read(&mut buf) {
+                let _ = io::stdout().write_all(&buf[..n]);
+            }
+            exited();
+        });
         let process = Process { child };
         let link = Link::connect(port, Duration::from_secs(10))?;
         Ok((process, link))
