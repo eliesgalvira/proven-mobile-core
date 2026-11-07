@@ -121,3 +121,25 @@ def Vec.hex(s: String) -> List<&2, U32>:
 
 def Vec.bytes(v: Vec) -> List<&2, U32>:
   Vec.hex(Vec.text(v))
+
+# The bytes of a hex field, and of the "value" of a field.
+def Vec.bytes_at(v: Vec, +key: String) -> List<&2, U32>:
+  Vec.bytes(Vec.field(v, key))
+
+def Vec.secret(+v: Vec, +key: String) -> List<&2, U32>:
+  Vec.bytes(Vec.field(Vec.field(v, key), "value"))
+
+# The captured message with the given "index", or VNull.
+def Vec.message.pick(more: Unit -> Vec, found: Vec, hit: Bool) -> Vec:
+  match hit:
+    case True{}:
+      found
+    case False{}:
+      more(Unit{})
+
+def Vec.message(msgs: List<&2, Vec>, +index: Nat) -> Vec:
+  match msgs:
+    case Nil{}:
+      VNull{}
+    case +m <> rest:
+      Vec.message.pick(u => Vec.message(rest, index), m, Nat.is_eq(Vec.nat(Vec.field(m, "index")), index))

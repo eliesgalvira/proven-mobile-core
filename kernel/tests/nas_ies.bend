@@ -9,26 +9,13 @@ import ../nas/ies.bend as E
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
+import ./lib/nas.bend as N
 
 # Typed views of the IEs carried by the captured 5GMM messages: each decodes
 # to the expected value and re-encodes to the bytes it came from.
 
-def message_pick(more: Unit -> V.Vec, found: V.Vec, hit: Bool) -> V.Vec:
-  match hit:
-    case True{}:
-      found
-    case False{}:
-      more(Unit{})
-
-def message(msgs: List<&2, V.Vec>, +index: Nat) -> V.Vec:
-  match msgs:
-    case Nil{}:
-      V.VNull{}
-    case +m <> rest:
-      message_pick(u => message(rest, index), m, Nat.is_eq(V.Vec.nat(V.Vec.field(m, "index")), index))
-
 def plain(+index: Nat) -> List<&2, U32>:
-  V.Vec.bytes(V.Vec.field(message(V.Vec.items(V.Vec.field(Capture.data(), "messages")), index), "plaintext_hex"))
+  V.Vec.bytes(V.Vec.field(V.Vec.message(V.Vec.items(V.Vec.field(Capture.data(), "messages")), index), "plaintext_hex"))
 
 def decoded(r: Result<&2, &2, B.Err, M.Mm>) -> M.Mm:
   match r:
@@ -40,43 +27,13 @@ def decoded(r: Result<&2, &2, B.Err, M.Mm>) -> M.Mm:
 def msg(+index: Nat) -> M.Mm:
   decoded(M.Mm.read(plain(index)))
 
-def field_bytes(f: I.Field) -> List<&2, U32>:
-  match f:
-    case I.FByte{v}:
-      [v]
-    case I.FLv{I.LenBody{len, body}}:
-      body
-    case I.FLvE{I.LenBody{len, body}}:
-      body
-
-def field_of(mf: Maybe<&2, I.Field>) -> List<&2, U32>:
-  match mf:
-    case None{}:
-      []
-    case Some{f}:
-      field_bytes(f)
-
 # The content of mandatory field `n`.
 def field(m: M.Mm, n: Nat) -> List<&2, U32>:
-  field_of(List.get(&2, I.Field, M.Mm.fields(m), n))
-
-def opt_pick(more: Unit -> List<&2, U32>, ie: I.Ie, hit: Bool) -> List<&2, U32>:
-  match hit:
-    case True{}:
-      I.Ie.body(ie)
-    case False{}:
-      more(Unit{})
-
-def opt_in(ies: List<&2, I.Ie>, +iei: U32) -> List<&2, U32>:
-  match ies:
-    case Nil{}:
-      []
-    case +ie <> rest:
-      opt_pick(u => opt_in(rest, iei), ie, U32.is_eq(I.Ie.iei(ie), iei))
+  N.Nas.field_of(List.get(&2, I.Field, M.Mm.fields(m), n))
 
 # The content of the optional IE with this IEI.
 def opt(m: M.Mm, iei: U32) -> List<&2, U32>:
-  opt_in(M.Mm.opts(m), iei)
+  N.Nas.opt_in(M.Mm.opts(m), iei)
 
 def digits_eq(+xs: List<&2, U32>, +ys: List<&2, U32>) -> Bool:
   B.bytes_eq(xs, ys)
@@ -168,20 +125,6 @@ def mobile_identity() -> IO(Unit):
     C.Check.report("a MAC address identity is Unsupported", fails(Mi.MobileId.read([6, 1, 2, 3, 4, 5, 6])))
 
 # A one-octet IE (T1) with this whole byte is present.
-def has_t1(ies: List<&2, I.Ie>, +byte: U32) -> Bool:
-  match ies:
-    case Nil{}:
-      False{}
-    case +ie <> rest:
-      Bool.or(U32.is_eq(I.Ie.iei(ie), byte), has_t1(rest, byte))
-
-def first_byte(bs: List<&2, U32>) -> U32:
-  match bs:
-    case Nil{}:
-      0
-    case b <> rest:
-      b
-
 # Expected shapes
 # ---------------
 
@@ -349,28 +292,25 @@ def name_is(r: B.Res(E.NetName), chars: Nat, +bs: List<&2, U32>) -> Bool:
     case Fail{e}:
       False{}
 
-def fails_res(-A: Data, r: B.Res(A)) -> Bool:
-  Result.is_fail(&2, &2, B.Err, A, r)
-
 def typed_ies() -> IO(Unit):
   do IO<Unit>:
     +reg1 : M.Mm = msg(15n)
-    C.Check.report("Registration request: ngKSI is no key (7), native", half_is(E.RegHeader.ksi(first_byte(field(reg1, 0n))), False{}, 7))
-    C.Check.report("Registration request: initial registration with follow-on request", half_is(E.RegHeader.reg(first_byte(field(reg1, 0n))), True{}, 1))
-    C.Check.report("Registration request: the first byte re-encodes", U32.is_eq(E.RegHeader.write(E.RegHeader.ksi(first_byte(field(reg1, 0n))), E.RegHeader.reg(first_byte(field(reg1, 0n)))), first_byte(field(reg1, 0n))))
+    C.Check.report("Registration request: ngKSI is no key (7), native", half_is(E.RegHeader.ksi(N.Nas.first_byte(field(reg1, 0n))), False{}, 7))
+    C.Check.report("Registration request: initial registration with follow-on request", half_is(E.RegHeader.reg(N.Nas.first_byte(field(reg1, 0n))), True{}, 1))
+    C.Check.report("Registration request: the first byte re-encodes", U32.is_eq(E.RegHeader.write(E.RegHeader.ksi(N.Nas.first_byte(field(reg1, 0n))), E.RegHeader.reg(N.Nas.first_byte(field(reg1, 0n)))), N.Nas.first_byte(field(reg1, 0n))))
     C.Check.report("Registration request: UE security capability", seccap_is(E.SecCap.read(opt(reg1, 46)), opt(reg1, 46)))
     +auth : M.Mm = msg(17n)
-    C.Check.report("Authentication request: ngKSI 0", ksi_is(E.Ksi.read(first_byte(field(auth, 0n))), False{}, 0))
+    C.Check.report("Authentication request: ngKSI 0", ksi_is(E.Ksi.read(N.Nas.first_byte(field(auth, 0n))), False{}, 0))
     C.Check.report("Authentication request: ABBA has two bytes", bytes_len(E.Abba.read(field(auth, 1n)), 2n))
     C.Check.report("Authentication request: RAND has sixteen bytes", bytes_len(E.Fixed16.read(opt(auth, 33)), 16n))
     C.Check.report("Authentication request: AUTN has sixteen bytes", bytes_len(E.Fixed16.read(opt(auth, 32)), 16n))
     C.Check.report("Authentication response: RES* has sixteen bytes", bytes_len(E.Fixed16.read(opt(msg(19n), 45)), 16n))
     +smc : M.Mm = msg(21n)
-    C.Check.report("Security mode command: NEA0 and NIA2", algs_is(E.SecAlgs.of(first_byte(field(smc, 0n))), 0, 2))
-    C.Check.report("Security mode command: the algorithms byte re-encodes", U32.is_eq(E.SecAlgs.write(E.SecAlgs.of(first_byte(field(smc, 0n)))), first_byte(field(smc, 0n))))
-    C.Check.report("Security mode command: ngKSI 0", ksi_is(E.Ksi.read(first_byte(field(smc, 1n))), False{}, 0))
+    C.Check.report("Security mode command: NEA0 and NIA2", algs_is(E.SecAlgs.of(N.Nas.first_byte(field(smc, 0n))), 0, 2))
+    C.Check.report("Security mode command: the algorithms byte re-encodes", U32.is_eq(E.SecAlgs.write(E.SecAlgs.of(N.Nas.first_byte(field(smc, 0n)))), N.Nas.first_byte(field(smc, 0n))))
+    C.Check.report("Security mode command: ngKSI 0", ksi_is(E.Ksi.read(N.Nas.first_byte(field(smc, 1n))), False{}, 0))
     C.Check.report("Security mode command: replayed UE security capability", seccap_is(E.SecCap.read(field(smc, 2n)), field(smc, 2n)))
-    C.Check.report("Security mode command: IMEISV requested", Bool.and(has_t1(M.Mm.opts(smc), 225), u32_is(E.ImeisvRequest.read(1), 1)))
+    C.Check.report("Security mode command: IMEISV requested", Bool.and(N.Nas.has_t1(M.Mm.opts(smc), 225), u32_is(E.ImeisvRequest.read(1), 1)))
     C.Check.report("Security mode command: additional security information asks for the retransmitted request", addsec_is(E.AddSecInfo.read(opt(smc, 54)), False{}, True{}, opt(smc, 54)))
     +complete : M.Mm = msg(23n)
     C.Check.report("Security mode complete: the NAS message container holds the Registration request", container_is(E.Container.read(opt(complete, 113)), opt(complete, 113)))
@@ -385,10 +325,10 @@ def typed_ies() -> IO(Unit):
     C.Check.report("Registration accept: network feature support has two bytes", bytes_len(E.NetFeature.read(opt(accept, 33)), 2n))
     C.Check.report("Registration accept: T3512 is 18 units of 10 hours", timer_is(E.Timer3.read(opt(accept, 94)), 4, 18, opt(accept, 94)))
     +ul : M.Mm = msg(31n)
-    C.Check.report("UL NAS transport: payload container type N1 SM", u32_is(E.ContainerType.read(first_byte(field(ul, 0n))), 1))
-    C.Check.report("UL NAS transport: payload container is the 5GSM message", Bool.and(Nat.is_eq(List.length(&2, U32, field(ul, 1n)), 21n), U32.is_eq(first_byte(field(ul, 1n)), 46)))
+    C.Check.report("UL NAS transport: payload container type N1 SM", u32_is(E.ContainerType.read(N.Nas.first_byte(field(ul, 0n))), 1))
+    C.Check.report("UL NAS transport: payload container is the 5GSM message", Bool.and(Nat.is_eq(List.length(&2, U32, field(ul, 1n)), 21n), U32.is_eq(N.Nas.first_byte(field(ul, 1n)), 46)))
     C.Check.report("UL NAS transport: PDU session 1", u32_is(E.PduSessionId.read(opt(ul, 18)), 1))
-    C.Check.report("UL NAS transport: initial request", Bool.and(has_t1(M.Mm.opts(ul), 129), u32_is(E.RequestType.read(1), 1)))
+    C.Check.report("UL NAS transport: initial request", Bool.and(N.Nas.has_t1(M.Mm.opts(ul), 129), u32_is(E.RequestType.read(1), 1)))
     C.Check.report("UL NAS transport: S-NSSAI SST 1", snssai_is_sst1(E.SNssai.read(opt(ul, 34)), opt(ul, 34)))
     C.Check.report("UL NAS transport: DNN internet", dnn_is(E.Dnn.read(opt(ul, 37)), opt(ul, 37)))
     +config : M.Mm = msg(34n)
@@ -398,21 +338,21 @@ def typed_ies() -> IO(Unit):
     C.Check.report("Configuration update: universal time and time zone", bytes_len(E.TimeZoneTime.read(opt(config, 71)), 7n))
     C.Check.report("Configuration update: no daylight saving", u32_is(E.Dst.read(opt(config, 73)), 0))
     +dl : M.Mm = msg(38n)
-    C.Check.report("DL NAS transport: payload container type N1 SM", u32_is(E.ContainerType.read(first_byte(field(dl, 0n))), 1))
-    C.Check.report("DL NAS transport: payload container is the 5GSM message", Bool.and(Nat.is_eq(List.length(&2, U32, field(dl, 1n)), 64n), U32.is_eq(first_byte(field(dl, 1n)), 46)))
+    C.Check.report("DL NAS transport: payload container type N1 SM", u32_is(E.ContainerType.read(N.Nas.first_byte(field(dl, 0n))), 1))
+    C.Check.report("DL NAS transport: payload container is the 5GSM message", Bool.and(Nat.is_eq(List.length(&2, U32, field(dl, 1n)), 64n), U32.is_eq(N.Nas.first_byte(field(dl, 1n)), 46)))
     C.Check.report("DL NAS transport: PDU session 1", u32_is(E.PduSessionId.read(opt(dl, 18)), 1))
     C.Check.report("an S-NSSAI with SD and mapped values", snssai_full(E.SNssai.read([1, 1, 1, 2, 2, 4, 4, 4]), [1, 1, 1, 2, 2, 4, 4, 4]))
-    C.Check.report("a three-byte S-NSSAI is rejected", fails_res(E.SNssai, E.SNssai.read([1, 2, 3])))
-    C.Check.report("a two-byte registration result is rejected", fails_res(E.RegResult, E.RegResult.read([1, 0])))
+    C.Check.report("a three-byte S-NSSAI is rejected", C.Check.fails(E.SNssai, E.SNssai.read([1, 2, 3])))
+    C.Check.report("a two-byte registration result is rejected", C.Check.fails(E.RegResult, E.RegResult.read([1, 0])))
     C.Check.report("a TAI list of type 00 with two TACs", tai00_is(E.TaiList.read([1, 0, 241, 16, 0, 0, 1, 0, 0, 2]), [1, 0, 241, 16, 0, 0, 1, 0, 0, 2]))
     C.Check.report("a TAI list of type 01 with three consecutive TACs", tai01_is(E.TaiList.read([34, 0, 241, 16, 0, 0, 1]), [34, 0, 241, 16, 0, 0, 1]))
     C.Check.report("a TAI list of type 10 with two TAIs", tai10_is(E.TaiList.read([65, 0, 241, 16, 0, 0, 1, 0, 241, 16, 0, 0, 2]), [65, 0, 241, 16, 0, 0, 1, 0, 241, 16, 0, 0, 2]))
-    C.Check.report("a TAI list of a reserved type is Unsupported", fails_res(List<&2, E.TaiPartial>, E.TaiList.read([96, 0, 241, 16, 0, 0, 1])))
-    C.Check.report("a TAI list short of a TAC is Short", fails_res(List<&2, E.TaiPartial>, E.TaiList.read([1, 0, 241, 16, 0, 0, 1, 0, 0])))
-    C.Check.report("a fifteen-byte RAND is rejected", fails_res(List<&2, U32>, E.Fixed16.read(List.take(&2, U32, opt(auth, 33), 15n))))
-    C.Check.report("a DNN label longer than its content is Short", fails_res(List<&2, List<&2, U32>>, E.Dnn.read([9, 105, 110, 116])))
-    C.Check.report("a network name without its extension bit is rejected", fails_res(E.NetName, E.NetName.read([16, 0, 83])))
-    C.Check.report("a payload container type with spare bits is rejected", fails_res(U32, E.ContainerType.read(17)))
+    C.Check.report("a TAI list of a reserved type is Unsupported", C.Check.fails(List<&2, E.TaiPartial>, E.TaiList.read([96, 0, 241, 16, 0, 0, 1])))
+    C.Check.report("a TAI list short of a TAC is Short", C.Check.fails(List<&2, E.TaiPartial>, E.TaiList.read([1, 0, 241, 16, 0, 0, 1, 0, 0])))
+    C.Check.report("a fifteen-byte RAND is rejected", C.Check.fails(List<&2, U32>, E.Fixed16.read(List.take(&2, U32, opt(auth, 33), 15n))))
+    C.Check.report("a DNN label longer than its content is Short", C.Check.fails(List<&2, List<&2, U32>>, E.Dnn.read([9, 105, 110, 116])))
+    C.Check.report("a network name without its extension bit is rejected", C.Check.fails(E.NetName, E.NetName.read([16, 0, 83])))
+    C.Check.report("a payload container type with spare bits is rejected", C.Check.fails(U32, E.ContainerType.read(17)))
 
 def main() -> IO(Unit):
   do IO<Unit>:

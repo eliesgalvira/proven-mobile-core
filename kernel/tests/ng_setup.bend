@@ -13,6 +13,7 @@ import ../amf/ngap.bend as N
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
+import ./lib/amf.bend as A
 
 # Drives step with Config, NgapAssocUp and the captured NG Setup Request: the
 # answer is the captured NG Setup Response, byte for byte. Then the failure
@@ -28,12 +29,9 @@ def sixteen() -> B.Bytes():
 def subscriber() -> B.Bytes():
   F.Sub.write(F.Sub{[48, 48, 49, 48, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49], sixteen(), [232, 237, 40, 157, 235, 169, 82, 228, 40, 59, 84, 232, 142, 97, 131, 202], [128, 0], [0, 0, 0, 0, 0, 64]})
 
-def key32() -> B.Bytes():
-  [88, 47, 147, 31, 207, 143, 43, 127, 145, 29, 235, 182, 34, 79, 113, 231, 43, 157, 74, 98, 238, 211, 141, 18, 159, 253, 119, 140, 48, 22, 211, 106]
-
 # The capture's network (test-vectors/capture/vectors.json § network), with a TAC of choice.
 def config(tac: B.Bytes()) -> List<&2, T.Tlv>:
-  [T.Tlv.make(1, [0, 241, 16]), T.Tlv.make(2, [2]), T.Tlv.make(3, [0, 1]), T.Tlv.make(4, [0]), T.Tlv.make(5, tac), T.Tlv.make(6, [115, 112, 101, 99, 107, 45, 97, 109, 102, 48]), T.Tlv.make(7, [1]), T.Tlv.make(8, [105, 110, 116, 101, 114, 110, 101, 116]), T.Tlv.make(9, [10, 45, 0, 0]), T.Tlv.make(10, [16]), T.Tlv.make(11, [8, 8, 8, 8]), T.Tlv.make(12, [10, 33, 0, 12]), T.Tlv.make(13, [10, 33, 0, 20]), T.Tlv.make(14, [10, 33, 0, 20]), T.Tlv.make(15, key32()), T.Tlv.make(16, [1]), T.Tlv.make(17, [0]), T.Tlv.make(18, [2]), T.Tlv.make(32, subscriber())]
+  [T.Tlv.make(1, [0, 241, 16]), T.Tlv.make(2, [2]), T.Tlv.make(3, [0, 1]), T.Tlv.make(4, [0]), T.Tlv.make(5, tac), T.Tlv.make(6, [115, 112, 101, 99, 107, 45, 97, 109, 102, 48]), T.Tlv.make(7, [1]), T.Tlv.make(8, [105, 110, 116, 101, 114, 110, 101, 116]), T.Tlv.make(9, [10, 45, 0, 0]), T.Tlv.make(10, [16]), T.Tlv.make(11, [8, 8, 8, 8]), T.Tlv.make(12, [10, 33, 0, 12]), T.Tlv.make(13, [10, 33, 0, 20]), T.Tlv.make(14, [10, 33, 0, 20]), T.Tlv.make(15, A.key32()), T.Tlv.make(16, [1]), T.Tlv.make(17, [0]), T.Tlv.make(18, [2]), T.Tlv.make(32, subscriber())]
 
 def config_event(tac: B.Bytes()) -> F.Evt:
   F.Evt.config_make(config(tac))
@@ -147,26 +145,12 @@ def send_on(a: Maybe<&2, F.Action>, +assoc: U32, +stream: U32) -> Bool:
     case _:
       False{}
 
-def pdu_is(r: Result<&2, &2, B.Err, Fr.Pdu>, +kind: U32, +code: U32) -> Bool:
-  match r:
-    case Fail{e}:
-      False{}
-    case Done{+p}:
-      Bool.and(U32.is_eq(Fr.Pdu.kind(p), kind), U32.is_eq(Fr.Pdu.code(p), code))
-
-def ies_rd(r: Ap.Rd(List<&2, Fr.Ie>)) -> List<&2, Fr.Ie>:
-  match r:
-    case Fail{e}:
-      []
-    case Done{(ies, c)}:
-      ies
-
 def ies_of(r: Result<&2, &2, B.Err, Fr.Pdu>) -> List<&2, Fr.Ie>:
   match r:
     case Fail{e}:
       []
     case Done{p}:
-      ies_rd(Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(Fr.Pdu.value(p)), 1n)}))
+      A.ies_rd(Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(Fr.Pdu.value(p)), 1n)}))
 
 def guami_ok(r: Result<&2, &2, B.Err, W.NGSetupResponse.View>) -> Bool:
   match r:
@@ -237,21 +221,21 @@ def main() -> IO(Unit):
     +a3 : List<&2, F.Action> = K.Kernel.frames(o3)
     +reply : B.Bytes() = send_bytes(one_send(a3))
     C.Check.report("Config: the configuration is kept", configured(st1))
-    C.Check.report("Config: a PFCP Association Setup Request goes to eUPF", pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(a1))), 5, False{}))
+    C.Check.report("Config: a PFCP Association Setup Request goes to the UPF", pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(a1))), 5, False{}))
     C.Check.report("NgapAssocUp: the association is known", S.Assocs.has(1, S.State.assocs(st2)))
     C.Check.report("NG Setup Request: exactly one NGAP message answers, on stream 0", send_on(one_send(a3), 1, 0))
-    C.Check.report("NG Setup Request: the answer is an NG Setup Response", pdu_is(Fr.Pdu.read(reply), Fr.Pdu.successful(), 21))
+    C.Check.report("NG Setup Request: the answer is an NG Setup Response", A.pdu_is(Fr.Pdu.read(reply), Fr.Pdu.successful(), 21))
     C.Check.report("NG Setup Request: the response carries the configured GUAMI and AMF name", guami_ok(W.NGSetupResponse.view(ies_of(Fr.Pdu.read(reply)))))
     C.Check.report("NG Setup Request: the response is the captured one, byte for byte", B.bytes_eq(reply, response))
     C.Check.report("NG Setup Request: no state changes", Nat.is_eq(List.length(&2, U32, ue_keys(K.Kernel.state(o3))), 0n))
     +st_tac : S.State = K.Kernel.state(K.Kernel.step(K.Kernel.state(K.Kernel.step(S.State.initial(), config_event([0, 0, 2]), entropy())), F.NgapAssocUp{1}, entropy()))
     +reply_tac : B.Bytes() = send_bytes(one_send(K.Kernel.frames(K.Kernel.step(st_tac, data_event(1, request), entropy()))))
-    C.Check.report("NG Setup Request for another TAC: NG Setup Failure", pdu_is(Fr.Pdu.read(reply_tac), Fr.Pdu.unsuccessful(), 21))
+    C.Check.report("NG Setup Request for another TAC: NG Setup Failure", A.pdu_is(Fr.Pdu.read(reply_tac), Fr.Pdu.unsuccessful(), 21))
     +reply_none : B.Bytes() = send_bytes(one_send(K.Kernel.frames(K.Kernel.step(S.State.initial(), data_event(1, request), entropy()))))
-    C.Check.report("NG Setup Request before Config: NG Setup Failure", pdu_is(Fr.Pdu.read(reply_none), Fr.Pdu.unsuccessful(), 21))
+    C.Check.report("NG Setup Request before Config: NG Setup Failure", A.pdu_is(Fr.Pdu.read(reply_none), Fr.Pdu.unsuccessful(), 21))
     +o_bad : N.Step() = K.Kernel.step(st2, data_event(1, [1, 2, 3]), entropy())
     +a_bad : List<&2, F.Action> = K.Kernel.frames(o_bad)
-    C.Check.report("an undecodable PDU: Error Indication on stream 0 and one log line", Bool.and(pdu_is(Fr.Pdu.read(send_bytes(one_send(a_bad))), Fr.Pdu.initiating(), 7), Bool.and(send_on(one_send(a_bad), 1, 0), Bool.and(Nat.is_eq(count_logs(a_bad), 1n), Nat.is_eq(List.length(&2, F.Action, a_bad), 2n)))))
+    C.Check.report("an undecodable PDU: Error Indication on stream 0 and one log line", Bool.and(A.pdu_is(Fr.Pdu.read(send_bytes(one_send(a_bad))), Fr.Pdu.initiating(), 7), Bool.and(send_on(one_send(a_bad), 1, 0), Bool.and(Nat.is_eq(count_logs(a_bad), 1n), Nat.is_eq(List.length(&2, F.Action, a_bad), 2n)))))
     C.Check.report("an undecodable PDU: the association stays known", S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_bad))))
     +o_inc : N.Step() = K.Kernel.step(S.State.initial(), F.Evt.config_make([T.Tlv.make(1, [0, 241, 16])]), entropy())
     C.Check.report("an incomplete Config: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_inc))), Nat.is_eq(count_logs(K.Kernel.frames(o_inc)), 1n)))
@@ -268,5 +252,5 @@ def main() -> IO(Unit):
     +st_ues : S.State = with_ues(st2, [(7, ue_of(1, [1])), (8, ue_of(2, [1])), (9, ue_of(1, [2]))], [(1, S.Session{S.SId{7, 1, 1, 1}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 1], 0, S.Active{}}}), (2, S.Session{S.SId{8, 1, 2, 2}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 2], 0, S.Active{}}})])
     +o_down : N.Step() = K.Kernel.step(st_ues, F.NgapAssocDown{1}, entropy())
     C.Check.report("NgapAssocDown: only the other association's UE remains", B.bytes_eq(ue_keys(K.Kernel.state(o_down)), [8]))
-    C.Check.report("NgapAssocDown: the released UE's session is deleted at eUPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.frames(o_down))), 1n), pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(K.Kernel.frames(o_down)))), 54, True{})))
+    C.Check.report("NgapAssocDown: the released UE's session is deleted at the UPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.frames(o_down))), 1n), pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(K.Kernel.frames(o_down)))), 54, True{})))
     C.Check.report("NgapAssocDown: the association is forgotten", Bool.not(S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_down)))))
