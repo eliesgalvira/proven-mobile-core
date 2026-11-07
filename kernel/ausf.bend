@@ -157,12 +157,13 @@ def Ausf.snn(plmn: B.Bytes()) -> B.Bytes():
 # The vector for a subscriber whose SQN was just advanced, with the RAND given.
 def Av.make(sub: Subscriber, +snn: B.Bytes(), +rand: B.Bytes()) -> Av:
   match sub:
-    case Subscriber{supi, +k, +opc, +amf, +sqn}:
-      +ck = Mil.milenage.f3(k, opc, rand)
-      +ik = Mil.milenage.f4(k, opc, rand)
-      +sqn_ak = Bytes.xor(sqn, Mil.milenage.f5(k, opc, rand))
-      +res_star = K.kdf.res_star(ck, ik, snn, rand, Mil.milenage.f2(k, opc, rand))
-      Av{rand, List.append(&2, U32, sqn_ak, List.append(&2, U32, amf, Mil.milenage.f1(k, opc, rand, sqn, amf))), res_star, K.kdf.hres_star(rand, res_star), K.kdf.k_ausf(ck, ik, snn, sqn_ak)}
+    case Subscriber{supi, k, opc, +amf, +sqn}:
+      +r = Mil.milenage.run(k, opc, rand)
+      +ck = Mil.Milenage.f3(r)
+      +ik = Mil.Milenage.f4(r)
+      +sqn_ak = Bytes.xor(sqn, Mil.Milenage.f5(r))
+      +res_star = K.kdf.res_star(ck, ik, snn, rand, Mil.Milenage.f2(r))
+      Av{rand, List.append(&2, U32, sqn_ak, List.append(&2, U32, amf, Mil.Milenage.f1(r, sqn, amf))), res_star, K.kdf.hres_star(rand, res_star), K.kdf.k_ausf(ck, ik, snn, sqn_ak)}
 
 # The UE's answer is accepted only over all sixteen octets, twice: the SEAF
 # compares HRES* with HXRES*, the AUSF compares RES* with XRES*.
@@ -185,6 +186,7 @@ def Ausf.resync_if(sqn_ms: B.Bytes(), ok: Bool) -> Maybe<&2, B.Bytes()>:
 
 def Ausf.resync(sub: Subscriber, +rand: B.Bytes(), +auts: B.Bytes()) -> Maybe<&2, B.Bytes()>:
   match sub:
-    case Subscriber{supi, +k, +opc, amf, sqn}:
-      +sqn_ms = Bytes.xor(List.take(&2, U32, auts, 6n), Mil.milenage.f5_star(k, opc, rand))
-      Ausf.resync_if(sqn_ms, Bool.and(Nat.is_eq(List.length(&2, U32, auts), 14n), B.bytes_eq(Mil.milenage.f1_star(k, opc, rand, sqn_ms, [0, 0]), List.drop(&2, U32, auts, 6n))))
+    case Subscriber{supi, k, opc, amf, sqn}:
+      +r = Mil.milenage.run(k, opc, rand)
+      +sqn_ms = Bytes.xor(List.take(&2, U32, auts, 6n), Mil.Milenage.f5_star(r))
+      Ausf.resync_if(sqn_ms, Bool.and(Nat.is_eq(List.length(&2, U32, auts), 14n), B.bytes_eq(Mil.Milenage.f1_star(r, sqn_ms, [0, 0]), List.drop(&2, U32, auts, 6n))))

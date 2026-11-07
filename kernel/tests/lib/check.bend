@@ -15,3 +15,6 @@ def Check.report(name: String, ok: Bool) -> IO(Unit):
 
 def Check.skip(reason: String) -> IO(Unit):
   IO.print("SKIP " ++ reason)
+
+def Check.fails(-A: Data, r: B.Res(A)) -> Bool:
+  Result.is_fail(&2, &2, B.Err, A, r)

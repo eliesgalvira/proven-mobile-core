@@ -8,7 +8,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::frame::Tlv;
+use crate::frame::{Tlv, MAX_CONFIG};
 
 #[derive(Debug)]
 pub enum Error {
@@ -91,7 +91,7 @@ pub struct Nas {
     pub integrity: Vec<u8>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Subscriber {
     pub supi: String,
     pub k: String,
@@ -117,6 +117,14 @@ fn digits(name: &str, text: &str, min: usize, max: usize) -> Result<Vec<u8>, Err
         return Err(Error::Field(format!("{name} must be {min} to {max} decimal digits")));
     }
     Ok(text.bytes().map(|b| b - b'0').collect())
+}
+
+/// A variable-length value, which a TLV's 16-bit length must be able to carry.
+fn value(name: &str, bytes: &[u8]) -> Result<Vec<u8>, Error> {
+    if bytes.len() > u16::MAX as usize {
+        return Err(Error::Field(format!("{name} takes at most {} bytes", u16::MAX)));
+    }
+    Ok(bytes.to_vec())
 }
 
 /// TS 24.501 PLMN: MCC digit 2 | digit 1, MNC digit 3 (or 0xF) | MCC digit 3, MNC digit 2 | digit 1.
@@ -155,9 +163,9 @@ impl Config {
             Tlv { tag: 0x0003, value: self.network.amf_set_id.to_be_bytes().to_vec() },
             Tlv { tag: 0x0004, value: vec![self.network.amf_pointer] },
             Tlv { tag: 0x0005, value: self.network.tac.to_be_bytes()[1..].to_vec() },
-            Tlv { tag: 0x0006, value: self.network.amf_name.as_bytes().to_vec() },
+            Tlv { tag: 0x0006, value: value("amf_name", self.network.amf_name.as_bytes())? },
             Tlv { tag: 0x0007, value: vec![self.slice.sst] },
-            Tlv { tag: 0x0008, value: self.slice.dnn.as_bytes().to_vec() },
+            Tlv { tag: 0x0008, value: value("dnn", self.slice.dnn.as_bytes())? },
             Tlv { tag: 0x0009, value: pool_base.octets().to_vec() },
             Tlv { tag: 0x000A, value: vec![prefix] },
             Tlv { tag: 0x000B, value: self.slice.dns.octets().to_vec() },
@@ -166,8 +174,8 @@ impl Config {
             Tlv { tag: 0x000E, value: self.n4.upf.octets().to_vec() },
             Tlv { tag: 0x000F, value: hex("suci.private_key", &self.suci.private_key, 32)? },
             Tlv { tag: 0x0010, value: vec![self.suci.key_id] },
-            Tlv { tag: 0x0011, value: self.nas.ciphering.clone() },
-            Tlv { tag: 0x0012, value: self.nas.integrity.clone() },
+            Tlv { tag: 0x0011, value: value("nas.ciphering", &self.nas.ciphering)? },
+            Tlv { tag: 0x0012, value: value("nas.integrity", &self.nas.integrity)? },
         ];
         for s in &self.subscriber {
             let supi = digits("supi", &s.supi, 5, 15)?;
@@ -178,6 +186,10 @@ impl Config {
             value.extend(hex("amf", &s.amf, 2)?);
             value.extend(hex("sqn", &s.sqn, 6)?);
             tlvs.push(Tlv { tag: 0x0020, value });
+        }
+        let len: usize = tlvs.iter().map(|t| 4 + t.value.len()).sum();
+        if len > MAX_CONFIG {
+            return Err(Error::Field(format!("the config takes {len} bytes of TLVs, more than the {MAX_CONFIG} a frame carries")));
         }
         Ok(tlvs)
     }
@@ -208,6 +220,24 @@ mod tests {
         assert_eq!(&sub[..16], b"\x0f001010000000001");
         assert_eq!(&sub[48..], &[0x80, 0x00, 0, 0, 0, 0, 0, 0x40]);
         assert_eq!(tlvs.len(), 19);
+    }
+
+    #[test]
+    fn values_a_tlv_or_a_frame_cannot_carry_are_refused() {
+        let mut c = example();
+        c.network.amf_name = "a".repeat(65_535);
+        assert!(c.tlvs().is_ok());
+        c.network.amf_name.push('a');
+        assert!(c.tlvs().is_err());
+        let mut c = example();
+        c.nas.integrity = vec![2; 65_536];
+        assert!(c.tlvs().is_err());
+        let mut c = example();
+        let one = c.subscriber.pop().unwrap();
+        c.subscriber = vec![one.clone(); 4_365];
+        assert!(c.tlvs().is_ok(), "4365 subscribers fit a frame body");
+        c.subscriber.push(one);
+        assert!(c.tlvs().is_err(), "4366 do not");
     }
 
     #[test]

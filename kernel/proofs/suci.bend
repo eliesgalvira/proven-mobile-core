@@ -169,7 +169,7 @@ def Routing.core2(+a: U32, +b: U32, xa: U32, xb: U32, xc: U32, xd: U32, ea: {xa 
   sda = Equal.sym(Bool, B.Tbcd.is_digit(a), True{}, da)
   %sda : {Su.Routing.nonempty(Su.Routing.step(a, [b, 15, 15], u => Su.Routing.digits([b, 15, 15]), _, U32.is_eq(a, 15))) == Done{[a, b]} : Result<&2, &2, B.Err, B.Digits()>}
   sdb = Equal.sym(Bool, B.Tbcd.is_digit(b), True{}, db)
-  %sdb : {Su.Routing.nonempty(Su.Routing.cons(a, Su.Routing.step(b, [15, 15], u => Su.Routing.digits([15, 15]), _, U32.is_eq(b, 15)))) == Done{[a, b]} : Result<&2, &2, B.Err, B.Digits()>}
+  %sdb : {Su.Routing.nonempty(B.Res.cons(U32, a, Su.Routing.step(b, [15, 15], u => Su.Routing.digits([15, 15]), _, U32.is_eq(b, 15)))) == Done{[a, b]} : Result<&2, &2, B.Err, B.Digits()>}
   {==}
 
 def Routing.core3(+a: U32, +b: U32, +c: U32, xa: U32, xb: U32, xc: U32, xd: U32, ea: {xa == a : U32}, eb: {xb == b : U32}, ec: {xc == c : U32}, ed: {xd == 15 : U32}, da: {B.Tbcd.is_digit(a) == True{} : Bool}, db: {B.Tbcd.is_digit(b) == True{} : Bool}, dc: {B.Tbcd.is_digit(c) == True{} : Bool}) -> {Su.Routing.nonempty(Su.Routing.digits([xa, xb, xc, xd])) == Done{[a, b, c]} : Result<&2, &2, B.Err, B.Digits()>}:
@@ -184,9 +184,9 @@ def Routing.core3(+a: U32, +b: U32, +c: U32, xa: U32, xb: U32, xc: U32, xd: U32,
   sda = Equal.sym(Bool, B.Tbcd.is_digit(a), True{}, da)
   %sda : {Su.Routing.nonempty(Su.Routing.step(a, [b, c, 15], u => Su.Routing.digits([b, c, 15]), _, U32.is_eq(a, 15))) == Done{[a, b, c]} : Result<&2, &2, B.Err, B.Digits()>}
   sdb = Equal.sym(Bool, B.Tbcd.is_digit(b), True{}, db)
-  %sdb : {Su.Routing.nonempty(Su.Routing.cons(a, Su.Routing.step(b, [c, 15], u => Su.Routing.digits([c, 15]), _, U32.is_eq(b, 15)))) == Done{[a, b, c]} : Result<&2, &2, B.Err, B.Digits()>}
+  %sdb : {Su.Routing.nonempty(B.Res.cons(U32, a, Su.Routing.step(b, [c, 15], u => Su.Routing.digits([c, 15]), _, U32.is_eq(b, 15)))) == Done{[a, b, c]} : Result<&2, &2, B.Err, B.Digits()>}
   sdc = Equal.sym(Bool, B.Tbcd.is_digit(c), True{}, dc)
-  %sdc : {Su.Routing.nonempty(Su.Routing.cons(a, Su.Routing.cons(b, Su.Routing.step(c, [15], u => Su.Routing.digits([15]), _, U32.is_eq(c, 15))))) == Done{[a, b, c]} : Result<&2, &2, B.Err, B.Digits()>}
+  %sdc : {Su.Routing.nonempty(B.Res.cons(U32, a, B.Res.cons(U32, b, Su.Routing.step(c, [15], u => Su.Routing.digits([15]), _, U32.is_eq(c, 15))))) == Done{[a, b, c]} : Result<&2, &2, B.Err, B.Digits()>}
   {==}
 
 def Routing.core4(+a: U32, +b: U32, +c: U32, +d: U32, xa: U32, xb: U32, xc: U32, xd: U32, ea: {xa == a : U32}, eb: {xb == b : U32}, ec: {xc == c : U32}, ed: {xd == d : U32}, da: {B.Tbcd.is_digit(a) == True{} : Bool}, db: {B.Tbcd.is_digit(b) == True{} : Bool}, dc: {B.Tbcd.is_digit(c) == True{} : Bool}, dd: {B.Tbcd.is_digit(d) == True{} : Bool}) -> {Su.Routing.nonempty(Su.Routing.digits([xa, xb, xc, xd])) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}:
@@ -201,11 +201,11 @@ def Routing.core4(+a: U32, +b: U32, +c: U32, +d: U32, xa: U32, xb: U32, xc: U32,
   sda = Equal.sym(Bool, B.Tbcd.is_digit(a), True{}, da)
   %sda : {Su.Routing.nonempty(Su.Routing.step(a, [b, c, d], u => Su.Routing.digits([b, c, d]), _, U32.is_eq(a, 15))) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}
   sdb = Equal.sym(Bool, B.Tbcd.is_digit(b), True{}, db)
-  %sdb : {Su.Routing.nonempty(Su.Routing.cons(a, Su.Routing.step(b, [c, d], u => Su.Routing.digits([c, d]), _, U32.is_eq(b, 15)))) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}
+  %sdb : {Su.Routing.nonempty(B.Res.cons(U32, a, Su.Routing.step(b, [c, d], u => Su.Routing.digits([c, d]), _, U32.is_eq(b, 15)))) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}
   sdc = Equal.sym(Bool, B.Tbcd.is_digit(c), True{}, dc)
-  %sdc : {Su.Routing.nonempty(Su.Routing.cons(a, Su.Routing.cons(b, Su.Routing.step(c, [d], u => Su.Routing.digits([d]), _, U32.is_eq(c, 15))))) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}
+  %sdc : {Su.Routing.nonempty(B.Res.cons(U32, a, B.Res.cons(U32, b, Su.Routing.step(c, [d], u => Su.Routing.digits([d]), _, U32.is_eq(c, 15))))) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}
   sdd = Equal.sym(Bool, B.Tbcd.is_digit(d), True{}, dd)
-  %sdd : {Su.Routing.nonempty(Su.Routing.cons(a, Su.Routing.cons(b, Su.Routing.cons(c, Su.Routing.step(d, [], u => Su.Routing.digits([]), _, U32.is_eq(d, 15)))))) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}
+  %sdd : {Su.Routing.nonempty(B.Res.cons(U32, a, B.Res.cons(U32, b, B.Res.cons(U32, c, Su.Routing.step(d, [], u => Su.Routing.digits([]), _, U32.is_eq(d, 15)))))) == Done{[a, b, c, d]} : Result<&2, &2, B.Err, B.Digits()>}
   {==}
 
 def Suci.null_shape1(+plmn: PL.Plmn, +a: U32, +msin: B.Digits(), v: {PL.Plmn.valid(plmn) == True{} : Bool}, +da: {B.Tbcd.is_digit(a) == True{} : Bool}) -> {Su.Suci.read(Su.Suci.write(Su.Suci.null(plmn, [a], msin))) == Done{Su.Suci.null(plmn, [a], msin)} : Result<&2, &2, B.Err, Su.Suci>}:

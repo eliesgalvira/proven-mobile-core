@@ -39,7 +39,7 @@ def L.aes.block_length(key, block):
 # ---
 
 # The keystream for n bytes has blocks16(n) bytes.
-def Ctr.keystream_len(+n: Nat, +rks: List<&2, A.Aes.Block>, +c: A.Aes.Block) -> {List.length(&2, U32, CT.Ctr.keystream(n, rks, c)) == CT.Ctr.blocks16(n) : Nat}:
+def Ctr.keystream_len(+n: Nat, +rks: A.Aes.Keys, +c: A.Aes.Block) -> {List.length(&2, U32, CT.Ctr.keystream(n, rks, c)) == CT.Ctr.blocks16(n) : Nat}:
   match n:
     case 0n:
       {==}
@@ -121,7 +121,7 @@ def Ctr.le_blocks16(n: Nat) -> {Nat.is_le(n, CT.Ctr.blocks16(n)) == True{} : Boo
       Ctr.le_blocks16(p)
 
 # The keystream covers the message.
-def Ctr.covers(+m: B.Bytes(), +rks: List<&2, A.Aes.Block>, +c: A.Aes.Block) -> {Nat.is_le(List.length(&2, U32, m), List.length(&2, U32, CT.Ctr.keystream(List.length(&2, U32, m), rks, c))) == True{} : Bool}:
+def Ctr.covers(+m: B.Bytes(), +rks: A.Aes.Keys, +c: A.Aes.Block) -> {Nat.is_le(List.length(&2, U32, m), List.length(&2, U32, CT.Ctr.keystream(List.length(&2, U32, m), rks, c))) == True{} : Bool}:
   kl = Ctr.keystream_len(List.length(&2, U32, m), rks, c)
   sl = Equal.sym(Nat, List.length(&2, U32, CT.Ctr.keystream(List.length(&2, U32, m), rks, c)), CT.Ctr.blocks16(List.length(&2, U32, m)), kl)
   %sl : {Nat.is_le(List.length(&2, U32, m), _) == True{} : Bool}
@@ -188,10 +188,10 @@ def L.ctr.involution(key, iv, m):
 # CMAC
 # ----
 
-def Cmac.finish_len(rks: List<&2, A.Aes.Block>, x: A.Aes.Block, last: A.Aes.Block, k: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.finish(rks, x, last, k)) == 16n : Nat}:
+def Cmac.finish_len(rks: A.Aes.Keys, x: A.Aes.Block, last: A.Aes.Block, k: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.finish(rks, x, last, k)) == 16n : Nat}:
   Aes.to_bytes_len(A.Aes.encrypt(rks, A.Aes.xor(A.Aes.xor(x, last), k)))
 
-def Cmac.go_len(~pad: List<&2, U32> -> List<&2, U32>, rest: B.Bytes(), +rks: List<&2, A.Aes.Block>, x: A.Aes.Block, cur: A.Aes.Block, k_last: A.Aes.Block, k_part: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.go(~pad, rest, rks, x, cur, k_last, k_part)) == 16n : Nat}:
+def Cmac.go_len(~pad: List<&2, U32> -> List<&2, U32>, rest: B.Bytes(), +rks: A.Aes.Keys, x: A.Aes.Block, cur: A.Aes.Block, k_last: A.Aes.Block, k_part: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.go(~pad, rest, rks, x, cur, k_last, k_part)) == 16n : Nat}:
   match rest:
     case Nil{}:
       Cmac.finish_len(rks, x, cur, k_last)
@@ -228,7 +228,7 @@ def Cmac.go_len(~pad: List<&2, U32> -> List<&2, U32>, rest: B.Bytes(), +rks: Lis
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> b14 <> Nil{}:
       Cmac.finish_len(rks, A.Aes.encrypt(rks, A.Aes.xor(x, cur)), A.Aes.block_of(pad([b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14])), k_part)
 
-def Cmac.start_len(~pad: List<&2, U32> -> List<&2, U32>, msg: B.Bytes(), +rks: List<&2, A.Aes.Block>, k_last: A.Aes.Block, k_part: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.start(~pad, msg, rks, k_last, k_part)) == 16n : Nat}:
+def Cmac.start_len(~pad: List<&2, U32> -> List<&2, U32>, msg: B.Bytes(), +rks: A.Aes.Keys, k_last: A.Aes.Block, k_part: A.Aes.Block) -> {List.length(&2, U32, M.Cmac.start(~pad, msg, rks, k_last, k_part)) == 16n : Nat}:
   match msg:
     case b0 <> b1 <> b2 <> b3 <> b4 <> b5 <> b6 <> b7 <> b8 <> b9 <> b10 <> b11 <> b12 <> b13 <> b14 <> b15 <> rest:
       Cmac.go_len(~pad, rest, rks, A.Aes.zero(), A.Blk{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}, k_last, k_part)
@@ -287,13 +287,14 @@ def Milenage.low6_len(b: A.Aes.Block) -> {List.length(&2, U32, Mil.Milenage.low6
       {==}
 
 def L.milenage.lengths(key, opc, rand, sqn, amf):
-  (Milenage.low8_len(Mil.Milenage.out1(key, opc, rand, sqn, amf)),
-   (Milenage.high8_len(Mil.Milenage.out1(key, opc, rand, sqn, amf)),
-   (Milenage.high8_len(Mil.Milenage.out(key, opc, rand, b => b, 1)),
-   (Aes.to_bytes_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot4(b), 2)),
-   (Aes.to_bytes_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot8(b), 4)),
-   (Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => b, 1)),
-   Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot12(b), 8))))))))
+  +r = Mil.milenage.run(key, opc, rand)
+  (Milenage.low8_len(Mil.Milenage.out1(r, sqn, amf)),
+   (Milenage.high8_len(Mil.Milenage.out1(r, sqn, amf)),
+   (Milenage.high8_len(Mil.Milenage.out(r, b => b, 1)),
+   (Aes.to_bytes_len(Mil.Milenage.out(r, b => Mil.Milenage.rot4(b), 2)),
+   (Aes.to_bytes_len(Mil.Milenage.out(r, b => Mil.Milenage.rot8(b), 4)),
+   (Milenage.low6_len(Mil.Milenage.out(r, b => b, 1)),
+   Milenage.low6_len(Mil.Milenage.out(r, b => Mil.Milenage.rot12(b), 8))))))))
 
 # KDF
 # ---

@@ -1,10 +1,12 @@
 """Emit show.bend: a normal form of every generated type's values, as text.
 
-oracle.py prints the same normal form from pycrate's decoding of the capture
-and compares. Numbers are decimal (an INTEGER's real value, an ENUMERATED's
-index, `x` marking an extension), bit strings `b` plus the bits, octet and
-character strings hex, records `{a,b,-}` (`-` an absent optional), choices
-`i:value`, lists and IE containers `[,a,b]`, raw IEs `id/crit/hex`.
+oracle.py prints the same normal form from pycrate's decoding of the NGAP
+vectors and compares. Numbers are decimal (an INTEGER's real value, an
+ENUMERATED's index, `x` marking an extension), bit strings `b` plus the bits,
+octet and character strings hex (an OCTET STRING (CONTAINING T) the normal
+form of the T it holds, `!` if it holds none), records `{a,b,-}` (`-` an
+absent optional), choices `i:value`, lists and IE containers `[,a,b]`, raw
+IEs `id/crit/hex`.
 """
 
 HEADER = """import Base
@@ -91,7 +93,7 @@ def Exts.show(ies: List<&2, Fr.Ie>) -> String:
   "[" ++ Ies.show(ies) ++ "]"
 """
 
-BITS = {"Bits", "ABits", "XBits", "BitStr", "XBitStr", "UBitStr"}
+BITS = {"Bits", "ABits", "XBits", "BitStr", "XBitStr", "UBitStr", "WBitStr"}
 BYTES = {"Big", "Octets", "AOctets", "OctStr", "Open", "Str", "XStr", "UStr"}
 
 
@@ -103,44 +105,16 @@ class Show:
     def out(self, text=""):
         self.lines.append(text)
 
-    def data(self, name):
-        if name == "EXTS":
-            return "List<&2, Fr.Ie>"
-        if name == "IE":
-            return "Fr.Ie"
-        return "G." + self.g.data(name)
-
-    def call(self, name, v):
-        if name == "EXTS":
-            return f"Exts.show({v})"
-        if name == "IE":
-            return f"Ie.show({v})"
-        return f"{self.g.types[name].bend}.show({v})"
-
     def show(self):
-        done = set()
-
-        def emit(name):
-            if name in done:
-                return
-            done.add(name)
-            t = self.g.types[name]
-            for d in t.deps:
-                emit(d)
+        for t in self.g.topo:
             getattr(self, "emit_" + t.kind)(t)
             self.emit_rd(t)
-
-        for name in self.g.order:
-            if self.g.types[name].kind != "message":
-                emit(name)
-        for name in self.g.order:
-            emit(name)
         self.emit_messages()
         return "\n".join(self.lines).rstrip() + "\n"
 
     def emit_rd(self, t):
         """The normal form of what a reader answered: `!` unless it consumed everything but padding."""
-        b, d = t.bend, self.data(t.name)
+        b, d = t.bend, t.qref()
         self.out(f"def {b}.show_end(+v: {d}, ok: Bool) -> String:")
         self.out("  match ok:")
         self.out("    case True{}:")
@@ -159,7 +133,7 @@ class Show:
         self.out()
 
     def emit_alias(self, t):
-        b, d, p = t.bend, self.data(t.name), t.prim
+        b, d, p = t.bend, t.qref(), t.prim
         self.out(f"def {b}.show(v: {d}) -> String:")
         if p in ("Int", "AInt"):
             self.out(f"  Dec(U32.add({t.lb}, v))")
@@ -183,6 +157,9 @@ class Show:
             self.out('      "x" ++ Dec(i)')
         elif p in BITS:
             self.out('  "b" ++ Bits.show(v)')
+        elif t.contains is not None:
+            inner = self.g.types[t.contains].bend
+            self.out(f"  {inner}.show_rd(G.{inner}.read(Ap.Cur{{0n, Ap.unpack(v)}}))")
         elif p in BYTES:
             self.out("  Hex.bytes(v)")
         else:
@@ -193,17 +170,17 @@ class Show:
         b, fields = t.bend, t.fields
         for fn, ft, o in fields:
             if o:
-                self.out(f"def {b}.m_{fn}(m: Maybe<&2, {self.data(ft)}>) -> String:")
+                self.out(f"def {b}.m_{fn}(m: Maybe<&2, {ft.qref()}>) -> String:")
                 self.out("  match m:")
                 self.out("    case None{}:")
                 self.out('      "-"')
                 self.out("    case Some{v}:")
-                self.out(f"      {self.call(ft, 'v')}")
+                self.out(f"      {ft.show}(v)")
                 self.out()
         self.out(f"def {b}.show(x: G.{b}) -> String:")
         self.out("  match x:")
         self.out("    case G." + b + "{" + ", ".join(fn for fn, _, _ in fields) + "}:")
-        parts = [f"{b}.m_{fn}({fn})" if o else self.call(ft, fn) for fn, ft, o in fields]
+        parts = [f"{b}.m_{fn}({fn})" if o else f"{ft.show}({fn})" for fn, ft, o in fields]
         self.out('      "{" ++ ' + ' ++ "," ++ '.join(parts) + ' ++ "}"')
         self.out()
 
@@ -213,18 +190,18 @@ class Show:
         self.out("  match x:")
         for j, (an, at) in enumerate(t.alts):
             self.out(f"    case G.{b}_{an}{{v}}:")
-            self.out(f'      "{j}:" ++ {self.call(at, "v")}')
+            self.out(f'      "{j}:" ++ {at.show}(v)')
         self.out()
 
     def emit_list(self, t):
         b, item = t.bend, t.item
-        d = self.data(item)
+        d = item.qref()
         self.out(f"def {b}.show_items(xs: List<&2, {d}>) -> String:")
         self.out("  match xs:")
         self.out("    case Nil{}:")
         self.out('      ""')
         self.out("    case x <> more:")
-        self.out(f'      "," ++ {self.call(item, "x")} ++ {b}.show_items(more)')
+        self.out(f'      "," ++ {item.show}(x) ++ {b}.show_items(more)')
         self.out()
         self.out(f"def {b}.show(xs: List<&2, {d}>) -> String:")
         self.out(f'  "[" ++ {b}.show_items(xs) ++ "]"')
@@ -236,9 +213,8 @@ class Show:
         self.out(f"def {b}.show_ie(id: Nat, +value: B.Bytes()) -> String:")
         self.out("  match id:")
         for iid, _, tn, _ in rows:
-            tb = self.g.types[tn].bend
             self.out(f"    case {iid}n:")
-            self.out(f"      {tb}.show_rd(G.{tb}.read(Ap.Cur{{0n, Ap.unpack(value)}}))")
+            self.out(f"      {tn.bend}.show_rd(G.{tn.read('Ap.Cur{0n, Ap.unpack(value)}')})")
         self.out("    case _:")
         self.out("      Hex.bytes(value)")
         self.out()

@@ -6,6 +6,34 @@ import ../bytes.bend as B
 # reproduces the input byte for byte. Typed views of the content are
 # separate functions (kernel/nas/mm.bend).
 
+# The IEIs the kernel looks for (TS 24.501 §8.2, §8.3)
+def Iei.request_type() -> U32:
+  8
+
+def Iei.pdu_session_type() -> U32:
+  9
+
+def Iei.s_nssai() -> U32:
+  34
+
+def Iei.dnn() -> U32:
+  37
+
+def Iei.authentication_response_parameter() -> U32:
+  45
+
+def Iei.ue_security_capability() -> U32:
+  46
+
+def Iei.authentication_failure_parameter() -> U32:
+  48
+
+def Iei.nas_message_container() -> U32:
+  113
+
+def Iei.extended_pco() -> U32:
+  123
+
 # A length prefix and the bytes it covers.
 type LenBody is Data:
   LenBody{len: U32, body: B.Bytes()}
@@ -152,19 +180,12 @@ def Field.read(lay: Lay, bs: B.Bytes()) -> B.Read(Field):
     case LvE{}:
       Field.of_lve(lve(bs))
 
-def Fields.cons(f: Field, r: B.Read(List<&2, Field>)) -> B.Read(List<&2, Field>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(fs, rest)}:
-      Done{(f <> fs, rest)}
-
 def Fields.next(r: B.Read(Field), more: B.Bytes() -> B.Read(List<&2, Field>)) -> B.Read(List<&2, Field>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(f, rest)}:
-      Fields.cons(f, more(rest))
+      B.Read.cons(Field, f, more(rest))
 
 def Fields.read(lays: List<&2, Lay>, bs: B.Bytes()) -> B.Read(List<&2, Field>):
   match lays:
@@ -327,19 +348,12 @@ def Opts.valid(+table: List<&2, Rule>, ies: List<&2, Ie>) -> Bool:
 
 # Optional IEs to the end of the message. The fuel is the byte count: every
 # IE takes at least one byte.
-def Opts.cons(ie: Ie, r: Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{ies}:
-      Done{ie <> ies}
-
 def Opts.next(r: B.Read(Ie), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(ie, rest)}:
-      Opts.cons(ie, more(rest))
+      B.Res.cons(Ie, ie, more(rest))
 
 def Opts.iei(table: List<&2, Rule>, +iei: U32, rest: B.Bytes(), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Ie>>, ok: Bool) -> Result<&2, &2, B.Err, List<&2, Ie>>:
   match ok:

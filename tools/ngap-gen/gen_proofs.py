@@ -5,6 +5,8 @@ for each type; proofs.bend fills them by composing the APER primitive laws
 (kernel/LAWS.bend, proven in kernel/proofs/aper.bend and canon.bend) along
 the shape of the generated codec: aliases defer to one primitive law, records
 go field by field, choices by alternative, lists by induction on the items.
+For each view, ngap.<Message>.mandatory states that it succeeds only when
+every mandatory IE occurs exactly once; its proof follows the view's lookups.
 """
 
 HEADER = """import Base
@@ -12,6 +14,7 @@ import ../../bytes.bend as B
 import ../../aper.bend as Ap
 import ../frame.bend as Fr
 import ./types.bend as G
+import ./views.bend as GV
 """
 
 PROOF_HEADER = HEADER + """import ./laws.bend as GL
@@ -24,7 +27,7 @@ import ../../proofs/ngap_frame.bend as PF
 
 PRIM_LAWS = {
     "Int": "int", "AInt": "aint", "Big": "big", "XInt": "xint", "XBig": "xbig", "Enum": "enum",
-    "XBits": "xbits", "BitStr": "bitstr", "XBitStr": "xbitstr", "UBitStr": "ubitstr",
+    "XBits": "xbits", "BitStr": "bitstr", "XBitStr": "xbitstr", "UBitStr": "ubitstr", "WBitStr": "wbitstr",
     "OctStr": "octstr", "Open": "open", "Str": "str", "XStr": "xstr", "UStr": "ustr",
 }
 NEEDS_WIDTH = {"Big", "XBig", "BitStr", "XBitStr", "OctStr", "Str", "XStr"}
@@ -45,6 +48,8 @@ def prim_prefix(t):
         return f"{a[0]}n, {a[1]}, {a[2]}"
     if p in ("XBits", "Bits", "ABits", "Octets", "AOctets"):
         return f"{a[0]}n"
+    if p == "WBitStr":
+        return f"{a[0]}n, {a[1]}n"
     if p in ("BitStr", "XBitStr", "OctStr", "Str", "XStr"):
         return f"{a[0]}, {a[1]}n, {a[2]}n, {a[3]}n"
     return ""
@@ -63,49 +68,33 @@ class Proofs:
     def out(self, text=""):
         self.lines.append(text)
 
-    # -- names on the proof side ----------------------------------------------
+    def data(self, t):
+        return t.qref()
 
-    def data(self, name):
-        if name == "EXTS":
-            return "List<&2, Fr.Ie>"
-        if name == "IE":
-            return "Fr.Ie"
-        return "G." + self.g.data(name)
+    def read(self, t, c):
+        return t.mod + t.read(c)
 
-    def read(self, name, c):
-        return self.pre(name) + self.g.read(name, c)
+    def write(self, t, v, rem, rest):
+        return t.mod + t.write(v, rem, rest)
 
-    def write(self, name, v, rem, rest):
-        return self.pre(name) + self.g.write(name, v, rem, rest)
+    def after(self, t, v, rem):
+        return t.mod + t.after(v, rem)
 
-    def after(self, name, v, rem):
-        return self.pre(name) + self.g.after(name, v, rem)
+    def valid(self, t, v):
+        return t.mod + t.valid(v)
 
-    def valid(self, name, v):
-        return self.pre(name) + self.g.valid(name, v)
+    def rt_law(self, t, v, rem, rest, ok):
+        return f"{t.law}.roundtrip({v}, {rem}, {rest}, {ok})"
 
-    def pre(self, name):
-        return "" if name in ("EXTS", "IE") else "G."
+    def dv_law(self, t, c, v, c2, e):
+        return f"{t.law}.decode_valid({c}, {v}, {c2}, {e})"
 
-    def law(self, name):
-        if name in ("EXTS", "IE"):
-            return "L.ngap." + name.lower()
-        return f"GL.ngap.{self.g.types[name].bend}"
+    def sx_law(self, t, r, b, v, r3, b3, e):
+        return f"{t.sx}({r}, {b}, {v}, {r3}, {b3}, {e})"
 
-    def rt_law(self, name, v, rem, rest, ok):
-        return f"{self.law(name)}.roundtrip({v}, {rem}, {rest}, {ok})"
-
-    def dv_law(self, name, c, v, c2, e):
-        return f"{self.law(name)}.decode_valid({c}, {v}, {c2}, {e})"
-
-    def sx_law(self, name, r, b, v, r3, b3, e):
-        if name in ("EXTS", "IE"):
-            return f"PF.{'Exts' if name == 'EXTS' else 'Ie'}.sx({r}, {b}, {v}, {r3}, {b3}, {e})"
-        return f"{self.law(name)}.suffix({r}, {b}, {v}, {r3}, {b3}, {e})"
-
-    def canon(self, name, b, v, r, b3, r3):
+    def canon(self, t, b, v, r, b3, r3):
         """The type a suffix law gives: bits b are the value's wire form before b3, and r3 follows."""
-        return f"{{{b} == {self.write(name, v, r, b3)} : Ap.Bits()}} & {{{r3} == {self.after(name, v, r)} : Nat}}"
+        return f"{{{b} == {self.write(t, v, r, b3)} : Ap.Bits()}} & {{{r3} == {self.after(t, v, r)} : Nat}}"
 
     def absurd(self, d, goal, err):
         return f"PA.Rd.absurd({d}, {goal}, {err}, v, c2, e)"
@@ -127,7 +116,6 @@ class Proofs:
             "er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)",
         ]
 
-    # -- laws ------------------------------------------------------------------
 
     def laws(self):
         self.lines = [HEADER]
@@ -136,9 +124,8 @@ class Proofs:
         self.out("# generated type; kernel/ngap/gen/proofs.bend proves them. `suffix` is")
         self.out("# canonical decoding: the bits a value was read from are its encoding.")
         self.out()
-        for name in self.g.order:
-            t = self.g.types[name]
-            b, d = t.bend, self.data(name)
+        for t in self.g.topo:
+            b, d = t.bend, self.data(t)
             self.out(f"law ngap.{b}.roundtrip:")
             self.out(f"  for +v: {d}")
             self.out("  for +rem: Nat")
@@ -160,36 +147,105 @@ class Proofs:
             self.out("  for +rem2: Nat")
             self.out("  for +bits2: Ap.Bits()")
             self.out(f"  for +e: {cur_eq(d, f'G.{b}.read(Ap.Cur{{rem, bits}})')}")
-            self.out(f"  {self.canon(name, 'bits', 'v', 'rem', 'bits2', 'rem2')}")
+            self.out(f"  {self.canon(t, 'bits', 'v', 'rem', 'bits2', 'rem2')}")
+            self.out()
+        for msg, rows in self.mandatory_views():
+            mb = self.g.types[msg].bend
+            self.out(f"law ngap.{mb}.mandatory:")
+            self.out("  for +ies: List<&2, Fr.Ie>")
+            self.out(f"  for +v: GV.{mb}.View")
+            self.out(f"  for +e: {{GV.{mb}.view(ies) == Done{{v}} : Result<&2, &2, B.Err, GV.{mb}.View>}}")
+            self.out(f"  {self.once(rows, 0)}")
             self.out()
         return "\n".join(self.lines).rstrip() + "\n"
 
-    # -- proofs ----------------------------------------------------------------
+
+    def mandatory_views(self):
+        """(message, view rows) for every view with a mandatory IE."""
+        for msg in sorted(self.g.messages):
+            rows = self.g.view_rows(msg)
+            if any(mand for _, _, _, mand in rows):
+                yield msg, rows
+
+    def once(self, rows, i, ies="ies"):
+        """Each mandatory IE from row i on occurs once in ies, as nested conjunctions."""
+        facts = [f"{{Fr.Ies.occurrences({iid}, {ies}) == 1n : Nat}}" for iid, _, _, mand in rows[i:] if mand]
+        goal = facts[-1]
+        for fact in reversed(facts[:-1]):
+            goal = f"{fact} & ({goal})" if " & " in goal else f"{fact} & {goal}"
+        return goal
+
+    def emit_view(self, msg, rows):
+        """The view's chain: v_<f> looks IE f up, d_<f> decodes it. Each step's
+        proof hands the next one its result, up to the last mandatory IE."""
+        mb = self.g.types[msg].bend
+        view = f"GV.{mb}.View"
+        last = max(i for i, (_, _, _, mand) in enumerate(rows) if mand)
+        nd = "+nd: {Fr.Ies.no_dups(ies) == True{} : Bool}"
+
+        def prev(i):
+            return [f"+{fn}: {tn.qref(not mand)}" for _, fn, tn, mand in rows[:i]]
+
+        def lookup(i, args, ies="ies", nd="nd"):
+            return f"{mb}.mand.v_{rows[i][1]}({', '.join([ies] + args + [f'Fr.Ies.lookup({rows[i][0]}, {ies})', '{==}', 'v', 'e', nd])})"
+
+        def absurd(goal, err):
+            return f"PF.View.absurd({view}, {goal}, {err}, v, e)"
+
+        for i in reversed(range(last + 1)):
+            iid, fn, tn, mand = rows[i]
+            d = tn.qref()
+            fields = [f for _, f, _, _ in rows[:i]]
+            goal = self.once(rows, i)
+            if i < last:
+                after = self.once(rows, i + 1)
+                self.out(f"def {mb}.mand.d_{fn}({', '.join(['+ies: List<&2, Fr.Ie>'] + prev(i) + [f'r: Result<&2, &2, B.Err, {d}>', f'+v: {view}', f'+e: {{GV.{mb}.d_{fn}({", ".join(["ies"] + fields + ["r"])}) == Done{{v}} : Result<&2, &2, B.Err, {view}>}}', nd])}) -> {after}:")
+                self.out("  match r:")
+                self.out("    case Fail{err}:")
+                self.out(f"      {absurd(after, 'err')}")
+                self.out(f"    case Done{{+{fn}}}:")
+                self.out(f"      {lookup(i + 1, fields + [fn if mand else f'Some{{{fn}}}'])}")
+                self.out()
+            self.out(f"def {mb}.mand.v_{fn}({', '.join(['+ies: List<&2, Fr.Ie>'] + prev(i) + ['m: Maybe<&2, B.Bytes()>', f'+em: {{Fr.Ies.lookup({iid}, ies) == m : Maybe<&2, B.Bytes()>}}', f'+v: {view}', f'+e: {{GV.{mb}.v_{fn}({", ".join(["ies"] + fields + ["m"])}) == Done{{v}} : Result<&2, &2, B.Err, {view}>}}', nd])}) -> {goal}:")
+            self.out("  match m:")
+            self.out("    case None{}:")
+            self.out(f"      {absurd(goal, f'B.Invalid{{{iid}}}') if mand else lookup(i + 1, fields + ['None{}'])}")
+            self.out("    case Some{+bs}:")
+            count = f"PF.Ies.lookup_count({iid}, ies, bs, nd, em)"
+            decode = f"{mb}.mand.d_{fn}({', '.join(['ies'] + fields + [f'Fr.View.exact({d}, {self.read(tn, "Ap.Cur{0n, Ap.unpack(bs)}")})', 'v', 'e', 'nd'])})"
+            self.out(f"      {count if i == last else f'({count}, {decode})' if mand else decode}")
+            self.out()
+        known = f"GV.{mb}.known()"
+        goal = self.once(rows, 0)
+        self.out(f"def {mb}.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {{Fr.View.prelude({known}, ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}}, +v: {view}, +e: {{GV.{mb}.v_prelude(rp) == Done{{v}} : Result<&2, &2, B.Err, {view}>}}) -> {goal}:")
+        self.out("  match rp:")
+        self.out("    case Fail{err}:")
+        self.out(f"      {absurd(goal, 'err')}")
+        self.out("    case Done{+ies2}:")
+        self.out(f"      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same({known}, ies, ies2, erp))")
+        self.out(f"      %seq : {self.once(rows, 0, '_')}")
+        self.out(f"      {lookup(0, [], 'ies2', f'PF.Prelude.nd({known}, ies, ies2, erp)')}")
+        self.out()
+        self.out(f"def GL.ngap.{mb}.mandatory(ies, v, e):")
+        self.out(f"  {mb}.mand(ies, Fr.View.prelude({known}, ies), {{==}}, v, e)")
+        self.out()
+
 
     def proofs(self):
         self.lines = [PROOF_HEADER]
         self.out("# GENERATED by tools/ngap-gen/gen.py from TS 38.413 V17.15.0; do not edit.")
         self.out("# Proofs of kernel/ngap/gen/laws.bend, composed from the APER primitive laws.")
         self.out()
-        done = set()
-
-        def emit(name):
-            if name in done:
-                return
-            done.add(name)
-            t = self.g.types[name]
-            for d in t.deps:
-                emit(d)
-            self.emit_sx_type(t)
+        for t in self.g.topo:
             getattr(self, "emit_" + t.kind)(t)
-
-        for name in self.g.order:
-            emit(name)
+        for msg, rows in self.mandatory_views():
+            self.emit_view(msg, rows)
         return "\n".join(self.lines).rstrip() + "\n"
 
     def emit_sx_type(self, t):
-        self.out(f"def {t.bend}.Sx(+bits: Ap.Bits(), +v: {self.data(t.name)}, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:")
-        self.out(f"  {self.canon(t.name, 'bits', 'v', 'rem', 'bits2', 'rem2')}")
+        """`T.Sx`: the suffix law's conclusion, named for the helpers that prove it."""
+        self.out(f"def {t.bend}.Sx(+bits: Ap.Bits(), +v: {self.data(t)}, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:")
+        self.out(f"  {self.canon(t, 'bits', 'v', 'rem', 'bits2', 'rem2')}")
         self.out()
 
     def emit_alias(self, t):
@@ -216,6 +272,7 @@ class Proofs:
         self.out()
 
     def emit_message(self, t):
+        self.emit_sx_type(t)
         b = t.bend
         gb = f"G.{b}"
         d = f"{gb}()"
@@ -297,6 +354,11 @@ class Proofs:
         self.out()
 
     def emit_record(self, t):
+        """Each optional field gets its own three proofs. Roundtrip rewrites the reader chain one
+        field at a time; decode_valid threads validity evidence through it, last field first;
+        suffix shows the bits before field i are the writes of the fields before it, each
+        presence flag being the bit read for fields before i and the field's value from i on."""
+        self.emit_sx_type(t)
         g = self.g
         b, fields = t.bend, t.fields
         gb = f"G.{b}"
@@ -348,7 +410,6 @@ class Proofs:
 
         pvar = lambda i: f"p_{fields[i][0]}"
 
-        # optional fields: their own roundtrip, decode_valid and suffix
         for i in opts:
             fn, ft, _ = fields[i]
             d = self.data(ft)
@@ -381,7 +442,6 @@ class Proofs:
             self.out("    case True{}:")
             self.out(f"      {b}.o_dv_{fn}.some(c, {self.read(ft, 'c')}, {{==}}, m, c2, e)")
             self.out()
-            # suffix of an optional field: canon of w/a, and the presence bit is the one read
             ocanon = lambda pres: f"({{b == {gb}.w_{fn}(m, r, b3) : Ap.Bits()}} & {{r3 == {gb}.a_{fn}(m, r) : Nat}}) & {{{pres} == Fr.Present({d}, m) : Bool}}"
             self.out(f"def {b}.o_sx_{fn}.go(+r: Nat, +b: Ap.Bits(), +x: {d}, +r4: Nat, +b4: Ap.Bits(), +m: {md}, +r3: Nat, +b3: Ap.Bits(), +e: {{Done{{(Some{{x}}, Ap.Cur{{r4, b4}})}} == Done{{(m, Ap.Cur{{r3, b3}})}} : Ap.Rd({md})}}, s: {{b == {self.write(ft, 'x', 'r', 'b4')} : Ap.Bits()}} & {{r4 == {self.after(ft, 'x', 'r')} : Nat}}) -> {ocanon('True{}')}:")
             self.out("  (s1, s2) = s")
@@ -412,7 +472,6 @@ class Proofs:
             self.out(f"      {b}.o_sx_{fn}.some(r, b, {self.read(ft, 'Ap.Cur{r, b}')}, {{==}}, m, r3, b3, e)")
             self.out()
 
-        # roundtrip: one rewrite per field along the reader chain
         r0 = "Ap.Bit.after(rem)" if t.ext else "rem"
         rems = [f"Ap.Bits.after({k}n, {r0})" if k else r0]
         for i in range(m):
@@ -444,7 +503,6 @@ class Proofs:
         self.out(f"      {b}.rt({', '.join(names + ['rem', 'rest', 'ok'])})")
         self.out()
 
-        # decode_valid: evidence threaded through the reader chain, last field first
         def pflags(i):
             return [pvar(j) for j in range(i, m) if fields[j][2]]
 
@@ -475,7 +533,6 @@ class Proofs:
         def first(c):
             return f"{b}.dv_{names[0]}({', '.join(pflags(0) + [c, READ(0, c, pvar), '{==}', 'v', 'c2', 'e'])})"
 
-        # The first field's presence bit is both passed on and read with when that field is optional.
         bm_pat = " <> ".join(("+" if i == 0 else "") + pvar(i) for i in opts) + " <> Nil{}"
         if k:
             self.out(f"def {b}.dv_bm(r: Ap.Rd(Ap.Bits()), +v: {gb}, +c2: Ap.Cur, +e: {{{gb}.r_bm(r) == Done{{(v, c2)}} : Ap.Rd({gb})}}) -> {goal}:")
@@ -502,7 +559,6 @@ class Proofs:
         self.out(f"  {body}")
         self.out()
 
-        # suffix: the bits before each field are the writes of the fields before it
         sx = f"{b}.Sx"
         sxgoal = f"{sx}(bits, v, rem, rem2, bits2)"
         r0p = "Ap.Bit.after(rem)" if t.ext else "rem"
@@ -511,14 +567,12 @@ class Proofs:
             R.append(AFTER(i, R[i]))
 
         def flag_at(i):
-            """The preamble flag of optional field j as helper i knows it: read bit before, value after."""
             return lambda j: PF(j) if j < i else pvar(j)
 
         def prefix0(hole):
             return f"Ap.Bit.write(False{{}}, rem, {hole})" if t.ext else hole
 
         def prefix(i, hole, flag):
-            """The original bits as the writes of fields before i around `hole` (the bits before field i)."""
             for j in reversed(range(i)):
                 hole = WRITE(j, R[j], hole)
             if k:
@@ -615,6 +669,7 @@ class Proofs:
         self.emit_sx_entry(t, body)
 
     def emit_choice(self, t):
+        self.emit_sx_type(t)
         b, alts = t.bend, t.alts
         gb = f"G.{b}"
         count = len(alts)
@@ -675,7 +730,6 @@ class Proofs:
         self.out(f"  {body}")
         self.out()
 
-        # suffix
         sx = f"{b}.Sx"
         sxgoal = f"{sx}(bits, v, rem, rem2, bits2)"
         prefix0 = (lambda h: f"Ap.Bit.write(False{{}}, rem, {h})") if t.ext else (lambda h: h)
@@ -734,6 +788,7 @@ class Proofs:
         self.emit_sx_entry(t, lambda r0e, b0e, bits: f"{b}.sx_idx(rem, {bits}, {r0e}, {b0e}, Ap.Size.read({size}, Ap.Cur{{{r0e}, {b0e}}}), {{==}}, v, rem2, bits2, e, {{==}}, {{==}})")
 
     def emit_list(self, t):
+        self.emit_sx_type(t)
         b, item = t.bend, t.item
         gb = f"G.{b}"
         al, n, lo, diff = t.args
@@ -815,7 +870,6 @@ class Proofs:
         self.out(f"  {b}.dv(c, Ap.Size.read({size}, c), {{==}}, v, c2, e)")
         self.out()
 
-        # suffix: by induction on the items, then the count
         sxi = f"{b}.Sxi"
         sx = f"{b}.Sx"
         w = lambda r, rest: self.write(item, "x", r, rest)

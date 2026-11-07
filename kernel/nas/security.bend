@@ -62,11 +62,6 @@ def Nas.Count.sqn(c: Nas.Count) -> U32:
     case Count{overflow, sqn}:
       sqn
 
-def Nas.Count.overflow(c: Nas.Count) -> U32:
-  match c:
-    case Count{overflow, sqn}:
-      overflow
-
 # The 32-bit COUNT: 0x00 || overflow || sqn.
 def Nas.Count.value(c: Nas.Count) -> U32:
   match c:

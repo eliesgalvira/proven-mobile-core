@@ -55,24 +55,12 @@ def Sub.digits(bs: B.Bytes()) -> Bool:
     case +b <> rest:
       Bool.and(Bool.and(U32.is_lt(47, b), U32.is_lt(b, 58)), Sub.digits(rest))
 
-def Sub.valid(s: Sub) -> Bool:
-  match s:
-    case Sub{+supi, k, opc, amf, sqn}:
-      Bool.and(Nat.is_lt(List.length(&2, U32, supi), 256n), Bool.and(Sub.digits(supi), Bool.and(Len.is(k, 16n), Bool.and(Len.is(opc, 16n), Bool.and(Len.is(amf, 2n), Len.is(sqn, 6n))))))
-
-def Exact.end(-A: Data, x: A, rest: B.Bytes()) -> Result<&2, &2, B.Err, A>:
-  match rest:
-    case Nil{}:
-      Done{x}
-    case b <> more:
-      Fail{B.Invalid{b}}
-
 def Sub.of_sqn(supi: B.Bytes(), k: B.Bytes(), opc: B.Bytes(), amf: B.Bytes(), r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, Sub>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(sqn, rest)}:
-      Exact.end(Sub, Sub{supi, k, opc, amf, sqn}, rest)
+      B.end(Sub, Sub{supi, k, opc, amf, sqn}, rest)
 
 def Sub.of_amf(supi: B.Bytes(), k: B.Bytes(), opc: B.Bytes(), r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, Sub>:
   match r:
@@ -222,11 +210,6 @@ type Evt is Data:
 # An event with the entropy the edge attached to it.
 type Input is Data:
   Input{entropy: B.Bytes(), event: Evt}
-
-def Input.entropy(i: Input) -> B.Bytes():
-  match i:
-    case Input{entropy, event}:
-      entropy
 
 def Input.event(i: Input) -> Evt:
   match i:
@@ -513,21 +496,6 @@ type Action is Data:
 type Actions is Data:
   Actions{count: U32, items: List<&2, Action>}
 
-def Action.kind(a: Action) -> U32:
-  match a:
-    case NgapSend{assoc, stream, len, bytes}:
-      129
-    case NgapClose{assoc}:
-      130
-    case PfcpSend{len, bytes}:
-      131
-    case TimerStart{timer, ms}:
-      132
-    case TimerCancel{timer}:
-      133
-    case Log{level, len, text}:
-      134
-
 def Action.valid(a: Action) -> Bool:
   match a:
     case NgapSend{assoc, +stream, +len, +bytes}:
@@ -705,19 +673,12 @@ def Action.write(a: Action, rest: B.Bytes()) -> B.Bytes():
     case Log{level, len, text}:
       B.write_u8(134, B.write_u8(Level.byte(level), B.write_u32(len, List.append(&2, U32, text, rest))))
 
-def Items.cons(a: Action, r: B.Read(List<&2, Action>)) -> B.Read(List<&2, Action>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(items, rest)}:
-      Done{(a <> items, rest)}
-
 def Items.next(r: Action.Res(), more: B.Bytes() -> B.Read(List<&2, Action>)) -> B.Read(List<&2, Action>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(a, rest)}:
-      Items.cons(a, more(rest))
+      B.Read.cons(Action, a, more(rest))
 
 # Exactly n actions.
 def Items.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, Action>):

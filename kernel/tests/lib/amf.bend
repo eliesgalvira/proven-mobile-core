@@ -100,6 +100,16 @@ def timer_starts(actions: List<&2, F.Action>) -> Nat:
     case a <> more:
       timer_starts(more)
 
+# The id of the first timer started.
+def first_timer(actions: List<&2, F.Action>) -> U32:
+  match actions:
+    case Nil{}:
+      0
+    case F.TimerStart{timer, ms} <> more:
+      timer
+    case a <> more:
+      first_timer(more)
+
 def timer_cancels(actions: List<&2, F.Action>) -> Nat:
   match actions:
     case Nil{}:

@@ -383,3 +383,67 @@ def Ies.sx(+rem: Nat, +bits: Ap.Bits(), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits
 
 def Exts.sx(+rem: Nat, +bits: Ap.Bits(), +ies: List<&2, Fr.Ie>, +rem2: Nat, +bits2: Ap.Bits(), e: {Fr.Exts.read(Ap.Cur{rem, bits}) == Done{(ies, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, Fr.Ie>)}) -> PC.Canon(bits, Fr.Exts.write(ies, rem, bits2), rem2, Fr.Exts.after(rem)):
   Ies.sx.count(1n, 65534n, rem, bits, Ap.Size.read(True{}, 16n, 1n, 65534n, Ap.Cur{rem, bits}), {==}, ies, rem2, bits2, e)
+
+# Views
+# -----
+
+def View.absurd(-A: Data, -G: Type, err: B.Err, v: A, e: {Fail{err} == Done{v} : Result<&2, &2, B.Err, A>}) -> G:
+  Empty.absurd(G, P.Refute.fail_done(B.Err, A, err, v, e))
+
+def Prelude.dv(+known: List<&2, U32>, +ies: List<&2, Fr.Ie>, ok: Bool, eok: {Bool.and(Fr.Ies.no_dups(ies), Fr.Ies.comprehended(known, ies)) == ok : Bool}, +ies2: List<&2, Fr.Ie>, +e: {Fr.View.gate(ies, ok) == Done{ies2} : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}) -> {Fr.Ies.no_dups(ies) == True{} : Bool}:
+  match ok:
+    case False{}:
+      View.absurd(List<&2, Fr.Ie>, {Fr.Ies.no_dups(ies) == True{} : Bool}, B.Invalid{0}, ies2, e)
+    case True{}:
+      P.Bool.and_true_l(Fr.Ies.no_dups(ies), Fr.Ies.comprehended(known, ies), eok)
+
+def L.ngap.view.duplicate_rejected(known, ies, ies2, e):
+  Prelude.dv(known, ies, Bool.and(Fr.Ies.no_dups(ies), Fr.Ies.comprehended(known, ies)), {==}, ies2, e)
+
+def Prelude.gate(+ies: List<&2, Fr.Ie>, ok: Bool, +ies2: List<&2, Fr.Ie>, +e: {Fr.View.gate(ies, ok) == Done{ies2} : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}) -> {ies == ies2 : List<&2, Fr.Ie>}:
+  match ok:
+    case False{}:
+      View.absurd(List<&2, Fr.Ie>, {ies == ies2 : List<&2, Fr.Ie>}, B.Invalid{0}, ies2, e)
+    case True{}:
+      Equal.cong(Result<&2, &2, B.Err, List<&2, Fr.Ie>>, List<&2, Fr.Ie>, y => P.Res.value(B.Err, List<&2, Fr.Ie>, y, ies), Done{ies}, Done{ies2}, e)
+
+# What a view's prelude passes on is the container it was given, so without duplicate ids.
+def Prelude.same(+known: List<&2, U32>, +ies: List<&2, Fr.Ie>, +ies2: List<&2, Fr.Ie>, +e: {Fr.View.prelude(known, ies) == Done{ies2} : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}) -> {ies == ies2 : List<&2, Fr.Ie>}:
+  Prelude.gate(ies, Bool.and(Fr.Ies.no_dups(ies), Fr.Ies.comprehended(known, ies)), ies2, e)
+
+def Prelude.nd(+known: List<&2, U32>, +ies: List<&2, Fr.Ie>, +ies2: List<&2, Fr.Ie>, +e: {Fr.View.prelude(known, ies) == Done{ies2} : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}) -> {Fr.Ies.no_dups(ies2) == True{} : Bool}:
+  +same = Prelude.same(known, ies, ies2, e)
+  (%same : {Fr.Ies.no_dups(_) == True{} : Bool}; L.ngap.view.duplicate_rejected(known, ies, ies2, e))
+
+# Lookups
+# -------
+
+def Ies.absent(+id: U32, ies: List<&2, Fr.Ie>, +h: {Fr.Ies.has(id, ies) == False{} : Bool}) -> {Fr.Ies.occurrences(id, ies) == 0n : Nat}:
+  match ies:
+    case Nil{}:
+      {==}
+    case +ie <> +more:
+      sh = Equal.sym(Bool, U32.is_eq(Fr.Ie.id(ie), id), False{}, P.Bool.or_false_l(U32.is_eq(Fr.Ie.id(ie), id), Fr.Ies.has(id, more), h))
+      %sh : {Fr.Ies.bump(Fr.Ies.occurrences(id, more), _) == 0n : Nat}
+      Ies.absent(id, more, P.Bool.or_false_r(U32.is_eq(Fr.Ie.id(ie), id), Fr.Ies.has(id, more), h))
+
+def Ies.lookup_step(+id: U32, +ie: Fr.Ie, +more: List<&2, Fr.Ie>, +v: B.Bytes(), hit: Bool, +eh: {U32.is_eq(Fr.Ie.id(ie), id) == hit : Bool}, +nd: {Bool.and(Bool.not(Fr.Ies.has(Fr.Ie.id(ie), more)), Fr.Ies.no_dups(more)) == True{} : Bool}, +e: {Fr.Ies.pick(ie, Fr.Ies.lookup(id, more), hit) == Some{v} : Maybe<&2, B.Bytes()>}, ih: {Fr.Ies.lookup(id, more) == Some{v} : Maybe<&2, B.Bytes()>} -> {Fr.Ies.occurrences(id, more) == 1n : Nat}) -> {Fr.Ies.bump(Fr.Ies.occurrences(id, more), U32.is_eq(Fr.Ie.id(ie), id)) == 1n : Nat}:
+  match hit:
+    case True{}:
+      seh = Equal.sym(Bool, U32.is_eq(Fr.Ie.id(ie), id), True{}, eh)
+      %seh : {Fr.Ies.bump(Fr.Ies.occurrences(id, more), _) == 1n : Nat}
+      hid = P.U32.eq_of_is_eq(Fr.Ie.id(ie), id, eh)
+      h0 = P.Bool.not_true(Fr.Ies.has(Fr.Ie.id(ie), more), P.Bool.and_true_l(Bool.not(Fr.Ies.has(Fr.Ie.id(ie), more)), Fr.Ies.no_dups(more), nd))
+      Equal.cong(Nat, Nat, n => 1n+n, Fr.Ies.occurrences(id, more), 0n, Ies.absent(id, more, (%hid : {Fr.Ies.has(_, more) == False{} : Bool}; h0)))
+    case False{}:
+      seh = Equal.sym(Bool, U32.is_eq(Fr.Ie.id(ie), id), False{}, eh)
+      %seh : {Fr.Ies.bump(Fr.Ies.occurrences(id, more), _) == 1n : Nat}
+      ih(e)
+
+# With no duplicate ids, a successful lookup means exactly one occurrence.
+def Ies.lookup_count(+id: U32, ies: List<&2, Fr.Ie>, +v: B.Bytes(), +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}, +e: {Fr.Ies.lookup(id, ies) == Some{v} : Maybe<&2, B.Bytes()>}) -> {Fr.Ies.occurrences(id, ies) == 1n : Nat}:
+  match ies:
+    case Nil{}:
+      Empty.absurd({0n == 1n : Nat}, P.Refute.none_some(B.Bytes(), v, e))
+    case +ie <> +more:
+      Ies.lookup_step(id, ie, more, v, U32.is_eq(Fr.Ie.id(ie), id), {==}, nd, e, e2 => Ies.lookup_count(id, more, v, P.Bool.and_true_r(Bool.not(Fr.Ies.has(Fr.Ie.id(ie), more)), Fr.Ies.no_dups(more), nd), e2))

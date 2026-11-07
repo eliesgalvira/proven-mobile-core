@@ -105,7 +105,7 @@
       # The NGAP generator needs pycrate's ASN.1 compiler only; cryptomobile (unfree) and pysctp are dropped.
       devShells.${system}.default = pkgs.mkShell {
         # pkgs.clang goes before lean, whose release bundles a clang without system headers.
-        packages = [ bend pkgs.clang lean pkgs.cargo pkgs.rustc (pkgs.python3.withPackages (p: [ (p.pycrate.overridePythonAttrs (o: { dependencies = [ p.lxml ]; })) ])) ];
+        packages = [ bend pkgs.clang lean pkgs.cargo pkgs.rustc pkgs.nushell (pkgs.python3.withPackages (p: [ (p.pycrate.overridePythonAttrs (o: { dependencies = [ p.lxml ]; })) ])) ];
         BEND_NO_TELEMETRY = "1";
       };
       checks.${system}.e2e = pkgs.testers.runNixOSTest (import ./e2e/test.nix { inherit kernel edge eupf; });

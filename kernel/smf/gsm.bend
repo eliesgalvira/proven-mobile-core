@@ -18,7 +18,7 @@ import ./n4.bend as Up
 
 # PDU session establishment (TS 24.501 §6.4.1, TS 23.502 §4.3.2.2): one IPv4
 # session per PDU session identity on the configured DNN and slice, set up at
-# eUPF over N4 and at the gNB over N2, and released with its UE. Every outcome
+# the UPF over N4 and at the gNB over N2, and released with its UE. Every outcome
 # is a transaction and actions, like the UE procedures.
 
 # 5GSM messages
@@ -29,6 +29,10 @@ def Gsm.sm(psi: U32, pti: U32, mt: Sm.Sm.Type, fields: List<&2, I.Field>, opts: 
 
 def Gsm.reject(psi: U32, pti: U32, cause: U32) -> B.Bytes():
   Gsm.sm(psi, pti, Sm.EstablishmentReject{}, [I.FByte{cause}], [])
+
+# A session released by the network: no transaction (TS 24.501 §6.3.3.2), #26.
+def Gsm.release_command(psi: U32) -> B.Bytes():
+  Gsm.sm(psi, 0, Sm.ReleaseCommand{}, [I.FByte{26}], [])
 
 # Modification is not offered: #31, request rejected, unspecified.
 def Gsm.modification_reject(psi: U32, pti: U32) -> B.Bytes():
@@ -54,7 +58,7 @@ def Gsm.filter_count(rs: List<&2, Q.Rule>) -> Nat:
     case r <> more:
       Nat.add(Q.RuleFilters.count(Gsm.rule_filters(r)), Gsm.filter_count(more))
 
-def Gsm.rules_bounded(r: Q.Res(List<&2, Q.Rule>)) -> Bool:
+def Gsm.rules_bounded(r: B.Res(List<&2, Q.Rule>)) -> Bool:
   match r:
     case Fail{e}:
       False{}
@@ -68,7 +72,7 @@ def Gsm.accept_bounded(m: Sm.Sm) -> Bool:
 
 def Gsm.phase_bounded(p: S.SPhase) -> Bool:
   match p:
-    case S.Creating{guard, pti, accept}:
+    case S.Creating{guard, pti, accept, request}:
       Gsm.accept_bounded(accept)
     case _:
       True{}
@@ -141,29 +145,33 @@ def Gsm.flow() -> G.QosFlowSetupRequestItem:
   G.QosFlowSetupRequestItem{Ap.IRoot{1}, G.QosFlowLevelQosParameters{G.QosCharacteristics_nonDynamic5QI{G.NonDynamic5QIDescriptor{Ap.IRoot{9}, None{}, None{}, None{}, None{}}}, G.AllocationAndRetentionPriority{7, Ap.Root{0}, Ap.Root{0}, None{}}, None{}, None{}, None{}, None{}}, None{}, None{}}
 
 def Gsm.transfer(cfg: S.Cfg, teid: U32) -> B.Bytes():
-  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write([N.Ngap.ie(130, Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])), N.Ngap.ie(139, Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])), N.Ngap.ie(134, Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(136, Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))], 0n, []))
+  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write([N.Ngap.ie(G.Id.PDUSessionAggregateMaximumBitRate(), Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])), N.Ngap.ie(G.Id.UL_NGU_UP_TNLInformation(), Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])), N.Ngap.ie(G.Id.PDUSessionType(), Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(G.Id.QosFlowSetupRequestList(), Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))], 0n, []))
 
 # Allocation
 # ----------
-# UE addresses are the first free host of the pool after the gateway; the N3
-# TEID and the local SEID come from entropy, never zero.
+# UE addresses are the first free host of the pool after the gateway. The N3
+# TEID and the local SEID are words of entropy, from bytes 20 and 24 on and
+# around: the first that is not zero and that no session holds, the SEID made
+# even (S.Ids). A collision draws again; none is ever evicted.
 
-def Ip.nonzero(v: U32, zero: Bool) -> U32:
-  match zero:
-    case True{}:
-      1
-    case False{}:
-      v
+def Ip.around(+entropy: B.Bytes(), +n: Nat) -> B.Bytes():
+  List.append(&2, U32, List.drop(&2, U32, entropy, n), List.take(&2, U32, entropy, n))
 
-def Ip.word_at(entropy: B.Bytes(), n: Nat) -> U32:
-  +v = N.Ngap.of_big(List.take(&2, U32, List.drop(&2, U32, entropy, n), 4n))
-  Ip.nonzero(v, U32.is_eq(v, 0))
+def Ip.teid_from(+sessions: Tb.Table(S.Session), words: B.Bytes()) -> Maybe<&2, U32>:
+  match words:
+    case a <> b <> c <> d <> more:
+      +t = N.Ngap.of_big([a, b, c, d])
+      Tb.Table.hit(U32, t, Ip.teid_from(sessions, more), Bool.not(Bool.or(U32.is_eq(t, 0), S.Sessions.has_teid(t, sessions))))
+    case _:
+      None{}
 
-def Ip.teid(entropy: B.Bytes()) -> U32:
-  Ip.word_at(entropy, 20n)
-
-def Ip.seid(entropy: B.Bytes()) -> U32:
-  Ip.word_at(entropy, 24n)
+def Ip.seid_from(+sessions: Tb.Table(S.Session), words: B.Bytes()) -> Maybe<&2, U32>:
+  match words:
+    case a <> b <> c <> d <> more:
+      +k = U32.and(4294967294, N.Ngap.of_big([a, b, c, d]))
+      Tb.Table.hit(U32, k, Ip.seid_from(sessions, more), Bool.not(Bool.or(U32.is_eq(k, 0), Tb.Table.has(S.Session, k, sessions))))
+    case _:
+      None{}
 
 def Ip.next(candidate: U32, later: Unit -> Maybe<&2, U32>, used: Bool) -> Maybe<&2, U32>:
   match used:
@@ -201,12 +209,13 @@ def Gsm.dels(victims: Tb.Table(S.Session)) -> S.Tx:
     case (k, t) <> more:
       S.Both{S.DelSession{k}, Gsm.dels(more)}
 
-# Sessions forgotten, those eUPF knows deleted there, from sequence number seq.
+# Sessions forgotten, those the UPF knows deleted there, from sequence number seq.
 def Gsm.forget(+victims: Tb.Table(S.Session), seq: U32) -> N.GOut():
   (S.Both{Gsm.dels(victims), S.BumpSeq{Up.N4.deletion_count(victims)}}, Up.N4.deletions(victims, seq))
 
-# The one write of a session: it takes its place, and every live session it
-# conflicts with (the same address, TEID, or PDU session of the UE) goes.
+# The one write of a session: it takes its place, and a live session it
+# conflicts with goes. The address, TEID and SEID are drawn free, so that is
+# only one of the UE's under the same PDU session identity.
 def Gsm.place(+st: S.State, +key: U32, +s: S.Session, seq: U32) -> N.GOut():
   N.Out.join((S.PutSession{key, s}, []), Gsm.forget(S.Sessions.evicted(key, s, S.State.sessions(st)), seq))
 
@@ -225,15 +234,20 @@ def Gsm.to_ue_m(key: U32, psi: U32, sm: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut
     case Some{+ue}:
       Gsm.to_ue_ctx(key, ue, psi, sm, S.Phase.ctx(S.Ue.phase(ue)))
 
-def Gsm.to_ue(st: S.State, +key: U32, psi: U32, sm: B.Bytes()) -> N.GOut():
-  Gsm.to_ue_m(key, psi, sm, Tb.Table.get(S.Ue, key, S.State.ues(st)))
+# A session given up: its UE told with the 5GSM message given, the UPF told, the row gone.
+def Gsm.give_up_m(+skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
+  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), Gsm.forget([(skey, s)], seq))
 
-# A session given up: its UE told why, eUPF told, the row and guard gone.
-def Gsm.abort_m(+skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), Gsm.reject(S.Session.psi(s), pti, cause), m), N.Out.also(Gsm.forget([(skey, s)], seq), N.Guard.cancel(S.SPhase.guard(S.Session.phase(s)))))
+def Gsm.give_up(st: S.State, skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32) -> N.GOut():
+  Gsm.give_up_m(skey, s, sm, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
 
+# Before the Accept went out, the UE is refused the session.
 def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32) -> N.GOut():
-  Gsm.abort_m(skey, s, pti, cause, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
+  Gsm.give_up(st, skey, s, Gsm.reject(S.Session.psi(s), pti, cause), seq)
+
+# After it, the session is released (TS 24.501 §6.3.3).
+def Gsm.drop(st: S.State, skey: U32, +s: S.Session, seq: U32) -> N.GOut():
+  Gsm.give_up(st, skey, s, Gsm.release_command(S.Session.psi(s)), seq)
 
 # Establishment
 # -------------
@@ -241,33 +255,46 @@ def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: 
 # What a request checks out to: a 5GSM cause, or the session to create.
 type Check is Data:
   Refuse{cause: U32}
-  Go{v4v6: Bool, dns: Bool, ip: U32}
+  Go{v4v6: Bool, dns: Bool, ip: U32, teid: U32, seid: U32}
 
-def Gsm.pick(ok: Bool, cause: U32, next: Check) -> Check:
+# The first check a request fails, as its 5GSM cause.
+def Gsm.pick(ok: Bool, cause: U32, next: Maybe<&2, U32>) -> Maybe<&2, U32>:
   match ok:
     case True{}:
       next
     case False{}:
-      Refuse{cause}
+      Some{cause}
 
-# A free address of the pool, or #26.
-def Gsm.grant(v4v6: Bool, dns: Bool, m: Maybe<&2, U32>) -> Check:
-  match m:
-    case None{}:
+# A free address of the pool, a free TEID and a free SEID, or #26.
+def Gsm.grant(v4v6: Bool, dns: Bool, ip: Maybe<&2, U32>, teid: Maybe<&2, U32>, seid: Maybe<&2, U32>) -> Check:
+  match ip teid seid:
+    case Some{a} Some{t} Some{k}:
+      Go{v4v6, dns, a, t, k}
+    case _ _ _:
       Refuse{26}
-    case Some{ip}:
-      Go{v4v6, dns, ip}
 
-def Gsm.type_check(t: Maybe<&2, U32>, dns: Bool, ip: Maybe<&2, U32>) -> Check:
+# The address, TEID and SEID are drawn only for a request that passed.
+def Gsm.allocate(refused: Maybe<&2, U32>, v4v6: Bool, dns: Bool, +cfg: S.Cfg, +sessions: Tb.Table(S.Session), +entropy: B.Bytes()) -> Check:
+  match refused:
+    case Some{cause}:
+      Refuse{cause}
+    case None{}:
+      Gsm.grant(v4v6, dns, Ip.alloc(cfg, sessions), Ip.teid_from(sessions, Ip.around(entropy, 20n)), Ip.seid_from(sessions, Ip.around(entropy, 24n)))
+
+# IPv4 (1) or IPv4v6 (3), granted IPv4; another type is refused (#50).
+def Gsm.type_ok(t: Maybe<&2, U32>) -> Bool:
   match t:
     case None{}:
-      Gsm.grant(False{}, dns, ip)
-    case Some{1}:
-      Gsm.grant(False{}, dns, ip)
-    case Some{3}:
-      Gsm.grant(True{}, dns, ip)
-    case Some{other}:
-      Refuse{50}
+      True{}
+    case Some{+v}:
+      Bool.or(U32.is_eq(v, 1), U32.is_eq(v, 3))
+
+def Gsm.v4v6(t: Maybe<&2, U32>) -> Bool:
+  match t:
+    case None{}:
+      False{}
+    case Some{v}:
+      U32.is_eq(v, 3)
 
 def Gsm.dnn_ok(+cfg: S.Cfg, m: Maybe<&2, B.Bytes()>) -> Bool:
   match m:
@@ -283,7 +310,7 @@ def Gsm.slice_ok(cfg: S.Cfg, m: Maybe<&2, B.Bytes()>) -> Bool:
     case Some{s}:
       U32.is_eq(N.Ngap.cap_byte(s, 0n), N.Ngap.cap_byte(S.Cfg.sst(cfg), 0n))
 
-def Gsm.wants_dns(r: Q.Res(Q.Epco)) -> Bool:
+def Gsm.wants_dns(r: B.Res(Q.Epco)) -> Bool:
   match r:
     case Fail{e}:
       False{}
@@ -305,33 +332,34 @@ def Gsm.request_type_ok(m: Maybe<&2, U32>) -> Bool:
       False{}
 
 # TS 24.501 §6.4.1.4.3: the identity must be one of a session (1 to 15), the
-# request an initial one, the DNN and slice the configured ones, eUPF
+# request an initial one, the DNN and slice the configured ones, the UPF
 # associated, the type IPv4 (IPv4v6 is granted IPv4), and the pool must hold
-# a free address.
-def Gsm.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, up: Bool, sessions: Tb.Table(S.Session)) -> Check:
-  Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.pick(up, 38, Gsm.type_check(I.Opts.t1(9, sm_opts), Gsm.dns_asked(I.Opts.find(123, sm_opts)), Ip.alloc(cfg, sessions)))))))
+# a free address, and entropy a free TEID and SEID.
+def Gsm.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, up: Bool, +sessions: Tb.Table(S.Session), +entropy: B.Bytes()) -> Check:
+  +t = I.Opts.t1(I.Iei.pdu_session_type(), sm_opts)
+  Gsm.allocate(Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(I.Iei.request_type(), mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(I.Iei.dnn(), mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(I.Iei.s_nssai(), mm_opts)), 70, Gsm.pick(up, 38, Gsm.pick(Gsm.type_ok(t), 50, None{})))))), Gsm.v4v6(t), Gsm.dns_asked(I.Opts.find(I.Iei.extended_pco(), sm_opts)), cfg, sessions, entropy)
 
-# The PFCP Session Establishment Request goes out; the session waits for eUPF with its Accept ready.
-def Gsm.create(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +entropy: B.Bytes(), v4v6: Bool, dns: Bool) -> N.GOut():
-  +timer = S.State.next_timer(st)
+# The PFCP Session Establishment Request goes out; the session waits for the UPF
+# with its Accept ready, under its guard, its local SEID.
+def Gsm.create(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +teid: U32, +seid: U32, v4v6: Bool, dns: Bool) -> N.GOut():
   +seq = S.State.pfcp_seq(st)
-  +teid = Ip.teid(entropy)
-  +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{timer, 0}, pti, Gsm.accept(cfg, psi, pti, ip, dns, v4v6)}}}
-  N.Out.join((S.Both{S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, S.Both{S.BumpTimer{}, S.BumpSeq{1}}}, [N.Pfcp{Some{key}, Up.N4.establish(cfg, Ip.seid(entropy), ip, teid, seq)}, N.TimerStart{Some{key}, timer, Up.N4.t1_ms()}]), Gsm.place(st, Ip.seid(entropy), s, U32.add(seq, 1)))
+  +request = Up.N4.establish(cfg, seid, ip, teid, seq)
+  +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{0}, pti, Gsm.accept(cfg, psi, pti, ip, dns, v4v6), request}}}
+  N.Out.join((S.Both{S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, S.BumpSeq{1}}, [N.Pfcp{Some{key}, request}, N.TimerStart{Some{key}, seid, Up.N4.t1_ms()}]), Gsm.place(st, seid, s, U32.add(seq, 1)))
 
-def Gsm.checked(+st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, entropy: B.Bytes(), c: Check) -> N.GOut():
+def Gsm.checked(+st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, c: Check) -> N.GOut():
   match c:
     case Refuse{cause}:
       Gsm.dl(key, ue, ctx, psi, Gsm.reject(psi, pti, cause))
-    case Go{v4v6, dns, ip}:
-      Gsm.create(st, key, ue, ctx, cfg, psi, pti, ip, entropy, v4v6, dns)
+    case Go{v4v6, dns, ip, teid, seid}:
+      Gsm.create(st, key, ue, ctx, cfg, psi, pti, ip, teid, seid, v4v6, dns)
 
 def Gsm.with_cfg(+st: S.State, key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32, pti: U32, mm_opts: List<&2, I.Ie>, sm_opts: List<&2, I.Ie>, entropy: B.Bytes(), cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match cfg:
     case None{}:
       N.Out.verified(key, ue, ctx, "5GSM: no configuration")
     case Some{+c}:
-      Gsm.checked(st, key, ue, ctx, c, psi, pti, entropy, Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st)))
+      Gsm.checked(st, key, ue, ctx, c, psi, pti, Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st), entropy))
 
 def Gsm.establish(+st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, psi: U32, pti: U32, mm_opts: List<&2, I.Ie>, sm_opts: List<&2, I.Ie>, entropy: B.Bytes()) -> N.GOut():
   Gsm.with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, S.State.config(st))
@@ -361,38 +389,38 @@ def Gsm.n1(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, mm_opts: List<&2, 
 def Gsm.ul_transport(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +fields: List<&2, I.Field>, opts: List<&2, I.Ie>, entropy: B.Bytes()) -> N.GOut():
   Gsm.n1(st, key, ue, ctx, opts, entropy, I.Fields.lve2(fields), U32.is_eq(I.Fields.byte1(fields), 1))
 
-# eUPF's answers
+# The UPF's answers
 # --------------
 
 # Session Establishment accepted: the UP SEID is kept and the gNB is asked to
-# set the session up, the Accept inside; the same guard bounds the wait.
-def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, pti: U32, accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, ctx: Maybe<&2, Sec.Nas.Ctx>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
+# set the session up, the Accept inside; the session's guard bounds the wait.
+def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, ctx: Maybe<&2, Sec.Nas.Ctx>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match ctx cfg:
     case Some{c} Some{+cf}:
       +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))
-      (S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{S.Guard.timer(guard), 0}, pti}}}}, [N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.transfer(cf, S.Session.teid(s))}, N.TimerStart{Some{S.Session.ue(s)}, S.Guard.timer(guard), Up.N4.t1_ms()}])
+      (S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}}}, [N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.transfer(cf, S.Session.teid(s))}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
     case _ _:
       Gsm.forget([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}}))], S.State.pfcp_seq(st))
 
-def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: Sm.Sm, up_seid: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
+def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, up_seid: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
       Gsm.forget([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}}))], S.State.pfcp_seq(st))
     case Some{+ue}:
-      Gsm.setup_ue(st, skey, s, guard, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st))
+      Gsm.setup_ue(st, skey, s, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st))
 
 # Refused, or no UP SEID: the UE is told (#38), nothing of the session remains.
-def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: Sm.Sm, ok: Bool, up: Maybe<&2, B.Bytes()>) -> N.GOut():
+def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, ok: Bool, up: Maybe<&2, B.Bytes()>) -> N.GOut():
   match ok up:
     case True{} Some{up_seid}:
-      Gsm.setup(st, skey, s, guard, pti, accept, up_seid, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
+      Gsm.setup(st, skey, s, pti, accept, up_seid, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
     case _ _:
       Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))
 
 def Gsm.established_phase(st: S.State, skey: U32, s: S.Session, +msg: Pf.Msg, p: S.SPhase) -> N.GOut():
   match p:
-    case S.Creating{guard, pti, accept}:
-      Gsm.established_as(st, skey, s, guard, pti, accept, Up.N4.accepted(Up.N4.cause(msg)), Up.N4.up_seid(msg))
+    case S.Creating{guard, pti, accept, request}:
+      Gsm.established_as(st, skey, s, pti, accept, Up.N4.accepted(Up.N4.cause(msg)), Up.N4.up_seid(msg))
     case _:
       N.Out.warn("PFCP: Session Establishment Response for a session not being created")
 
@@ -403,18 +431,18 @@ def Gsm.established(st: S.State, msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ 
     case Some{(skey, +s)}:
       Gsm.established_phase(st, skey, s, msg, S.Session.phase(s))
 
-# Session Modification accepted: active; refused: the session goes, silently.
-def Gsm.modified_as(st: S.State, +skey: U32, +s: S.Session, guard: S.Guard, ok: Bool) -> N.GOut():
+# Session Modification accepted: active; refused: the session is released.
+def Gsm.modified_as(+st: S.State, +skey: U32, +s: S.Session, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), S.Active{}}}, [N.TimerCancel{S.Guard.timer(guard)}, N.Note{F.Info{}, "5GSM: PDU session active"}])
+      (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), S.Active{}}}, [N.TimerCancel{skey}, N.Note{F.Info{}, "5GSM: PDU session active"}])
     case False{}:
-      N.Out.also(Gsm.forget([(skey, s)], S.State.pfcp_seq(st)), [N.TimerCancel{S.Guard.timer(guard)}, N.Note{F.Warn{}, "PFCP: Session Modification refused; session released"}])
+      Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
 
 def Gsm.modified_phase(st: S.State, skey: U32, s: S.Session, msg: Pf.Msg, p: S.SPhase) -> N.GOut():
   match p:
-    case S.Modifying{guard}:
-      Gsm.modified_as(st, skey, s, guard, Up.N4.accepted(Up.N4.cause(msg)))
+    case S.Modifying{guard, request}:
+      Gsm.modified_as(st, skey, s, Up.N4.accepted(Up.N4.cause(msg)))
     case _:
       N.Out.warn("PFCP: Session Modification Response for a session not being modified")
 
@@ -437,35 +465,35 @@ def Gsm.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
     case True{}:
       Gsm.established(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
     case False{}:
-      Gsm.pfcp_k6(st, msg, U32.is_eq(kind, 53))
+      Gsm.pfcp_k6(st, msg, U32.is_eq(kind, Pf.Type.session_modification_response()))
 
 def Gsm.pfcp_k4(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       (S.Keep{}, [])
     case False{}:
-      Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, 51))
+      Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 
-def Gsm.pfcp_k3(st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
+def Gsm.pfcp_k3(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      Up.N4.assoc_response(msg)
+      Up.N4.assoc_response(st, msg)
     case False{}:
-      Gsm.pfcp_k4(st, msg, kind, U32.is_eq(kind, 55))
+      Gsm.pfcp_k4(st, msg, kind, U32.is_eq(kind, Pf.Type.session_deletion_response()))
 
-def Gsm.pfcp_k2(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
+def Gsm.pfcp_k2(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      (S.Keep{}, [])
+      Up.N4.alive(st, msg)
     case False{}:
-      Gsm.pfcp_k3(st, msg, kind, U32.is_eq(kind, 6))
+      Gsm.pfcp_k3(st, msg, kind, U32.is_eq(kind, Pf.Type.association_setup_response()))
 
 def Gsm.pfcp_k1(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Up.N4.heartbeat_answer(st, msg)
     case False{}:
-      Gsm.pfcp_k2(st, msg, kind, U32.is_eq(kind, 2))
+      Gsm.pfcp_k2(st, msg, kind, U32.is_eq(kind, Pf.Type.heartbeat_response()))
 
 def Gsm.pfcp_msg(st: S.State, r: B.Read(Pf.Msg)) -> N.GOut():
   match r:
@@ -473,9 +501,9 @@ def Gsm.pfcp_msg(st: S.State, r: B.Read(Pf.Msg)) -> N.GOut():
       N.Out.warn("PFCP: message not decodable")
     case Done{(+msg, rest)}:
       +kind = Pf.Msg.kind(msg)
-      Gsm.pfcp_k1(st, msg, kind, U32.is_eq(kind, 1))
+      Gsm.pfcp_k1(st, msg, kind, U32.is_eq(kind, Pf.Type.heartbeat_request()))
 
-# A PFCP datagram from eUPF.
+# A PFCP datagram from the UPF.
 def Gsm.pfcp_data(st: S.State, bytes: B.Bytes()) -> N.GOut():
   Gsm.pfcp_msg(st, Pf.Msg.read(bytes))
 
@@ -517,18 +545,19 @@ def Gsm.tunnel_of(r: Ap.Rd(G.PDUSessionResourceSetupResponseTransfer)) -> Maybe<
     case Done{(t, c)}:
       Gsm.tunnel(t)
 
-# eUPF is told the gNB's tunnel; the same guard bounds the wait.
-def Gsm.modify(st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, pti: U32, +seq: U32, tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> N.GOut():
+# The UPF is told the gNB's tunnel; the session's guard bounds the wait.
+def Gsm.modify(st: S.State, +skey: U32, +s: S.Session, pti: U32, +seq: U32, tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> N.GOut():
   match tunnel:
     case None{}:
-      Gsm.abort(st, skey, s, pti, 26, seq)
+      Gsm.drop(st, skey, s, seq)
     case Some{(gnb_teid, gnb_addr)}:
-      (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{S.Guard.timer(guard), 0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)}, N.TimerStart{Some{S.Session.ue(s)}, S.Guard.timer(guard), Up.N4.t1_ms()}])
+      +request = Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)
+      (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
 
 def Gsm.set_up_phase(st: S.State, skey: U32, s: S.Session, transfer: B.Bytes(), seq: U32, p: S.SPhase) -> N.GOut():
   match p:
     case S.Setting{guard, pti}:
-      Gsm.modify(st, skey, s, guard, pti, seq, Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})))
+      Gsm.modify(st, skey, s, pti, seq, Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})))
     case _:
       N.Out.warn("NGAP: PDU session set up at the gNB while not being set up")
 
@@ -586,11 +615,17 @@ def Gsm.setup_response_ue(st: S.State, assoc: U32, key: U32, oks: G.PDUSessionRe
     case Some{ue}:
       Gsm.results(st, key, oks, fails)
 
+def Gsm.setup_response_key(+st: S.State, +assoc: U32, ran: B.Bytes(), oks: G.PDUSessionResourceSetupListSURes(), fails: G.PDUSessionResourceFailedToSetupListSURes(), m: Maybe<&2, U32>) -> N.GOut():
+  match m:
+    case None{}:
+      (S.Keep{}, N.Ngap.unknown_ue(assoc))
+    case Some{+key}:
+      Gsm.setup_response_ue(st, assoc, key, oks, fails, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+
 def Gsm.setup_response(+st: S.State, +assoc: U32, v: V.PDUSessionResourceSetupResponse.View) -> N.GOut():
   match v:
     case V.PDUSessionResourceSetupResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, oks, fails, diagnostics, uli}:
-      +key = N.Ngap.of_big(amf_ue_ngap_id)
-      Gsm.setup_response_ue(st, assoc, key, Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran_ue_ngap_id))
+      Gsm.setup_response_key(st, assoc, ran_ue_ngap_id, Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fails), N.Ngap.ue_key(amf_ue_ngap_id))
 
 def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err, V.PDUSessionResourceSetupResponse.View>) -> N.GOut():
   match r:
@@ -602,22 +637,24 @@ def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err,
 # Guard timers
 # ------------
 
-# No answer in time: before the Accept went out the UE is told (#38); after
-# it, the session is released silently.
+# A PFCP request unanswered for T1 goes again, unchanged, its sequence number
+# included, up to N1 times (TS 29.244 §6.4); after that the session fails.
+def Gsm.resend_if(+skey: U32, +s: S.Session, p: S.SPhase, +request: B.Bytes(), fail: N.GOut(), more: Bool) -> N.GOut():
+  match more:
+    case True{}:
+      (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), p}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+    case False{}:
+      fail
+
+# No answer in time: before the Accept went out the UE is refused (#38);
+# after it, the session is released.
 def Gsm.expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase) -> N.GOut():
   match p:
-    case S.Creating{guard, pti, accept}:
-      Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))
+    case S.Creating{+guard, +pti, accept, +request}:
+      Gsm.resend_if(skey, s, S.Creating{S.Guard{U32.add(S.Guard.retries(guard), 1)}, pti, accept, request}, request, Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st)), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
     case S.Setting{guard, pti}:
-      Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))
-    case S.Modifying{guard}:
-      N.Out.also(Gsm.forget([(skey, s)], S.State.pfcp_seq(st)), [N.Note{F.Warn{}, "PFCP: no Session Modification Response; session released"}])
+      Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
+    case S.Modifying{+guard, +request}:
+      Gsm.resend_if(skey, s, S.Modifying{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, Gsm.drop(st, skey, s, S.State.pfcp_seq(st)), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
     case S.Active{}:
       (S.Keep{}, [])
-
-def Gsm.fired(st: S.State, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, [])
-    case Some{(skey, +s)}:
-      Gsm.expired(st, skey, s, S.Session.phase(s))

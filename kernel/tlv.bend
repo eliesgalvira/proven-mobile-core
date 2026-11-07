@@ -95,19 +95,12 @@ def Tlvs.valid(tl: List<&2, Tlv>) -> Bool:
     case t <> more:
       Bool.and(Tlv.valid(t), Tlvs.valid(more))
 
-def Tlvs.cons(t: Tlv, r: Result<&2, &2, B.Err, List<&2, Tlv>>) -> Result<&2, &2, B.Err, List<&2, Tlv>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{tl}:
-      Done{t <> tl}
-
 def Tlvs.next(r: B.Read(Tlv), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Tlv>>) -> Result<&2, &2, B.Err, List<&2, Tlv>>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(t, rest)}:
-      Tlvs.cons(t, more(rest))
+      B.Res.cons(Tlv, t, more(rest))
 
 # Every TLV up to the end of the bytes; each takes at least four, so the byte count is fuel enough.
 def Tlvs.read(fuel: Nat, bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, Tlv>>:

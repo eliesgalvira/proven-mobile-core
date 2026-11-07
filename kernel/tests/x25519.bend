@@ -6,9 +6,6 @@ import ./vectors/spec-rfc7748.bend as Rfc7748
 
 # RFC 7748 §5.2 vectors, the iterated test, and the §6.1 Diffie-Hellman example.
 
-def hex(c: V.Vec, +key: String) -> List<&2, U32>:
-  V.Vec.bytes(V.Vec.field(c, key))
-
 # k, u := X25519(k, u), k
 def iterate(n: Nat, +k: List<&2, U32>, u: List<&2, U32>) -> List<&2, U32>:
   match n:
@@ -20,15 +17,15 @@ def iterate(n: Nat, +k: List<&2, U32>, u: List<&2, U32>) -> List<&2, U32>:
 def case_(+c: V.Vec, kind: String) -> IO(Unit):
   match kind:
     case "x25519":
-      C.Check.report("RFC 7748 5.2 " ++ V.Vec.text(V.Vec.field(c, "u")), C.Check.bytes_eq(X.x25519(hex(c, "scalar"), hex(c, "u")), hex(c, "output")))
+      C.Check.report("RFC 7748 5.2 " ++ V.Vec.text(V.Vec.field(c, "u")), C.Check.bytes_eq(X.x25519(V.Vec.bytes_at(c, "scalar"), V.Vec.bytes_at(c, "u")), V.Vec.bytes_at(c, "output")))
     case "x25519_iterated":
-      C.Check.report("RFC 7748 5.2 iterated " ++ Nat.show(V.Vec.nat(V.Vec.field(c, "iterations"))), C.Check.bytes_eq(iterate(V.Vec.nat(V.Vec.field(c, "iterations")), hex(c, "initial_k"), hex(c, "initial_u")), hex(c, "output")))
+      C.Check.report("RFC 7748 5.2 iterated " ++ Nat.show(V.Vec.nat(V.Vec.field(c, "iterations"))), C.Check.bytes_eq(iterate(V.Vec.nat(V.Vec.field(c, "iterations")), V.Vec.bytes_at(c, "initial_k"), V.Vec.bytes_at(c, "initial_u")), V.Vec.bytes_at(c, "output")))
     case "diffie_hellman":
       do IO<Unit>:
-        C.Check.report("RFC 7748 6.1 Alice public", C.Check.bytes_eq(X.x25519(hex(c, "alice_private"), X.x25519.base()), hex(c, "alice_public")))
-        C.Check.report("RFC 7748 6.1 Bob public", C.Check.bytes_eq(X.x25519(hex(c, "bob_private"), X.x25519.base()), hex(c, "bob_public")))
-        C.Check.report("RFC 7748 6.1 shared (Alice)", C.Check.bytes_eq(X.x25519(hex(c, "alice_private"), hex(c, "bob_public")), hex(c, "shared_secret")))
-        C.Check.report("RFC 7748 6.1 shared (Bob)", C.Check.bytes_eq(X.x25519(hex(c, "bob_private"), hex(c, "alice_public")), hex(c, "shared_secret")))
+        C.Check.report("RFC 7748 6.1 Alice public", C.Check.bytes_eq(X.x25519(V.Vec.bytes_at(c, "alice_private"), X.x25519.base()), V.Vec.bytes_at(c, "alice_public")))
+        C.Check.report("RFC 7748 6.1 Bob public", C.Check.bytes_eq(X.x25519(V.Vec.bytes_at(c, "bob_private"), X.x25519.base()), V.Vec.bytes_at(c, "bob_public")))
+        C.Check.report("RFC 7748 6.1 shared (Alice)", C.Check.bytes_eq(X.x25519(V.Vec.bytes_at(c, "alice_private"), V.Vec.bytes_at(c, "bob_public")), V.Vec.bytes_at(c, "shared_secret")))
+        C.Check.report("RFC 7748 6.1 shared (Bob)", C.Check.bytes_eq(X.x25519(V.Vec.bytes_at(c, "bob_private"), V.Vec.bytes_at(c, "alice_public")), V.Vec.bytes_at(c, "shared_secret")))
     case _:
       C.Check.report("unknown case kind", False{})
 

@@ -3,9 +3,9 @@ import ../../kernel/bytes.bend as B
 import ../../kernel/ngap/frame.bend as F
 import ../../kernel/ngap/gen/show.bend as S
 import ../../kernel/tests/lib/vec.bend as V
-import ../../kernel/tests/vectors/capture-vectors.bend as Capture
+import ../../kernel/tests/lib/ngap_vectors.bend as N
 
-# Prints one line per NGAP message of the capture, in order: the message
+# Prints one line per NGAP message of the vectors, in order: the message
 # name, then the normal form of our decoding (PDU kind/code/criticality and
 # the message value), for tools/ngap-gen/oracle.py to compare with pycrate.
 
@@ -42,4 +42,4 @@ def run(msgs: List<&2, V.Vec>) -> IO(Unit):
         run(rest)
 
 def main() -> IO(Unit):
-  run(V.Vec.items(V.Vec.field(Capture.data(), "messages")))
+  run(N.Ngap.vectors())

@@ -9,35 +9,18 @@ import ./mm.bend as M
 # the content of an IE as the generic codec sliced it and must consume all of
 # it; each writer gives the content back.
 
-def Res(-A: Data) -> Data:
-  Result<&2, &2, B.Err, A>
-
 # The whole content, when it has an acceptable length.
-def Bytes.sized(bs: B.Bytes(), ok: Bool) -> Res(B.Bytes()):
-  match ok:
-    case True{}:
-      Done{bs}
-    case False{}:
-      Fail{B.Invalid{0}}
+def Bytes.exactly(+bs: B.Bytes(), n: Nat) -> B.Res(B.Bytes()):
+  B.guard(B.Bytes(), bs, 0, Nat.is_eq(List.length(&2, U32, bs), n))
 
-def Bytes.exactly(+bs: B.Bytes(), n: Nat) -> Res(B.Bytes()):
-  Bytes.sized(bs, Nat.is_eq(List.length(&2, U32, bs), n))
-
-def Bytes.between(+bs: B.Bytes(), lo: Nat, hi: Nat) -> Res(B.Bytes()):
-  Bytes.sized(bs, Bool.and(Nat.is_ge(List.length(&2, U32, bs), lo), Nat.is_le(List.length(&2, U32, bs), hi)))
+def Bytes.between(+bs: B.Bytes(), lo: Nat, hi: Nat) -> B.Res(B.Bytes()):
+  B.guard(B.Bytes(), bs, 0, Bool.and(Nat.is_ge(List.length(&2, U32, bs), lo), Nat.is_le(List.length(&2, U32, bs), hi)))
 
 # A one-byte content whose spare bits (under `mask`) are zero.
-def Byte.spare_ok(+v: U32, ok: Bool) -> Res(U32):
-  match ok:
-    case True{}:
-      Done{v}
-    case False{}:
-      Fail{B.Invalid{v}}
-
-def Byte.one(bs: B.Bytes(), mask: U32) -> Res(U32):
+def Byte.one(bs: B.Bytes(), mask: U32) -> B.Res(U32):
   match bs:
     case +v <> Nil{}:
-      Byte.spare_ok(v, U32.is_eq(U32.and(mask, v), 0))
+      B.guard(U32, v, v, U32.is_eq(U32.and(mask, v), 0))
     case _:
       Fail{B.Invalid{0}}
 
@@ -77,7 +60,7 @@ def RegHeader.reg(v: U32) -> Half:
 def RegHeader.write(ksi: Half, reg: Half) -> U32:
   B.cat4(Half.nibble(reg), Half.nibble(ksi))
 
-def Half.ok(v: U32, ok: Bool) -> Res(Half):
+def Half.ok(v: U32, ok: Bool) -> B.Res(Half):
   match ok:
     case True{}:
       Done{Half.of(v)}
@@ -85,11 +68,8 @@ def Half.ok(v: U32, ok: Bool) -> Res(Half):
       Fail{B.Invalid{v}}
 
 # A byte holding ngKSI in its low nibble and a spare high nibble.
-def Ksi.read(+v: U32) -> Res(Half):
+def Ksi.read(+v: U32) -> B.Res(Half):
   Half.ok(v, U32.is_eq(U32.and(240, v), 0))
-
-def Ksi.write(h: Half) -> U32:
-  Half.nibble(h)
 
 # NAS security algorithms (§9.11.3.34)
 # ------------------------------------
@@ -106,8 +86,8 @@ def SecAlgs.write(a: SecAlgs) -> U32:
       B.cat4(integrity, ciphering)
 
 # Payload container type (§9.11.3.40): the low nibble of its byte.
-def ContainerType.read(+v: U32) -> Res(U32):
-  Byte.spare_ok(U32.and(15, v), U32.is_eq(U32.and(240, v), 0))
+def ContainerType.read(+v: U32) -> B.Res(U32):
+  B.guard(U32, U32.and(15, v), U32.and(15, v), U32.is_eq(U32.and(240, v), 0))
 
 # UE security capability (§9.11.3.54)
 # -----------------------------------
@@ -116,14 +96,14 @@ def ContainerType.read(+v: U32) -> Res(U32):
 type SecCap is Data:
   SecCap{ea: U32, ia: U32, eutra: B.Bytes()}
 
-def SecCap.tail(+ea: U32, ia: U32, rest: B.Bytes(), ok: Bool) -> Res(SecCap):
+def SecCap.tail(+ea: U32, ia: U32, rest: B.Bytes(), ok: Bool) -> B.Res(SecCap):
   match ok:
     case True{}:
       Done{SecCap{ea, ia, rest}}
     case False{}:
       Fail{B.Invalid{ea}}
 
-def SecCap.read(bs: B.Bytes()) -> Res(SecCap):
+def SecCap.read(bs: B.Bytes()) -> B.Res(SecCap):
   match bs:
     case ea <> ia <> +rest:
       SecCap.tail(ea, ia, rest, Nat.is_le(List.length(&2, U32, rest), 6n))
@@ -139,14 +119,14 @@ def SecCap.write(c: SecCap) -> B.Bytes():
 type MmCap is Data:
   MmCap{flags: U32, more: B.Bytes()}
 
-def MmCap.tail(+flags: U32, more: B.Bytes(), ok: Bool) -> Res(MmCap):
+def MmCap.tail(+flags: U32, more: B.Bytes(), ok: Bool) -> B.Res(MmCap):
   match ok:
     case True{}:
       Done{MmCap{flags, more}}
     case False{}:
       Fail{B.Invalid{flags}}
 
-def MmCap.read(bs: B.Bytes()) -> Res(MmCap):
+def MmCap.read(bs: B.Bytes()) -> B.Res(MmCap):
   match bs:
     case flags <> +more:
       MmCap.tail(flags, more, Nat.is_le(List.length(&2, U32, more), 12n))
@@ -157,21 +137,6 @@ def MmCap.write(c: MmCap) -> B.Bytes():
   match c:
     case MmCap{flags, more}:
       flags <> more
-
-def MmCap.s1_mode(c: MmCap) -> Bool:
-  match c:
-    case MmCap{flags, more}:
-      Bit.of(flags, 1)
-
-def MmCap.ho_attach(c: MmCap) -> Bool:
-  match c:
-    case MmCap{flags, more}:
-      Bit.of(flags, 2)
-
-def MmCap.lpp(c: MmCap) -> Bool:
-  match c:
-    case MmCap{flags, more}:
-      Bit.of(flags, 4)
 
 # S-NSSAI (§9.11.2.8) and NSSAI (§9.11.3.37)
 # ------------------------------------------
@@ -185,33 +150,7 @@ type SNssai is Data:
   SstSdMapped{sst: U32, sd: U32, msst: U32}
   SstFull{sst: U32, sd: U32, msst: U32, msd: U32}
 
-def SNssai.sst(s: SNssai) -> U32:
-  match s:
-    case Sst{sst}:
-      sst
-    case SstMapped{sst, msst}:
-      sst
-    case SstSd{sst, sd}:
-      sst
-    case SstSdMapped{sst, sd, msst}:
-      sst
-    case SstFull{sst, sd, msst, msd}:
-      sst
-
-def SNssai.sd(s: SNssai) -> Maybe<&2, U32>:
-  match s:
-    case Sst{sst}:
-      None{}
-    case SstMapped{sst, msst}:
-      None{}
-    case SstSd{sst, sd}:
-      Some{sd}
-    case SstSdMapped{sst, sd, msst}:
-      Some{sd}
-    case SstFull{sst, sd, msst, msd}:
-      Some{sd}
-
-def SNssai.read(bs: B.Bytes()) -> Res(SNssai):
+def SNssai.read(bs: B.Bytes()) -> B.Res(SNssai):
   match bs:
     case sst <> Nil{}:
       Done{Sst{sst}}
@@ -239,7 +178,7 @@ def SNssai.write(s: SNssai) -> B.Bytes():
     case SstFull{sst, sd, msst, msd}:
       sst <> B.write_u24(sd, msst <> B.write_u24(msd, []))
 
-def Nssai.cons(s: Res(SNssai), more: Res(List<&2, SNssai>)) -> Res(List<&2, SNssai>):
+def Nssai.cons(s: B.Res(SNssai), more: B.Res(List<&2, SNssai>)) -> B.Res(List<&2, SNssai>):
   match s:
     case Fail{e}:
       Fail{e}
@@ -250,7 +189,7 @@ def Nssai.cons(s: Res(SNssai), more: Res(List<&2, SNssai>)) -> Res(List<&2, SNss
         case Done{list}:
           Done{one <> list}
 
-def Nssai.item(r: B.Read(B.Bytes()), more: B.Bytes() -> Res(List<&2, SNssai>)) -> Res(List<&2, SNssai>):
+def Nssai.item(r: B.Read(B.Bytes()), more: B.Bytes() -> B.Res(List<&2, SNssai>)) -> B.Res(List<&2, SNssai>):
   match r:
     case Fail{e}:
       Fail{e}
@@ -258,7 +197,7 @@ def Nssai.item(r: B.Read(B.Bytes()), more: B.Bytes() -> Res(List<&2, SNssai>)) -
       Nssai.cons(SNssai.read(body), more(rest))
 
 # Length-prefixed S-NSSAIs to the end of the content; the fuel is the byte count.
-def Nssai.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, SNssai>):
+def Nssai.go(fuel: Nat, bs: B.Bytes()) -> B.Res(List<&2, SNssai>):
   match fuel bs:
     case _ Nil{}:
       Done{[]}
@@ -267,7 +206,7 @@ def Nssai.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, SNssai>):
     case 1n+f +len <> rest:
       Nssai.item(B.take(U32.to_nat(len), rest), left => Nssai.go(f, left))
 
-def Nssai.read(+bs: B.Bytes()) -> Res(List<&2, SNssai>):
+def Nssai.read(+bs: B.Bytes()) -> B.Res(List<&2, SNssai>):
   Nssai.go(List.length(&2, U32, bs), bs)
 
 def Nssai.write(ss: List<&2, SNssai>) -> B.Bytes():
@@ -287,14 +226,14 @@ type UpdateType is Data:
 def UpdateType.of(+v: U32) -> UpdateType:
   UpdateType{Bit.of(v, 1), Bit.of(v, 2), U32.and(3, U32.shrn(v, 2n)), U32.and(3, U32.shrn(v, 4n))}
 
-def UpdateType.ok(r: Res(U32)) -> Res(UpdateType):
+def UpdateType.ok(r: B.Res(U32)) -> B.Res(UpdateType):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{v}:
       Done{UpdateType.of(v)}
 
-def UpdateType.read(bs: B.Bytes()) -> Res(UpdateType):
+def UpdateType.read(bs: B.Bytes()) -> B.Res(UpdateType):
   UpdateType.ok(Byte.one(bs, 192))
 
 def UpdateType.write(u: UpdateType) -> B.Bytes():
@@ -306,29 +245,29 @@ def UpdateType.write(u: UpdateType) -> B.Bytes():
 # -------------------------
 
 # ABBA (§9.11.3.10): at least two bytes.
-def Abba.read(bs: B.Bytes()) -> Res(B.Bytes()):
+def Abba.read(bs: B.Bytes()) -> B.Res(B.Bytes()):
   Bytes.between(bs, 2n, 255n)
 
 # RAND, AUTN (§9.11.3.16, §9.11.3.15) and RES* (§9.11.3.17): sixteen bytes.
-def Fixed16.read(bs: B.Bytes()) -> Res(B.Bytes()):
+def Fixed16.read(bs: B.Bytes()) -> B.Res(B.Bytes()):
   Bytes.exactly(bs, 16n)
 
 # IMEISV request (§9.11.3.28): the low nibble of a one-octet IE; 1 means requested.
-def ImeisvRequest.read(+nibble: U32) -> Res(U32):
-  Byte.spare_ok(U32.and(7, nibble), U32.is_eq(U32.and(8, nibble), 0))
+def ImeisvRequest.read(+nibble: U32) -> B.Res(U32):
+  B.guard(U32, U32.and(7, nibble), U32.and(7, nibble), U32.is_eq(U32.and(8, nibble), 0))
 
 # Additional 5G security information (§9.11.3.12)
 type AddSecInfo is Data:
   AddSecInfo{hdp: Bool, rinmr: Bool}
 
-def AddSecInfo.ok(r: Res(U32)) -> Res(AddSecInfo):
+def AddSecInfo.ok(r: B.Res(U32)) -> B.Res(AddSecInfo):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{+v}:
       Done{AddSecInfo{Bit.of(v, 1), Bit.of(v, 2)}}
 
-def AddSecInfo.read(bs: B.Bytes()) -> Res(AddSecInfo):
+def AddSecInfo.read(bs: B.Bytes()) -> B.Res(AddSecInfo):
   AddSecInfo.ok(Byte.one(bs, 252))
 
 def AddSecInfo.write(a: AddSecInfo) -> B.Bytes():
@@ -337,7 +276,7 @@ def AddSecInfo.write(a: AddSecInfo) -> B.Bytes():
       [U32.add(Bit.to(hdp, 1), Bit.to(rinmr, 2))]
 
 # NAS message container (§9.11.3.33): a plain 5GMM message.
-def Container.read(bs: B.Bytes()) -> Res(M.Mm):
+def Container.read(bs: B.Bytes()) -> B.Res(M.Mm):
   M.Mm.read(bs)
 
 # 5GS registration result (§9.11.3.6)
@@ -346,14 +285,14 @@ def Container.read(bs: B.Bytes()) -> Res(M.Mm):
 type RegResult is Data:
   RegResult{value: U32, sms_allowed: Bool, nssaa: Bool, emergency: Bool}
 
-def RegResult.ok(r: Res(U32)) -> Res(RegResult):
+def RegResult.ok(r: B.Res(U32)) -> B.Res(RegResult):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{+v}:
       Done{RegResult{U32.and(7, v), Bit.of(v, 8), Bit.of(v, 16), Bit.of(v, 32)}}
 
-def RegResult.read(bs: B.Bytes()) -> Res(RegResult):
+def RegResult.read(bs: B.Bytes()) -> B.Res(RegResult):
   RegResult.ok(Byte.one(bs, 192))
 
 def RegResult.write(r: RegResult) -> B.Bytes():
@@ -374,19 +313,12 @@ type TaiPartial is Data:
   Tai01{plmn: P.Plmn, first: U32, count: Nat}
   Tai10{tais: List<&2, Tai>}
 
-def Tacs.cons(tac: U32, r: B.Read(List<&2, U32>)) -> B.Read(List<&2, U32>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(tacs, rest)}:
-      Done{(tac <> tacs, rest)}
-
 def Tacs.next(r: B.Read(U32), more: B.Bytes() -> B.Read(List<&2, U32>)) -> B.Read(List<&2, U32>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(tac, rest)}:
-      Tacs.cons(tac, more(rest))
+      B.Read.cons(U32, tac, more(rest))
 
 def Tacs.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, U32>):
   match n:
@@ -395,19 +327,12 @@ def Tacs.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, U32>):
     case 1n+p:
       Tacs.next(B.u24(bs), rest => Tacs.read(p, rest))
 
-def Tais.cons(tai: Tai, r: B.Read(List<&2, Tai>)) -> B.Read(List<&2, Tai>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(tais, rest)}:
-      Done{(tai <> tais, rest)}
-
 def Tais.tac(plmn: P.Plmn, r: B.Read(U32), more: B.Bytes() -> B.Read(List<&2, Tai>)) -> B.Read(List<&2, Tai>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(tac, rest)}:
-      Tais.cons(Tai{plmn, tac}, more(rest))
+      B.Read.cons(Tai, Tai{plmn, tac}, more(rest))
 
 def Tais.plmn(r: B.Read(P.Plmn), more: B.Bytes() -> B.Read(List<&2, Tai>)) -> B.Read(List<&2, Tai>):
   match r:
@@ -423,49 +348,49 @@ def Tais.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, Tai>):
     case 1n+p:
       Tais.plmn(P.Plmn.read(bs), rest => Tais.read(p, rest))
 
-def TaiList.push(item: TaiPartial, r: Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def TaiList.push(item: TaiPartial, r: B.Res(List<&2, TaiPartial>)) -> B.Res(List<&2, TaiPartial>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{list}:
       Done{item <> list}
 
-def TaiList.tacs(plmn: P.Plmn, r: B.Read(List<&2, U32>), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def TaiList.tacs(plmn: P.Plmn, r: B.Read(List<&2, U32>), more: B.Bytes() -> B.Res(List<&2, TaiPartial>)) -> B.Res(List<&2, TaiPartial>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(tacs, rest)}:
       TaiList.push(Tai00{plmn, tacs}, more(rest))
 
-def TaiList.first(plmn: P.Plmn, n: Nat, r: B.Read(U32), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def TaiList.first(plmn: P.Plmn, n: Nat, r: B.Read(U32), more: B.Bytes() -> B.Res(List<&2, TaiPartial>)) -> B.Res(List<&2, TaiPartial>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(tac, rest)}:
       TaiList.push(Tai01{plmn, tac, n}, more(rest))
 
-def TaiList.tais(r: B.Read(List<&2, Tai>), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def TaiList.tais(r: B.Read(List<&2, Tai>), more: B.Bytes() -> B.Res(List<&2, TaiPartial>)) -> B.Res(List<&2, TaiPartial>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(tais, rest)}:
       TaiList.push(Tai10{tais}, more(rest))
 
-def TaiList.plmn00(n: Nat, r: B.Read(P.Plmn), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def TaiList.plmn00(n: Nat, r: B.Read(P.Plmn), more: B.Bytes() -> B.Res(List<&2, TaiPartial>)) -> B.Res(List<&2, TaiPartial>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(plmn, rest)}:
       TaiList.tacs(plmn, Tacs.read(n, rest), more)
 
-def TaiList.plmn01(n: Nat, r: B.Read(P.Plmn), more: B.Bytes() -> Res(List<&2, TaiPartial>)) -> Res(List<&2, TaiPartial>):
+def TaiList.plmn01(n: Nat, r: B.Read(P.Plmn), more: B.Bytes() -> B.Res(List<&2, TaiPartial>)) -> B.Res(List<&2, TaiPartial>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(plmn, rest)}:
       TaiList.first(plmn, n, B.u24(rest), more)
 
-def TaiList.kind(+h: U32, rest: B.Bytes(), more: B.Bytes() -> Res(List<&2, TaiPartial>), kind: Nat) -> Res(List<&2, TaiPartial>):
+def TaiList.kind(+h: U32, rest: B.Bytes(), more: B.Bytes() -> B.Res(List<&2, TaiPartial>), kind: Nat) -> B.Res(List<&2, TaiPartial>):
   match kind:
     case 0n:
       TaiList.plmn00(1n+U32.to_nat(U32.and(31, h)), P.Plmn.read(rest), more)
@@ -476,7 +401,7 @@ def TaiList.kind(+h: U32, rest: B.Bytes(), more: B.Bytes() -> Res(List<&2, TaiPa
     case 3n+p:
       Fail{B.Unsupported{h}}
 
-def TaiList.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, TaiPartial>):
+def TaiList.go(fuel: Nat, bs: B.Bytes()) -> B.Res(List<&2, TaiPartial>):
   match fuel bs:
     case _ Nil{}:
       Done{[]}
@@ -485,7 +410,7 @@ def TaiList.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, TaiPartial>):
     case 1n+f +h <> rest:
       TaiList.kind(h, rest, left => TaiList.go(f, left), U32.to_nat(U32.and(3, U32.shrn(h, 5n))))
 
-def TaiList.read(+bs: B.Bytes()) -> Res(List<&2, TaiPartial>):
+def TaiList.read(+bs: B.Bytes()) -> B.Res(List<&2, TaiPartial>):
   TaiList.go(List.length(&2, U32, bs), bs)
 
 def Tacs.write(tacs: List<&2, U32>, rest: B.Bytes()) -> B.Bytes():
@@ -518,28 +443,21 @@ def TaiList.write(list: List<&2, TaiPartial>) -> B.Bytes():
       TaiList.header(2, List.length(&2, Tai, tais)) <> Tais.write(tais, TaiList.write(more))
 
 # 5GS network feature support (§9.11.3.5): one to three bytes of flags.
-def NetFeature.read(bs: B.Bytes()) -> Res(B.Bytes()):
+def NetFeature.read(bs: B.Bytes()) -> B.Res(B.Bytes()):
   Bytes.between(bs, 1n, 3n)
-
-def NetFeature.ims_vops_3gpp(bs: B.Bytes()) -> Bool:
-  match bs:
-    case Nil{}:
-      False{}
-    case b <> rest:
-      Bit.of(b, 1)
 
 # GPRS timer 3 (TS 24.008 §10.5.7.4a): a unit in the high three bits, a value below.
 type Timer3 is Data:
   Timer3{unit: U32, value: U32}
 
-def Timer3.ok(r: Res(U32)) -> Res(Timer3):
+def Timer3.ok(r: B.Res(U32)) -> B.Res(Timer3):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{+v}:
       Done{Timer3{U32.shrn(v, 5n), U32.and(31, v)}}
 
-def Timer3.read(bs: B.Bytes()) -> Res(Timer3):
+def Timer3.read(bs: B.Bytes()) -> B.Res(Timer3):
   Timer3.ok(Byte.one(bs, 0))
 
 def Timer3.write(t: Timer3) -> B.Bytes():
@@ -548,31 +466,24 @@ def Timer3.write(t: Timer3) -> B.Bytes():
       [U32.add(U32.shln(U32.and(7, unit), 5n), U32.and(31, value))]
 
 # PDU session identity 2 (§9.11.3.41): one byte.
-def PduSessionId.read(bs: B.Bytes()) -> Res(U32):
+def PduSessionId.read(bs: B.Bytes()) -> B.Res(U32):
   Byte.one(bs, 0)
 
 # Request type (§9.11.3.47): the low nibble of a one-octet IE.
-def RequestType.read(+nibble: U32) -> Res(U32):
-  Byte.spare_ok(U32.and(7, nibble), U32.is_eq(U32.and(8, nibble), 0))
+def RequestType.read(+nibble: U32) -> B.Res(U32):
+  B.guard(U32, U32.and(7, nibble), U32.and(7, nibble), U32.is_eq(U32.and(8, nibble), 0))
 
 # DNN (§9.11.2.1A): length-prefixed labels
 # ----------------------------------------
 
-def Dnn.cons(label: B.Bytes(), more: Res(List<&2, B.Bytes()>)) -> Res(List<&2, B.Bytes()>):
-  match more:
-    case Fail{e}:
-      Fail{e}
-    case Done{labels}:
-      Done{label <> labels}
-
-def Dnn.label(r: B.Read(B.Bytes()), more: B.Bytes() -> Res(List<&2, B.Bytes()>)) -> Res(List<&2, B.Bytes()>):
+def Dnn.label(r: B.Read(B.Bytes()), more: B.Bytes() -> B.Res(List<&2, B.Bytes()>)) -> B.Res(List<&2, B.Bytes()>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(label, rest)}:
-      Dnn.cons(label, more(rest))
+      B.Res.cons(B.Bytes(), label, more(rest))
 
-def Dnn.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, B.Bytes()>):
+def Dnn.go(fuel: Nat, bs: B.Bytes()) -> B.Res(List<&2, B.Bytes()>):
   match fuel bs:
     case _ Nil{}:
       Done{[]}
@@ -581,7 +492,7 @@ def Dnn.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, B.Bytes()>):
     case 1n+f +len <> rest:
       Dnn.label(B.take(U32.to_nat(len), rest), left => Dnn.go(f, left))
 
-def Dnn.read(+bs: B.Bytes()) -> Res(List<&2, B.Bytes()>):
+def Dnn.read(+bs: B.Bytes()) -> B.Res(List<&2, B.Bytes()>):
   Dnn.go(List.length(&2, U32, bs), bs)
 
 def Dnn.write(labels: List<&2, B.Bytes()>) -> B.Bytes():
@@ -599,14 +510,14 @@ def Dnn.write(labels: List<&2, B.Bytes()>) -> B.Bytes():
 type NetName is Data:
   NetName{scheme: U32, add_ci: Bool, spare_bits: U32, text: B.Bytes()}
 
-def NetName.ext(+h: U32, text: B.Bytes(), ok: Bool) -> Res(NetName):
+def NetName.ext(+h: U32, text: B.Bytes(), ok: Bool) -> B.Res(NetName):
   match ok:
     case True{}:
       Done{NetName{U32.and(7, U32.shrn(h, 4n)), Bit.of(h, 8), U32.and(7, h), text}}
     case False{}:
       Fail{B.Invalid{h}}
 
-def NetName.read(bs: B.Bytes()) -> Res(NetName):
+def NetName.read(bs: B.Bytes()) -> B.Res(NetName):
   match bs:
     case Nil{}:
       Fail{B.Short{}}
@@ -619,11 +530,11 @@ def NetName.write(n: NetName) -> B.Bytes():
       U32.add(128, U32.add(U32.shln(U32.and(7, scheme), 4n), U32.add(Bit.to(add_ci, 8), U32.and(7, spare)))) <> text
 
 # Time zone (TS 24.008 §10.5.3.8), time zone and time (§10.5.3.9), daylight saving time (§10.5.3.12)
-def TimeZone.read(bs: B.Bytes()) -> Res(U32):
+def TimeZone.read(bs: B.Bytes()) -> B.Res(U32):
   Byte.one(bs, 0)
 
-def TimeZoneTime.read(bs: B.Bytes()) -> Res(B.Bytes()):
+def TimeZoneTime.read(bs: B.Bytes()) -> B.Res(B.Bytes()):
   Bytes.exactly(bs, 7n)
 
-def Dst.read(bs: B.Bytes()) -> Res(U32):
+def Dst.read(bs: B.Bytes()) -> B.Res(U32):
   Byte.one(bs, 252)

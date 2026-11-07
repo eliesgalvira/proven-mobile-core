@@ -1026,6 +1026,22 @@ def XBitStr.write(al: Bool, n: Nat, +lo: Nat, +diff: Nat, +bs: Bits(), rem: Nat,
 def XBitStr.after(bs: Bits(), rem: Nat) -> Nat:
   Rem.add(List.length(&2, Bool, bs), 0n)
 
+# A bit string whose size bound reaches 64K (§16.11): its length is an
+# unconstrained determinant (§11.9.4.2), so the size is only checked. It is
+# written as an unconstrained one.
+def WBitStr.valid(lo: Nat, diff: Nat, +bs: Bits()) -> Bool:
+  Bool.and(Size.valid(lo, diff, List.length(&2, Bool, bs)), UBitStr.valid(bs))
+
+def WBitStr.inside(lo: Nat, diff: Nat, r: Rd(Bits())) -> Rd(Bits()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(+bs, c)}:
+      XBits.of(bs, c, Size.valid(lo, diff, List.length(&2, Bool, bs)))
+
+def WBitStr.read(lo: Nat, diff: Nat, c: Cur) -> Rd(Bits()):
+  WBitStr.inside(lo, diff, UBitStr.read(c))
+
 # A PrintableString with an extension marker on its size (§30.4).
 def XStr.valid(lo: Nat, diff: Nat, +s: B.Bytes()) -> Bool:
   Bool.and(Bool.or(Size.valid(lo, diff, List.length(&2, U32, s)), Len.valid(List.length(&2, U32, s))), Str.all(s))

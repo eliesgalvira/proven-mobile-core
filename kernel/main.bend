@@ -77,27 +77,48 @@ def Main.fail(sock: Socket, why: String) -> IO(Unit):
 @unsafe def Main.frames(sock: Socket, st: S.State, +buf: B.Bytes()) -> IO(Unit):
   Main.framed(sock, st, buf, F.Frame.read(buf))
 
-@unsafe def Main.framed(sock: Socket, st: S.State, buf: B.Bytes(), r: B.Read(B.Bytes())) -> IO(Unit):
+@unsafe def Main.framed(sock: Socket, st: S.State, +buf: B.Bytes(), r: B.Read(B.Bytes())) -> IO(Unit):
   match r:
     case Done{(body, rest)}:
       Main.event(sock, st, rest, F.Input.read(body))
     case Fail{B.Short{}}:
-      do IO<Unit>:
-        got : Socket & Result<&1, &1, U32 & String, Maybe<&1, List<&2, U32>>> <- TCP.recv_bytes(sock, 65536)
-        Main.received(st, buf, got)
+      Main.wait(sock, st, [buf], List.length(&2, U32, buf), Main.need(B.u32(buf)))
     case Fail{e}:
       Main.fail(sock, "frame too long or malformed")
 
-@unsafe def Main.received(st: S.State, buf: B.Bytes(), got: Socket & Result<&1, &1, U32 & String, Maybe<&1, List<&2, U32>>>) -> IO(Unit):
+# The bytes a frame needs: its length field, then the body it declares.
+def Main.need(r: B.Read(U32)) -> Nat:
+  match r:
+    case Done{(len, rest)}:
+      Nat.add(4n, U32.to_nat(len))
+    case Fail{e}:
+      4n
+
+# The chunks received, newest first, are joined once the frame is complete,
+# so a frame arriving in pieces costs its length, not its length squared.
+@unsafe def Main.wait(sock: Socket, st: S.State, chunks: List<&2, B.Bytes()>, have: Nat, need: Nat) -> IO(Unit):
+  do IO<Unit>:
+    got : Socket & Result<&1, &1, U32 & String, Maybe<&1, List<&2, U32>>> <- TCP.recv_bytes(sock, 65536)
+    Main.received(st, chunks, have, need, got)
+
+@unsafe def Main.received(st: S.State, chunks: List<&2, B.Bytes()>, have: Nat, +need: Nat, got: Socket & Result<&1, &1, U32 & String, Maybe<&1, List<&2, U32>>>) -> IO(Unit):
   match got:
-    case (sock, Done{Some{bytes}}):
-      Main.frames(sock, st, List.append(&2, U32, buf, bytes))
+    case (sock, Done{Some{+bytes}}):
+      +total = Nat.add(have, List.length(&2, U32, bytes))
+      Main.gathered(sock, st, bytes <> chunks, total, need, Nat.is_le(need, total))
     case (sock, Done{None{}}):
       do IO<Unit>:
         Socket.close(sock)
         IO.print_err("kernel: edge closed the connection")
     case (sock, Fail{(code, msg)}):
       Main.fail(sock, "recv: " ++ msg)
+
+@unsafe def Main.gathered(sock: Socket, st: S.State, chunks: List<&2, B.Bytes()>, have: Nat, need: Nat, complete: Bool) -> IO(Unit):
+  match complete:
+    case True{}:
+      Main.frames(sock, st, List.concat(&2, U32, List.reverse(&2, B.Bytes(), chunks)))
+    case False{}:
+      Main.wait(sock, st, chunks, have, need)
 
 def Main.serve(accepted: Listener & Result<&1, &1, U32 & String, Socket>) -> IO(Unit):
   match accepted:

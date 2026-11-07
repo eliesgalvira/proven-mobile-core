@@ -6,16 +6,6 @@ import ./ie.bend as I
 # TS 24.008 elements it reuses). Readers take the content of an IE as the
 # generic codec sliced it; those over lists return what is left.
 
-def Res(-A: Data) -> Data:
-  Result<&2, &2, B.Err, A>
-
-def Ok(-A: Data, v: A, tag: U32, ok: Bool) -> Res(A):
-  match ok:
-    case True{}:
-      Done{v}
-    case False{}:
-      Fail{B.Invalid{tag}}
-
 # Packet filter components (§9.11.4.13, Table 9.11.4.13.1)
 # -------------------------------------------------------
 
@@ -197,7 +187,7 @@ def Payload.ipv4(addr: U32, r: B.Read(U32)) -> B.Read(Payload):
     case Fail{e}:
       Fail{e}
     case Done{(+mask, rest)}:
-      Ok(B.ReadValue(Payload), (PIpv4{addr, mask}, rest), mask, Mask.contiguous(mask))
+      B.guard(B.ReadValue(Payload), (PIpv4{addr, mask}, rest), mask, Mask.contiguous(mask))
 
 def Payload.ipv4_addr(r: B.Read(U32)) -> B.Read(Payload):
   match r:
@@ -211,7 +201,7 @@ def Payload.ipv6_prefix(addr: B.Bytes(), r: B.Read(U32)) -> B.Read(Payload):
     case Fail{e}:
       Fail{e}
     case Done{(+prefix, rest)}:
-      Ok(B.ReadValue(Payload), (PIpv6{addr, prefix}, rest), prefix, U32.is_le(prefix, 128))
+      B.guard(B.ReadValue(Payload), (PIpv6{addr, prefix}, rest), prefix, U32.is_le(prefix, 128))
 
 def Payload.ipv6(r: B.Read(B.Bytes())) -> B.Read(Payload):
   match r:
@@ -295,19 +285,12 @@ def Comp.read(bs: B.Bytes()) -> B.Read(Comp):
     case +kind <> rest:
       Comp.kind(kind, rest, Comp.shape(kind))
 
-def Comps.cons(c: Comp, r: Result<&2, &2, B.Err, List<&2, Comp>>) -> Result<&2, &2, B.Err, List<&2, Comp>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{cs}:
-      Done{c <> cs}
-
 def Comps.next(r: B.Read(Comp), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Comp>>) -> Result<&2, &2, B.Err, List<&2, Comp>>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(c, rest)}:
-      Comps.cons(c, more(rest))
+      B.Res.cons(Comp, c, more(rest))
 
 # Components to the end of a packet filter's contents.
 def Comps.go(fuel: Nat, bs: B.Bytes()) -> Result<&2, &2, B.Err, List<&2, Comp>>:
@@ -385,19 +368,12 @@ def Filter.read(bs: B.Bytes()) -> B.Read(Filter):
     case +hdr <> rest:
       Filter.hdr_ok(hdr, rest, Bool.and(B.fits8(hdr), U32.is_eq(U32.and(192, hdr), 0)))
 
-def Filters.cons(f: Filter, r: B.Read(List<&2, Filter>)) -> B.Read(List<&2, Filter>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(fs, rest)}:
-      Done{(f <> fs, rest)}
-
 def Filters.next(r: B.Read(Filter), more: B.Bytes() -> B.Read(List<&2, Filter>)) -> B.Read(List<&2, Filter>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(f, rest)}:
-      Filters.cons(f, more(rest))
+      B.Read.cons(Filter, f, more(rest))
 
 # Exactly n packet filters.
 def Filters.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, Filter>):
@@ -538,42 +514,42 @@ def Rules.valid(rs: List<&2, Rule>) -> Bool:
 
 # Reading a rule body: operation byte, filters, tail; nothing may be left.
 
-def Rule.end(qri: U32, len: U32, op: U32, fs: RuleFilters, t: RuleTail, rest: B.Bytes()) -> Res(Rule):
+def Rule.end(qri: U32, len: U32, op: U32, fs: RuleFilters, t: RuleTail, rest: B.Bytes()) -> B.Res(Rule):
   match rest:
     case Nil{}:
       Done{Rule{qri, len, op, fs, t}}
     case b <> more:
       Fail{B.Invalid{b}}
 
-def Rule.tail_qfi(qri: U32, len: U32, op: U32, fs: RuleFilters, precedence: U32, r: B.Read(U32)) -> Res(Rule):
+def Rule.tail_qfi(qri: U32, len: U32, op: U32, fs: RuleFilters, precedence: U32, r: B.Read(U32)) -> B.Res(Rule):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(qfi, rest)}:
       Rule.end(qri, len, op, fs, Tail{precedence, qfi}, rest)
 
-def Rule.tail(qri: U32, len: U32, op: U32, fs: RuleFilters, r: B.Read(U32)) -> Res(Rule):
+def Rule.tail(qri: U32, len: U32, op: U32, fs: RuleFilters, r: B.Read(U32)) -> B.Res(Rule):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(precedence, rest)}:
       Rule.tail_qfi(qri, len, op, fs, precedence, B.u8(rest))
 
-def Rule.whole(qri: U32, len: U32, op: U32, r: B.Read(List<&2, Filter>)) -> Res(Rule):
+def Rule.whole(qri: U32, len: U32, op: U32, r: B.Read(List<&2, Filter>)) -> B.Res(Rule):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(filters, rest)}:
       Rule.tail(qri, len, op, Whole{filters}, B.u8(rest))
 
-def Rule.only(qri: U32, len: U32, op: U32, r: B.Read(List<&2, U32>)) -> Res(Rule):
+def Rule.only(qri: U32, len: U32, op: U32, r: B.Read(List<&2, U32>)) -> B.Res(Rule):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(ids, rest)}:
       Rule.tail(qri, len, op, Only{ids}, B.u8(rest))
 
-def Rule.by_code(qri: U32, len: U32, +op: U32, rest: B.Bytes(), code: Nat) -> Res(Rule):
+def Rule.by_code(qri: U32, len: U32, +op: U32, rest: B.Bytes(), code: Nat) -> B.Res(Rule):
   match code:
     case 1n:
       Rule.whole(qri, len, op, Filters.read(Rule.count(op), rest))
@@ -590,14 +566,14 @@ def Rule.by_code(qri: U32, len: U32, +op: U32, rest: B.Bytes(), code: Nat) -> Re
     case other:
       Fail{B.Unsupported{op}}
 
-def Rule.body(qri: U32, len: U32, body: B.Bytes()) -> Res(Rule):
+def Rule.body(qri: U32, len: U32, body: B.Bytes()) -> B.Res(Rule):
   match body:
     case Nil{}:
       Fail{B.Short{}}
     case +op <> rest:
       Rule.by_code(qri, len, op, rest, Rule.code(op))
 
-def Rule.cons(r: Res(Rule), rest: B.Bytes()) -> B.Read(Rule):
+def Rule.cons(r: B.Res(Rule), rest: B.Bytes()) -> B.Read(Rule):
   match r:
     case Fail{e}:
       Fail{e}
@@ -618,22 +594,15 @@ def Rule.read(bs: B.Bytes()) -> B.Read(Rule):
     case qri <> rest:
       Rule.len(qri, I.lve(rest))
 
-def Rules.cons(r: Rule, more: Res(List<&2, Rule>)) -> Res(List<&2, Rule>):
-  match more:
-    case Fail{e}:
-      Fail{e}
-    case Done{rs}:
-      Done{r <> rs}
-
-def Rules.next(r: B.Read(Rule), more: B.Bytes() -> Res(List<&2, Rule>)) -> Res(List<&2, Rule>):
+def Rules.next(r: B.Read(Rule), more: B.Bytes() -> B.Res(List<&2, Rule>)) -> B.Res(List<&2, Rule>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(rule, rest)}:
-      Rules.cons(rule, more(rest))
+      B.Res.cons(Rule, rule, more(rest))
 
 # Rules to the end of the IE content.
-def Rules.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, Rule>):
+def Rules.go(fuel: Nat, bs: B.Bytes()) -> B.Res(List<&2, Rule>):
   match fuel bs:
     case _ Nil{}:
       Done{[]}
@@ -642,7 +611,7 @@ def Rules.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, Rule>):
     case 1n+f b <> rest:
       Rules.next(Rule.read(b <> rest), left => Rules.go(f, left))
 
-def Rules.read(+bs: B.Bytes()) -> Res(List<&2, Rule>):
+def Rules.read(+bs: B.Bytes()) -> B.Res(List<&2, Rule>):
   Rules.go(List.length(&2, U32, bs), bs)
 
 # QoS flow descriptions (§9.11.4.12)
@@ -666,19 +635,12 @@ def Flow.code(f: Flow) -> Nat:
     case Flow{qfi, op, count, params}:
       U32.to_nat(U32.shrn(op, 5n))
 
-def Params.cons(p: Param, r: B.Read(List<&2, Param>)) -> B.Read(List<&2, Param>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(ps, rest)}:
-      Done{(p <> ps, rest)}
-
 def Param.of(id: U32, r: B.Read(I.LenBody), more: B.Bytes() -> B.Read(List<&2, Param>)) -> B.Read(List<&2, Param>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(lb, rest)}:
-      Params.cons(Param{id, lb}, more(rest))
+      B.Read.cons(Param, Param{id, lb}, more(rest))
 
 def Params.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, Param>):
   match n bs:
@@ -715,21 +677,14 @@ def Flow.write(f: Flow, rest: B.Bytes()) -> B.Bytes():
     case Flow{qfi, op, count, params}:
       qfi <> op <> count <> Params.write(params, rest)
 
-def Flows.cons(f: Flow, more: Res(List<&2, Flow>)) -> Res(List<&2, Flow>):
-  match more:
-    case Fail{e}:
-      Fail{e}
-    case Done{fs}:
-      Done{f <> fs}
-
-def Flows.next(r: B.Read(Flow), more: B.Bytes() -> Res(List<&2, Flow>)) -> Res(List<&2, Flow>):
+def Flows.next(r: B.Read(Flow), more: B.Bytes() -> B.Res(List<&2, Flow>)) -> B.Res(List<&2, Flow>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(f, rest)}:
-      Flows.cons(f, more(rest))
+      B.Res.cons(Flow, f, more(rest))
 
-def Flows.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, Flow>):
+def Flows.go(fuel: Nat, bs: B.Bytes()) -> B.Res(List<&2, Flow>):
   match fuel bs:
     case _ Nil{}:
       Done{[]}
@@ -738,7 +693,7 @@ def Flows.go(fuel: Nat, bs: B.Bytes()) -> Res(List<&2, Flow>):
     case 1n+f b <> rest:
       Flows.next(Flow.read(b <> rest), left => Flows.go(f, left))
 
-def Flows.read(+bs: B.Bytes()) -> Res(List<&2, Flow>):
+def Flows.read(+bs: B.Bytes()) -> B.Res(List<&2, Flow>):
   Flows.go(List.length(&2, U32, bs), bs)
 
 def Flows.write(fs: List<&2, Flow>) -> B.Bytes():
@@ -763,10 +718,10 @@ def Ambr.valid(a: Ambr) -> Bool:
     case Ambr{du, dl, uu, ul}:
       Bool.and(Ambr.unit_ok(du), Ambr.unit_ok(uu))
 
-def Ambr.read(bs: B.Bytes()) -> Res(Ambr):
+def Ambr.read(bs: B.Bytes()) -> B.Res(Ambr):
   match bs:
     case +du <> d1 <> d0 <> +uu <> u1 <> u0 <> Nil{}:
-      Ok(Ambr, Ambr{du, B.cat8(d0, d1), uu, B.cat8(u0, u1)}, du, Bool.and(Ambr.unit_ok(du), Ambr.unit_ok(uu)))
+      B.guard(Ambr, Ambr{du, B.cat8(d0, d1), uu, B.cat8(u0, u1)}, du, Bool.and(Ambr.unit_ok(du), Ambr.unit_ok(uu)))
     case _:
       Fail{B.Invalid{0}}
 
@@ -792,13 +747,13 @@ def PduAddr.write(a: PduAddr) -> B.Bytes():
     case Ipv4v6{addr, iid}:
       3 <> B.write_u32(addr, iid)
 
-def PduAddr.ipv4v6(a3: U32, a2: U32, a1: U32, a0: U32, +iid: B.Bytes()) -> Res(PduAddr):
-  Ok(PduAddr, Ipv4v6{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), iid}, 3, Nat.is_eq(List.length(&2, U32, iid), 8n))
+def PduAddr.ipv4v6(a3: U32, a2: U32, a1: U32, a0: U32, +iid: B.Bytes()) -> B.Res(PduAddr):
+  B.guard(PduAddr, Ipv4v6{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), iid}, 3, Nat.is_eq(List.length(&2, U32, iid), 8n))
 
-def PduAddr.ipv6(+iid: B.Bytes()) -> Res(PduAddr):
-  Ok(PduAddr, Ipv6{iid}, 2, Nat.is_eq(List.length(&2, U32, iid), 8n))
+def PduAddr.ipv6(+iid: B.Bytes()) -> B.Res(PduAddr):
+  B.guard(PduAddr, Ipv6{iid}, 2, Nat.is_eq(List.length(&2, U32, iid), 8n))
 
-def PduAddr.body(h: U32, kind: Nat, rest: B.Bytes()) -> Res(PduAddr):
+def PduAddr.body(h: U32, kind: Nat, rest: B.Bytes()) -> B.Res(PduAddr):
   match kind rest:
     case 1n a3 <> a2 <> a1 <> a0 <> Nil{}:
       Done{Ipv4{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3)))}}
@@ -809,7 +764,7 @@ def PduAddr.body(h: U32, kind: Nat, rest: B.Bytes()) -> Res(PduAddr):
     case _ _:
       Fail{B.Unsupported{h}}
 
-def PduAddr.read(bs: B.Bytes()) -> Res(PduAddr):
+def PduAddr.read(bs: B.Bytes()) -> B.Res(PduAddr):
   match bs:
     case Nil{}:
       Fail{B.Short{}}
@@ -880,28 +835,21 @@ def Epco.valid(e: Epco) -> Bool:
     case Epco{+cs}:
       Bool.and(Nat.is_le(List.length(&2, Container, cs), Epco.limit()), Bool.and(Containers.valid(cs), Nat.is_le(Containers.size(cs), 65534n)))
 
-def Containers.cons(c: Container, r: Res(List<&2, Container>)) -> Res(List<&2, Container>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{cs}:
-      Done{c <> cs}
-
-def Container.body(id: U32, r: B.Read(I.LenBody), more: B.Bytes() -> Res(List<&2, Container>)) -> Res(List<&2, Container>):
+def Container.body(id: U32, r: B.Read(I.LenBody), more: B.Bytes() -> B.Res(List<&2, Container>)) -> B.Res(List<&2, Container>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(lb, rest)}:
-      Containers.cons(Container{id, lb}, more(rest))
+      B.Res.cons(Container, Container{id, lb}, more(rest))
 
-def Container.id_ok(id: U32, rest: B.Bytes(), more: B.Bytes() -> Res(List<&2, Container>), ok: Bool) -> Res(List<&2, Container>):
+def Container.id_ok(id: U32, rest: B.Bytes(), more: B.Bytes() -> B.Res(List<&2, Container>), ok: Bool) -> B.Res(List<&2, Container>):
   match ok:
     case True{}:
       Container.body(id, I.lv(rest), more)
     case False{}:
       Fail{B.Invalid{id}}
 
-def Container.id(r: B.Read(U32), more: B.Bytes() -> Res(List<&2, Container>)) -> Res(List<&2, Container>):
+def Container.id(r: B.Read(U32), more: B.Bytes() -> B.Res(List<&2, Container>)) -> B.Res(List<&2, Container>):
   match r:
     case Fail{e}:
       Fail{e}
@@ -909,7 +857,7 @@ def Container.id(r: B.Read(U32), more: B.Bytes() -> Res(List<&2, Container>)) ->
       Container.id_ok(id, rest, more, B.fits16(id))
 
 # Containers to the end of the content, at most `budget` of them.
-def Containers.go(fuel: Nat, budget: Nat, bs: B.Bytes()) -> Res(List<&2, Container>):
+def Containers.go(fuel: Nat, budget: Nat, bs: B.Bytes()) -> B.Res(List<&2, Container>):
   match fuel budget bs:
     case _ _ Nil{}:
       Done{[]}
@@ -920,21 +868,21 @@ def Containers.go(fuel: Nat, budget: Nat, bs: B.Bytes()) -> Res(List<&2, Contain
     case 1n+f 1n+k b <> rest:
       Container.id(B.u16(b <> rest), left => Containers.go(f, k, left))
 
-def Epco.of(r: Res(List<&2, Container>)) -> Res(Epco):
+def Epco.of(r: B.Res(List<&2, Container>)) -> B.Res(Epco):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{cs}:
       Done{Epco{cs}}
 
-def Epco.hdr(h: U32, +rest: B.Bytes(), ok: Bool) -> Res(Epco):
+def Epco.hdr(h: U32, +rest: B.Bytes(), ok: Bool) -> B.Res(Epco):
   match ok:
     case True{}:
       Epco.of(Containers.go(List.length(&2, U32, rest), Epco.limit(), rest))
     case False{}:
       Fail{B.Invalid{h}}
 
-def Epco.read(bs: B.Bytes()) -> Res(Epco):
+def Epco.read(bs: B.Bytes()) -> B.Res(Epco):
   match bs:
     case Nil{}:
       Fail{B.Short{}}
@@ -945,22 +893,22 @@ def Epco.read(bs: B.Bytes()) -> Res(Epco):
 # -------------------
 
 # 5GSM capability (§9.11.4.1): one byte of flags, up to twelve more.
-def SmCap.read(bs: B.Bytes()) -> Res(B.Bytes()):
+def SmCap.read(bs: B.Bytes()) -> B.Res(B.Bytes()):
   match bs:
     case Nil{}:
       Fail{B.Short{}}
     case +b <> +more:
-      Ok(B.Bytes(), b <> more, b, Nat.is_le(List.length(&2, U32, more), 12n))
+      B.guard(B.Bytes(), b <> more, b, Nat.is_le(List.length(&2, U32, more), 12n))
 
 # PDU session type (§9.11.4.11) and SSC mode (§9.11.4.16): the low three bits of a one-octet IE.
-def Nibble3.read(+nibble: U32) -> Res(U32):
-  Ok(U32, U32.and(7, nibble), nibble, U32.is_eq(U32.and(8, nibble), 0))
+def Nibble3.read(+nibble: U32) -> B.Res(U32):
+  B.guard(U32, U32.and(7, nibble), nibble, U32.is_eq(U32.and(8, nibble), 0))
 
 # Integrity protection maximum data rate (§9.11.4.7): uplink then downlink.
 type MaxRate is Data:
   MaxRate{ul: U32, dl: U32}
 
-def MaxRate.of(bs: B.Bytes()) -> Res(MaxRate):
+def MaxRate.of(bs: B.Bytes()) -> B.Res(MaxRate):
   match bs:
     case ul <> dl <> Nil{}:
       Done{MaxRate{ul, dl}}

@@ -5,8 +5,8 @@
 
 Writes OUT_DIR/types.bend: for every type in the tier M+R closure a datatype
 (or alias), `T.read`, `T.write`, `T.after` and `T.valid`, built on
-kernel/aper.bend and kernel/ngap/frame.bend; plus `T.roundtrips` and the
-per-message IE dispatch used by the tests. views.bend holds one view per
+kernel/aper.bend and kernel/ngap/frame.bend; plus the per-message IE
+dispatch the tests use to roundtrip IE values. views.bend holds one view per
 message; laws.bend and proofs.bend (gen_proofs.py) the codec laws of every
 type with their proofs; show.bend (gen_show.py) the normal form oracle.py
 compares with pycrate. The generator is untrusted: the checker judges what
@@ -22,8 +22,6 @@ import ngap_model as M  # noqa: E402
 
 KEYWORDS = {"def", "type", "match", "case", "import", "as", "is", "for", "law", "return",
             "if", "else", "do", "with", "true", "false", "lambda", "let", "in", "fn", "use"}
-EXTS = "iE-Extensions"
-SINGLE = "ProtocolIE-SingleContainer"
 
 
 def bname(name):
@@ -75,44 +73,104 @@ def int_params(lb, ub):
 
 
 class Type:
-    """One emitted type: kind in alias|record|choice|list|message, with its codec expressions."""
+    """One emitted type: kind in alias|record|choice|list|message, with its codec expressions.
+    Fields, alternatives, items and deps are Types; `contains` names the type an
+    OCTET STRING (CONTAINING T) holds."""
+    mod = "G."
 
     def __init__(self, name):
         self.name = name
         self.bend = bname(name)
         self.deps = []
+        self.contains = None
+        self.law = f"GL.ngap.{self.bend}"
+        self.sx = f"{self.law}.suffix"
+        self.show = f"{self.bend}.show"
+
+    def base(self):
+        return self.bend if self.kind in ("record", "choice") else f"{self.bend}()"
+
+    def ref(self, optional=False, mod=""):
+        """The type in types.bend, a Maybe of it if optional."""
+        d = mod + self.base()
+        return f"Maybe<&2, {d}>" if optional else d
+
+    def qref(self, optional=False):
+        """The type as the other generated modules name it."""
+        return self.ref(optional, self.mod)
+
+    def read(self, c):
+        return f"{self.bend}.read({c})"
+
+    def write(self, v, rem, rest):
+        return f"{self.bend}.write({v}, {rem}, {rest})"
+
+    def after(self, v, rem):
+        return f"{self.bend}.after({v}, {rem})"
+
+    def valid(self, v):
+        return f"{self.bend}.valid({v})"
+
+
+class Pseudo(Type):
+    """A generic container kernel/ngap/frame.bend codes once, its laws in kernel/LAWS.bend."""
+    mod = ""
+
+    def __init__(self, name, bend, data, short):
+        super().__init__(name)
+        self.bend, self.data, self.kind = bend, data, short.lower()
+        self.law, self.sx, self.show = f"L.ngap.{short.lower()}", f"PF.{short}.sx", f"{short}.show"
+
+    def base(self):
+        return self.data
+
+    def after(self, v, rem):
+        return f"{self.bend}.after({rem})"
 
 
 class Gen:
     def __init__(self):
-        self.types = {}
+        self.types = {t.name: t for t in (Pseudo("ProtocolExtensionContainer", "Fr.Exts", "List<&2, Fr.Ie>", "Exts"),
+                                           Pseudo("ProtocolIE-SingleContainer", "Fr.Ie", "Fr.Ie", "Ie"))}
         self.order = []
         self.lines = []
         self.messages = {}
         self.procs = M.procedures()
-
-    # -- model walking -------------------------------------------------------
+        self.ids = M.constants("ProtocolIE-ID")
 
     def type_of(self, obj, inline_name):
-        """Name of the type to emit for obj, synthesising one for inline types."""
+        """The Type to emit for obj, synthesising one for inline types."""
         ref = M.ref_name(obj)
-        if ref == "ProtocolExtensionContainer":
-            return "EXTS"
-        if ref == SINGLE:
-            return "IE"
-        if ref is not None:
-            self.visit(ref, M.find(ref))
-            return ref
-        self.visit(inline_name, obj)
-        return inline_name
+        if ref is None:
+            return self.visit(inline_name, obj)
+        return self.types.get(ref) or self.visit(ref, M.find(ref))
 
     def visit(self, name, obj):
-        if name in self.types:
-            return
-        t = Type(name)
-        self.types[name] = t
-        self.describe(t, obj)
-        self.order.append(name)
+        if name not in self.types:
+            self.types[name] = Type(name)
+            self.describe(self.types[name], obj)
+            self.order.append(name)
+        return self.types[name]
+
+    def needs(self, t):
+        """The types t's definitions call in any generated module."""
+        rows = [tn for _, _, tn, _ in self.view_rows(t.name)] if t.kind == "message" else []
+        return t.deps + rows + ([self.types[t.contains]] if t.contains else [])
+
+    def sort(self):
+        """g.topo: every type after the types it needs, as Bend wants them defined."""
+        self.topo = []
+        done = {t for t in self.types.values() if isinstance(t, Pseudo)}
+
+        def place(t):
+            if t not in done:
+                done.add(t)
+                for d in self.needs(t):
+                    place(d)
+                self.topo.append(t)
+
+        for name in self.order:
+            place(self.types[name])
 
     def describe(self, t, obj):
         obj = M.deref(obj)
@@ -150,10 +208,14 @@ class Gen:
                     t.prim, t.args = "XBits", (lb,)
                 elif lb == ub:
                     t.prim, t.args = ("Bits" if lb <= 16 else "ABits"), (lb,)
+                elif ub >= 65536 and not ext:
+                    t.prim, t.args = "WBitStr", (lb, ub - lb)
                 else:
                     t.prim, t.args = ("XBitStr" if ext else "BitStr"), size_params(lb, ub)
         elif kind == "OCTET STRING":
             t.kind, t.data = "alias", "B.Bytes()"
+            if const(obj, "CONTAINING") is not None:
+                t.contains = M.ref_name(const(obj, "CONTAINING")["obj"])
             c = const(obj, "SIZE")
             if c is None:
                 t.prim, t.args = "Open", ()
@@ -186,8 +248,7 @@ class Gen:
                 optional = bool(comp._flag) and "OPTIONAL" in comp._flag
                 ftype = self.type_of(comp, f"{t.name}-{n}")
                 t.fields.append((bname(n), ftype, optional))
-                if ftype not in ("EXTS", "IE"):
-                    t.deps.append(ftype)
+                t.deps.append(ftype)
         elif kind == "CHOICE":
             t.kind, t.ext = "choice", obj._ext is not None
             t.alts = []
@@ -195,8 +256,7 @@ class Gen:
             for n in obj._root:
                 atype = self.type_of(obj._cont[n], f"{t.name}-{n}")
                 t.alts.append((bname(n), atype))
-                if atype not in ("EXTS", "IE"):
-                    t.deps.append(atype)
+                t.deps.append(atype)
         elif kind == "SEQUENCE OF":
             lb, ub, ext = rng(const(obj, "SIZE"))
             if ext:
@@ -205,84 +265,16 @@ class Gen:
             t.item = self.type_of(obj._cont, f"{t.name}-Item")
             t.deps.append(t.item)
             t.args = size_params(lb, ub)
-            t.data = f"List<&2, {self.data(t.item)}>"
+            t.data = f"List<&2, {t.item.ref()}>"
         else:
             raise ValueError(f"{t.name}: unsupported kind {kind}")
-
-    # -- codec expressions for a type name ------------------------------------
-
-    def data(self, name):
-        if name == "EXTS":
-            return "List<&2, Fr.Ie>"
-        if name == "IE":
-            return "Fr.Ie"
-        t = self.types[name]
-        if t.kind in ("record", "choice"):
-            return t.bend
-        return f"{t.bend}()"
-
-    def read(self, name, c):
-        if name == "EXTS":
-            return f"Fr.Exts.read({c})"
-        if name == "IE":
-            return f"Fr.Ie.read({c})"
-        return f"{self.types[name].bend}.read({c})"
-
-    def write(self, name, v, rem, rest):
-        if name == "EXTS":
-            return f"Fr.Exts.write({v}, {rem}, {rest})"
-        if name == "IE":
-            return f"Fr.Ie.write({v}, {rem}, {rest})"
-        return f"{self.types[name].bend}.write({v}, {rem}, {rest})"
-
-    def after(self, name, v, rem):
-        if name == "EXTS":
-            return f"Fr.Exts.after({rem})"
-        if name == "IE":
-            return f"Fr.Ie.after({rem})"
-        return f"{self.types[name].bend}.after({v}, {rem})"
-
-    def valid(self, name, v):
-        if name == "EXTS":
-            return f"Fr.Exts.valid({v})"
-        if name == "IE":
-            return f"Fr.Ie.valid({v})"
-        return f"{self.types[name].bend}.valid({v})"
-
-    # -- emission --------------------------------------------------------------
 
     def out(self, text=""):
         self.lines.append(text)
 
     def emit_all(self):
-        done = set()
-
-        def emit(name):
-            if name in done:
-                return
-            done.add(name)
-            for d in self.types[name].deps:
-                emit(d)
-            getattr(self, "emit_" + self.types[name].kind)(self.types[name])
-            self.emit_roundtrips(self.types[name])
-
-        for name in self.order:
-            emit(name)
-
-    def emit_roundtrips(self, t):
-        b, d = t.bend, self.data(t.name)
-        self.out(f"def {b}.roundtrips.end(+bs: B.Bytes(), r: Ap.Rd({d})) -> Bool:")
-        self.out("  match r:")
-        self.out("    case Fail{e}:")
-        self.out("      False{}")
-        self.out("    case Done{(+v, c)}:")
-        self.out("      match c:")
-        self.out("        case Ap.Cur{rem, bits}:")
-        self.out(f"          Bool.and(Ap.Tail.zero(bits), Bool.and({self.valid(t.name, 'v')}, B.bytes_eq(Ap.pack({self.write(t.name, 'v', '0n', '[]')}), bs)))")
-        self.out()
-        self.out(f"def {b}.roundtrips(+bs: B.Bytes()) -> Bool:")
-        self.out(f"  {b}.roundtrips.end(bs, {self.read(t.name, 'Ap.Cur{0n, Ap.unpack(bs)}')})")
-        self.out()
+        for t in self.topo:
+            getattr(self, "emit_" + t.kind)(t)
 
     def prim_exprs(self, t):
         a = t.args
@@ -325,6 +317,10 @@ class Gen:
                     "Ap.XBitStr.after(v, rem)", f"Ap.XBitStr.valid({lo}n, {diff}n, v)")
         if p == "UBitStr":
             return ("Ap.UBitStr.read(c)", "Ap.UBitStr.write(v, rem, rest)", "Ap.UBitStr.after(v, rem)", "Ap.UBitStr.valid(v)")
+        if p == "WBitStr":
+            lo, diff = a
+            return (f"Ap.WBitStr.read({lo}n, {diff}n, c)", "Ap.UBitStr.write(v, rem, rest)", "Ap.UBitStr.after(v, rem)",
+                    f"Ap.WBitStr.valid({lo}n, {diff}n, v)")
         if p in ("Octets", "AOctets"):
             (n,) = a
             return (f"Ap.{p}.read({n}n, c)", f"Ap.{p}.write(v, rem, rest)",
@@ -421,31 +417,31 @@ class Gen:
         k = len(opts)
         self.out(f"# {t.name} ::= {M.render(M.find(t.name)) if self.is_named(t.name) else 'SEQUENCE'}")
         self.out(f"type {b} is Data:")
-        self.out("  " + b + "{" + ", ".join(f"{fn}: {self.ftype(ft, o)}" for fn, ft, o in fields) + "}")
+        self.out("  " + b + "{" + ", ".join(f"{fn}: {ft.ref(o)}" for fn, ft, o in fields) + "}")
         self.out()
         for i in opts:
             fn, ft, _ = fields[i]
-            d = self.data(ft)
+            d = ft.ref()
             self.out(f"def {b}.v_{fn}(m: Maybe<&2, {d}>) -> Bool:")
             self.out("  match m:")
             self.out("    case None{}:")
             self.out("      True{}")
             self.out("    case Some{v}:")
-            self.out(f"      {self.valid(ft, 'v')}")
+            self.out(f"      {ft.valid('v')}")
             self.out()
             self.out(f"def {b}.w_{fn}(m: Maybe<&2, {d}>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():")
             self.out("  match m:")
             self.out("    case None{}:")
             self.out("      rest")
             self.out("    case Some{v}:")
-            self.out(f"      {self.write(ft, 'v', 'rem', 'rest')}")
+            self.out(f"      {ft.write('v', 'rem', 'rest')}")
             self.out()
             self.out(f"def {b}.a_{fn}(m: Maybe<&2, {d}>, +rem: Nat) -> Nat:")
             self.out("  match m:")
             self.out("    case None{}:")
             self.out("      rem")
             self.out("    case Some{v}:")
-            self.out(f"      {self.after(ft, 'v', 'rem')}")
+            self.out(f"      {ft.after('v', 'rem')}")
             self.out()
             self.out(f"def {b}.s_{fn}(r: Ap.Rd({d})) -> Ap.Rd(Maybe<&2, {d}>):")
             self.out("  match r:")
@@ -459,23 +455,21 @@ class Gen:
             self.out("    case False{}:")
             self.out("      Done{(None{}, c)}")
             self.out("    case True{}:")
-            self.out(f"      {b}.s_{fn}({self.read(ft, 'c')})")
+            self.out(f"      {b}.s_{fn}({ft.read('c')})")
             self.out()
-        # validity
         self.out(f"def {b}.valid(x: {b}) -> Bool:")
         self.out("  match x:")
         self.out("    case " + b + "{" + ", ".join(fn for fn, _, _ in fields) + "}:")
-        conj = [f"{b}.v_{fn}({fn})" if o else self.valid(ft, fn) for fn, ft, o in fields]
+        conj = [f"{b}.v_{fn}({fn})" if o else ft.valid(fn) for fn, ft, o in fields]
         self.out("      " + self.conj(conj))
         self.out()
-        # reader chain, last to first so each helper's callee precedes it
         m = len(fields)
         names = [fn for fn, _, _ in fields]
         for i in reversed(range(m)):
             fn, ft, o = fields[i]
             later_opts = [fields[j][0] for j in range(i + 1, m) if fields[j][2]]
-            params = [f"p_{p}: Bool" for p in later_opts] + [f"{names[j]}: {self.ftype(fields[j][1], fields[j][2])}" for j in range(i)]
-            d = self.ftype(ft, o)
+            params = [f"p_{p}: Bool" for p in later_opts] + [f"{names[j]}: {fields[j][1].ref(fields[j][2])}" for j in range(i)]
+            d = ft.ref(o)
             self.out(f"def {b}.r_{fn}({', '.join(params + [f'r: Ap.Rd({d})'])}) -> Ap.Rd({b}):")
             self.out("  match r:")
             self.out("    case Fail{e}:")
@@ -487,11 +481,11 @@ class Gen:
                 nfn, nft, no = fields[i + 1]
                 rest_opts = [fields[j][0] for j in range(i + 2, m) if fields[j][2]]
                 args = [f"p_{p}" for p in rest_opts] + names[: i + 1]
-                nxt = f"{b}.o_{nfn}(p_{nfn}, c)" if no else self.read(nft, "c")
+                nxt = f"{b}.o_{nfn}(p_{nfn}, c)" if no else nft.read("c")
                 self.out(f"      {b}.r_{nfn}({', '.join(args + [nxt])})")
             self.out()
         first = fields[0]
-        first_call = (f"{b}.o_{first[0]}(p_{first[0]}, c)" if first[2] else self.read(first[1], "c"))
+        first_call = (f"{b}.o_{first[0]}(p_{first[0]}, c)" if first[2] else first[1].read("c"))
         first_args = [f"p_{fields[j][0]}" for j in range(1, m) if fields[j][2]]
         start = f"{b}.r_{first[0]}({', '.join(first_args + [first_call])})"
         if k > 0:
@@ -525,7 +519,6 @@ class Gen:
         self.out(f"def {b}.read(c: Ap.Cur) -> Ap.Rd({b}):")
         self.out(f"  {body}")
         self.out()
-        # writer and after
         self.out(f"def {b}.write(x: {b}, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():")
         self.out("  match x:")
         self.out("    case " + b + "{" + ", ".join(f"+{fn}" for fn in names) + "}:")
@@ -536,14 +529,14 @@ class Gen:
             self.out(f"      +r0 = {r0}")
         for i in range(m - 1):
             fn, ft, o = fields[i]
-            aft = f"{b}.a_{fn}({fn}, r{i})" if o else self.after(ft, fn, f"r{i}")
+            aft = f"{b}.a_{fn}({fn}, r{i})" if o else ft.after(fn, f"r{i}")
             self.out(f"      +r{i + 1} = {aft}")
         inner = "rest"
         for i in reversed(range(m)):
             fn, ft, o = fields[i]
-            inner = f"{b}.w_{fn}({fn}, r{i}, {inner})" if o else self.write(ft, fn, f"r{i}", inner)
+            inner = f"{b}.w_{fn}({fn}, r{i}, {inner})" if o else ft.write(fn, f"r{i}", inner)
         if k > 0:
-            bm = "[" + ", ".join(f"Fr.Present({self.data(fields[i][1])}, {fields[i][0]})" for i in opts) + "]"
+            bm = "[" + ", ".join(f"Fr.Present({fields[i][1].ref()}, {fields[i][0]})" for i in opts) + "]"
             inner = f"Ap.Bits.write({bm}, {r0}, {inner})"
         if t.ext:
             inner = f"Ap.Bit.write(False{{}}, rem, {inner})"
@@ -558,14 +551,10 @@ class Gen:
             self.out(f"      +r0 = {r0}")
         for i in range(m):
             fn, ft, o = fields[i]
-            aft = f"{b}.a_{fn}({fn}, r{i})" if o else self.after(ft, fn, f"r{i}")
+            aft = f"{b}.a_{fn}({fn}, r{i})" if o else ft.after(fn, f"r{i}")
             self.out(f"      +r{i + 1} = {aft}")
         self.out(f"      r{m}")
         self.out()
-
-    def ftype(self, ft, optional):
-        d = self.data(ft)
-        return f"Maybe<&2, {d}>" if optional else d
 
     def conj(self, terms):
         if not terms:
@@ -582,16 +571,16 @@ class Gen:
         self.out(f"# {t.name} ::= {M.render(M.find(t.name)) if self.is_named(t.name) else 'CHOICE'}")
         self.out(f"type {b} is Data:")
         for an, at in alts:
-            self.out(f"  {b}_{an}{{v: {self.data(at)}}}")
+            self.out(f"  {b}_{an}{{v: {at.ref()}}}")
         self.out()
         self.out(f"def {b}.valid(x: {b}) -> Bool:")
         self.out("  match x:")
         for an, at in alts:
             self.out(f"    case {b}_{an}{{v}}:")
-            self.out(f"      {self.valid(at, 'v')}")
+            self.out(f"      {at.valid('v')}")
         self.out()
         for an, at in alts:
-            self.out(f"def {b}.c_{an}(r: Ap.Rd({self.data(at)})) -> Ap.Rd({b}):")
+            self.out(f"def {b}.c_{an}(r: Ap.Rd({at.ref()})) -> Ap.Rd({b}):")
             self.out("  match r:")
             self.out("    case Fail{e}:")
             self.out("      Fail{e}")
@@ -602,7 +591,7 @@ class Gen:
         self.out("  match i:")
         for j, (an, at) in enumerate(alts):
             self.out(f"    case {j}n:")
-            self.out(f"      {b}.c_{an}({self.read(at, 'c')})")
+            self.out(f"      {b}.c_{an}({at.read('c')})")
         self.out(f"    case {count}n+p:")
         self.out("      Fail{B.Invalid{0}}")
         self.out()
@@ -636,7 +625,7 @@ class Gen:
         self.out("  match x:")
         for j, (an, at) in enumerate(alts):
             self.out(f"    case {b}_{an}{{+v}}:")
-            inner = f"Ap.Size.write(False{{}}, {n}n, 0n, {j}n, {r0}, {self.write(at, 'v', r1, 'rest')})"
+            inner = f"Ap.Size.write(False{{}}, {n}n, 0n, {j}n, {r0}, {at.write('v', r1, 'rest')})"
             if t.ext:
                 inner = f"Ap.Bit.write(False{{}}, rem, {inner})"
             self.out(f"      {inner}")
@@ -645,13 +634,13 @@ class Gen:
         self.out("  match x:")
         for an, at in alts:
             self.out(f"    case {b}_{an}{{v}}:")
-            self.out(f"      {self.after(at, 'v', r1)}")
+            self.out(f"      {at.after('v', r1)}")
         self.out()
 
     def emit_list(self, t):
         b, item = t.bend, t.item
         al, n, lo, diff = t.args
-        d = self.data(item)
+        d = item.ref()
         self.out(f"# {t.name} ::= {M.render(M.find(t.name)) if self.is_named(t.name) else 'SEQUENCE OF'}")
         self.out(f"def {b}() -> Data:")
         self.out(f"  List<&2, {d}>")
@@ -661,7 +650,7 @@ class Gen:
         self.out("    case Nil{}:")
         self.out("      True{}")
         self.out("    case x <> more:")
-        self.out(f"      Bool.and({self.valid(item, 'x')}, {b}.all_valid(more))")
+        self.out(f"      Bool.and({item.valid('x')}, {b}.all_valid(more))")
         self.out()
         self.out(f"def {b}.valid(+xs: {b}()) -> Bool:")
         self.out(f"  Bool.and(Ap.Size.valid({lo}n, {diff}n, List.length(&2, {d}, xs)), {b}.all_valid(xs))")
@@ -685,7 +674,7 @@ class Gen:
         self.out("    case 0n:")
         self.out("      Done{([], c)}")
         self.out("    case 1n+p:")
-        self.out(f"      {b}.next({self.read(item, 'c')}, c2 => {b}.items(p, c2))")
+        self.out(f"      {b}.next({item.read('c')}, c2 => {b}.items(p, c2))")
         self.out()
         self.out(f"def {b}.count(r: Ap.Rd(Nat)) -> Ap.Rd({b}()):")
         self.out("  match r:")
@@ -702,7 +691,7 @@ class Gen:
         self.out("    case Nil{}:")
         self.out("      rest")
         self.out("    case +x <> more:")
-        self.out(f"      {self.write(item, 'x', 'rem', f'{b}.items_write(more, {self.after(item, 'x', 'rem')}, rest)')}")
+        self.out(f"      {item.write('x', 'rem', f'{b}.items_write(more, {item.after('x', 'rem')}, rest)')}")
         self.out()
         self.out(f"def {b}.write(+xs: {b}(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():")
         self.out(f"  Ap.Size.write({al}, {n}n, {lo}n, List.length(&2, {d}, xs), rem, {b}.items_write(xs, Ap.Size.after({al}, {n}n, rem), rest))")
@@ -712,7 +701,7 @@ class Gen:
         self.out("    case Nil{}:")
         self.out("      rem")
         self.out("    case x <> more:")
-        self.out(f"      {b}.items_after(more, {self.after(item, 'x', 'rem')})")
+        self.out(f"      {b}.items_after(more, {item.after('x', 'rem')})")
         self.out()
         self.out(f"def {b}.after(+xs: {b}(), +rem: Nat) -> Nat:")
         self.out(f"  {b}.items_after(xs, Ap.Size.after({al}, {n}n, rem))")
@@ -721,19 +710,23 @@ class Gen:
     def emit_dispatch(self):
         """Per-message IE check used by the tests: does the value of a known IE id roundtrip?
         Ie.check picks the message from the PDU kind and procedure code."""
-        names = M.ie_names()
-        for msg, rows in sorted(self.messages.items()):
-            b = self.types[msg].bend
-            self.out(f"def {b}.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:")
+        fns = "valid: A -> Bool, write: A -> Ap.Bits(), +bs: B.Bytes()"
+        self.out(f"def Ie.roundtrips.end(-A: Data, {fns}, r: Result<&2, &2, B.Err, A>) -> Bool:")
+        self.out("  match r:")
+        self.out("    case Fail{e}:")
+        self.out("      False{}")
+        self.out("    case Done{+v}:")
+        self.out("      Bool.and(valid(v), B.bytes_eq(Ap.pack(write(v)), bs))")
+        self.out()
+        self.out(f"def Ie.roundtrips(-A: Data, read: Ap.Cur -> Ap.Rd(A), {fns}) -> Bool:")
+        self.out("  Ie.roundtrips.end(A, valid, write, bs, Fr.View.exact(A, read(Ap.Cur{0n, Ap.unpack(bs)})))")
+        self.out()
+        for msg in sorted(self.messages):
+            self.out(f"def {self.types[msg].bend}.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:")
             self.out("  match id:")
-            seen = set()
-            for row in rows:
-                tname = M.ref_name(M.row_type(row))
-                if tname is None or tname not in self.types or row["id"] in seen:
-                    continue
-                seen.add(row["id"])
-                self.out(f"    case {row['id']}n:")
-                self.out(f"      Some{{{self.types[tname].bend}.roundtrips(value)}}")
+            for iid, _, t, _ in self.view_rows(msg):
+                self.out(f"    case {iid}n:")
+                self.out(f"      Some{{Ie.roundtrips({t.ref()}, {t.bend}.read, v => {t.bend}.valid(v), v => {t.bend}.write(v, 0n, []), value)}}")
             self.out("    case _:")
             self.out("      None{}")
             self.out()
@@ -749,22 +742,25 @@ class Gen:
                 lines += [f"    case {kind}n {code}n:", f"      {call(self.types[msg].bend)}"]
         return lines + ["    case _ _:", f"      {miss}"]
 
-    # -- message views ----------------------------------------------------------
-
-    def field_name(self, names, row):
-        base = names.get(row["id"], f"ie{row['id']}")
-        base = base[3:] if base.startswith("id-") else base
-        return bname(base).lower()
-
     def view_rows(self, msg):
-        names = M.ie_names()
+        """(IE id, field name, Type, mandatory) for the IEs of msg whose type is generated."""
         rows = []
         for row in self.messages[msg]:
-            tname = M.ref_name(M.row_type(row))
-            if tname is None or tname not in self.types:
-                continue
-            rows.append((row["id"], self.field_name(names, row), tname, row["presence"] == "mandatory"))
+            t = self.types.get(M.ref_name(M.row_type(row)))
+            if t is not None:
+                rows.append((row["id"], bname(self.ids[row["id"]][3:]).lower(), t, row["presence"] == "mandatory"))
         return rows
+
+    def emit_constants(self):
+        """The procedure codes of the generated messages and the ids of their IEs, named as in NGAP-Constants."""
+        procs = M.constants("ProcedureCode")
+        codes = sorted({code for (_, code), msg in self.procs.items() if msg in self.messages})
+        ids = sorted({iid for msg in self.messages for iid, _, _, _ in self.view_rows(msg)})
+        for space, names, values in (("Proc", procs, codes), ("Id", self.ids, ids)):
+            for v in values:
+                self.out(f"def {space}.{bname(names[v][3:])}() -> U32:")
+                self.out(f"  {v}")
+                self.out()
 
     def emit_views(self):
         self.lines = []
@@ -787,7 +783,7 @@ class Gen:
             n = len(rows)
             o(f"# {msg}")
             o(f"type {mb}.View is Data:")
-            o(f"  {mb}.View{{" + ", ".join(f"{fn}: {self.gdata(tn, mand)}" for _, fn, tn, mand in rows) + "}")
+            o(f"  {mb}.View{{" + ", ".join(f"{fn}: {tn.qref(not mand)}" for _, fn, tn, mand in rows) + "}")
             o()
             o(f"def {mb}.known() -> List<&2, U32>:")
             o("  [" + ", ".join(str(i) for i, _, _, _ in rows) + "]")
@@ -801,8 +797,8 @@ class Gen:
 
             for i in reversed(range(n)):
                 iid, fn, tn, mand = rows[i]
-                d = self.gdata(tn, True)
-                prev = [f"{fields[j]}: {self.gdata(rows[j][2], rows[j][3])}" for j in range(i)]
+                d = tn.qref()
+                prev = [f"{fields[j]}: {rows[j][2].qref(not rows[j][3])}" for j in range(i)]
                 o(f"def {mb}.d_{fn}({', '.join(['+ies: List<&2, Fr.Ie>'] + prev + [f'r: Result<&2, &2, B.Err, {d}>'])}) -> Result<&2, &2, B.Err, {mb}.View>:")
                 o("  match r:")
                 o("    case Fail{e}:")
@@ -818,7 +814,8 @@ class Gen:
                 else:
                     o(f"      {nxt(i + 1, fields[:i] + ['None{}'])}")
                 o("    case Some{bs}:")
-                o(f"      {mb}.d_{fn}({', '.join(['ies'] + fields[:i] + [f'Fr.View.exact({d}, G.{self.types[tn].bend}.read(Ap.Cur{{0n, Ap.unpack(bs)}}))'])})")
+                exact = f"Fr.View.exact({d}, G.{tn.read('Ap.Cur{0n, Ap.unpack(bs)}')})"
+                o(f"      {mb}.d_{fn}({', '.join(['ies'] + fields[:i] + [exact])})")
                 o()
             o(f"def {mb}.v_prelude(r: Result<&2, &2, B.Err, List<&2, Fr.Ie>>) -> Result<&2, &2, B.Err, {mb}.View>:")
             o("  match r:")
@@ -834,18 +831,19 @@ class Gen:
         self.lines += self.dispatch("View.check", "ies: List<&2, Fr.Ie>", "Maybe<&2, Bool>", lambda b: f"Some{{Bool.not(Result.is_fail(&2, &2, B.Err, {b}.View, {b}.view(ies)))}}", "None{}")
         return "\n".join(self.lines).rstrip() + "\n"
 
-    def gdata(self, tname, mandatory):
-        t = self.types[tname]
-        d = f"G.{t.bend}" if t.kind in ("record", "choice") else f"G.{t.bend}()"
-        return d if mandatory else f"Maybe<&2, {d}>"
 
-
-def main():
-    asn, out = sys.argv[1], pathlib.Path(sys.argv[2])
+def build(asn):
+    """The Gen of the milestone message set (tiers M and R), its types visited and sorted."""
     M.compile_dir(asn)
     g = Gen()
     for name in M.closure(M.MESSAGES + M.TRANSFERS, "R"):
         g.visit(name, M.find(name))
+    g.sort()
+    return g
+
+
+def main():
+    g, out = build(sys.argv[1]), pathlib.Path(sys.argv[2])
     g.out("import Base")
     g.out("import ../../bytes.bend as B")
     g.out("import ../../aper.bend as Ap")
@@ -853,8 +851,10 @@ def main():
     g.out()
     g.out("# GENERATED by tools/ngap-gen/gen.py from TS 38.413 V17.15.0; do not edit.")
     g.out("# Every type of the milestone message set (tiers M and R): its datatype,")
-    g.out("# `read`, `write`, `after` and `valid`, on the APER primitives.")
+    g.out("# `read`, `write`, `after` and `valid`, on the APER primitives, after the")
+    g.out("# procedure codes and IE ids they use (TS 38.413 §9.4.7).")
     g.out()
+    g.emit_constants()
     g.emit_all()
     g.emit_dispatch()
     out.mkdir(parents=True, exist_ok=True)
@@ -864,7 +864,7 @@ def main():
     (out / "laws.bend").write_text(proofs.laws())
     (out / "proofs.bend").write_text(proofs.proofs())
     (out / "show.bend").write_text(gen_show.Show(g).show())
-    print(f"{len(g.types)} types, {len(g.messages)} views, laws, proofs and show -> {out}")
+    print(f"{len(g.topo)} types, {len(g.messages)} views, laws, proofs and show -> {out}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,526 @@
+{
+ "description": "NGAP messages and transfers of the handover procedures that no simulator sent against Open5GS 2.8.0 (docs/research/handover-simulator.md), built by hand from the ASN.1 of TS 38.413 V17.15.0 (tools/ngap-gen/asn). Values follow the handover capture: PLMN 001/01, AMF-UE-NGAP-ID 1, RAN-UE-NGAP-IDs 1 to 3.",
+ "conventions": {
+  "jer": "the NGAP-PDU in JSON encoding rules as pycrate 0.8.1 writes it; tools/ngap-gen/oracle.py checks that pycrate encodes it to 'hex'",
+  "hex": "the APER NGAP-PDU, lowercase"
+ },
+ "messages": [
+  {
+   "protocol": "NGAP",
+   "message": "PathSwitchRequest",
+   "note": "a Path Switch Request (TS 38.413 \u00a79.2.3.8) whose second PDU session failed to set up in the target (IE 57, PathSwitchRequestSetupFailedTransfer)",
+   "jer": {
+    "initiatingMessage": {
+     "criticality": "reject",
+     "procedureCode": 25,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "reject",
+        "id": 85,
+        "value": 2
+       },
+       {
+        "criticality": "reject",
+        "id": 100,
+        "value": 1
+       },
+       {
+        "criticality": "ignore",
+        "id": 121,
+        "value": {
+         "userLocationInformationNR": {
+          "nR-CGI": {
+           "nRCellIdentity": "0000000200",
+           "pLMNIdentity": "00f110"
+          },
+          "tAI": {
+           "pLMNIdentity": "00f110",
+           "tAC": "000001"
+          }
+         }
+        }
+       },
+       {
+        "criticality": "ignore",
+        "id": 119,
+        "value": {
+         "eUTRAencryptionAlgorithms": "0000",
+         "eUTRAintegrityProtectionAlgorithms": "0000",
+         "nRencryptionAlgorithms": "c000",
+         "nRintegrityProtectionAlgorithms": "c000"
+        }
+       },
+       {
+        "criticality": "reject",
+        "id": 76,
+        "value": [
+         {
+          "pDUSessionID": 1,
+          "pathSwitchRequestTransfer": {
+           "PathSwitchRequestTransfer": {
+            "dL-NGU-UP-TNLInformation": {
+             "gTPTunnel": {
+              "gTP-TEID": "00000002",
+              "transportLayerAddress": {
+               "length": 32,
+               "value": "0a21001f"
+              }
+             }
+            },
+            "qosFlowAcceptedList": [
+             {
+              "qosFlowIdentifier": 1
+             }
+            ]
+           }
+          }
+         }
+        ]
+       },
+       {
+        "criticality": "ignore",
+        "id": 57,
+        "value": [
+         {
+          "pDUSessionID": 2,
+          "pathSwitchRequestSetupFailedTransfer": {
+           "PathSwitchRequestSetupFailedTransfer": {
+            "cause": {
+             "radioNetwork": "radio-resources-not-available"
+            }
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "hex": "0019004d0000060055000200020064000200010079400f4000f110000000020000f1100000010077400918000c000000000000004c00100000010c001f0a21001f00000002000200394006000002020160"
+  },
+  {
+   "protocol": "NGAP",
+   "message": "PathSwitchRequestAcknowledge",
+   "note": "a Path Switch Request Acknowledge (\u00a79.2.3.9) with the stored UE security capabilities (IE 119) and a released PDU session (IE 68, PathSwitchRequestUnsuccessfulTransfer)",
+   "jer": {
+    "successfulOutcome": {
+     "criticality": "reject",
+     "procedureCode": 25,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "ignore",
+        "id": 10,
+        "value": 1
+       },
+       {
+        "criticality": "ignore",
+        "id": 85,
+        "value": 2
+       },
+       {
+        "criticality": "reject",
+        "id": 119,
+        "value": {
+         "eUTRAencryptionAlgorithms": "0000",
+         "eUTRAintegrityProtectionAlgorithms": "0000",
+         "nRencryptionAlgorithms": "c000",
+         "nRintegrityProtectionAlgorithms": "c000"
+        }
+       },
+       {
+        "criticality": "reject",
+        "id": 93,
+        "value": {
+         "nextHopChainingCount": 2,
+         "nextHopNH": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a"
+        }
+       },
+       {
+        "criticality": "ignore",
+        "id": 77,
+        "value": [
+         {
+          "pDUSessionID": 1,
+          "pathSwitchRequestAcknowledgeTransfer": {
+           "PathSwitchRequestAcknowledgeTransfer": {
+            "uL-NGU-UP-TNLInformation": {
+             "gTPTunnel": {
+              "gTP-TEID": "00000001",
+              "transportLayerAddress": {
+               "length": 32,
+               "value": "0a210014"
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       {
+        "criticality": "ignore",
+        "id": 68,
+        "value": [
+         {
+          "pDUSessionID": 2,
+          "pathSwitchRequestUnsuccessfulTransfer": {
+           "PathSwitchRequestUnsuccessfulTransfer": {
+            "cause": {
+             "radioNetwork": "radio-resources-not-available"
+            }
+           }
+          }
+         }
+        ]
+       },
+       {
+        "criticality": "reject",
+        "id": 0,
+        "value": [
+         {
+          "s-NSSAI": {
+           "sST": "01"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "hex": "20190063000007000a400200010055400200020077000918000c000000000000005d0021105a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a004d400e0000010a401f0a2100140000000100444006000002020160000000020001"
+  },
+  {
+   "protocol": "NGAP",
+   "message": "PathSwitchRequestFailure",
+   "note": "a Path Switch Request Failure (\u00a79.2.3.10) releasing the only PDU session (PathSwitchRequestUnsuccessfulTransfer)",
+   "jer": {
+    "unsuccessfulOutcome": {
+     "criticality": "reject",
+     "procedureCode": 25,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "ignore",
+        "id": 10,
+        "value": 1
+       },
+       {
+        "criticality": "ignore",
+        "id": 85,
+        "value": 2
+       },
+       {
+        "criticality": "ignore",
+        "id": 69,
+        "value": [
+         {
+          "pDUSessionID": 1,
+          "pathSwitchRequestUnsuccessfulTransfer": {
+           "PathSwitchRequestUnsuccessfulTransfer": {
+            "cause": {
+             "radioNetwork": "unknown-PDU-session-ID"
+            }
+           }
+          }
+         }
+        ]
+       }
+      ]
+     }
+    }
+   },
+   "hex": "40190019000003000a40020001005540020002004540060000010201a0"
+  },
+  {
+   "protocol": "NGAP",
+   "message": "HandoverRequestAcknowledge",
+   "note": "a Handover Request Acknowledge (\u00a79.2.3.5) admitting one PDU session and failing another (IE 56, HandoverResourceAllocationUnsuccessfulTransfer)",
+   "jer": {
+    "successfulOutcome": {
+     "criticality": "reject",
+     "procedureCode": 13,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "ignore",
+        "id": 10,
+        "value": 1
+       },
+       {
+        "criticality": "ignore",
+        "id": 85,
+        "value": 3
+       },
+       {
+        "criticality": "ignore",
+        "id": 53,
+        "value": [
+         {
+          "handoverRequestAcknowledgeTransfer": {
+           "HandoverRequestAcknowledgeTransfer": {
+            "dL-NGU-UP-TNLInformation": {
+             "gTPTunnel": {
+              "gTP-TEID": "00000003",
+              "transportLayerAddress": {
+               "length": 32,
+               "value": "0a21001e"
+              }
+             }
+            },
+            "qosFlowSetupResponseList": [
+             {
+              "qosFlowIdentifier": 1
+             }
+            ]
+           }
+          },
+          "pDUSessionID": 1
+         }
+        ]
+       },
+       {
+        "criticality": "ignore",
+        "id": 56,
+        "value": [
+         {
+          "handoverResourceAllocationUnsuccessfulTransfer": {
+           "HandoverResourceAllocationUnsuccessfulTransfer": {
+            "cause": {
+             "radioNetwork": "radio-resources-not-available"
+            }
+           }
+          },
+          "pDUSessionID": 2
+         }
+        ]
+       },
+       {
+        "criticality": "reject",
+        "id": 106,
+        "value": "000011"
+       }
+      ]
+     }
+    }
+   },
+   "hex": "200d0036000005000a40020001005540020003003540110000010d0007c00a21001e000000030001003840060000020200b0006a000403000011"
+  },
+  {
+   "protocol": "NGAP",
+   "message": "HandoverFailure",
+   "note": "a Handover Failure (\u00a79.2.3.6): the target could not admit the UE",
+   "jer": {
+    "unsuccessfulOutcome": {
+     "criticality": "reject",
+     "procedureCode": 13,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "ignore",
+        "id": 10,
+        "value": 1
+       },
+       {
+        "criticality": "ignore",
+        "id": 15,
+        "value": {
+         "radioNetwork": "ho-failure-in-target-5GC-ngran-node-or-target-system"
+        }
+       }
+      ]
+     }
+    }
+   },
+   "hex": "400d000f000002000a40020001000f400201c0"
+  },
+  {
+   "protocol": "NGAP",
+   "message": "HandoverPreparationFailure",
+   "note": "a Handover Preparation Failure (\u00a79.2.3.3) to the source",
+   "jer": {
+    "unsuccessfulOutcome": {
+     "criticality": "reject",
+     "procedureCode": 12,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "ignore",
+        "id": 10,
+        "value": 1
+       },
+       {
+        "criticality": "ignore",
+        "id": 85,
+        "value": 1
+       },
+       {
+        "criticality": "ignore",
+        "id": 15,
+        "value": {
+         "radioNetwork": "ho-failure-in-target-5GC-ngran-node-or-target-system"
+        }
+       }
+      ]
+     }
+    }
+   },
+   "hex": "400c0015000003000a40020001005540020001000f400201c0"
+  },
+  {
+   "protocol": "NGAP",
+   "message": "UplinkRANStatusTransfer",
+   "note": "an Uplink RAN Status Transfer (\u00a79.2.3.13) for an 18-bit and a 12-bit PDCP SN DRB, with a 5-bit receive status",
+   "jer": {
+    "initiatingMessage": {
+     "criticality": "ignore",
+     "procedureCode": 49,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "reject",
+        "id": 10,
+        "value": 1
+       },
+       {
+        "criticality": "reject",
+        "id": 85,
+        "value": 1
+       },
+       {
+        "criticality": "reject",
+        "id": 84,
+        "value": {
+         "dRBsSubjectToStatusTransferList": [
+          {
+           "dRB-ID": 1,
+           "dRBStatusDL": {
+            "dRBStatusDL18": {
+             "dL-COUNTValue": {
+              "hFN-PDCP-SN18": 0,
+              "pDCP-SN18": 9
+             }
+            }
+           },
+           "dRBStatusUL": {
+            "dRBStatusUL18": {
+             "receiveStatusOfUL-PDCP-SDUs": {
+              "length": 5,
+              "value": "a8"
+             },
+             "uL-COUNTValue": {
+              "hFN-PDCP-SN18": 0,
+              "pDCP-SN18": 5
+             }
+            }
+           }
+          },
+          {
+           "dRB-ID": 2,
+           "dRBStatusDL": {
+            "dRBStatusDL12": {
+             "dL-COUNTValue": {
+              "hFN-PDCP-SN12": 1,
+              "pDCP-SN12": 7
+             }
+            }
+           },
+           "dRBStatusUL": {
+            "dRBStatusUL12": {
+             "uL-COUNTValue": {
+              "hFN-PDCP-SN12": 1,
+              "pDCP-SN12": 3
+             }
+            }
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    }
+   },
+   "hex": "0031402a000003000a00020001005500020001005400170200a005000005aa000900000100000300010000070001"
+  },
+  {
+   "protocol": "NGAP",
+   "message": "DownlinkRANStatusTransfer",
+   "note": "the Downlink RAN Status Transfer (\u00a79.2.3.14) relaying it to the target",
+   "jer": {
+    "initiatingMessage": {
+     "criticality": "ignore",
+     "procedureCode": 7,
+     "value": {
+      "protocolIEs": [
+       {
+        "criticality": "reject",
+        "id": 10,
+        "value": 1
+       },
+       {
+        "criticality": "reject",
+        "id": 85,
+        "value": 3
+       },
+       {
+        "criticality": "reject",
+        "id": 84,
+        "value": {
+         "dRBsSubjectToStatusTransferList": [
+          {
+           "dRB-ID": 1,
+           "dRBStatusDL": {
+            "dRBStatusDL18": {
+             "dL-COUNTValue": {
+              "hFN-PDCP-SN18": 0,
+              "pDCP-SN18": 9
+             }
+            }
+           },
+           "dRBStatusUL": {
+            "dRBStatusUL18": {
+             "receiveStatusOfUL-PDCP-SDUs": {
+              "length": 5,
+              "value": "a8"
+             },
+             "uL-COUNTValue": {
+              "hFN-PDCP-SN18": 0,
+              "pDCP-SN18": 5
+             }
+            }
+           }
+          },
+          {
+           "dRB-ID": 2,
+           "dRBStatusDL": {
+            "dRBStatusDL12": {
+             "dL-COUNTValue": {
+              "hFN-PDCP-SN12": 1,
+              "pDCP-SN12": 7
+             }
+            }
+           },
+           "dRBStatusUL": {
+            "dRBStatusUL12": {
+             "uL-COUNTValue": {
+              "hFN-PDCP-SN12": 1,
+              "pDCP-SN12": 3
+             }
+            }
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    }
+   },
+   "hex": "0007402a000003000a00020001005500020003005400170200a005000005aa000900000100000300010000070001"
+  }
+ ]
+}

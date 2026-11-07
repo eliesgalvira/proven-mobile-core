@@ -26,6 +26,8 @@ type Mm.Type is Data:
   Status{}
   UlNasTransport{}
   DlNasTransport{}
+  ServiceRequest{}
+  ServiceReject{}
 
 def Mm.Type.code(t: Mm.Type) -> U32:
   match t:
@@ -67,13 +69,37 @@ def Mm.Type.code(t: Mm.Type) -> U32:
       103
     case DlNasTransport{}:
       104
+    case ServiceRequest{}:
+      76
+    case ServiceReject{}:
+      77
+
+def Mm.Type.of20.pick(b: U32, hit: Bool) -> Maybe<&2, Mm.Type>:
+  match hit:
+    case True{}:
+      Some{ServiceReject{}}
+    case False{}:
+      None{}
+
+def Mm.Type.of20(+b: U32) -> Maybe<&2, Mm.Type>:
+  Mm.Type.of20.pick(b, U32.is_eq(b, 77))
+
+def Mm.Type.of19.pick(b: U32, hit: Bool) -> Maybe<&2, Mm.Type>:
+  match hit:
+    case True{}:
+      Some{ServiceRequest{}}
+    case False{}:
+      Mm.Type.of20(b)
+
+def Mm.Type.of19(+b: U32) -> Maybe<&2, Mm.Type>:
+  Mm.Type.of19.pick(b, U32.is_eq(b, 76))
 
 def Mm.Type.of18.pick(b: U32, hit: Bool) -> Maybe<&2, Mm.Type>:
   match hit:
     case True{}:
       Some{DlNasTransport{}}
     case False{}:
-      None{}
+      Mm.Type.of19(b)
 
 def Mm.Type.of18(+b: U32) -> Maybe<&2, Mm.Type>:
   Mm.Type.of18.pick(b, U32.is_eq(b, 104))
@@ -303,6 +329,10 @@ def Mm.layout(t: Mm.Type) -> List<&2, I.Lay>:
       [I.V1{}, I.LvE{}]
     case DlNasTransport{}:
       [I.V1{}, I.LvE{}]
+    case ServiceRequest{}:
+      [I.V1{}, I.LvE{}]
+    case ServiceReject{}:
+      [I.V1{}]
 
 # Optional IEs below 0x80 that are not TLV (TS 24.501 Tables 8.2.x.1.1).
 def Mm.table(t: Mm.Type) -> List<&2, I.Rule>:
@@ -345,6 +375,10 @@ def Mm.table(t: Mm.Type) -> List<&2, I.Rule>:
       [I.Rule{18, I.LowTv{1n}}, I.Rule{89, I.LowTv{1n}}]
     case DlNasTransport{}:
       [I.Rule{18, I.LowTv{1n}}, I.Rule{88, I.LowTv{1n}}]
+    case ServiceRequest{}:
+      [I.Rule{113, I.LowTlvE{}}]
+    case ServiceReject{}:
+      [I.Rule{117, I.LowTlvE{}}, I.Rule{120, I.LowTlvE{}}]
 
 type Mm is Data:
   Mm{mt: Mm.Type, fields: List<&2, I.Field>, opts: List<&2, I.Ie>}

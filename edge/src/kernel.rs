@@ -2,7 +2,7 @@
 //! frame out.
 
 use std::fmt;
-use std::io;
+use std::io::{self, Read, Write};
 use std::net::{Ipv4Addr, TcpStream};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
@@ -65,10 +65,22 @@ pub struct Process {
 }
 
 impl Process {
-    pub fn spawn(path: &str, port: u16) -> io::Result<(Process, Link)> {
-        let child = Command::new(path).arg(port.to_string()).stdin(Stdio::null()).spawn()?;
+    /// Starts the kernel and connects to it. `exited` runs on a thread once the
+    /// kernel exits, told by the end of its stdout: a pipe only the kernel
+    /// holds, whose bytes, if it writes any, are passed on to ours.
+    pub fn spawn(path: &str, port: u16, exited: impl FnOnce() + Send + 'static) -> io::Result<(Process, Link)> {
+        let mut child = Command::new(path).arg(port.to_string()).stdin(Stdio::null()).stdout(Stdio::piped()).spawn()?;
+        let mut out = child.stdout.take().expect("the kernel's stdout is piped");
+        std::thread::spawn(move || {
+            let mut buf = [0u8; 4096];
+            while let Ok(n @ 1..) = out.read(&mut buf) {
+                let _ = io::stdout().write_all(&buf[..n]);
+            }
+            exited();
+        });
+        let process = Process { child };
         let link = Link::connect(port, Duration::from_secs(10))?;
-        Ok((Process { child }, link))
+        Ok((process, link))
     }
 }
 

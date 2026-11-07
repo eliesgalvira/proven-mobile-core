@@ -24,7 +24,7 @@ def Ctr.blocks16(n: Nat) -> Nat:
     case q:
       16n
 
-def Ctr.keystream(n: Nat, +rks: List<&2, A.Aes.Block>, +c: A.Aes.Block) -> List<&2, U32>:
+def Ctr.keystream(n: Nat, +rks: A.Aes.Keys, +c: A.Aes.Block) -> List<&2, U32>:
   match n:
     case 0n:
       Nil{}

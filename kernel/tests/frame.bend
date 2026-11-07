@@ -16,13 +16,6 @@ def entropy() -> B.Bytes():
 def cat(xs: B.Bytes(), ys: B.Bytes()) -> B.Bytes():
   List.append(&2, U32, xs, ys)
 
-def fails(-A: Data, r: Result<&2, &2, B.Err, A>) -> Bool:
-  match r:
-    case Fail{e}:
-      True{}
-    case Done{x}:
-      False{}
-
 def body_is(r: B.Read(B.Bytes()), body: B.Bytes(), rest: B.Bytes()) -> Bool:
   match r:
     case Fail{e}:
@@ -126,23 +119,23 @@ def main() -> IO(Unit):
     each_event(V.Vec.items(V.Vec.field(Fv.data(), "events")))
     each_actions(V.Vec.items(V.Vec.field(Fv.data(), "actions")))
     C.Check.report("a frame yields its body and the bytes after it", body_is(F.Frame.read([0, 0, 0, 3, 1, 2, 3, 4, 5]), [1, 2, 3], [4, 5]))
-    C.Check.report("a frame short of its body is Short", fails(B.ReadValue(B.Bytes()), F.Frame.read([0, 0, 0, 3, 1, 2])))
-    C.Check.report("a frame short of its length word is Short", fails(B.ReadValue(B.Bytes()), F.Frame.read([0, 0, 0])))
-    C.Check.report("a body of 262144 octets is allowed by its length word", Bool.not(fails(B.ReadValue(U32), B.u32([0, 4, 0, 0]))))
-    C.Check.report("a body over 262144 octets is refused on its length word alone", fails(B.ReadValue(B.Bytes()), F.Frame.read([0, 4, 0, 1])))
-    C.Check.report("an event short of its entropy is Short", fails(B.ReadValue(F.Input), F.Input.read([6, 1, 2, 3])))
-    C.Check.report("an event of unknown kind is Unsupported", fails(B.ReadValue(F.Input), F.Input.read(cat([7], cat(entropy(), [0, 0, 0, 7])))))
-    C.Check.report("NgapData short of its bytes is Short", fails(B.ReadValue(F.Input), F.Input.read(cat([4], cat(entropy(), [0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 1, 2])))))
+    C.Check.report("a frame short of its body is Short", C.Check.fails(B.ReadValue(B.Bytes()), F.Frame.read([0, 0, 0, 3, 1, 2])))
+    C.Check.report("a frame short of its length word is Short", C.Check.fails(B.ReadValue(B.Bytes()), F.Frame.read([0, 0, 0])))
+    C.Check.report("a body of 262144 octets is allowed by its length word", Bool.not(C.Check.fails(B.ReadValue(U32), B.u32([0, 4, 0, 0]))))
+    C.Check.report("a body over 262144 octets is refused on its length word alone", C.Check.fails(B.ReadValue(B.Bytes()), F.Frame.read([0, 4, 0, 1])))
+    C.Check.report("an event short of its entropy is Short", C.Check.fails(B.ReadValue(F.Input), F.Input.read([6, 1, 2, 3])))
+    C.Check.report("an event of unknown kind is Unsupported", C.Check.fails(B.ReadValue(F.Input), F.Input.read(cat([7], cat(entropy(), [0, 0, 0, 7])))))
+    C.Check.report("NgapData short of its bytes is Short", C.Check.fails(B.ReadValue(F.Input), F.Input.read(cat([4], cat(entropy(), [0, 0, 0, 3, 0, 1, 0, 0, 0, 4, 1, 2])))))
     C.Check.report("Config: the PLMN is read", get_is(F.Config.get(1, tlvs_of(decoded)), [2, 241, 16]))
     C.Check.report("Config: a repeated TAC yields the later value", get_is(F.Config.get(5, tlvs_of(decoded)), [0, 0, 7]))
     C.Check.report("Config: an unknown tag is carried and never asked for", Bool.and(Nat.is_eq(List.length(&2, T.Tlv, tlvs_of(decoded)), 6n), get_is(F.Config.get(255, tlvs_of(decoded)), [1, 2, 3])))
     C.Check.report("Config: an absent tag is None", Bool.not(get_is(F.Config.get(2, tlvs_of(decoded)), [])))
     C.Check.report("Config: the subscriber decodes", sub_ok(F.Sub.read(subscriber())))
     C.Check.report("Config: one subscriber is listed", Nat.is_eq(List.length(&2, B.Bytes(), F.Config.subscribers(tlvs_of(decoded))), 1n))
-    C.Check.report("Config: a PLMN of two octets is rejected", fails(B.ReadValue(F.Input), F.Input.read(F.Input.write(F.Input{entropy(), F.Evt.config_make([T.Tlv.make(1, [2, 241])])}, []))))
-    C.Check.report("Config: a subscriber with a non-digit SUPI is rejected", fails(B.ReadValue(F.Input), F.Input.read(F.Input.write(F.Input{entropy(), F.Evt.config_make([T.Tlv.make(32, cat([1, 65], cat(sixteen(), cat(sixteen(), [128, 0, 0, 0, 0, 0, 0, 33]))))])}, []))))
-    C.Check.report("Config: a TLV short of its value is Short", fails(B.ReadValue(T.Tlv), T.Tlv.read([0, 1, 0, 3, 2, 241])))
-    C.Check.report("Config: a TLV list with a trailing byte is Invalid", fails(List<&2, T.Tlv>, T.Tlvs.decode([0, 2, 0, 1, 5, 9])))
-    C.Check.report("Actions: a wrong body kind is Unsupported", fails(B.ReadValue(F.Actions), F.Actions.read([1, 0, 0])))
-    C.Check.report("Actions: a log level above 3 is Invalid", fails(B.ReadValue(F.Actions), F.Actions.read([128, 0, 1, 134, 4, 0, 0, 0, 0])))
-    C.Check.report("Actions: a count beyond the actions present is Short", fails(B.ReadValue(F.Actions), F.Actions.read([128, 0, 2, 130, 0, 0, 0, 3])))
+    C.Check.report("Config: a PLMN of two octets is rejected", C.Check.fails(B.ReadValue(F.Input), F.Input.read(F.Input.write(F.Input{entropy(), F.Evt.config_make([T.Tlv.make(1, [2, 241])])}, []))))
+    C.Check.report("Config: a subscriber with a non-digit SUPI is rejected", C.Check.fails(B.ReadValue(F.Input), F.Input.read(F.Input.write(F.Input{entropy(), F.Evt.config_make([T.Tlv.make(32, cat([1, 65], cat(sixteen(), cat(sixteen(), [128, 0, 0, 0, 0, 0, 0, 33]))))])}, []))))
+    C.Check.report("Config: a TLV short of its value is Short", C.Check.fails(B.ReadValue(T.Tlv), T.Tlv.read([0, 1, 0, 3, 2, 241])))
+    C.Check.report("Config: a TLV list with a trailing byte is Invalid", C.Check.fails(List<&2, T.Tlv>, T.Tlvs.decode([0, 2, 0, 1, 5, 9])))
+    C.Check.report("Actions: a wrong body kind is Unsupported", C.Check.fails(B.ReadValue(F.Actions), F.Actions.read([1, 0, 0])))
+    C.Check.report("Actions: a log level above 3 is Invalid", C.Check.fails(B.ReadValue(F.Actions), F.Actions.read([128, 0, 1, 134, 4, 0, 0, 0, 0])))
+    C.Check.report("Actions: a count beyond the actions present is Short", C.Check.fails(B.ReadValue(F.Actions), F.Actions.read([128, 0, 2, 130, 0, 0, 0, 3])))

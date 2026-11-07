@@ -115,7 +115,7 @@ def Short.take(n: Nat, bs: B.Bytes(), e: {Nat.is_lt(List.length(&2, U32, bs), n)
       {==}
     case 1n+p b <> t:
       ih = Equal.sym(B.Read(B.Bytes()), B.take(p, t), Fail{B.Short{}}, Short.take(p, t, e))
-      %ih : {B.Take.cons(b, _) == Fail{B.Short{}} : B.Read(B.Bytes())}
+      %ih : {B.Read.cons(U32, b, _) == Fail{B.Short{}} : B.Read(B.Bytes())}
       {==}
 
 def L.bytes.short_input_fails(bs):
@@ -133,7 +133,7 @@ def Take.finish(+p: Nat, +b: U32, +t: B.Bytes(), +tk: B.Bytes(), +rs: B.Bytes(),
 
 def Take.step(+p: Nat, +b: U32, +t: B.Bytes(), +taken: B.Bytes(), +rest: B.Bytes(), r: B.Read(B.Bytes()),
   ih: @tk: B.Bytes() -> @rs: B.Bytes() -> {r == Done{(tk, rs)} : B.Read(B.Bytes())} -> Take.Spec(tk, rs, p, t),
-  +e: {B.Take.cons(b, r) == Done{(taken, rest)} : B.Read(B.Bytes())}) -> Take.Spec(taken, rest, 1n+p, b <> t):
+  +e: {B.Read.cons(U32, b, r) == Done{(taken, rest)} : B.Read(B.Bytes())}) -> Take.Spec(taken, rest, 1n+p, b <> t):
   match r:
     case Fail{err}:
       Empty.absurd(Take.Spec(taken, rest, 1n+p, b <> t), P.Refute.fail_done(B.Err, B.ReadValue(B.Bytes()), err, (taken, rest), e))
@@ -320,13 +320,6 @@ def U32.sx(+a: U32, +b: U32, +c: U32, +d: U32, +t: B.Bytes(), +ab: {B.all_bytes(
   P.Bytes.u32_sx(a, b, c, d, Bytes.mask(a, b <> c <> d <> t, ab), Bytes.mask(b, c <> d <> t, ab2), Bytes.mask(c, d <> t, ab3), Bytes.mask(d, t, Bytes.all_tail(c, d <> t, ab3)), X)
 
 # What a word reader answered: the bytes it consumed and the value they make.
-def U8.rd(-G: Type, bs: B.Bytes(), +v: U32, +rest: B.Bytes(), +e: {B.u8(bs) == Done{(v, rest)} : B.Read(U32)}, k: @a: U32 -> {bs == a <> rest : B.Bytes()} -> {a == v : U32} -> G) -> G:
-  match bs:
-    case Nil{}:
-      Empty.absurd(G, P.Refute.fail_done(B.Err, B.ReadValue(U32), B.Short{}, (v, rest), e))
-    case +a <> t:
-      k(a, Equal.cong(B.Read(U32), B.Bytes(), x => a <> P.Read.rest(U32, x, rest), Done{(a, t)}, Done{(v, rest)}, e), Equal.cong(B.Read(U32), U32, x => P.Read.value(U32, x, v), Done{(a, t)}, Done{(v, rest)}, e))
-
 def U16.rd(-G: Type, bs: B.Bytes(), +v: U32, +rest: B.Bytes(), +e: {B.u16(bs) == Done{(v, rest)} : B.Read(U32)}, k: @a: U32 -> @b: U32 -> {bs == a <> b <> rest : B.Bytes()} -> {B.cat8(b, a) == v : U32} -> G) -> G:
   match bs:
     case Nil{}:

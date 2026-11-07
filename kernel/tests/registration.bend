@@ -90,28 +90,11 @@ def rand_of(nas: B.Bytes()) -> B.Bytes():
 def phase_at(st: S.State, +key: U32) -> String:
   A.phase_name(Tb.Table.get(S.Ue, key, S.State.ues(st)))
 
-def timer_of(g: Maybe<&2, S.Guard>) -> U32:
-  match g:
-    case Some{guard}:
-      S.Guard.timer(guard)
-    case None{}:
-      0
-
-def guard_of(m: Maybe<&2, S.Ue>) -> U32:
-  match m:
-    case Some{u}:
-      timer_of(S.Ue.guard(u))
-    case None{}:
-      0
-
-def timer_at(st: S.State, +key: U32) -> U32:
-  guard_of(Tb.Table.get(S.Ue, key, S.State.ues(st)))
-
-# The id counters set where they will be after counting through 2^32 ids.
-def rewound(st: S.State, ue: U32, timer: U32) -> S.State:
+# The AMF-UE-NGAP-ID search set to start at an id.
+def rewound(st: S.State, ue: U32) -> S.State:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-      S.State{config, subs, assocs, ues, sessions, pfcp_seq, ue, timer, n4}
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      S.State{config, subs, assocs, ues, sessions, pfcp_seq, ue, n4}
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -153,26 +136,28 @@ def main() -> IO(Unit):
     +o5b : N.Step() = K.Kernel.step(K.Kernel.state(K.Kernel.step(st3, A.data(1, A.hex_of(A.entry(28n, msgs), "hex")), A.entropy())), A.data(1, A.hex_of(A.entry(27n, msgs), "hex")), A.entropy())
     C.Check.report("Registration Complete, then Initial Context Setup Response: registered", A.phase_is(K.Kernel.state(o5b), "registered"))
     +o_rel2 : N.Step() = K.Kernel.step(st5, A.data_on(2, A.release_request(ran)), A.entropy())
-    C.Check.report("UE Context Release Request from another association: Error Indication, state unchanged", Bool.and(A.phase_is(K.Kernel.state(o_rel2), "registered"), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_rel2)))), Fr.Pdu.initiating(), 7)))
+    C.Check.report("UE Context Release Request from another association: Error Indication, state unchanged", Bool.and(A.phase_is(K.Kernel.state(o_rel2), "registered"), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_rel2)))), Fr.Pdu.initiating(), 9)))
     +o_rel : N.Step() = K.Kernel.step(st5, A.data(1, A.release_request(ran)), A.entropy())
     C.Check.report("UE Context Release Request from the owner: Release Command", Bool.and(A.phase_is(K.Kernel.state(o_rel), "releasing"), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_rel)))), Fr.Pdu.initiating(), 41)))
     +o_cpl2 : N.Step() = K.Kernel.step(K.Kernel.state(o_rel), A.data_on(2, release_complete(ran)), A.entropy())
-    C.Check.report("UE Context Release Complete from another association: Error Indication, context kept", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_cpl2)), 1n), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_cpl2)))), Fr.Pdu.initiating(), 7)))
+    C.Check.report("UE Context Release Complete from another association: Error Indication, context kept", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_cpl2)), 1n), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_cpl2)))), Fr.Pdu.initiating(), 9)))
     +o_cpl : N.Step() = K.Kernel.step(K.Kernel.state(o_rel), A.data(1, release_complete(ran)), A.entropy())
     C.Check.report("UE Context Release Complete from the owner: the context is forgotten", Nat.is_eq(A.ue_count(K.Kernel.state(o_cpl)), 0n))
     +o_replay2 : N.Step() = K.Kernel.step(st5, A.data_on(2, initial), A.entropy())
     +st_r : S.State = K.Kernel.state(o_replay2)
     C.Check.report("a captured SUCI replayed from another gNB: the registered UE stays, the newcomer is only challenged", Bool.and(String.eq(phase_at(st_r, 1), "registered"), Bool.and(Nat.is_eq(A.ue_count(st_r), 2n), Bool.and(Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.frames(o_replay2))), 1n), U32.is_eq(A.nas_type(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_replay2))))), 86)))))
-    +st_w1 : S.State = K.Kernel.state(K.Kernel.step(rewound(st1, 0, 4294967295), A.data_on(2, initial), A.entropy()))
-    +st_w2 : S.State = K.Kernel.state(K.Kernel.step(st_w1, A.data_on(3, initial), A.entropy()))
-    C.Check.report("the id counters wrap: AMF-UE-NGAP-ID 1 and guard timers 0 (N4) and 1, still live, are skipped", Bool.and(Nat.is_eq(A.ue_count(st_w2), 3n), Bool.and(String.eq(phase_at(st_w2, 1), "authenticating"), Bool.and(String.eq(phase_at(st_w2, 2), "authenticating"), Bool.and(U32.is_eq(timer_at(st_w2, 1), 1), Bool.and(U32.is_eq(timer_at(st_w2, 0), 4294967295), U32.is_eq(timer_at(st_w2, 2), 2)))))))
-    +o_fail2 : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, flip_last(auth_resp))), A.entropy())
-    C.Check.report("the newcomer fails 5G-AKA: the registered UE is untouched", Bool.and(String.eq(phase_at(K.Kernel.state(o_fail2), 1), "registered"), String.eq(phase_at(K.Kernel.state(o_fail2), 2), "releasing")))
-    +o_take : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, auth_resp)), A.entropy())
+    C.Check.report("a second context: the next odd AMF-UE-NGAP-ID, 3, whose guard timer is 3", Bool.and(String.eq(phase_at(st_r, 3), "authenticating"), U32.is_eq(A.first_timer(K.Kernel.frames(o_replay2)), 3)))
+    +st_w : S.State = K.Kernel.state(K.Kernel.step(rewound(st1, 1), A.data_on(2, initial), A.entropy()))
+    C.Check.report("the AMF-UE-NGAP-ID search skips an id a context holds", Bool.and(Nat.is_eq(A.ue_count(st_w), 2n), Bool.and(String.eq(phase_at(st_w, 1), "authenticating"), String.eq(phase_at(st_w, 3), "authenticating"))))
+    +o_fail2 : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([3], ran, uli, flip_last(auth_resp))), A.entropy())
+    C.Check.report("the newcomer fails 5G-AKA: the registered UE is untouched", Bool.and(String.eq(phase_at(K.Kernel.state(o_fail2), 1), "registered"), String.eq(phase_at(K.Kernel.state(o_fail2), 3), "releasing")))
+    +o_take : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([3], ran, uli, auth_resp)), A.entropy())
     +st_t : S.State = K.Kernel.state(o_take)
-    C.Check.report("the newcomer passes 5G-AKA: only then is the old context released", Bool.and(Nat.is_eq(A.ue_count(st_t), 1n), Bool.and(String.eq(phase_at(st_t, 2), "security_mode"), Bool.and(A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_take)))), Fr.Pdu.initiating(), 41), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_take)), 1n))), Fr.Pdu.initiating(), 4)))))
+    C.Check.report("the newcomer passes 5G-AKA: only then is the old context released", Bool.and(Nat.is_eq(A.ue_count(st_t), 1n), Bool.and(String.eq(phase_at(st_t, 3), "security_mode"), Bool.and(A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_take)))), Fr.Pdu.initiating(), 41), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_take)), 1n))), Fr.Pdu.initiating(), 4)))))
     +o_dereg : N.Step() = K.Kernel.step(st5, A.data(1, A.uplink(ran, uli, A.ue_protect(2, deregistration(1)))), A.entropy())
     C.Check.report("Deregistration Request: Deregistration Accept, then Release Command", Bool.and(A.phase_is(K.Kernel.state(o_dereg), "releasing"), Bool.and(B.bytes_eq(List.drop(&2, U32, A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_dereg)))), 7n), [126, 0, 70]), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_dereg)), 1n))), Fr.Pdu.initiating(), 41))))
+    +o_big : N.Step() = K.Kernel.step(st5, A.data(1, A.uplink_as([1, 0, 0, 0, 1], ran, uli, A.ue_protect(2, deregistration(1)))), A.entropy())
+    C.Check.report("an AMF-UE-NGAP-ID of 2^32 + 1: an unknown UE, never UE 1", Bool.and(A.phase_is(K.Kernel.state(o_big), "registered"), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_big)))), Fr.Pdu.initiating(), 9)))
     +o_off : N.Step() = K.Kernel.step(st5, A.data(1, A.uplink(ran, uli, A.ue_protect(2, deregistration(9)))), A.entropy())
     C.Check.report("Deregistration Request, switch off: Release Command only", Bool.and(A.phase_is(K.Kernel.state(o_off), "releasing"), Bool.and(Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.frames(o_off))), 1n), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_off)))), Fr.Pdu.initiating(), 41))))
     +st_nia1 : S.State = K.Kernel.state(K.Kernel.step(K.Kernel.state(K.Kernel.step(K.Kernel.state(K.Kernel.step(S.State.initial(), F.Evt.config_make(A.config_nia([1], [T.Tlv.make(32, A.subscriber([0, 0, 0, 0, 0, 32]))])), A.entropy())), F.NgapAssocUp{1}, A.entropy())), A.data(1, initial), A.entropy()))
@@ -181,7 +166,7 @@ def main() -> IO(Unit):
     +o_bad : N.Step() = K.Kernel.step(st1, A.data(1, A.uplink(ran, uli, flip_last(auth_resp))), A.entropy())
     C.Check.report("a wrong RES*: Authentication Reject, then UE Context Release Command", Bool.and(A.phase_is(K.Kernel.state(o_bad), "releasing"), Bool.and(U32.is_eq(A.nas_type(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_bad))))), 88), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_bad)), 1n))), Fr.Pdu.initiating(), 41))))
     +o_other : N.Step() = K.Kernel.step(st1, F.NgapData{2, 1, U32.from_nat(List.length(&2, U32, A.uplink(ran, uli, auth_resp))), A.uplink(ran, uli, auth_resp)}, A.entropy())
-    C.Check.report("an Authentication Response over another association: Error Indication, state unchanged", Bool.and(A.phase_is(K.Kernel.state(o_other), "authenticating"), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_other)))), Fr.Pdu.initiating(), 7)))
+    C.Check.report("an Authentication Response over another association: Error Indication, state unchanged", Bool.and(A.phase_is(K.Kernel.state(o_other), "authenticating"), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_other)))), Fr.Pdu.initiating(), 9)))
     +st_retry : S.State = fire(4n, st1)
     +o_retry : N.Step() = K.Kernel.step(st1, F.TimerFired{1}, A.entropy())
     C.Check.report("T3560: the Authentication Request is retransmitted", Bool.and(B.bytes_eq(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_retry)))), auth_req), Bool.and(Nat.is_eq(A.timer_starts(K.Kernel.frames(o_retry)), 1n), A.phase_is(st_retry, "authenticating"))))
@@ -191,10 +176,16 @@ def main() -> IO(Unit):
     +o_nosub : N.Step() = K.Kernel.step(st_nosub, A.data(1, initial), A.entropy())
     C.Check.report("an unknown subscriber: Registration Reject #7, then release", Bool.and(A.phase_is(K.Kernel.state(o_nosub), "releasing"), Bool.and(B.bytes_eq(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_nosub)))), [126, 0, 68, 7]), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_nosub)), 1n))), Fr.Pdu.initiating(), 41))))
     +o_bad_view : N.Step() = K.Kernel.step(st0, A.data(1, N.Ngap.pdu(Fr.Pdu.initiating(), 15, Fr.Criticality.ignore(), [N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write([1], 0n, []))])), A.entropy())
-    C.Check.report("an InitialUEMessage missing its NAS-PDU: Error Indication and no context", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_bad_view)), 0n), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_bad_view)))), Fr.Pdu.initiating(), 7)))
+    C.Check.report("an InitialUEMessage missing its NAS-PDU: Error Indication and no context", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_bad_view)), 0n), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_bad_view)))), Fr.Pdu.initiating(), 9)))
     +guti_pdu : B.Bytes() = N.Ngap.pdu(Fr.Pdu.initiating(), 15, Fr.Criticality.ignore(), [N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(38, Fr.Criticality.reject(), G.NAS_PDU.write(guti_registration(), 0n, [])), N.Ngap.ie(121, Fr.Criticality.reject(), A.uli_bits(uli)), N.Ngap.ie(90, Fr.Criticality.ignore(), G.RRCEstablishmentCause.write(Ap.Root{3}, 0n, []))])
     +o_guti : N.Step() = K.Kernel.step(st0, A.data(1, guti_pdu), A.entropy())
     C.Check.report("a Registration Request with an unknown 5G-GUTI: Identity Request", Bool.and(A.phase_is(K.Kernel.state(o_guti), "identifying"), B.bytes_eq(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_guti)))), [126, 0, 91, 1])))
+    +sht1_pdu : B.Bytes() = N.Ngap.pdu(Fr.Pdu.initiating(), 15, Fr.Criticality.ignore(), [N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(38, Fr.Criticality.reject(), G.NAS_PDU.write(List.append(&2, U32, [126, 1, 9, 9, 9, 9, 3], guti_registration()), 0n, [])), N.Ngap.ie(121, Fr.Criticality.reject(), A.uli_bits(uli)), N.Ngap.ie(90, Fr.Criticality.ignore(), G.RRCEstablishmentCause.write(Ap.Root{3}, 0n, []))])
+    +o_sht1 : N.Step() = K.Kernel.step(st0, A.data(1, sht1_pdu), A.entropy())
+    C.Check.report("a returning UE's integrity-protected Registration Request, read unverified: Identity Request", Bool.and(A.phase_is(K.Kernel.state(o_sht1), "identifying"), B.bytes_eq(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_sht1)))), [126, 0, 91, 1])))
+    +service_pdu : B.Bytes() = N.Ngap.pdu(Fr.Pdu.initiating(), 15, Fr.Criticality.ignore(), [N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(38, Fr.Criticality.reject(), G.NAS_PDU.write([126, 1, 9, 9, 9, 9, 3, 126, 0, 76, 0, 0, 7, 244, 0, 64, 1, 2, 3, 4], 0n, [])), N.Ngap.ie(121, Fr.Criticality.reject(), A.uli_bits(uli)), N.Ngap.ie(90, Fr.Criticality.ignore(), G.RRCEstablishmentCause.write(Ap.Root{3}, 0n, []))])
+    +o_service : N.Step() = K.Kernel.step(st0, A.data(1, service_pdu), A.entropy())
+    C.Check.report("a returning UE's Service Request: Service Reject #9, then UE Context Release Command", Bool.and(A.phase_is(K.Kernel.state(o_service), "releasing"), Bool.and(B.bytes_eq(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_service)))), [126, 0, 77, 9]), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_service)), 1n))), Fr.Pdu.initiating(), 41))))
     +o_ident : N.Step() = K.Kernel.step(K.Kernel.state(o_guti), A.data(1, A.uplink(ran, uli, identity_response(mobile_identity(reg_req)))), A.entropy())
     C.Check.report("Identity Response with the SUCI: the captured Authentication Request follows", Bool.and(A.phase_is(K.Kernel.state(o_ident), "authenticating"), B.bytes_eq(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_ident)))), auth_req)))
     +o_sync : N.Step() = K.Kernel.step(st1, A.data(1, A.uplink(ran, uli, synch_failure(rand_of(auth_req), [0, 0, 0, 0, 1, 0]))), A.entropy())

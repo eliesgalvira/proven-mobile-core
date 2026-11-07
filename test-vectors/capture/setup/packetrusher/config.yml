@@ -1,0 +1,54 @@
+# PacketRusher v2.0.0 for the handover capture. The first gNB takes these addresses
+# and gNB ID; the second takes the next ones (10.33.0.31, gNB ID 00000002).
+gnodeb:
+  controlif:
+    ip: "10.33.0.30"
+    port: 9487
+  dataif:
+    ip: "10.33.0.30"
+    port: 2152
+  plmnlist:
+    mcc: "001"
+    mnc: "01"
+    tac: "000001"
+    gnbidlength: 32
+    cellid: 0
+    gnbid: "00000001"
+  slicesupportlist:
+    sst: "01"
+
+# The subscriber of subscriber.js, with SUCI Profile A and the key of ../hnet.
+ue:
+  hplmn:
+    mcc: "001"
+    mnc: "01"
+  msin: "0000000001"
+  routingindicator: "0000"
+  protectionScheme: 1
+  homeNetworkPublicKey: "033c4dd9d5c5f1c0b0ed135f6e5a12c45cabd2e1bb54b3f17a7f3ca7e9647371"
+  homeNetworkPublicKeyID: 1
+  pdusessiontype: IPv4
+  tunnelmtu: 0
+  key: "465B5CE8B199B49FAA5F0A2EE238A6BC"
+  opc: "E8ED289DEBA952E4283B54E88E6183CA"
+  amf: "8000"
+  sqn: "00000000"
+  dnn: "internet"
+  snssai:
+    sst: "01"
+  integrity:
+    nia0: false
+    nia1: true
+    nia2: true
+    nia3: false
+  ciphering:
+    nea0: true
+    nea1: true
+    nea2: true
+    nea3: false
+
+amfif:
+  - ip: "10.33.0.11"
+    port: 38412
+logs:
+  level: 4

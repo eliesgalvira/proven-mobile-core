@@ -25,6 +25,41 @@ def ReadValue(-A: Data) -> Data:
 def Read(-A: Data) -> Data:
   Result<&2, &2, Err, ReadValue(A)>
 
+# A codec's answer: an error, or the value.
+def Res(-A: Data) -> Data:
+  Result<&2, &2, Err, A>
+
+# The value when ok holds, or Invalid with tag.
+def guard(-A: Data, v: A, tag: U32, ok: Bool) -> Res(A):
+  match ok:
+    case True{}:
+      Done{v}
+    case False{}:
+      Fail{Invalid{tag}}
+
+# A value read to the end of its body: nothing may be left.
+def end(-A: Data, x: A, rest: Bytes()) -> Res(A):
+  match rest:
+    case Nil{}:
+      Done{x}
+    case b <> more:
+      Fail{Invalid{b}}
+
+# A list read element by element: the element in front of the rest.
+def Read.cons(-A: Data, x: A, r: Read(List<&2, A>)) -> Read(List<&2, A>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(xs, rest)}:
+      Done{(x <> xs, rest)}
+
+def Res.cons(-A: Data, x: A, r: Res(List<&2, A>)) -> Res(List<&2, A>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{xs}:
+      Done{x <> xs}
+
 def is_byte(x: U32) -> Bool:
   U32.is_lt(x, 256)
 
@@ -34,6 +69,9 @@ def fits8(+x: U32) -> Bool:
 
 def fits16(+x: U32) -> Bool:
   U32.is_eq(U32.and(65535, x), x)
+
+def fits24(+x: U32) -> Bool:
+  U32.is_eq(U32.and(16777215, x), x)
 
 def all_bytes(bs: Bytes()) -> Bool:
   match bs:
@@ -113,13 +151,6 @@ def nibbles(bs: Bytes()) -> Read(Nibbles()):
 def write_nibbles(hi: U32, lo: U32, rest: Bytes()) -> Bytes():
   cat4(lo, U32.and(15, hi)) <> rest
 
-def Take.cons(b: U32, r: Read(Bytes())) -> Read(Bytes()):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(taken, rest)}:
-      Done{(b <> taken, rest)}
-
 # Exactly n bytes, or Short.
 def take(n: Nat, bs: Bytes()) -> Read(Bytes()):
   match n bs:
@@ -128,7 +159,7 @@ def take(n: Nat, bs: Bytes()) -> Read(Bytes()):
     case 1n+p Nil{}:
       Fail{Short{}}
     case 1n+p b <> rest:
-      Take.cons(b, take(p, rest))
+      Read.cons(U32, b, take(p, rest))
 
 # TBCD (TS 24.008 §10.5.1.4): each byte holds two digits, the first in its low
 # nibble; an odd digit count ends with the filler 0xF in the last high nibble.

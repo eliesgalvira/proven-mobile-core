@@ -36,11 +36,12 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 33 | liveness-laws | done | 18 | 3219d95, 168b4b0, 6582b9c: Releasing has a guard whose expiry forgets the UE and deletes its sessions at eUPF; ids skip live ones; the step returns actions naming their UE context; `amf.guard.expires`, `amf.sessions.owned` and `amf.release.forgets_ue` over every event replace the two vacuous laws |
 | 34 | laws-on-real-paths | done | 19 | aced957..3cbac54: laws restated over what the kernel runs: SNN and ePCO over the valid Config every state holds (`kernel.config.valid`), TBCD over `Tbcd.decode`, F-SEID/F-TEID re-encode to their body, empty pool and any gNB failed list in the SMF laws with the PFCP deletion, packet-filter bound and TEID uniqueness as invariants; six advisory rows back to Yes; gate CHECK OK, 703 checks |
 | 38 | review-gaps | done | 32, 33, 34 | d00a846: items 1, 3, 4 done: `amf.contexts.guarded` and `smf.sessions.known` (known exactly when past Creating) proven through the liveness walk, `failure_releases` states the PFCP deletion past Creating with no `Up.N4.known` premise, five table invariants share one event chain, report fixed; item 2 (`state.ids.free`, false only at id exhaustion) moved to ticket 35 item 8 |
-| 35 | procedure-robustness | todo | 32, 33 | |
-| 36 | edge-robustness | todo | 21 | |
-| 37 | simplify | todo | 32–36 | |
-| 24 | handover-capture | todo | — | |
-| 25 | ngap-handover | todo | 13, 24 | |
+| 35 | procedure-robustness | done | 32, 33 | 93de91c..a6058da: PFCP association and heartbeat retransmitted with their sequence number, a silent eUPF takes the link down; Release Command after the Accept; TEID/SEID drawn again on collision; AMF-UE-NGAP-ID ≥ 2³² unknown; returning UEs read unverified (Service Reject #9); Set ID/Pointer ranges; guard timers keyed by their row, free AMF-UE-NGAP-IDs, law `state.ids.free`, takeover law covers overwrites; 722 checks, E2E PASS |
+| 36 | edge-robustness | done | 21 | 47eb0ca: timers fire after every event, kernel exit detected by its stdout closing, association ids checked and never reused while held, N4 replies to the UPF datagram's source port, oversize config values and Config refused; 15 cargo tests, clippy clean, E2E PASS |
+| 37 | simplify | done | 32–36 | 50b05d6..be7cce1, d8adb3f..b36d1df: one walk over the step function and one over transactions, lemmas in the lib, dead code and duplicate codec shapes gone, named protocol constants (generated from NGAP-Constants), UPF not eUPF, hot paths, shared test helpers, nushell gate, e2e unit ordering; NGAP generator: one generic IE roundtrip check, pseudo-types, one dependency order, no unused `.Sx` (kernel/ngap/gen 66,132→63,035 lines); `capture.py` replaces `run.sh` and `handover.py`; Error Indication sent with code 9, not 7; three item-9 parts and `lt10_mask4` left with their reasons in `loop/decisions.md` |
+| 39 | second-simplify | todo | 35–38 | |
+| 24 | handover-capture | done | — | bc4134f: PacketRusher v2.0.0 with a Handover Cancel patch (UERANSIM has no handover); 86-message capture of Xn and N2 handover (one cancelled) with NH/NCC recomputed; uncaptured failure messages are hand-built in test-vectors/hand/ |
+| 25 | ngap-handover | done | 13, 24 | 232ba2b: 14 messages and 8 transfers (140→253 types, 15→30 views), a generated mandatory law per view, the three ticket laws; pycrate agrees on 46 NGAP messages |
 | 26 | nh-ncc | todo | 07, 24 | |
 | 27 | path-switch | todo | 19, 25, 26 | |
 | 28 | n2-handover | todo | 19, 25, 26 | |

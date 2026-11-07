@@ -517,7 +517,7 @@ def Take.append(xs: B.Bytes(), +rest: B.Bytes()) -> {B.take(List.length(&2, U32,
       {==}
     case +x <> +t:
       ih = Equal.sym(B.Read(B.Bytes()), B.take(List.length(&2, U32, t), List.append(&2, U32, t, rest)), Done{(t, rest)}, Take.append(t, rest))
-      %ih : {B.Take.cons(x, _) == Done{(x <> t, rest)} : B.Read(B.Bytes())}
+      %ih : {B.Read.cons(U32, x, _) == Done{(x <> t, rest)} : B.Read(B.Bytes())}
       {==}
 
 # Bytes of cat8: the low byte is lo, the high byte is hi, when each fits a byte.
@@ -760,3 +760,84 @@ def Bytes.u24_sx.go(d0: U32, d1: U32, d2: U32, +e0: U32, +e1: U32, +e2: U32, s0:
 
 def Bytes.u24_sx(+b0: U32, +b1: U32, +b2: U32, m0: {U32.and(255, b0) == b0 : U32}, m1: {U32.and(255, b1) == b1 : U32}, m2: {U32.and(255, b2) == b2 : U32}, +rest: B.Bytes()) -> {B.write_u24(B.cat8(b2, B.cat8(b1, b0)), rest) == b0 <> b1 <> b2 <> rest : B.Bytes()}:
   Bytes.u24_sx.go(b0, b1, b2, b0, b1, b2, {==}, {==}, {==}, m0, m1, m2, rest)
+
+# Equalities
+# ----------
+
+def Some.inj(-A: Data, +x: A, +y: A, +e: {Some{x} == Some{y} : Maybe<&2, A>}) -> {x == y : A}:
+  Equal.cong(Maybe<&2, A>, A, m => Maybe.value(A, m, x), Some{x}, Some{y}, e)
+
+def U32.eq_true(+a: U32, +b: U32, +e: {a == b : U32}) -> {U32.is_eq(a, b) == True{} : Bool}:
+  %e : {U32.is_eq(a, _) == True{} : Bool}
+  U32.is_eq_refl(a)
+
+def U32.sym_false(+a: U32, +b: U32, +y: Bool, +ey: {U32.is_eq(b, a) == y : Bool}, +ex: {U32.is_eq(a, b) == False{} : Bool}) -> {False{} == y : Bool}:
+  match y:
+    case True{}:
+      t = U32.eq_true(a, b, Equal.sym(U32, b, a, U32.eq_of_is_eq(b, a, ey)))
+      Empty.absurd({False{} == True{} : Bool}, Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(a, b), True{}, Equal.sym(Bool, U32.is_eq(a, b), False{}, ex), t)))
+    case False{}:
+      {==}
+
+def U32.sym_case(+a: U32, +b: U32, +x: Bool, +ex: {U32.is_eq(a, b) == x : Bool}) -> {x == U32.is_eq(b, a) : Bool}:
+  match x:
+    case True{}:
+      Equal.sym(Bool, U32.is_eq(b, a), True{}, U32.eq_true(b, a, Equal.sym(U32, a, b, U32.eq_of_is_eq(a, b, ex))))
+    case False{}:
+      U32.sym_false(a, b, U32.is_eq(b, a), {==}, ex)
+
+def U32.sym(+a: U32, +b: U32) -> {U32.is_eq(a, b) == U32.is_eq(b, a) : Bool}:
+  U32.sym_case(a, b, U32.is_eq(a, b), {==})
+
+def Bytes.eq_true(+a: B.Bytes(), +b: B.Bytes(), +e: {a == b : B.Bytes()}) -> {B.bytes_eq(a, b) == True{} : Bool}:
+  %e : {B.bytes_eq(a, _) == True{} : Bool}
+  Bytes.eq_refl(a)
+
+def Bytes.sym_false(+a: B.Bytes(), +b: B.Bytes(), +y: Bool, +ey: {B.bytes_eq(b, a) == y : Bool}, +ex: {B.bytes_eq(a, b) == False{} : Bool}) -> {False{} == y : Bool}:
+  match y:
+    case True{}:
+      t = Bytes.eq_true(a, b, Equal.sym(B.Bytes(), b, a, Bytes.eq_of_bytes_eq(b, a, ey)))
+      Empty.absurd({False{} == True{} : Bool}, Refute.bool(Equal.trans(Bool, False{}, B.bytes_eq(a, b), True{}, Equal.sym(Bool, B.bytes_eq(a, b), False{}, ex), t)))
+    case False{}:
+      {==}
+
+def Bytes.sym_case(+a: B.Bytes(), +b: B.Bytes(), +x: Bool, +ex: {B.bytes_eq(a, b) == x : Bool}) -> {x == B.bytes_eq(b, a) : Bool}:
+  match x:
+    case True{}:
+      Equal.sym(Bool, B.bytes_eq(b, a), True{}, Bytes.eq_true(b, a, Equal.sym(B.Bytes(), a, b, Bytes.eq_of_bytes_eq(a, b, ex))))
+    case False{}:
+      Bytes.sym_false(a, b, B.bytes_eq(b, a), {==}, ex)
+
+def Bytes.sym(+a: B.Bytes(), +b: B.Bytes()) -> {B.bytes_eq(a, b) == B.bytes_eq(b, a) : Bool}:
+  Bytes.sym_case(a, b, B.bytes_eq(a, b), {==})
+
+# Or
+# --
+
+def Bool.or_l(+a: Bool, +b: Bool, +e: {a == True{} : Bool}) -> {Bool.or(a, b) == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({Bool.or(False{}, b) == True{} : Bool}, Refute.bool(e))
+
+def Bool.or_r(+a: Bool, +b: Bool, +e: {b == True{} : Bool}) -> {Bool.or(a, b) == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      e
+
+def Bool.or_true_l(a: Bool, +b: Bool, eb: {b == False{} : Bool}, e: {Bool.or(a, b) == True{} : Bool}) -> {a == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({False{} == True{} : Bool}, Refute.true_false(Equal.trans(Bool, True{}, b, False{}, Equal.sym(Bool, b, True{}, e), eb)))
+
+def Bool.or_true_r(a: Bool, +b: Bool, ea: {a == False{} : Bool}, e: {Bool.or(a, b) == True{} : Bool}) -> {b == True{} : Bool}:
+  match a:
+    case True{}:
+      Empty.absurd({b == True{} : Bool}, Refute.true_false(ea))
+    case False{}:
+      e

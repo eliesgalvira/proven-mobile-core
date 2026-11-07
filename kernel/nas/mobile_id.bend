@@ -89,13 +89,6 @@ def MobileId.end(id: MobileId, rest: B.Bytes()) -> MobileId.Res():
     case b <> more:
       Fail{B.Invalid{b}}
 
-def MobileId.ok(tag: U32, id: MobileId, ok: Bool) -> MobileId.Res():
-  match ok:
-    case True{}:
-      Done{id}
-    case False{}:
-      Fail{B.Invalid{tag}}
-
 # The first digit sits in the high nibble of the first octet; the odd/even
 # bit and the digit count must agree, so the counts are fixed.
 def MobileId.imeisv_of(+h: U32, r: Result<&2, &2, B.Err, B.Digits()>) -> MobileId.Res():
@@ -104,7 +97,7 @@ def MobileId.imeisv_of(+h: U32, r: Result<&2, &2, B.Err, B.Digits()>) -> MobileI
       Fail{e}
     case Done{+ds}:
       +d = U32.and(15, U32.shrn(h, 4n))
-      MobileId.ok(h, Imeisv{d <> ds}, Bool.and(B.Tbcd.is_digit(d), Nat.is_eq(List.length(&2, U32, ds), 15n)))
+      B.guard(MobileId, Imeisv{d <> ds}, h, Bool.and(B.Tbcd.is_digit(d), Nat.is_eq(List.length(&2, U32, ds), 15n)))
 
 def MobileId.imei_of(+h: U32, r: Result<&2, &2, B.Err, B.Digits()>) -> MobileId.Res():
   match r:
@@ -112,7 +105,7 @@ def MobileId.imei_of(+h: U32, r: Result<&2, &2, B.Err, B.Digits()>) -> MobileId.
       Fail{e}
     case Done{+ds}:
       +d = U32.and(15, U32.shrn(h, 4n))
-      MobileId.ok(h, Imei{d <> ds}, Bool.and(B.Tbcd.is_digit(d), Nat.is_eq(List.length(&2, U32, ds), 14n)))
+      B.guard(MobileId, Imei{d <> ds}, h, Bool.and(B.Tbcd.is_digit(d), Nat.is_eq(List.length(&2, U32, ds), 14n)))
 
 def MobileId.r5(+h: U32, rest: B.Bytes(), hit: Bool) -> MobileId.Res():
   match hit:

@@ -59,7 +59,7 @@ def Mask.payload_eq(+kind: U32, +addr: U32, +mask: U32, +rest: B.Bytes(), +k2: U
 def Mask.absurd(+kind: U32, +addr: U32, +mask: U32, +rest: B.Bytes(), err: B.Err, e: {Fail{err} == Mask.target(kind, addr, mask, rest) : Comp.Rd()}) -> Mask.Goal(mask):
   Empty.absurd(Mask.Goal(mask), P.Refute.fail_done(B.Err, B.ReadValue(Q.Comp), err, (Q.Comp{kind, Q.PIpv4{addr, mask}}, rest), e))
 
-def Mask.ipv4_ok(+kind: U32, +addr: U32, +mask: U32, +rest: B.Bytes(), +k2: U32, +a2: U32, +m2: U32, +r2: B.Bytes(), ok: Bool, ev: {Q.Mask.contiguous(m2) == ok : Bool}, e: {Q.Comp.of(k2, Q.Ok(B.ReadValue(Q.Payload), (Q.PIpv4{a2, m2}, r2), m2, ok)) == Mask.target(kind, addr, mask, rest) : Comp.Rd()}) -> Mask.Goal(mask):
+def Mask.ipv4_ok(+kind: U32, +addr: U32, +mask: U32, +rest: B.Bytes(), +k2: U32, +a2: U32, +m2: U32, +r2: B.Bytes(), ok: Bool, ev: {Q.Mask.contiguous(m2) == ok : Bool}, e: {Q.Comp.of(k2, B.guard(B.ReadValue(Q.Payload), (Q.PIpv4{a2, m2}, r2), m2, ok)) == Mask.target(kind, addr, mask, rest) : Comp.Rd()}) -> Mask.Goal(mask):
   match ok:
     case False{}:
       Mask.absurd(kind, addr, mask, rest, B.Invalid{m2}, e)
@@ -160,7 +160,7 @@ def Payload.six_not(rt: B.Read(B.Bytes()), p: Q.Payload, r: B.Bytes(), e: {Q.Pay
       %ep : Payload.not_ipv4(_)
       Unit{}
 
-def Payload.ipv6_ok(+addr: B.Bytes(), +prefix: U32, +t: B.Bytes(), p: Q.Payload, r: B.Bytes(), ok: Bool, e: {Q.Ok(B.ReadValue(Q.Payload), (Q.PIpv6{addr, prefix}, t), prefix, ok) == Done{(p, r)} : B.Read(Q.Payload)}) -> Payload.not_ipv4(p):
+def Payload.ipv6_ok(+addr: B.Bytes(), +prefix: U32, +t: B.Bytes(), p: Q.Payload, r: B.Bytes(), ok: Bool, e: {B.guard(B.ReadValue(Q.Payload), (Q.PIpv6{addr, prefix}, t), prefix, ok) == Done{(p, r)} : B.Read(Q.Payload)}) -> Payload.not_ipv4(p):
   match ok:
     case False{}:
       Empty.absurd(Payload.not_ipv4(p), P.Refute.fail_done(B.Err, B.ReadValue(Q.Payload), B.Invalid{prefix}, (p, r), e))
@@ -230,7 +230,7 @@ def Ambr.Goal(bs: B.Bytes(), a: Q.Ambr) -> Type:
 def Ambr.absurd(+bs: B.Bytes(), +a: Q.Ambr, err: B.Err, e: {Fail{err} == Done{a} : Result<&2, &2, B.Err, Q.Ambr>}) -> Ambr.Goal(bs, a):
   Empty.absurd(Ambr.Goal(bs, a), P.Refute.fail_done(B.Err, Q.Ambr, err, a, e))
 
-def Ambr.six(+du: U32, +d1: U32, +d0: U32, +uu: U32, +u1: U32, +u0: U32, +a: Q.Ambr, ok: Bool, ev: {Bool.and(Q.Ambr.unit_ok(du), Q.Ambr.unit_ok(uu)) == ok : Bool}, e: {Q.Ok(Q.Ambr, Q.Ambr{du, B.cat8(d0, d1), uu, B.cat8(u0, u1)}, du, ok) == Done{a} : Result<&2, &2, B.Err, Q.Ambr>}) -> Ambr.Goal([du, d1, d0, uu, u1, u0], a):
+def Ambr.six(+du: U32, +d1: U32, +d0: U32, +uu: U32, +u1: U32, +u0: U32, +a: Q.Ambr, ok: Bool, ev: {Bool.and(Q.Ambr.unit_ok(du), Q.Ambr.unit_ok(uu)) == ok : Bool}, e: {B.guard(Q.Ambr, Q.Ambr{du, B.cat8(d0, d1), uu, B.cat8(u0, u1)}, du, ok) == Done{a} : Result<&2, &2, B.Err, Q.Ambr>}) -> Ambr.Goal([du, d1, d0, uu, u1, u0], a):
   match ok:
     case False{}:
       Ambr.absurd([du, d1, d0, uu, u1, u0], a, B.Invalid{du}, e)
@@ -318,7 +318,7 @@ def Cont.dv_step(+k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32
   %sll : {Nat.is_le(1n+List.length(&2, Q.Container, cs2), 1n+k) == True{} : Bool} & ({Bool.and(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2)) == True{} : Bool} & {Nat.add(3n, Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3))) == 1n+1n+_ : Nat})
   (le, (P.Bool.and_intro(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(cs2), P.Bool.and_intro(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), f16, v8), va), {==}))
 
-def Cont.dv_more(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs: List<&2, Q.Container>, ro: Cont.Res(), ero: {Q.Containers.go(f, k, r3) == ro : Cont.Res()}, +e: {Q.Containers.cons(Q.Container{id, I.LenBody{len, body}}, ro) == Done{cs} : Cont.Res()}, f16: {B.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: @cs2: List<&2, Q.Container> -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
+def Cont.dv_more(+f: Nat, +k: Nat, +b: U32, +b0: U32, +r2: B.Bytes(), +id: U32, +len: U32, +body: B.Bytes(), +r3: B.Bytes(), +cs: List<&2, Q.Container>, ro: Cont.Res(), ero: {Q.Containers.go(f, k, r3) == ro : Cont.Res()}, +e: {B.Res.cons(Q.Container, Q.Container{id, I.LenBody{len, body}}, ro) == Done{cs} : Cont.Res()}, f16: {B.fits16(id) == True{} : Bool}, v8: {I.LenBody.valid8(I.LenBody{len, body}) == True{} : Bool}, ll: {List.length(&2, U32, r2) == 1n+Nat.add(List.length(&2, U32, body), List.length(&2, U32, r3)) : Nat}, ih: @cs2: List<&2, Q.Container> -> {Q.Containers.go(f, k, r3) == Done{cs2} : Cont.Res()} -> Cont.Inv(k, r3, cs2)) -> Cont.Inv(1n+k, b <> b0 <> r2, cs):
   match ro:
     case Fail{err}:
       Cont.absurd(1n+k, b <> b0 <> r2, cs, err, e)
@@ -455,7 +455,7 @@ def Cont.rt(cs: List<&2, Q.Container>, fuel: Nat, budget: Nat, +v: {Q.Containers
       lr = Equal.sym(B.Read(I.LenBody), I.lv(I.write_lv(I.LenBody{len, body}, W)), Done{(I.LenBody{len, body}, W)}, Lv.rt(len, body, W, P.Bool.and_true_r(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body}), cv)))
       %lr : {Q.Container.body(id, _, left => Q.Containers.go(f, k, left)) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
       ih = Equal.sym(Cont.Res(), Q.Containers.go(f, k, W), Done{more}, Cont.rt(more, f, k, P.Bool.and_true_r(Bool.and(B.fits16(id), I.LenBody.valid8(I.LenBody{len, body})), Q.Containers.valid(more), v), P.Nat.le_of_append(body, W, 2n, f, bound), cnt))
-      %ih : {Q.Containers.cons(Q.Container{id, I.LenBody{len, body}}, _) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
+      %ih : {B.Res.cons(Q.Container, Q.Container{id, I.LenBody{len, body}}, _) == Done{Q.Container{id, I.LenBody{len, body}} <> more} : Cont.Res()}
       {==}
 
 def Epco.rt(+cs: List<&2, Q.Container>, +v: {Q.Epco.valid(Q.Epco{cs}) == True{} : Bool}) -> {Nat.is_le(List.length(&2, U32, Q.Epco.write(Q.Epco{cs})), 65535n) == True{} : Bool} & {Q.Epco.read(Q.Epco.write(Q.Epco{cs})) == Done{Q.Epco{cs}} : Epco.Res()}:
@@ -548,7 +548,7 @@ def Payload.sx_ipv4_fin(+a3: U32, +a2: U32, +a1: U32, +a0: U32, +m3: U32, +m2: U
   %sa : {_ == a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2 : B.Bytes()} & {B.all_bytes(r2) == True{} : Bool}
   ({==}, ab2)
 
-def Payload.sx_ipv4_ok(+a3: U32, +a2: U32, +a1: U32, +a0: U32, +m3: U32, +m2: U32, +m1: U32, +m0: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ok: Bool, +e: {Q.Ok(B.ReadValue(Q.Payload), (Q.PIpv4{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))}, r2), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3))), ok) == Done{(p, r)} : B.Read(Q.Payload)}, +ab: {B.all_bytes(a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2) == True{} : Bool}) -> Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2):
+def Payload.sx_ipv4_ok(+a3: U32, +a2: U32, +a1: U32, +a0: U32, +m3: U32, +m2: U32, +m1: U32, +m0: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), ok: Bool, +e: {B.guard(B.ReadValue(Q.Payload), (Q.PIpv4{B.cat8(a0, B.cat8(a1, B.cat8(a2, a3))), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))}, r2), B.cat8(m0, B.cat8(m1, B.cat8(m2, m3))), ok) == Done{(p, r)} : B.Read(Q.Payload)}, +ab: {B.all_bytes(a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2) == True{} : Bool}) -> Payload.Sx(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2):
   match ok:
     case False{}:
       Payload.absurd(p, r, a3 <> a2 <> a1 <> a0 <> m3 <> m2 <> m1 <> m0 <> r2, B.Invalid{B.cat8(m0, B.cat8(m1, B.cat8(m2, m3)))}, e)
@@ -575,7 +575,7 @@ def Payload.sx_ipv6_fin(+addr: B.Bytes(), +pre: U32, +r2: B.Bytes(), +p: Q.Paylo
   %smp : {List.append(&2, U32, addr, _ <> r2) == bs : B.Bytes()} & {B.all_bytes(r2) == True{} : Bool}
   (ap, ab2)
 
-def Payload.sx_ipv6_ok(+addr: B.Bytes(), +pre: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), ok: Bool, +e: {Q.Ok(B.ReadValue(Q.Payload), (Q.PIpv6{addr, pre}, r2), pre, ok) == Done{(p, r)} : B.Read(Q.Payload)}, ap: {List.append(&2, U32, addr, pre <> r2) == bs : B.Bytes()}, +al: {B.all_bytes(pre <> r2) == True{} : Bool}) -> Payload.Sx(p, r, bs):
+def Payload.sx_ipv6_ok(+addr: B.Bytes(), +pre: U32, +r2: B.Bytes(), +p: Q.Payload, +r: B.Bytes(), +bs: B.Bytes(), ok: Bool, +e: {B.guard(B.ReadValue(Q.Payload), (Q.PIpv6{addr, pre}, r2), pre, ok) == Done{(p, r)} : B.Read(Q.Payload)}, ap: {List.append(&2, U32, addr, pre <> r2) == bs : B.Bytes()}, +al: {B.all_bytes(pre <> r2) == True{} : Bool}) -> Payload.Sx(p, r, bs):
   match ok:
     case False{}:
       Payload.absurd(p, r, bs, B.Invalid{pre}, e)
@@ -707,7 +707,7 @@ def Comps.Res() -> Data:
 def Comps.absurd(+cs: List<&2, Q.Comp>, +bs: B.Bytes(), err: B.Err, e: {Fail{err} == Done{cs} : Comps.Res()}) -> {Q.Comps.write(cs, []) == bs : B.Bytes()}:
   Empty.absurd({Q.Comps.write(cs, []) == bs : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, Q.Comp>, err, cs, e))
 
-def Comps.sx_cons(+f: Nat, +b: U32, +rest: B.Bytes(), +c: Q.Comp, +r1: B.Bytes(), +cs: List<&2, Q.Comp>, ro: Comps.Res(), ero: {Q.Comps.go(f, r1) == ro : Comps.Res()}, +e: {Q.Comps.cons(c, ro) == Done{cs} : Comps.Res()}, s: Comp.Sx(c, r1, b <> rest), ih: @cs2: List<&2, Q.Comp> -> {Q.Comps.go(f, r1) == Done{cs2} : Comps.Res()} -> {B.all_bytes(r1) == True{} : Bool} -> {Q.Comps.write(cs2, []) == r1 : B.Bytes()}) -> {Q.Comps.write(cs, []) == b <> rest : B.Bytes()}:
+def Comps.sx_cons(+f: Nat, +b: U32, +rest: B.Bytes(), +c: Q.Comp, +r1: B.Bytes(), +cs: List<&2, Q.Comp>, ro: Comps.Res(), ero: {Q.Comps.go(f, r1) == ro : Comps.Res()}, +e: {B.Res.cons(Q.Comp, c, ro) == Done{cs} : Comps.Res()}, s: Comp.Sx(c, r1, b <> rest), ih: @cs2: List<&2, Q.Comp> -> {Q.Comps.go(f, r1) == Done{cs2} : Comps.Res()} -> {B.all_bytes(r1) == True{} : Bool} -> {Q.Comps.write(cs2, []) == r1 : B.Bytes()}) -> {Q.Comps.write(cs, []) == b <> rest : B.Bytes()}:
   match ro:
     case Fail{err}:
       Comps.absurd(cs, b <> rest, err, e)
@@ -813,7 +813,7 @@ def Filters.sx_fin(+bs: B.Bytes(), +f: Q.Filter, +r1: B.Bytes(), +fs2: List<&2, 
   %sw2 : {Q.Filter.write(f, _) == bs : B.Bytes()} & {B.all_bytes(r3) == True{} : Bool}
   (w1, a2)
 
-def Filters.sx_cons(+p: Nat, +bs: B.Bytes(), +f: Q.Filter, +r1: B.Bytes(), r2: B.Read(List<&2, Q.Filter>), er2: {Q.Filters.read(p, r1) == r2 : B.Read(List<&2, Q.Filter>)}, +fs: List<&2, Q.Filter>, +rest: B.Bytes(), +e: {Q.Filters.cons(f, r2) == Done{(fs, rest)} : B.Read(List<&2, Q.Filter>)}, s1: Filter.Sx(f, r1, bs), ih: @fs2: List<&2, Q.Filter> -> @r3: B.Bytes() -> {Q.Filters.read(p, r1) == Done{(fs2, r3)} : B.Read(List<&2, Q.Filter>)} -> {B.all_bytes(r1) == True{} : Bool} -> Filters.Sx(fs2, r3, r1)) -> Filters.Sx(fs, rest, bs):
+def Filters.sx_cons(+p: Nat, +bs: B.Bytes(), +f: Q.Filter, +r1: B.Bytes(), r2: B.Read(List<&2, Q.Filter>), er2: {Q.Filters.read(p, r1) == r2 : B.Read(List<&2, Q.Filter>)}, +fs: List<&2, Q.Filter>, +rest: B.Bytes(), +e: {B.Read.cons(Q.Filter, f, r2) == Done{(fs, rest)} : B.Read(List<&2, Q.Filter>)}, s1: Filter.Sx(f, r1, bs), ih: @fs2: List<&2, Q.Filter> -> @r3: B.Bytes() -> {Q.Filters.read(p, r1) == Done{(fs2, r3)} : B.Read(List<&2, Q.Filter>)} -> {B.all_bytes(r1) == True{} : Bool} -> Filters.Sx(fs2, r3, r1)) -> Filters.Sx(fs, rest, bs):
   match r2:
     case Fail{err}:
       Filters.absurd(fs, rest, bs, err, e)
@@ -994,7 +994,7 @@ def Rules.Res() -> Data:
 def Rules.absurd(+rs: List<&2, Q.Rule>, +bs: B.Bytes(), err: B.Err, e: {Fail{err} == Done{rs} : Rules.Res()}) -> {Q.Rules.write(rs) == bs : B.Bytes()}:
   Empty.absurd({Q.Rules.write(rs) == bs : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, Q.Rule>, err, rs, e))
 
-def Rules.sx_cons(+f: Nat, +b: U32, +rest: B.Bytes(), +rule: Q.Rule, +r1: B.Bytes(), +rs: List<&2, Q.Rule>, ro: Rules.Res(), ero: {Q.Rules.go(f, r1) == ro : Rules.Res()}, +e: {Q.Rules.cons(rule, ro) == Done{rs} : Rules.Res()}, s: Rule.Sx(rule, r1, b <> rest), ih: @rs2: List<&2, Q.Rule> -> {Q.Rules.go(f, r1) == Done{rs2} : Rules.Res()} -> {B.all_bytes(r1) == True{} : Bool} -> {Q.Rules.write(rs2) == r1 : B.Bytes()}) -> {Q.Rules.write(rs) == b <> rest : B.Bytes()}:
+def Rules.sx_cons(+f: Nat, +b: U32, +rest: B.Bytes(), +rule: Q.Rule, +r1: B.Bytes(), +rs: List<&2, Q.Rule>, ro: Rules.Res(), ero: {Q.Rules.go(f, r1) == ro : Rules.Res()}, +e: {B.Res.cons(Q.Rule, rule, ro) == Done{rs} : Rules.Res()}, s: Rule.Sx(rule, r1, b <> rest), ih: @rs2: List<&2, Q.Rule> -> {Q.Rules.go(f, r1) == Done{rs2} : Rules.Res()} -> {B.all_bytes(r1) == True{} : Bool} -> {Q.Rules.write(rs2) == r1 : B.Bytes()}) -> {Q.Rules.write(rs) == b <> rest : B.Bytes()}:
   match ro:
     case Fail{err}:
       Rules.absurd(rs, b <> rest, err, e)

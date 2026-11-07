@@ -269,17 +269,7 @@ def U32.fits_of(+n: Nat, +bs: Ap.Bits(), e: {List.length(&2, Bool, bs) == n : Na
   se = Equal.sym(Nat, List.length(&2, Bool, bs), n, e)
   Word.high_zero_of(32n, n, List.reverse(&2, Bool, bs), (%rl : {Nat.is_le(_, n) == True{} : Bool}; (%se : {Nat.is_le(_, n) == True{} : Bool}; P.Nat.le_refl(n))))
 
-def U32.byte_fits.go(d: U32, +d2: U32, same: {d == d2 : U32}, m8: {U32.and(255, d2) == d2 : U32}) -> {Ap.U32.fits(8n, d2) == True{} : Bool}:
-  match d:
-    case U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
-      %m8 : {Ap.U32.fits(8n, _) == True{} : Bool}
-      %same : {Ap.U32.fits(8n, U32.and(255, _)) == True{} : Bool}
-      {==}
-
 # A byte fits eight bits.
-def U32.byte_fits(+b: U32, e: {B.is_byte(b) == True{} : Bool}) -> {Ap.U32.fits(8n, b) == True{} : Bool}:
-  U32.byte_fits.go(b, b, {==}, P.U32.lt256_mask8(b, e))
-
 # Constrained whole numbers
 # -------------------------
 
@@ -1011,6 +1001,32 @@ def UBitStr.dv(rl: Ap.Rd(Nat), +c0: Ap.Cur, +erl: {Ap.Len.read(c0) == rl : Ap.Rd
 def L.aper.ubitstr.decode_valid(c, bs, c2, e):
   UBitStr.dv(Ap.Len.read(c), c, {==}, bs, c2, e)
 
+def L.aper.wbitstr.roundtrip(lo, diff, bs, rem, rest, v):
+  sv = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), True{}, P.Bool.and_true_l(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), Ap.UBitStr.valid(bs), v))
+  ur = Equal.sym(Ap.Rd(Ap.Bits()), Ap.UBitStr.read(Ap.Cur{rem, Ap.UBitStr.write(bs, rem, rest)}), Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})}, L.aper.ubitstr.roundtrip(bs, rem, rest, P.Bool.and_true_r(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), Ap.UBitStr.valid(bs), v)))
+  %ur : {Ap.WBitStr.inside(lo, diff, _) == Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+  %sv : {Ap.XBits.of(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest}, _) == Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+  {==}
+
+def WBitStr.dv.ok(+lo: Nat, +diff: Nat, +bs0: Ap.Bits(), +c: Ap.Cur, ok: Bool, eok: {Ap.Size.valid(lo, diff, List.length(&2, Bool, bs0)) == ok : Bool}, +bs: Ap.Bits(), +c2: Ap.Cur, +e: {Ap.XBits.of(bs0, c, ok) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}, uv: {Ap.UBitStr.valid(bs0) == True{} : Bool}) -> {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}:
+  match ok:
+    case False{}:
+      Rd.absurd(Ap.Bits(), {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}, B.Invalid{2}, bs, c2, e)
+    case True{}:
+      ev = Equal.cong(Ap.Rd(Ap.Bits()), Ap.Bits(), y => Rd.value(Ap.Bits(), y, bs), Done{(bs0, c)}, Done{(bs, c2)}, e)
+      %ev : {Ap.WBitStr.valid(lo, diff, _) == True{} : Bool}
+      P.Bool.and_intro(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs0)), Ap.UBitStr.valid(bs0), eok, uv)
+
+def WBitStr.dv(+lo: Nat, +diff: Nat, +c0: Ap.Cur, ru: Ap.Rd(Ap.Bits()), +eru: {Ap.UBitStr.read(c0) == ru : Ap.Rd(Ap.Bits())}, +bs: Ap.Bits(), +c2: Ap.Cur, +e: {Ap.WBitStr.inside(lo, diff, ru) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}) -> {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}:
+  match ru:
+    case Fail{err}:
+      Rd.absurd(Ap.Bits(), {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}, err, bs, c2, e)
+    case Done{(+bs0, +c)}:
+      WBitStr.dv.ok(lo, diff, bs0, c, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs0)), {==}, bs, c2, e, L.aper.ubitstr.decode_valid(c0, bs0, c, eru))
+
+def L.aper.wbitstr.decode_valid(lo, diff, c, bs, c2, e):
+  WBitStr.dv(lo, diff, c, Ap.UBitStr.read(c), {==}, bs, c2, e)
+
 def L.aper.open.roundtrip(bs, rem, rest, v):
   lr = Equal.sym(Ap.Rd(Nat), Ap.Len.read(Ap.Cur{rem, Ap.Len.write(List.length(&2, U32, bs), rem, Ap.Octets.write(bs, 0n, rest))}), Done{(List.length(&2, U32, bs), Ap.Cur{0n, Ap.Octets.write(bs, 0n, rest)})}, L.aper.len.roundtrip(List.length(&2, U32, bs), rem, Ap.Octets.write(bs, 0n, rest), P.Bool.and_true_l(Ap.Len.valid(List.length(&2, U32, bs)), B.all_bytes(bs), v)))
   %lr : {Ap.Open.count(_) == Done{(bs, Ap.Cur{0n, rest})} : Ap.Rd(B.Bytes())}
@@ -1185,13 +1201,6 @@ def Bool.or_intro_r(a: Bool, +b: Bool, eb: {b == True{} : Bool}) -> {Bool.or(a, 
     case False{}:
       eb
 
-def Bool.or_true_r(a: Bool, +b: Bool, ea: {a == False{} : Bool}, e: {Bool.or(a, b) == True{} : Bool}) -> {b == True{} : Bool}:
-  match a:
-    case True{}:
-      Empty.absurd({b == True{} : Bool}, P.Refute.true_false(ea))
-    case False{}:
-      e
-
 def XInt.root_rt(al: Bool, +n: Nat, +diff: U32, +i: U32, +rem: Nat, +rest: Ap.Bits(), +v: {Ap.Int.valid(n, diff, i) == True{} : Bool}) -> {Ap.XInt.root_read(al, n, diff, Ap.Cur{rem, Ap.XInt.root_write(al, n, i, rem, rest)}) == Done{(i, Ap.Cur{Ap.XInt.root_after(al, n, rem), rest})} : Ap.Rd(U32)}:
   match al:
     case False{}:
@@ -1299,7 +1308,7 @@ def XBits.rt(+n: Nat, +bs: Ap.Bits(), +rem: Nat, +rest: Ap.Bits(), root: Bool, +
       %el : {Ap.Bits.go(_, Ap.Rem.add(_, Ap.Rem.next(rem)), List.append(&2, Bool, bs, rest)) == Done{(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), Ap.Rem.next(rem)), rest})} : Ap.Rd(Ap.Bits())}
       Equal.sym(Ap.Rd(Ap.Bits()), Done{(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), Ap.Rem.next(rem)), rest})}, Ap.Bits.go(List.length(&2, Bool, bs), Ap.Rem.add(List.length(&2, Bool, bs), Ap.Rem.next(rem)), List.append(&2, Bool, bs, rest)), Bits.go_app(bs, Ap.Rem.add(List.length(&2, Bool, bs), Ap.Rem.next(rem)), rest))
     case False{}:
-      ur = Equal.sym(Ap.Rd(Ap.Bits()), Ap.UBitStr.read(Ap.Cur{Ap.Rem.next(rem), Ap.UBitStr.write(bs, Ap.Rem.next(rem), rest)}), Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, Ap.Rem.next(rem)), rest})}, L.aper.ubitstr.roundtrip(bs, Ap.Rem.next(rem), rest, Bool.or_true_r(Nat.is_eq(List.length(&2, Bool, bs), n), Ap.UBitStr.valid(bs), er, v)))
+      ur = Equal.sym(Ap.Rd(Ap.Bits()), Ap.UBitStr.read(Ap.Cur{Ap.Rem.next(rem), Ap.UBitStr.write(bs, Ap.Rem.next(rem), rest)}), Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, Ap.Rem.next(rem)), rest})}, L.aper.ubitstr.roundtrip(bs, Ap.Rem.next(rem), rest, P.Bool.or_true_r(Nat.is_eq(List.length(&2, Bool, bs), n), Ap.UBitStr.valid(bs), er, v)))
       %ur : {Ap.XBits.outside(n, _) == Done{(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), 0n), rest})} : Ap.Rd(Ap.Bits())}
       ser = Equal.sym(Bool, Nat.is_eq(List.length(&2, Bool, bs), n), False{}, er)
       %ser : {Ap.XBits.of(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), 0n), rest}, Bool.not(_)) == Done{(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), 0n), rest})} : Ap.Rd(Ap.Bits())}
@@ -1350,7 +1359,7 @@ def XBitStr.rt(+al: Bool, +n: Nat, +lo: Nat, +diff: Nat, +bs: Ap.Bits(), +rem: N
     case True{}:
       L.aper.bitstr.roundtrip(al, n, lo, diff, bs, Ap.Rem.next(rem), rest, er, w)
     case False{}:
-      ur = Equal.sym(Ap.Rd(Ap.Bits()), Ap.UBitStr.read(Ap.Cur{Ap.Rem.next(rem), Ap.UBitStr.write(bs, Ap.Rem.next(rem), rest)}), Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, Ap.Rem.next(rem)), rest})}, L.aper.ubitstr.roundtrip(bs, Ap.Rem.next(rem), rest, Bool.or_true_r(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), Ap.UBitStr.valid(bs), er, v)))
+      ur = Equal.sym(Ap.Rd(Ap.Bits()), Ap.UBitStr.read(Ap.Cur{Ap.Rem.next(rem), Ap.UBitStr.write(bs, Ap.Rem.next(rem), rest)}), Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, Ap.Rem.next(rem)), rest})}, L.aper.ubitstr.roundtrip(bs, Ap.Rem.next(rem), rest, P.Bool.or_true_r(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), Ap.UBitStr.valid(bs), er, v)))
       %ur : {Ap.XBitStr.outside(lo, diff, _) == Done{(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), 0n), rest})} : Ap.Rd(Ap.Bits())}
       ser = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), False{}, er)
       %ser : {Ap.XBits.of(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), 0n), rest}, Bool.not(_)) == Done{(bs, Ap.Cur{Ap.Rem.add(List.length(&2, Bool, bs), 0n), rest})} : Ap.Rd(Ap.Bits())}
@@ -1394,7 +1403,7 @@ def XStr.rt(+al: Bool, +n: Nat, +lo: Nat, +diff: Nat, +s: B.Bytes(), +rem: Nat, 
     case True{}:
       L.aper.str.roundtrip(al, n, lo, diff, s, Ap.Rem.next(rem), rest, P.Bool.and_intro(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), Ap.Str.all(s), er, P.Bool.and_true_r(Bool.or(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), Ap.Len.valid(List.length(&2, U32, s))), Ap.Str.all(s), v)), w)
     case False{}:
-      lv = Bool.or_true_r(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), Ap.Len.valid(List.length(&2, U32, s)), er, P.Bool.and_true_l(Bool.or(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), Ap.Len.valid(List.length(&2, U32, s))), Ap.Str.all(s), v))
+      lv = P.Bool.or_true_r(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), Ap.Len.valid(List.length(&2, U32, s)), er, P.Bool.and_true_l(Bool.or(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), Ap.Len.valid(List.length(&2, U32, s))), Ap.Str.all(s), v))
       ur = Equal.sym(Ap.Rd(B.Bytes()), Ap.UStr.read(Ap.Cur{Ap.Rem.next(rem), Ap.UStr.write(s, Ap.Rem.next(rem), rest)}), Done{(s, Ap.Cur{0n, rest})}, L.aper.ustr.roundtrip(s, Ap.Rem.next(rem), rest, P.Bool.and_intro(Ap.Len.valid(List.length(&2, U32, s)), Ap.Str.all(s), lv, P.Bool.and_true_r(Bool.or(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), Ap.Len.valid(List.length(&2, U32, s))), Ap.Str.all(s), v))))
       %ur : {Ap.XStr.outside(lo, diff, _) == Done{(s, Ap.Cur{0n, rest})} : Ap.Rd(B.Bytes())}
       ser = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, U32, s)), False{}, er)
