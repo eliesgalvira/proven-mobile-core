@@ -58,7 +58,7 @@ def Gsm.filter_count(rs: List<&2, Q.Rule>) -> Nat:
     case r <> more:
       Nat.add(Q.RuleFilters.count(Gsm.rule_filters(r)), Gsm.filter_count(more))
 
-def Gsm.rules_bounded(r: Q.Res(List<&2, Q.Rule>)) -> Bool:
+def Gsm.rules_bounded(r: B.Res(List<&2, Q.Rule>)) -> Bool:
   match r:
     case Fail{e}:
       False{}
@@ -310,7 +310,7 @@ def Gsm.slice_ok(cfg: S.Cfg, m: Maybe<&2, B.Bytes()>) -> Bool:
     case Some{s}:
       U32.is_eq(N.Ngap.cap_byte(s, 0n), N.Ngap.cap_byte(S.Cfg.sst(cfg), 0n))
 
-def Gsm.wants_dns(r: Q.Res(Q.Epco)) -> Bool:
+def Gsm.wants_dns(r: B.Res(Q.Epco)) -> Bool:
   match r:
     case Fail{e}:
       False{}

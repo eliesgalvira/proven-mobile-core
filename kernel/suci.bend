@@ -29,13 +29,6 @@ def Suci.scheme_a() -> U32:
 # Routing indicator
 # -----------------
 
-def Routing.cons(d: U32, r: Result<&2, &2, B.Err, B.Digits()>) -> Result<&2, &2, B.Err, B.Digits()>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{ds}:
-      Done{d <> ds}
-
 def Routing.filler(n: U32, more: Unit -> Result<&2, &2, B.Err, B.Digits()>, ok: Bool) -> Result<&2, &2, B.Err, B.Digits()>:
   match ok:
     case True{}:
@@ -53,7 +46,7 @@ def Routing.fillers(ns: List<&2, U32>) -> Result<&2, &2, B.Err, B.Digits()>:
 def Routing.step(n: U32, rest: List<&2, U32>, more: Unit -> Result<&2, &2, B.Err, B.Digits()>, digit: Bool, filler: Bool) -> Result<&2, &2, B.Err, B.Digits()>:
   match digit:
     case True{}:
-      Routing.cons(n, more(Unit{}))
+      B.Res.cons(U32, n, more(Unit{}))
     case False{}:
       match filler:
         case True{}:

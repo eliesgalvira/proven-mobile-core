@@ -115,7 +115,7 @@ def Items.rt(items: List<&2, F.Action>, +W: B.Bytes(), +v: {F.Items.valid(items)
       ar = Equal.sym(B.Read(F.Action), F.Action.read(F.Action.write(a, W2)), Done{(a, W2)}, Action.rt(a, W2, P.Bool.and_true_l(F.Action.valid(a), F.Items.valid(more), v)))
       %ar : {F.Items.next(_, left => F.Items.read(List.length(&2, F.Action, more), left)) == Done{(a <> more, W)} : B.Read(List<&2, F.Action>)}
       ih = Equal.sym(B.Read(List<&2, F.Action>), F.Items.read(List.length(&2, F.Action, more), W2), Done{(more, W)}, Items.rt(more, W, P.Bool.and_true_r(F.Action.valid(a), F.Items.valid(more), v)))
-      %ih : {F.Items.cons(a, _) == Done{(a <> more, W)} : B.Read(List<&2, F.Action>)}
+      %ih : {B.Read.cons(F.Action, a, _) == Done{(a <> more, W)} : B.Read(List<&2, F.Action>)}
       {==}
 
 def Actions.rt(+count: U32, +items: List<&2, F.Action>, +rest: B.Bytes(), +v: {F.Actions.valid(F.Actions{count, items}) == True{} : Bool}) -> {F.Actions.read(F.Actions.write(F.Actions{count, items}, rest)) == Done{(F.Actions{count, items}, rest)} : B.Read(F.Actions)}:

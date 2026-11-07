@@ -517,7 +517,7 @@ def Take.append(xs: B.Bytes(), +rest: B.Bytes()) -> {B.take(List.length(&2, U32,
       {==}
     case +x <> +t:
       ih = Equal.sym(B.Read(B.Bytes()), B.take(List.length(&2, U32, t), List.append(&2, U32, t, rest)), Done{(t, rest)}, Take.append(t, rest))
-      %ih : {B.Take.cons(x, _) == Done{(x <> t, rest)} : B.Read(B.Bytes())}
+      %ih : {B.Read.cons(U32, x, _) == Done{(x <> t, rest)} : B.Read(B.Bytes())}
       {==}
 
 # Bytes of cat8: the low byte is lo, the high byte is hi, when each fits a byte.

@@ -42,8 +42,12 @@ def Msg.ies(m: Msg) -> List<&2, T.Tlv>:
     case Msg{kind, len, seid, seq, ies}:
       ies
 
-def fits24(+x: U32) -> Bool:
-  U32.is_eq(U32.and(16777215, x), x)
+def Addr.write(a: Maybe<&2, B.Bytes()>, rest: B.Bytes()) -> B.Bytes():
+  match a:
+    case None{}:
+      rest
+    case Some{bs}:
+      List.append(&2, U32, bs, rest)
 
 def Seid.valid(seid: Maybe<&2, B.Bytes()>) -> Bool:
   match seid:
@@ -66,13 +70,6 @@ def Seid.flags(seid: Maybe<&2, B.Bytes()>) -> U32:
     case Some{bs}:
       33
 
-def Seid.write(seid: Maybe<&2, B.Bytes()>, rest: B.Bytes()) -> B.Bytes():
-  match seid:
-    case None{}:
-      rest
-    case Some{bs}:
-      List.append(&2, U32, bs, rest)
-
 # The octets the length field counts: SEID, sequence number, spare, IEs.
 def Msg.body_size(seid: Maybe<&2, B.Bytes()>, ies: List<&2, T.Tlv>) -> Nat:
   Nat.add(Seid.size(seid), Nat.add(4n, T.Tlvs.size(ies)))
@@ -80,7 +77,7 @@ def Msg.body_size(seid: Maybe<&2, B.Bytes()>, ies: List<&2, T.Tlv>) -> Nat:
 def Msg.valid(m: Msg) -> Bool:
   match m:
     case Msg{kind, +len, +seid, seq, +ies}:
-      Bool.and(B.fits8(kind), Bool.and(B.fits16(len), Bool.and(Seid.valid(seid), Bool.and(fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(len), Msg.body_size(seid, ies)), T.Tlvs.valid(ies))))))
+      Bool.and(B.fits8(kind), Bool.and(B.fits16(len), Bool.and(Seid.valid(seid), Bool.and(B.fits24(seq), Bool.and(Nat.is_eq(U32.to_nat(len), Msg.body_size(seid, ies)), T.Tlvs.valid(ies))))))
 
 def Msg.of_ies(kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, seq: U32, r: Result<&2, &2, B.Err, List<&2, T.Tlv>>) -> Result<&2, &2, B.Err, Msg>:
   match r:
@@ -115,7 +112,7 @@ def Msg.of_seq(kind: U32, len: U32, seid: Maybe<&2, B.Bytes()>, r: B.Read(U32)) 
     case Fail{e}:
       Fail{e}
     case Done{(+seq, rest)}:
-      Msg.seq_ok(kind, len, seid, seq, rest, fits24(seq))
+      Msg.seq_ok(kind, len, seid, seq, rest, B.fits24(seq))
 
 def Msg.of_seid(kind: U32, len: U32, r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, Msg>:
   match r:
@@ -199,7 +196,7 @@ def Msg.read(bs: B.Bytes()) -> B.Read(Msg):
 def Msg.write(m: Msg, rest: B.Bytes()) -> B.Bytes():
   match m:
     case Msg{kind, len, +seid, seq, ies}:
-      B.write_u8(Seid.flags(seid), B.write_u8(kind, B.write_u16(len, Seid.write(seid, B.write_u24(seq, B.write_u8(0, T.Tlvs.write(ies, rest)))))))
+      B.write_u8(Seid.flags(seid), B.write_u8(kind, B.write_u16(len, Addr.write(seid, B.write_u24(seq, B.write_u8(0, T.Tlvs.write(ies, rest)))))))
 
 # A message over its content, with the length word it needs.
 def Msg.make(kind: U32, +seid: Maybe<&2, B.Bytes()>, seq: U32, +ies: List<&2, T.Tlv>) -> Msg:
@@ -209,19 +206,12 @@ def Msg.make(kind: U32, +seid: Maybe<&2, B.Bytes()>, seq: U32, +ies: List<&2, T.
 # ------------------------
 # Each decodes the whole body of its IE, or fails.
 
-def Exact.end(-A: Data, x: A, rest: B.Bytes()) -> Result<&2, &2, B.Err, A>:
-  match rest:
-    case Nil{}:
-      Done{x}
-    case b <> more:
-      Fail{B.Invalid{b}}
-
 def exact(-A: Data, r: B.Read(A)) -> Result<&2, &2, B.Err, A>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(x, rest)}:
-      Exact.end(A, x, rest)
+      B.end(A, x, rest)
 
 # One-octet values: Cause, Source and Destination Interface, QFI, Gate Status, PDN Type.
 def Byte.read(body: B.Bytes()) -> Result<&2, &2, B.Err, U32>:
@@ -255,14 +245,14 @@ def NodeId.v4(r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, NodeId>:
     case Fail{e}:
       Fail{e}
     case Done{(addr, rest)}:
-      Exact.end(NodeId, NodeV4{addr}, rest)
+      B.end(NodeId, NodeV4{addr}, rest)
 
 def NodeId.v6(r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, NodeId>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(addr, rest)}:
-      Exact.end(NodeId, NodeV6{addr}, rest)
+      B.end(NodeId, NodeV6{addr}, rest)
 
 def NodeId.kind(kind: U32, rest: B.Bytes()) -> Result<&2, &2, B.Err, NodeId>:
   match kind:
@@ -309,13 +299,6 @@ def Addr.present(a: Maybe<&2, B.Bytes()>) -> Bool:
     case Some{bs}:
       True{}
 
-def Addr.write(a: Maybe<&2, B.Bytes()>, rest: B.Bytes()) -> B.Bytes():
-  match a:
-    case None{}:
-      rest
-    case Some{bs}:
-      List.append(&2, U32, bs, rest)
-
 def Addr.some(r: B.Read(B.Bytes())) -> B.Read(Maybe<&2, B.Bytes()>):
   match r:
     case Fail{e}:
@@ -358,7 +341,7 @@ def Fseid.of_v6(seid: B.Bytes(), v4: Maybe<&2, B.Bytes()>, r: B.Read(Maybe<&2, B
     case Fail{e}:
       Fail{e}
     case Done{(v6, rest)}:
-      Exact.end(Fseid, Fseid{seid, v4, v6}, rest)
+      B.end(Fseid, Fseid{seid, v4, v6}, rest)
 
 def Fseid.of_v4(+flags: U32, seid: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>)) -> Result<&2, &2, B.Err, Fseid>:
   match r:
@@ -416,7 +399,7 @@ def Fteid.of_v6(teid: U32, v4: Maybe<&2, B.Bytes()>, r: B.Read(Maybe<&2, B.Bytes
     case Fail{e}:
       Fail{e}
     case Done{(v6, rest)}:
-      Exact.end(Fteid, Teid{teid, v4, v6}, rest)
+      B.end(Fteid, Teid{teid, v4, v6}, rest)
 
 def Fteid.of_v4(+flags: U32, teid: U32, r: B.Read(Maybe<&2, B.Bytes()>)) -> Result<&2, &2, B.Err, Fteid>:
   match r:
@@ -437,14 +420,14 @@ def Fteid.of_chid(v4: Bool, v6: Bool, r: B.Read(U32)) -> Result<&2, &2, B.Err, F
     case Fail{e}:
       Fail{e}
     case Done{(chid, rest)}:
-      Exact.end(Fteid, Choose{v4, v6, Some{chid}}, rest)
+      B.end(Fteid, Choose{v4, v6, Some{chid}}, rest)
 
 def Fteid.choose(+flags: U32, rest: B.Bytes(), chid: Bool) -> Result<&2, &2, B.Err, Fteid>:
   match chid:
     case True{}:
       Fteid.of_chid(bit(flags, 1), bit(flags, 2), B.u8(rest))
     case False{}:
-      Exact.end(Fteid, Choose{bit(flags, 1), bit(flags, 2), None{}}, rest)
+      B.end(Fteid, Choose{bit(flags, 1), bit(flags, 2), None{}}, rest)
 
 def Fteid.form(+flags: U32, rest: B.Bytes(), ch: Bool) -> Result<&2, &2, B.Err, Fteid>:
   match ch:
@@ -510,7 +493,7 @@ def UeIp.of_v6(source: Bool, v4: Maybe<&2, B.Bytes()>, r: B.Read(Maybe<&2, B.Byt
     case Fail{e}:
       Fail{e}
     case Done{(v6, rest)}:
-      Exact.end(UeIp, UeIp{source, v4, v6}, rest)
+      B.end(UeIp, UeIp{source, v4, v6}, rest)
 
 def UeIp.of_v4(+flags: U32, r: B.Read(Maybe<&2, B.Bytes()>)) -> Result<&2, &2, B.Err, UeIp>:
   match r:
@@ -565,7 +548,7 @@ def Ohc.of_port(desc: U32, teid: Maybe<&2, U32>, v4: Maybe<&2, B.Bytes()>, v6: M
     case Fail{e}:
       Fail{e}
     case Done{(port, rest)}:
-      Exact.end(Ohc, Ohc{desc, teid, v4, v6, port}, rest)
+      B.end(Ohc, Ohc{desc, teid, v4, v6, port}, rest)
 
 def Word.some(r: B.Read(U32)) -> B.Read(Maybe<&2, U32>):
   match r:
@@ -649,7 +632,7 @@ def Mbr.of_dl(ul: B.Bytes(), r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, Mbr>
     case Fail{e}:
       Fail{e}
     case Done{(dl, rest)}:
-      Exact.end(Mbr, Mbr{ul, dl}, rest)
+      B.end(Mbr, Mbr{ul, dl}, rest)
 
 def Mbr.of_ul(r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, Mbr>:
   match r:

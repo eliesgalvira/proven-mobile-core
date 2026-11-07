@@ -85,7 +85,7 @@ def first_byte(bs: List<&2, U32>) -> U32:
     case b <> rest:
       b
 
-def fails_res(-A: Data, r: Q.Res(A)) -> Bool:
+def fails_res(-A: Data, r: B.Res(A)) -> Bool:
   Result.is_fail(&2, &2, B.Err, A, r)
 
 def fails_read(-A: Data, r: B.Read(A)) -> Bool:
@@ -127,21 +127,21 @@ def rule_is(r: Q.Rule) -> Bool:
     case Q.Rule{+qri, +len, +op, +fs, +t}:
       Bool.and(Bool.and(U32.is_eq(qri, 1), U32.is_eq(len, 6)), Bool.and(Bool.and(Nat.is_eq(Q.Rule.code(op), 1n), Bool.and(Q.Rule.dqr(op), Nat.is_eq(Q.Rule.count(op), 1n))), Bool.and(rule_filters(fs), rule_tail(t))))
 
-def rules_is(r: Q.Res(List<&2, Q.Rule>), +bs: List<&2, U32>) -> Bool:
+def rules_is(r: B.Res(List<&2, Q.Rule>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+rule <> Nil{}}:
       Bool.and(Bool.and(rule_is(rule), Q.Rules.valid([rule])), C.Check.bytes_eq(Q.Rules.write([rule]), bs))
     case _:
       False{}
 
-def ambr_is(r: Q.Res(Q.Ambr), +bs: List<&2, U32>) -> Bool:
+def ambr_is(r: B.Res(Q.Ambr), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{Q.Ambr{+du, +dl, +uu, +ul}}:
       Bool.and(Bool.and(Bool.and(U32.is_eq(du, 3), U32.is_eq(dl, 62500)), Bool.and(U32.is_eq(uu, 3), U32.is_eq(ul, 62500))), Bool.and(Q.Ambr.valid(Q.Ambr{du, dl, uu, ul}), C.Check.bytes_eq(Q.Ambr.write(Q.Ambr{du, dl, uu, ul}), bs)))
     case Fail{e}:
       False{}
 
-def addr_is(r: Q.Res(Q.PduAddr), +bs: List<&2, U32>) -> Bool:
+def addr_is(r: B.Res(Q.PduAddr), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{Q.Ipv4{+addr}}:
       Bool.and(U32.is_eq(addr, 170721282), C.Check.bytes_eq(Q.PduAddr.write(Q.Ipv4{addr}), bs))
@@ -160,7 +160,7 @@ def flow_is(f: Q.Flow) -> Bool:
     case _:
       False{}
 
-def flows_is(r: Q.Res(List<&2, Q.Flow>), +bs: List<&2, U32>) -> Bool:
+def flows_is(r: B.Res(List<&2, Q.Flow>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+f <> Nil{}}:
       Bool.and(flow_is(f), C.Check.bytes_eq(Q.Flows.write([f]), bs))
@@ -172,42 +172,42 @@ def container_is(c: Q.Container, id: U32, +content: List<&2, U32>) -> Bool:
     case Q.Container{+i, I.LenBody{+len, +body}}:
       Bool.and(U32.is_eq(i, id), C.Check.bytes_eq(body, content))
 
-def epco_req(r: Q.Res(Q.Epco), +bs: List<&2, U32>) -> Bool:
+def epco_req(r: B.Res(Q.Epco), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{Q.Epco{+a <> +b <> Nil{}}}:
       Bool.and(Bool.and(container_is(a, 10, []), container_is(b, 13, [])), Bool.and(Q.Epco.valid(Q.Epco{[a, b]}), C.Check.bytes_eq(Q.Epco.write(Q.Epco{[a, b]}), bs)))
     case _:
       False{}
 
-def epco_accept(r: Q.Res(Q.Epco), +bs: List<&2, U32>) -> Bool:
+def epco_accept(r: B.Res(Q.Epco), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{Q.Epco{+a <> Nil{}}}:
       Bool.and(container_is(a, 13, [8, 8, 8, 8]), Bool.and(Q.Epco.valid(Q.Epco{[a]}), C.Check.bytes_eq(Q.Epco.write(Q.Epco{[a]}), bs)))
     case _:
       False{}
 
-def epco_count(r: Q.Res(Q.Epco), n: Nat) -> Bool:
+def epco_count(r: B.Res(Q.Epco), n: Nat) -> Bool:
   match r:
     case Done{Q.Epco{+cs}}:
       Nat.is_eq(List.length(&2, Q.Container, cs), n)
     case Fail{e}:
       False{}
 
-def rate_is(r: Q.Res(Q.MaxRate)) -> Bool:
+def rate_is(r: B.Res(Q.MaxRate)) -> Bool:
   match r:
     case Done{Q.MaxRate{+ul, +dl}}:
       Bool.and(U32.is_eq(ul, 255), U32.is_eq(dl, 255))
     case Fail{e}:
       False{}
 
-def u32_is(r: Q.Res(U32), v: U32) -> Bool:
+def u32_is(r: B.Res(U32), v: U32) -> Bool:
   match r:
     case Done{+x}:
       U32.is_eq(x, v)
     case Fail{e}:
       False{}
 
-def bytes_is(r: Q.Res(List<&2, U32>), +bs: List<&2, U32>) -> Bool:
+def bytes_is(r: B.Res(List<&2, U32>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+x}:
       C.Check.bytes_eq(x, bs)

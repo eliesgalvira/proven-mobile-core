@@ -152,19 +152,12 @@ def Field.read(lay: Lay, bs: B.Bytes()) -> B.Read(Field):
     case LvE{}:
       Field.of_lve(lve(bs))
 
-def Fields.cons(f: Field, r: B.Read(List<&2, Field>)) -> B.Read(List<&2, Field>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(fs, rest)}:
-      Done{(f <> fs, rest)}
-
 def Fields.next(r: B.Read(Field), more: B.Bytes() -> B.Read(List<&2, Field>)) -> B.Read(List<&2, Field>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(f, rest)}:
-      Fields.cons(f, more(rest))
+      B.Read.cons(Field, f, more(rest))
 
 def Fields.read(lays: List<&2, Lay>, bs: B.Bytes()) -> B.Read(List<&2, Field>):
   match lays:
@@ -327,19 +320,12 @@ def Opts.valid(+table: List<&2, Rule>, ies: List<&2, Ie>) -> Bool:
 
 # Optional IEs to the end of the message. The fuel is the byte count: every
 # IE takes at least one byte.
-def Opts.cons(ie: Ie, r: Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{ies}:
-      Done{ie <> ies}
-
 def Opts.next(r: B.Read(Ie), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Ie>>) -> Result<&2, &2, B.Err, List<&2, Ie>>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(ie, rest)}:
-      Opts.cons(ie, more(rest))
+      B.Res.cons(Ie, ie, more(rest))
 
 def Opts.iei(table: List<&2, Rule>, +iei: U32, rest: B.Bytes(), more: B.Bytes() -> Result<&2, &2, B.Err, List<&2, Ie>>, ok: Bool) -> Result<&2, &2, B.Err, List<&2, Ie>>:
   match ok:

@@ -152,7 +152,7 @@ def Routing.dig_cons_fin(+n: U32, +rest: B.Bytes(), +ds2: B.Digits(), dgn: {B.Tb
   (dg0, le0) = t0
   (P.List.cons_eq(n, n, List.append(&2, U32, ds2, Routing.fills(Nat.sub(List.length(&2, U32, rest), List.length(&2, U32, ds2)))), rest, {==}, a0), (P.Bool.and_intro(B.Tbcd.is_digit(n), B.Tbcd.all_digits(ds2), dgn, dg0), le0))
 
-def Routing.dig_cons(+n: U32, +rest: B.Bytes(), +ds: B.Digits(), r: Tbcd.Res(), er: {Su.Routing.digits(rest) == r : Tbcd.Res()}, +e: {Su.Routing.cons(n, r) == Done{ds} : Tbcd.Res()}, dgn: {B.Tbcd.is_digit(n) == True{} : Bool}, ih: @ds2: B.Digits() -> {Su.Routing.digits(rest) == Done{ds2} : Tbcd.Res()} -> Routing.DigInv(rest, ds2)) -> Routing.DigInv(n <> rest, ds):
+def Routing.dig_cons(+n: U32, +rest: B.Bytes(), +ds: B.Digits(), r: Tbcd.Res(), er: {Su.Routing.digits(rest) == r : Tbcd.Res()}, +e: {B.Res.cons(U32, n, r) == Done{ds} : Tbcd.Res()}, dgn: {B.Tbcd.is_digit(n) == True{} : Bool}, ih: @ds2: B.Digits() -> {Su.Routing.digits(rest) == Done{ds2} : Tbcd.Res()} -> Routing.DigInv(rest, ds2)) -> Routing.DigInv(n <> rest, ds):
   match r:
     case Fail{err}:
       Empty.absurd(Routing.DigInv(n <> rest, ds), P.Refute.fail_done(B.Err, B.Digits(), err, ds, e))
@@ -324,7 +324,7 @@ def Id.Sx(id: Mi.MobileId, bs: B.Bytes()) -> Type:
 def Id.Dv(id: Mi.MobileId) -> Type:
   {Mi.MobileId.valid(id) == True{} : Bool}
 
-def Id.ok_inv(-G: Type, +tag: U32, +id0: Mi.MobileId, +id: Mi.MobileId, ok: Bool, +e: {Mi.MobileId.ok(tag, id0, ok) == Done{id} : Id.Res()}, k: {id0 == id : Mi.MobileId} -> {ok == True{} : Bool} -> G) -> G:
+def Id.ok_inv(-G: Type, +tag: U32, +id0: Mi.MobileId, +id: Mi.MobileId, ok: Bool, +e: {B.guard(Mi.MobileId, id0, tag, ok) == Done{id} : Id.Res()}, k: {id0 == id : Mi.MobileId} -> {ok == True{} : Bool} -> G) -> G:
   match ok:
     case True{}:
       k(Equal.cong(Id.Res(), Mi.MobileId, x => P.Res.value(B.Err, Mi.MobileId, x, id), Done{id0}, Done{id}, e), {==})

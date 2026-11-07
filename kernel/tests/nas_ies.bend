@@ -190,7 +190,7 @@ def half_is(h: E.Half, flag: Bool, value: U32) -> Bool:
     case E.Half{+f, +v}:
       Bool.and(Bool.not(Bool.xor(f, flag)), U32.is_eq(v, value))
 
-def ksi_is(r: E.Res(E.Half), flag: Bool, value: U32) -> Bool:
+def ksi_is(r: B.Res(E.Half), flag: Bool, value: U32) -> Bool:
   match r:
     case Done{+h}:
       half_is(h, flag, value)
@@ -202,14 +202,14 @@ def algs_is(a: E.SecAlgs, c: U32, i: U32) -> Bool:
     case E.SecAlgs{+ciphering, +integrity}:
       Bool.and(U32.is_eq(ciphering, c), U32.is_eq(integrity, i))
 
-def seccap_is(r: E.Res(E.SecCap), +bs: List<&2, U32>) -> Bool:
+def seccap_is(r: B.Res(E.SecCap), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.SecCap{+ea, +ia, +eutra}}:
       Bool.and(Bool.and(U32.is_eq(ea, 240), U32.is_eq(ia, 240)), Bool.and(digits_eq(eutra, [240, 240]), C.Check.bytes_eq(E.SecCap.write(E.SecCap{ea, ia, eutra}), bs)))
     case Fail{e}:
       False{}
 
-def mmcap_is(r: E.Res(E.MmCap), +bs: List<&2, U32>) -> Bool:
+def mmcap_is(r: B.Res(E.MmCap), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.MmCap{+flags, +more}}:
       Bool.and(Bool.and(U32.is_eq(flags, 0), List.is_empty(&2, U32, more)), C.Check.bytes_eq(E.MmCap.write(E.MmCap{flags, more}), bs))
@@ -223,63 +223,63 @@ def snssai_sst1(s: E.SNssai) -> Bool:
     case _:
       False{}
 
-def nssai_is_sst1(r: E.Res(List<&2, E.SNssai>), +bs: List<&2, U32>) -> Bool:
+def nssai_is_sst1(r: B.Res(List<&2, E.SNssai>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+s <> Nil{}}:
       Bool.and(snssai_sst1(s), C.Check.bytes_eq(E.Nssai.write([s]), bs))
     case _:
       False{}
 
-def snssai_is_sst1(r: E.Res(E.SNssai), +bs: List<&2, U32>) -> Bool:
+def snssai_is_sst1(r: B.Res(E.SNssai), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+s}:
       Bool.and(snssai_sst1(s), C.Check.bytes_eq(E.SNssai.write(s), bs))
     case Fail{e}:
       False{}
 
-def snssai_full(r: E.Res(E.SNssai), +bs: List<&2, U32>) -> Bool:
+def snssai_full(r: B.Res(E.SNssai), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.SstFull{+sst, +sd, +msst, +msd}}:
       Bool.and(Bool.and(U32.is_eq(sst, 1), U32.is_eq(sd, 65794)), Bool.and(Bool.and(U32.is_eq(msst, 2), U32.is_eq(msd, 263172)), C.Check.bytes_eq(E.SNssai.write(E.SstFull{sst, sd, msst, msd}), bs)))
     case _:
       False{}
 
-def update_zero(r: E.Res(E.UpdateType), +bs: List<&2, U32>) -> Bool:
+def update_zero(r: B.Res(E.UpdateType), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.UpdateType{+sms, +rcu, +pnb, +eps}}:
       Bool.and(Bool.and(Bool.not(sms), Bool.not(rcu)), Bool.and(Bool.and(U32.is_eq(pnb, 0), U32.is_eq(eps, 0)), C.Check.bytes_eq(E.UpdateType.write(E.UpdateType{sms, rcu, pnb, eps}), bs)))
     case Fail{e}:
       False{}
 
-def bytes_len(r: E.Res(List<&2, U32>), n: Nat) -> Bool:
+def bytes_len(r: B.Res(List<&2, U32>), n: Nat) -> Bool:
   match r:
     case Done{+bs}:
       Nat.is_eq(List.length(&2, U32, bs), n)
     case Fail{e}:
       False{}
 
-def u32_is(r: E.Res(U32), v: U32) -> Bool:
+def u32_is(r: B.Res(U32), v: U32) -> Bool:
   match r:
     case Done{+x}:
       U32.is_eq(x, v)
     case Fail{e}:
       False{}
 
-def addsec_is(r: E.Res(E.AddSecInfo), hdp: Bool, rinmr: Bool, +bs: List<&2, U32>) -> Bool:
+def addsec_is(r: B.Res(E.AddSecInfo), hdp: Bool, rinmr: Bool, +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.AddSecInfo{+h, +m}}:
       Bool.and(Bool.and(Bool.not(Bool.xor(h, hdp)), Bool.not(Bool.xor(m, rinmr))), C.Check.bytes_eq(E.AddSecInfo.write(E.AddSecInfo{h, m}), bs))
     case Fail{e}:
       False{}
 
-def container_is(r: E.Res(M.Mm), +bs: List<&2, U32>) -> Bool:
+def container_is(r: B.Res(M.Mm), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+m}:
       Bool.and(U32.is_eq(M.Mm.Type.code(M.Mm.mt(m)), 65), C.Check.bytes_eq(M.Mm.write(m), bs))
     case Fail{e}:
       False{}
 
-def result_is(r: E.Res(E.RegResult), +bs: List<&2, U32>) -> Bool:
+def result_is(r: B.Res(E.RegResult), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.RegResult{+value, +sms, +nssaa, +emergency}}:
       Bool.and(Bool.and(U32.is_eq(value, 1), Bool.not(sms)), Bool.and(Bool.and(Bool.not(nssaa), Bool.not(emergency)), C.Check.bytes_eq(E.RegResult.write(E.RegResult{value, sms, nssaa, emergency}), bs)))
@@ -300,56 +300,56 @@ def tai_one(item: E.TaiPartial, +bs: List<&2, U32>) -> Bool:
     case _:
       False{}
 
-def tai01_is(r: E.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
+def tai01_is(r: B.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.Tai01{+plmn, +first, +count} <> Nil{}}:
       Bool.and(Bool.and(U32.is_eq(first, 1), Nat.is_eq(count, 3n)), C.Check.bytes_eq(E.TaiList.write([E.Tai01{plmn, first, count}]), bs))
     case _:
       False{}
 
-def tai_is(r: E.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
+def tai_is(r: B.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{item <> Nil{}}:
       tai_one(item, bs)
     case _:
       False{}
 
-def tai00_is(r: E.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
+def tai00_is(r: B.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.Tai00{+plmn, +tacs} <> Nil{}}:
       Bool.and(digits_eq(tacs, [1, 2]), C.Check.bytes_eq(E.TaiList.write([E.Tai00{plmn, tacs}]), bs))
     case _:
       False{}
 
-def tai10_is(r: E.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
+def tai10_is(r: B.Res(List<&2, E.TaiPartial>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.Tai10{+tais} <> Nil{}}:
       Bool.and(Nat.is_eq(List.length(&2, E.Tai, tais), 2n), C.Check.bytes_eq(E.TaiList.write([E.Tai10{tais}]), bs))
     case _:
       False{}
 
-def timer_is(r: E.Res(E.Timer3), unit: U32, value: U32, +bs: List<&2, U32>) -> Bool:
+def timer_is(r: B.Res(E.Timer3), unit: U32, value: U32, +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.Timer3{+u, +v}}:
       Bool.and(Bool.and(U32.is_eq(u, unit), U32.is_eq(v, value)), C.Check.bytes_eq(E.Timer3.write(E.Timer3{u, v}), bs))
     case Fail{e}:
       False{}
 
-def dnn_is(r: E.Res(List<&2, List<&2, U32>>), +bs: List<&2, U32>) -> Bool:
+def dnn_is(r: B.Res(List<&2, List<&2, U32>>), +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{+label <> Nil{}}:
       Bool.and(C.Check.bytes_eq(label, [105, 110, 116, 101, 114, 110, 101, 116]), C.Check.bytes_eq(E.Dnn.write([label]), bs))
     case _:
       False{}
 
-def name_is(r: E.Res(E.NetName), chars: Nat, +bs: List<&2, U32>) -> Bool:
+def name_is(r: B.Res(E.NetName), chars: Nat, +bs: List<&2, U32>) -> Bool:
   match r:
     case Done{E.NetName{+scheme, +ci, +spare, +text}}:
       Bool.and(Bool.and(U32.is_eq(scheme, 1), Bool.not(ci)), Bool.and(Bool.and(U32.is_eq(spare, 0), Nat.is_eq(List.length(&2, U32, text), chars)), C.Check.bytes_eq(E.NetName.write(E.NetName{scheme, ci, spare, text}), bs)))
     case Fail{e}:
       False{}
 
-def fails_res(-A: Data, r: E.Res(A)) -> Bool:
+def fails_res(-A: Data, r: B.Res(A)) -> Bool:
   Result.is_fail(&2, &2, B.Err, A, r)
 
 def typed_ies() -> IO(Unit):

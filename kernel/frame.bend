@@ -55,19 +55,12 @@ def Sub.digits(bs: B.Bytes()) -> Bool:
     case +b <> rest:
       Bool.and(Bool.and(U32.is_lt(47, b), U32.is_lt(b, 58)), Sub.digits(rest))
 
-def Exact.end(-A: Data, x: A, rest: B.Bytes()) -> Result<&2, &2, B.Err, A>:
-  match rest:
-    case Nil{}:
-      Done{x}
-    case b <> more:
-      Fail{B.Invalid{b}}
-
 def Sub.of_sqn(supi: B.Bytes(), k: B.Bytes(), opc: B.Bytes(), amf: B.Bytes(), r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, Sub>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(sqn, rest)}:
-      Exact.end(Sub, Sub{supi, k, opc, amf, sqn}, rest)
+      B.end(Sub, Sub{supi, k, opc, amf, sqn}, rest)
 
 def Sub.of_amf(supi: B.Bytes(), k: B.Bytes(), opc: B.Bytes(), r: B.Read(B.Bytes())) -> Result<&2, &2, B.Err, Sub>:
   match r:
@@ -680,19 +673,12 @@ def Action.write(a: Action, rest: B.Bytes()) -> B.Bytes():
     case Log{level, len, text}:
       B.write_u8(134, B.write_u8(Level.byte(level), B.write_u32(len, List.append(&2, U32, text, rest))))
 
-def Items.cons(a: Action, r: B.Read(List<&2, Action>)) -> B.Read(List<&2, Action>):
-  match r:
-    case Fail{e}:
-      Fail{e}
-    case Done{(items, rest)}:
-      Done{(a <> items, rest)}
-
 def Items.next(r: Action.Res(), more: B.Bytes() -> B.Read(List<&2, Action>)) -> B.Read(List<&2, Action>):
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(a, rest)}:
-      Items.cons(a, more(rest))
+      B.Read.cons(Action, a, more(rest))
 
 # Exactly n actions.
 def Items.read(n: Nat, bs: B.Bytes()) -> B.Read(List<&2, Action>):

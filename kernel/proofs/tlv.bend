@@ -244,10 +244,10 @@ def Tlvs.rt(ies: List<&2, T.Tlv>, fuel: Nat, +v: {T.Tlvs.valid(ies) == True{} : 
       sr = Equal.sym(B.Read(T.Tlv), T.Tlv.read(T.Tlv.write(T.Tlv{kind, len, body}, W)), Done{(T.Tlv{kind, len, body}, W)}, Tlv.rt(kind, len, body, W, P.Bool.and_true_l(T.Tlv.valid(T.Tlv{kind, len, body}), T.Tlvs.valid(more), v)))
       %sr : {T.Tlvs.next(_, left => T.Tlvs.read(f, left)) == Done{T.Tlv{kind, len, body} <> more} : Tlvs.Res()}
       ih = Equal.sym(Tlvs.Res(), T.Tlvs.read(f, W), Done{more}, Tlvs.rt(more, f, P.Bool.and_true_r(T.Tlv.valid(T.Tlv{kind, len, body}), T.Tlvs.valid(more), v), P.Nat.le_of_append(body, W, 3n, f, bound)))
-      %ih : {T.Tlvs.cons(T.Tlv{kind, len, body}, _) == Done{T.Tlv{kind, len, body} <> more} : Tlvs.Res()}
+      %ih : {B.Res.cons(T.Tlv, T.Tlv{kind, len, body}, _) == Done{T.Tlv{kind, len, body} <> more} : Tlvs.Res()}
       {==}
 
-def Tlvs.dv_cons(+ie: T.Tlv, +ro: Tlvs.Res(), +ies: List<&2, T.Tlv>, e: {T.Tlvs.cons(ie, ro) == Done{ies} : Tlvs.Res()}, hv: {T.Tlv.valid(ie) == True{} : Bool}, ho: @ies2: List<&2, T.Tlv> -> {ro == Done{ies2} : Tlvs.Res()} -> {T.Tlvs.valid(ies2) == True{} : Bool}) -> {T.Tlvs.valid(ies) == True{} : Bool}:
+def Tlvs.dv_cons(+ie: T.Tlv, +ro: Tlvs.Res(), +ies: List<&2, T.Tlv>, e: {B.Res.cons(T.Tlv, ie, ro) == Done{ies} : Tlvs.Res()}, hv: {T.Tlv.valid(ie) == True{} : Bool}, ho: @ies2: List<&2, T.Tlv> -> {ro == Done{ies2} : Tlvs.Res()} -> {T.Tlvs.valid(ies2) == True{} : Bool}) -> {T.Tlvs.valid(ies) == True{} : Bool}:
   match ro:
     case Fail{err}:
       Empty.absurd({T.Tlvs.valid(ies) == True{} : Bool}, P.Refute.fail_done(B.Err, List<&2, T.Tlv>, err, ies, e))
@@ -279,7 +279,7 @@ def Tlvs.dv(+fuel: Nat, +bs: B.Bytes(), +ies: List<&2, T.Tlv>, e: {T.Tlvs.read(f
       Tlvs.dv_next(f, b <> r, T.Tlv.read(b <> r), {==}, ies, e, left => ies2 => e2 => Tlvs.dv(f, left, ies2, e2))
 
 # The TLVs read from some bytes measure exactly those bytes.
-def Tlvs.len_cons(+bs: B.Bytes(), +ie: T.Tlv, +r2: B.Bytes(), +ro: Tlvs.Res(), +ies: List<&2, T.Tlv>, e: {T.Tlvs.cons(ie, ro) == Done{ies} : Tlvs.Res()}, cn: {List.length(&2, U32, bs) == Nat.add(4n, Nat.add(List.length(&2, U32, T.Tlv.body(ie)), List.length(&2, U32, r2))) : Nat}, ih: @ies2: List<&2, T.Tlv> -> {ro == Done{ies2} : Tlvs.Res()} -> {T.Tlvs.size(ies2) == List.length(&2, U32, r2) : Nat}) -> {T.Tlvs.size(ies) == List.length(&2, U32, bs) : Nat}:
+def Tlvs.len_cons(+bs: B.Bytes(), +ie: T.Tlv, +r2: B.Bytes(), +ro: Tlvs.Res(), +ies: List<&2, T.Tlv>, e: {B.Res.cons(T.Tlv, ie, ro) == Done{ies} : Tlvs.Res()}, cn: {List.length(&2, U32, bs) == Nat.add(4n, Nat.add(List.length(&2, U32, T.Tlv.body(ie)), List.length(&2, U32, r2))) : Nat}, ih: @ies2: List<&2, T.Tlv> -> {ro == Done{ies2} : Tlvs.Res()} -> {T.Tlvs.size(ies2) == List.length(&2, U32, r2) : Nat}) -> {T.Tlvs.size(ies) == List.length(&2, U32, bs) : Nat}:
   match ro:
     case Fail{err}:
       Empty.absurd({T.Tlvs.size(ies) == List.length(&2, U32, bs) : Nat}, P.Refute.fail_done(B.Err, List<&2, T.Tlv>, err, ies, e))
@@ -313,7 +313,7 @@ def Tlvs.len(+fuel: Nat, +bs: B.Bytes(), +ies: List<&2, T.Tlv>, e: {T.Tlvs.read(
       Tlvs.len_next(f, b <> r, T.Tlv.read(b <> r), {==}, ies, e, left => ies2 => e2 => Tlvs.len(f, left, ies2, e2))
 
 # The bytes a list of TLVs was read from, before any tail, are its encoding.
-def Tlvs.sx_cons(+bs: B.Bytes(), +ie: T.Tlv, +r2: B.Bytes(), +ro: Tlvs.Res(), +ies: List<&2, T.Tlv>, +e: {T.Tlvs.cons(ie, ro) == Done{ies} : Tlvs.Res()}, +tail: B.Bytes(), w: {T.Tlv.write(ie, List.append(&2, U32, r2, tail)) == List.append(&2, U32, bs, tail) : B.Bytes()}, ab2: {B.all_bytes(r2) == True{} : Bool}, ih: @ies2: List<&2, T.Tlv> -> {ro == Done{ies2} : Tlvs.Res()} -> {B.all_bytes(r2) == True{} : Bool} -> {T.Tlvs.write(ies2, tail) == List.append(&2, U32, r2, tail) : B.Bytes()}) -> {T.Tlvs.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}:
+def Tlvs.sx_cons(+bs: B.Bytes(), +ie: T.Tlv, +r2: B.Bytes(), +ro: Tlvs.Res(), +ies: List<&2, T.Tlv>, +e: {B.Res.cons(T.Tlv, ie, ro) == Done{ies} : Tlvs.Res()}, +tail: B.Bytes(), w: {T.Tlv.write(ie, List.append(&2, U32, r2, tail)) == List.append(&2, U32, bs, tail) : B.Bytes()}, ab2: {B.all_bytes(r2) == True{} : Bool}, ih: @ies2: List<&2, T.Tlv> -> {ro == Done{ies2} : Tlvs.Res()} -> {B.all_bytes(r2) == True{} : Bool} -> {T.Tlvs.write(ies2, tail) == List.append(&2, U32, r2, tail) : B.Bytes()}) -> {T.Tlvs.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}:
   match ro:
     case Fail{err}:
       Empty.absurd({T.Tlvs.write(ies, tail) == List.append(&2, U32, bs, tail) : B.Bytes()}, P.Refute.fail_done(B.Err, List<&2, T.Tlv>, err, ies, e))
