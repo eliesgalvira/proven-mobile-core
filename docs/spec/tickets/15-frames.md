@@ -18,4 +18,4 @@ Hand-made frames for each kind, including a truncated frame and an oversize one.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

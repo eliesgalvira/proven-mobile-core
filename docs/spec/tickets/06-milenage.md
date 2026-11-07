@@ -16,4 +16,4 @@ TS 35.208 test sets 1 to 6. Also check RAND→RES/CK/IK against the captured ses
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

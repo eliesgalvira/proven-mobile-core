@@ -39,4 +39,4 @@ Replay of the N2 handover and cancel in the ticket 24 capture. Hand-made cases:
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

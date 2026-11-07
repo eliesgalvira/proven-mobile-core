@@ -4,10 +4,10 @@ Audited at commit 657e746 on `loop/m1`, 2026-11-02, re-audited by the owner on 2
 
 | Check | Result |
 |---|---|
-| `scripts/test-kernel.sh --strict` | every `kernel/tests/*.bend` passes, 1103 checks, nothing skipped (2026-11-07, after the milestone 2 review's fixes) |
+| `scripts/test-kernel.nu --strict` | every `kernel/tests/*.bend` passes, 1103 checks, nothing skipped (2026-11-07, after the milestone 2 review's fixes) |
 | `python3 -I scripts/acceptance.py --strict` | 36 laws required (the 25 in-scope advisories and the laws tickets name), 0 failures (2026-11-07, after the milestone 2 review's fixes) |
 | `bend kernel/PROOF.bend` and `--verdict` | ALL PROOFS CHECK; 159 laws in `kernel/LAWS.bend` plus 788 generated NGAP laws in `kernel/ngap/gen/laws.bend` (2026-11-07, after the milestone 2 review's fixes) |
-| `scripts/check.sh` | `CHECK OK` (2026-11-07, after the milestone 2 review's fixes) |
+| `scripts/check.nu` | `CHECK OK` (2026-11-07, after the milestone 2 review's fixes) |
 | `nix build .#checks.x86_64-linux.e2e` | `E2E PASS: registration`, `xn-handover` and `n2-handover` in three runs out of three on 2026-11-07 after ticket 29, and in one run after the milestone 2 review's fixes: registration and PDU session through UERANSIM, then Xn and N2 handover through PacketRusher, 4/4 pings through eUPF before and after each, and after each handover eUPF's downlink FAR for the UE points at the target gNB's address only; the flake check `edge-sctp` passes too, its SCTP test run with `REQUIRE_SCTP=1` |
 
 Lines refer to `kernel/LAWS.bend` after the milestone 2 review's fixes.

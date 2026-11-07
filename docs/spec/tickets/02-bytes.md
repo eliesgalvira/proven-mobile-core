@@ -38,4 +38,4 @@ All laws above pass `--verdict`; `kernel/tests/bytes.bend` passes.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

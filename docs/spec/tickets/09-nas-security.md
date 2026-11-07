@@ -24,4 +24,4 @@ TS 33.401 Annex C 128-EIA2 and 128-EEA2 test sets; the captured protected NAS me
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

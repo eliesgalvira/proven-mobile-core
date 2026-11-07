@@ -38,4 +38,4 @@ Replay with fixed entropy whose first 16 bytes are the captured RAND and with th
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

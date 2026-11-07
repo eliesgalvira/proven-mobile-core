@@ -21,4 +21,4 @@ FIPS 197 C.1, SP 800-38A F.5.1, RFC 4493 examples 1 to 4.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

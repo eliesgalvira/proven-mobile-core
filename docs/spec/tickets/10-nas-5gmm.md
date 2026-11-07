@@ -31,4 +31,4 @@ Every 5GMM message in `test-vectors/capture`, plaintext form. Each must decode, 
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

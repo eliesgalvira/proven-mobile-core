@@ -28,4 +28,4 @@ The 5GSM messages in `test-vectors/capture`, plus hand-made malformed cases: tru
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

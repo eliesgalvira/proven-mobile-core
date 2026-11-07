@@ -27,4 +27,4 @@ Replay of the Xn handover in the ticket 24 capture. Hand-made cases: an unknown 
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

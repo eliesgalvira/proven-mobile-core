@@ -20,4 +20,4 @@ The NH values in the ticket 24 capture, recomputed from its KAMF and KgNB.
 
 ## Verify
 
-`scripts/check.sh`
+`scripts/check.nu`

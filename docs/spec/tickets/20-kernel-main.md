@@ -19,8 +19,8 @@ Build with `bend kernel/main.bend -o build/kernel`.
 
 ## Done when
 
-The test above passes; `scripts/check.sh` passes and its `@unsafe` scan still finds nothing outside `main.bend`.
+The test above passes; `scripts/check.nu` passes and its `@unsafe` scan still finds nothing outside `main.bend`.
 
 ## Verify
 
-`bend kernel/main.bend -o build/kernel && python3 -I scripts/frame-client.py && scripts/check.sh`
+`bend kernel/main.bend -o build/kernel && python3 -I scripts/frame-client.py && scripts/check.nu`

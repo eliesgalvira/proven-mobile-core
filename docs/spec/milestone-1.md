@@ -78,7 +78,7 @@ The edge reads a TOML file (`edge/config.example.toml`) and sends `Config` as it
   - `X.roundtrip`: `valid(v) → decode(encode(v) ++ rest) = Done{(v, rest)}`.
   - `X.decode_valid`: `decode(bs) = Done{(v, rest)} → valid(v)`.
   - `X.suffix`: on success, `rest` is a suffix of `bs`, and the consumed prefix is exactly the length the wire format declares.
-- **Totality is structural.** A def without `@unsafe` terminates and handles every case, so "never crashes on any input" holds for every pure def that `--verdict` accepts. `scripts/check.sh` fails if any file under `kernel/` other than `main.bend` contains `@unsafe` or a foreign import.
+- **Totality is structural.** A def without `@unsafe` terminates and handles every case, so "never crashes on any input" holds for every pure def that `--verdict` accepts. `scripts/check.nu` fails if any file under `kernel/` other than `main.bend` contains `@unsafe` or a foreign import.
 
 ## Test vectors
 
@@ -93,7 +93,7 @@ Both directories may still be arriving on `main` while the loop runs. A test who
 
 ## Verification
 
-`scripts/check.sh` is the gate. It runs, in order:
+`scripts/check.nu` is the gate. It runs, in order:
 1. the `@unsafe` and foreign-import scan;
 2. `bend kernel/PROOF.bend`;
 3. `bend kernel/PROOF.bend --verdict`;
@@ -101,4 +101,4 @@ Both directories may still be arriving on `main` while the loop runs. A test who
 5. `cargo test` in `edge/`, once it exists;
 6. `scripts/acceptance.py`, which checks that every law named in the advisory log exists in `LAWS.bend` and isn't open.
 
-A ticket is done only when `scripts/check.sh` passes and the ticket's own verification command does.
+A ticket is done only when `scripts/check.nu` passes and the ticket's own verification command does.

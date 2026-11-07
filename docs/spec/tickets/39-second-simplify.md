@@ -30,4 +30,4 @@ What the 2026-11-07 merge review left after the pre-merge fixes:
 
 ## Verify
 
-`scripts/check.sh` (or its new name) and `nix build .#checks.x86_64-linux.e2e`.
+`scripts/check.nu` and `nix build .#checks.x86_64-linux.e2e`.

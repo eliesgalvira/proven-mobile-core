@@ -50,4 +50,4 @@ Read first: `docs/research/ngap-codec-approach.md`, then `docs/research/ngap-asn
 
 ## Verify
 
-`python3 -I tools/ngap-gen/test_gen.py && scripts/check.sh`
+`python3 -I tools/ngap-gen/test_gen.py && scripts/check.nu`
