@@ -170,12 +170,9 @@ def ping_ue(ue_ip, log):
 
 
 def handover(out):
-    """gNB 2 gets 10.33.0.31 in the same container, and both gNB addresses ping eUPF first:
-    its XDP program sends downlink G-PDUs only to a gNB address its ARP table holds."""
+    """gNB 2 gets 10.33.0.31 in the same container."""
     core_up("ran")
     dc("exec", "-T", "ran", "ip", "addr", "add", "10.33.0.31/24", "dev", "eth0")
-    for gnb_ip in ("10.33.0.30", "10.33.0.31"):
-        dc("exec", "-T", "ran", "ping", "-c", "1", "-I", gnb_ip, "10.33.0.20", capture_output=True)
 
     print("== capture: PFCP association, NG setup x2, registration, PDU session, handovers ==")
     pr_log = out / "logs" / "packetrusher.log"
