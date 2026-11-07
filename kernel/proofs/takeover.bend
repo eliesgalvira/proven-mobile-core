@@ -838,26 +838,19 @@ def Ws.create(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg
   +ph = S.Phase.with_ctx(S.Ue.phase(ue), ctx)
   Tk.sp_join(k, u, (S.Both{S.Rephase{key, ph}, S.Both{S.BumpTimer{}, S.BumpSeq{1}}}, [N.Pfcp{Some{key}, Up.N4.establish(cfg, Gsm.Ip.seid(entropy), ip, teid, seq)}, N.TimerStart{Some{key}, timer, Up.N4.t1_ms()}]), Gsm.Gsm.place(st, Gsm.Ip.seid(entropy), s, U32.add(seq, 1)), P.Bool.and_intro(Tk.spares(k, u, S.Rephase{key, ph}), True{}, Tk.sp_rephase(k, u, key, ph, h1), {==}), Ws.place(st, Gsm.Ip.seid(entropy), s, U32.add(seq, 1), k, u))
 
-def Ws.allocated(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +entropy: B.Bytes(), +v4v6: Bool, +dns: Bool, +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.allocated(st, key, ue, ctx, cfg, psi, pti, entropy, v4v6, dns, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      Tk.sp_dl(k, u, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.reject(psi, pti, 26)), h1)
-    case Some{+ip}:
-      Ws.create(st, key, ue, ctx, cfg, psi, pti, ip, entropy, v4v6, dns, k, u, h1)
-
 def Ws.checked(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +entropy: B.Bytes(), +c: Gsm.Check, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.checked(st, key, ue, ctx, cfg, psi, pti, entropy, c)) == True{} : Bool}:
   match c:
     case Gsm.Refuse{+cause}:
       Tk.sp_dl(k, u, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.reject(psi, pti, cause)), h1)
-    case Gsm.Go{+v4v6, +dns}:
-      Ws.allocated(st, key, ue, ctx, cfg, psi, pti, entropy, v4v6, dns, Gsm.Ip.alloc(cfg, S.State.sessions(st)), k, u, h1)
+    case Gsm.Go{+v4v6, +dns, +ip}:
+      Ws.create(st, key, ue, ctx, cfg, psi, pti, ip, entropy, v4v6, dns, k, u, h1)
 
 def Ws.with_cfg(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +pti: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +cfg: Maybe<&2, S.Cfg>, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, cfg)) == True{} : Bool}:
   match cfg:
     case None{}:
       Tk.sp_verified(k, u, key, ue, ctx, "5GSM: no configuration", h1)
     case Some{+c}:
-      Ws.checked(st, key, ue, ctx, c, psi, pti, entropy, Gsm.Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st)), k, u, h1)
+      Ws.checked(st, key, ue, ctx, c, psi, pti, entropy, Gsm.Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st)), k, u, h1)
 
 def Ws.message(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +mm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Sm.Sm>, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.message(st, key, ue, ctx, mm_opts, entropy, r)) == True{} : Bool}:
   match r:

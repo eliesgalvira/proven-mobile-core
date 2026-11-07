@@ -1315,9 +1315,9 @@ law amf.release.forgets_ue:
 # PDU session establishment.
 
 # GHSA-ch5j-wv55-jmr6: a PDU Session Establishment Request that fails
-# validation (the session identity, request type, DNN, slice, type, or no
-# association) leaves the sessions and the PFCP sequence as they were; the UE
-# is told why and nothing else happens.
+# validation (the session identity, request type, DNN, slice, no association,
+# type, or no free address in the pool, #26) leaves the sessions and the PFCP
+# sequence as they were; the UE is told why and nothing else happens.
 law smf.establish.reject_leaves_state:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1359,7 +1359,7 @@ law smf.establish.reject_leaves_state:
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.EstablishmentRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   for +ef: {St.State.config(st) == Some{cfg} : Maybe<&2, St.Cfg>}
-  for +ex: {Gs.Gsm.validate(cfg, psi, opts, sopts, Up.N4.up(st)) == Gs.Refuse{cause} : Gs.Check}
+  for +ex: {Gs.Gsm.validate(cfg, psi, opts, sopts, Up.N4.up(st), St.State.sessions(st)) == Gs.Refuse{cause} : Gs.Check}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
   & ({St.State.pfcp_seq(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.pfcp_seq(st) : U32}
   & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}] : List<&2, Ng.Act>})

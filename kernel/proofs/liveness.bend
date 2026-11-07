@@ -561,26 +561,19 @@ def Lw.create(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg
   +hb = P.Bool.and_intro(Tb.Table.has(S.Ue, key, rep), Bool.and(Lv.homed(Gsm.Gsm.dels(vs), rep), True{}), (%hr : {_ == True{} : Bool}; eh), P.Bool.and_intro(Lv.homed(Gsm.Gsm.dels(vs), rep), True{}, Lv.free_homed(Gsm.Gsm.dels(vs), rep, Lv.dels_free(vs)), {==}))
   P.Bool.and_intro(Lv.acts(st, List.append(&2, N.Act, [x, y], Up.N4.deletions(vs, U32.add(seq, 1)))), Bool.and(Tb.Table.has(S.Ue, key, rep), Bool.and(Lv.homed(Gsm.Gsm.dels(vs), rep), True{})), ha, hb)
 
-def Lw.allocated(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +entropy: B.Bytes(), +v4v6: Bool, +dns: Bool, +m: Maybe<&2, U32>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.allocated(st, key, ue, ctx, cfg, psi, pti, entropy, v4v6, dns, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      Lv.ok_of(st, Gsm.Gsm.dl(key, ue, ctx, psi, Gsm.Gsm.reject(psi, pti, 26)), Lw.out_dl(st, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.reject(psi, pti, 26)), Lv.has_live(st, key, eh)))
-    case Some{+ip}:
-      Lw.create(st, key, ue, ctx, cfg, psi, pti, ip, entropy, v4v6, dns, eh)
-
 def Lw.checked(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +entropy: B.Bytes(), +c: Gsm.Check, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.checked(st, key, ue, ctx, cfg, psi, pti, entropy, c)) == True{} : Bool}:
   match c:
     case Gsm.Refuse{+cause}:
       Lv.ok_of(st, Gsm.Gsm.dl(key, ue, ctx, psi, Gsm.Gsm.reject(psi, pti, cause)), Lw.out_dl(st, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.reject(psi, pti, cause)), Lv.has_live(st, key, eh)))
-    case Gsm.Go{+v4v6, +dns}:
-      Lw.allocated(st, key, ue, ctx, cfg, psi, pti, entropy, v4v6, dns, Gsm.Ip.alloc(cfg, S.State.sessions(st)), eh)
+    case Gsm.Go{+v4v6, +dns, +ip}:
+      Lw.create(st, key, ue, ctx, cfg, psi, pti, ip, entropy, v4v6, dns, eh)
 
 def Lw.gsm_with_cfg(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +pti: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +cfg: Maybe<&2, S.Cfg>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, cfg)) == True{} : Bool}:
   match cfg:
     case None{}:
       {==}
     case Some{+c}:
-      Lw.checked(st, key, ue, ctx, c, psi, pti, entropy, Gsm.Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st)), eh)
+      Lw.checked(st, key, ue, ctx, c, psi, pti, entropy, Gsm.Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st)), eh)
 
 def Lw.establish(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +pti: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.establish(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy)) == True{} : Bool}:
   Lw.gsm_with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, S.State.config(st), eh)

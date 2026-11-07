@@ -207,7 +207,7 @@ def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: 
 # What a request checks out to: a 5GSM cause, or the session to create.
 type Check is Data:
   Refuse{cause: U32}
-  Go{v4v6: Bool, dns: Bool}
+  Go{v4v6: Bool, dns: Bool, ip: U32}
 
 def Gsm.pick(ok: Bool, cause: U32, next: Check) -> Check:
   match ok:
@@ -216,14 +216,22 @@ def Gsm.pick(ok: Bool, cause: U32, next: Check) -> Check:
     case False{}:
       Refuse{cause}
 
-def Gsm.type_check(t: Maybe<&2, U32>, dns: Bool) -> Check:
+# A free address of the pool, or #26.
+def Gsm.grant(v4v6: Bool, dns: Bool, m: Maybe<&2, U32>) -> Check:
+  match m:
+    case None{}:
+      Refuse{26}
+    case Some{ip}:
+      Go{v4v6, dns, ip}
+
+def Gsm.type_check(t: Maybe<&2, U32>, dns: Bool, ip: Maybe<&2, U32>) -> Check:
   match t:
     case None{}:
-      Go{False{}, dns}
+      Gsm.grant(False{}, dns, ip)
     case Some{1}:
-      Go{False{}, dns}
+      Gsm.grant(False{}, dns, ip)
     case Some{3}:
-      Go{True{}, dns}
+      Gsm.grant(True{}, dns, ip)
     case Some{other}:
       Refuse{50}
 
@@ -263,10 +271,11 @@ def Gsm.request_type_ok(m: Maybe<&2, U32>) -> Bool:
       False{}
 
 # TS 24.501 §6.4.1.4.3: the identity must be one of a session (1 to 15), the
-# request an initial one, the DNN and slice the configured ones, the type
-# IPv4 (IPv4v6 is granted IPv4), and eUPF must be associated.
-def Gsm.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, up: Bool) -> Check:
-  Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.pick(up, 38, Gsm.type_check(I.Opts.t1(9, sm_opts), Gsm.dns_asked(I.Opts.find(123, sm_opts))))))))
+# request an initial one, the DNN and slice the configured ones, eUPF
+# associated, the type IPv4 (IPv4v6 is granted IPv4), and the pool must hold
+# a free address.
+def Gsm.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, up: Bool, sessions: Tb.Table(S.Session)) -> Check:
+  Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.pick(up, 38, Gsm.type_check(I.Opts.t1(9, sm_opts), Gsm.dns_asked(I.Opts.find(123, sm_opts)), Ip.alloc(cfg, sessions)))))))
 
 # The PFCP Session Establishment Request goes out; the session waits for eUPF with its Accept ready.
 def Gsm.create(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +entropy: B.Bytes(), v4v6: Bool, dns: Bool) -> N.GOut():
@@ -276,26 +285,19 @@ def Gsm.create(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg
   +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{timer, 0}, pti, Gsm.accept(cfg, psi, pti, ip, dns, v4v6)}}}
   N.Out.join((S.Both{S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, S.Both{S.BumpTimer{}, S.BumpSeq{1}}}, [N.Pfcp{Some{key}, Up.N4.establish(cfg, Ip.seid(entropy), ip, teid, seq)}, N.TimerStart{Some{key}, timer, Up.N4.t1_ms()}]), Gsm.place(st, Ip.seid(entropy), s, U32.add(seq, 1)))
 
-def Gsm.allocated(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, cfg: S.Cfg, +psi: U32, +pti: U32, entropy: B.Bytes(), v4v6: Bool, dns: Bool, m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      Gsm.dl(key, ue, ctx, psi, Gsm.reject(psi, pti, 26))
-    case Some{ip}:
-      Gsm.create(st, key, ue, ctx, cfg, psi, pti, ip, entropy, v4v6, dns)
-
 def Gsm.checked(+st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, entropy: B.Bytes(), c: Check) -> N.GOut():
   match c:
     case Refuse{cause}:
       Gsm.dl(key, ue, ctx, psi, Gsm.reject(psi, pti, cause))
-    case Go{v4v6, dns}:
-      Gsm.allocated(st, key, ue, ctx, cfg, psi, pti, entropy, v4v6, dns, Ip.alloc(cfg, S.State.sessions(st)))
+    case Go{v4v6, dns, ip}:
+      Gsm.create(st, key, ue, ctx, cfg, psi, pti, ip, entropy, v4v6, dns)
 
 def Gsm.with_cfg(+st: S.State, key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32, pti: U32, mm_opts: List<&2, I.Ie>, sm_opts: List<&2, I.Ie>, entropy: B.Bytes(), cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match cfg:
     case None{}:
       N.Out.verified(key, ue, ctx, "5GSM: no configuration")
     case Some{+c}:
-      Gsm.checked(st, key, ue, ctx, c, psi, pti, entropy, Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st)))
+      Gsm.checked(st, key, ue, ctx, c, psi, pti, entropy, Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st)))
 
 def Gsm.establish(+st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, psi: U32, pti: U32, mm_opts: List<&2, I.Ie>, sm_opts: List<&2, I.Ie>, entropy: B.Bytes()) -> N.GOut():
   Gsm.with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, S.State.config(st))
