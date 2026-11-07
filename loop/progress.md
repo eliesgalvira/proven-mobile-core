@@ -39,8 +39,8 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 35 | procedure-robustness | done | 32, 33 | 93de91c..a6058da: PFCP association and heartbeat retransmitted with their sequence number, a silent eUPF takes the link down; Release Command after the Accept; TEID/SEID drawn again on collision; AMF-UE-NGAP-ID ≥ 2³² unknown; returning UEs read unverified (Service Reject #9); Set ID/Pointer ranges; guard timers keyed by their row, free AMF-UE-NGAP-IDs, law `state.ids.free`, takeover law covers overwrites; 722 checks, E2E PASS |
 | 36 | edge-robustness | done | 21 | 47eb0ca: timers fire after every event, kernel exit detected by its stdout closing, association ids checked and never reused while held, N4 replies to the UPF datagram's source port, oversize config values and Config refused; 15 cargo tests, clippy clean, E2E PASS |
 | 37 | simplify | in-progress | 32–36 | items 3–11 done (50b05d6..be7cce1): one walk over the step function and one over transactions, lemmas in the lib, dead code and duplicate codec shapes gone, named protocol constants, UPF not eUPF, hot paths, shared test helpers, nushell gate, e2e unit ordering; three item-9 parts and `lt10_mask4` left with their reasons in `loop/decisions.md`; `run.sh` waits for ticket 24's `handover.py`. Items 1–2 (NGAP generator) wait for ticket 25, not done |
-| 24 | handover-capture | todo | — | |
-| 25 | ngap-handover | todo | 13, 24 | |
+| 24 | handover-capture | done | — | bc4134f: PacketRusher v2.0.0 with a Handover Cancel patch (UERANSIM has no handover); 86-message capture of Xn and N2 handover (one cancelled) with NH/NCC recomputed; uncaptured failure messages are hand-built in test-vectors/hand/ |
+| 25 | ngap-handover | done | 13, 24 | 232ba2b: 14 messages and 8 transfers (140→253 types, 15→30 views), a generated mandatory law per view, the three ticket laws; pycrate agrees on 46 NGAP messages |
 | 26 | nh-ncc | todo | 07, 24 | |
 | 27 | path-switch | todo | 19, 25, 26 | |
 | 28 | n2-handover | todo | 19, 25, 26 | |
