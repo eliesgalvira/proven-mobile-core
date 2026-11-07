@@ -398,12 +398,20 @@ def Gone.cancels(before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> Li
     case (+k, +s) <> more:
       List.append(&2, Act, Gone.row(k, s, Tb.Table.has(S.Session, k, after)), Gone.cancels(more, after))
 
+# A transaction that keeps the session table removes no row: nothing to compare.
+def Gone.when(keeps: Bool, before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> List<&2, Act>:
+  match keeps:
+    case True{}:
+      []
+    case False{}:
+      Gone.cancels(before, after)
+
 # The step a procedure's outcome makes from st.
 def Step.of(+st: S.State, o: GOut()) -> Step():
   match o:
-    case (tx, acts):
+    case (+tx, acts):
       +st2 = S.Tx.apply(tx, st)
-      (st2, List.append(&2, Act, acts, Gone.cancels(S.State.sessions(st), S.State.sessions(st2))))
+      (st2, List.append(&2, Act, acts, Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2))))
 
 # The UE under an AMF-UE-NGAP-ID, if the association owns it under that RAN-UE-NGAP-ID.
 def Owner.check(ue: S.Ue, ok: Bool) -> Maybe<&2, S.Ue>:

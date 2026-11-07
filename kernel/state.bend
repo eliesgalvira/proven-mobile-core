@@ -947,3 +947,21 @@ def Tx.apply(tx: Tx, st: State) -> State:
           State{config, subs, assocs, ues, sessions, U32.add(pfcp_seq, n), next_ue, n4}
     case Both{first, second}:
       Tx.apply(second, Tx.apply(first, st))
+
+# The transactions that leave the session table as it is.
+def Tx.keeps_sessions(tx: Tx) -> Bool:
+  match tx:
+    case Put{key, ue}:
+      False{}
+    case Del{key}:
+      False{}
+    case PutSession{key, s}:
+      False{}
+    case Revar{key, v}:
+      False{}
+    case DelSession{key}:
+      False{}
+    case Both{first, second}:
+      Bool.and(Tx.keeps_sessions(first), Tx.keeps_sessions(second))
+    case _:
+      True{}

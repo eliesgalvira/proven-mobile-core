@@ -1921,10 +1921,17 @@ def Lv.gone(+st: S.State, +before: Tb.Table(S.Session), +after: Tb.Table(S.Sessi
     case (+k, +t) <> +more:
       Lv.append(st, N.Gone.row(k, t, Tb.Table.has(S.Session, k, after)), N.Gone.cancels(more, after), Lv.gone_row(st, k, t, Tb.Table.has(S.Session, k, after)), Lv.gone(st, more, after))
 
+def Lv.gone_when(+st: S.State, +keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> {Lv.acts(st, N.Gone.when(keeps, before, after)) == True{} : Bool}:
+  match keeps:
+    case True{}:
+      {==}
+    case False{}:
+      Lv.gone(st, before, after)
+
 def Lv.step_acts(+st: S.State, +o: N.GOut(), +h: {Lv.ok(st, o) == True{} : Bool}) -> {Lv.acts(st, K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool}:
   match o:
     case (+tx, +acts):
-      Lv.append(st, acts, N.Gone.cancels(S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), P.Bool.and_true_l(Lv.acts(st, acts), Lv.homed(st, tx, S.State.ues(st)), h), Lv.gone(st, S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))))
+      Lv.append(st, acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), P.Bool.and_true_l(Lv.acts(st, acts), Lv.homed(st, tx, S.State.ues(st)), h), Lv.gone_when(st, S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))))
 
 def Lv.no_response(+st: S.State, +as: List<&2, N.Act>, +h: {Lv.acts(st, as) == True{} : Bool}) -> {N.Ngap.any_ng_setup_response(as) == False{} : Bool}:
   match as:
@@ -2124,10 +2131,17 @@ def Lv.spare_gone(+k: U32, +before: Tb.Table(S.Session), +after: Tb.Table(S.Sess
     case (+key, +t) <> +more:
       Lv.spare_app(k, N.Gone.row(key, t, Tb.Table.has(S.Session, key, after)), N.Gone.cancels(more, after), Lv.spare_row(k, key, t, Tb.Table.has(S.Session, key, after)), Lv.spare_gone(k, more, after))
 
+def Lv.spare_when(+k: U32, +keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> {N.Acts.spare(k, N.Gone.when(keeps, before, after)) == True{} : Bool}:
+  match keeps:
+    case True{}:
+      {==}
+    case False{}:
+      Lv.spare_gone(k, before, after)
+
 def Lv.spare_step(+k: U32, +st: S.State, +o: N.GOut(), +h: {N.Acts.spare(k, Lv.as(o)) == True{} : Bool}) -> {N.Acts.spare(k, K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool}:
   match o:
     case (+tx, +acts):
-      Lv.spare_app(k, acts, N.Gone.cancels(S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), h, Lv.spare_gone(k, S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))))
+      Lv.spare_app(k, acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), h, Lv.spare_when(k, S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))))
 
 def Lv.config_spare(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +k: U32) -> {N.Acts.spare(k, K.Kernel.actions(K.Kernel.config(complete, st, tlvs, entropy))) == True{} : Bool}:
   match complete:
@@ -2152,8 +2166,7 @@ def Lv.down_spare(+st: S.State, +assoc: U32, +k: U32, +eo: {S.Sessions.owned(S.S
       +gone = S.Sessions.sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions)
       +note : N.Act = N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}
       +xs = List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [note])
-      +kept = S.Sessions.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, sessions)
-      Lv.spare_app(k, xs, N.Gone.cancels(sessions, kept), Lv.spare_of(st0, xs, k, Lv.append(st0, Up.N4.deletions(gone, pfcp_seq), [note], Lv.dels(st0, gone, pfcp_seq, Lv.srows_sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions)), {==}), eo, eg, en), Lv.spare_gone(k, sessions, kept))
+      Lv.spare_app(k, xs, N.Gone.cancels(gone, []), Lv.spare_of(st0, xs, k, Lv.append(st0, Up.N4.deletions(gone, pfcp_seq), [note], Lv.dels(st0, gone, pfcp_seq, Lv.srows_sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions)), {==}), eo, eg, en), Lv.spare_gone(k, gone, []))
 
 def Lv.down_owned(+st: S.State, +assoc: U32) -> {S.Sessions.owned(S.State.sessions(K.Kernel.state(K.Kernel.assoc_down(st, assoc))), S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:
@@ -2644,10 +2657,18 @@ def Gs.gone(+before: Tb.Table(S.Session), +after: Tb.Table(S.Session), +k: U32, 
 def Gs.kept(+ss: Tb.Table(S.Session), +k: U32, +s: S.Session, +es: {Tb.Table.get(S.Session, k, ss) == Some{s} : Maybe<&2, S.Session>}, +eh: {Tb.Table.get(S.Session, k, ss) == None{} : Maybe<&2, S.Session>}) -> Empty:
   P.Refute.none_some(S.Session, s, Equal.trans(Maybe<&2, S.Session>, None{}, Tb.Table.get(S.Session, k, ss), Some{s}, Equal.sym(Maybe<&2, S.Session>, Tb.Table.get(S.Session, k, ss), None{}, eh), es))
 
+def Gs.when(+st: S.State, +tx: S.Tx, +k: U32, +s: S.Session, +g: S.Guard, +keeps: Bool, +ek: {S.Tx.keeps_sessions(tx) == keeps : Bool}, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(S.Tx.apply(tx, st))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, N.Gone.when(keeps, S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st)))) == True{} : Bool}:
+  match keeps:
+    case True{}:
+      +same = Equal.cong(Tb.Table(S.Session), Maybe<&2, S.Session>, x => Tb.Table.get(S.Session, k, x), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st)), Equal.sym(Tb.Table(S.Session), S.State.sessions(S.Tx.apply(tx, st)), S.State.sessions(st), PK.Tx.kept(tx, st, ek)))
+      Empty.absurd({N.Acts.stops(k, []) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, Equal.trans(Maybe<&2, S.Session>, Tb.Table.get(S.Session, k, S.State.sessions(st)), Tb.Table.get(S.Session, k, S.State.sessions(S.Tx.apply(tx, st))), None{}, same, eh)))
+    case False{}:
+      Gs.gone(S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st)), k, s, g, es, eg, eh)
+
 def Gs.of(+st: S.State, +o: N.GOut(), +k: U32, +s: S.Session, +g: S.Guard, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(N.Step.of(st, o)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool}:
   match o:
     case (+tx, +acts):
-      Gs.stops_app(k, acts, N.Gone.cancels(S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), Gs.gone(S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st)), k, s, g, es, eg, eh))
+      Gs.stops_app(k, acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), Gs.when(st, tx, k, s, g, S.Tx.keeps_sessions(tx), {==}, es, eg, eh))
 
 def Gs.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +k: U32, +s: S.Session, +g: S.Guard, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(K.Kernel.config(complete, st, tlvs, entropy)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(K.Kernel.config(complete, st, tlvs, entropy))) == True{} : Bool}:
   match complete:
@@ -2665,13 +2686,42 @@ def Gs.up(+st: S.State, +assoc: U32, +k: U32, +s: S.Session, +es: {Tb.Table.get(
     case S.State{config, subs, assocs, ues, +sessions, pfcp_seq, next_ue, n4}:
       Empty.absurd({N.Acts.stops(k, []) == True{} : Bool}, Gs.kept(sessions, k, s, es, eh))
 
+# A row the sessions owned by left lack is one of the orphans.
+def Gs.lost(+k: U32, +s: S.Session, +t: S.Session, +more: Tb.Table(S.Session), +owned: Tb.Table(S.Session), +orphan: Tb.Table(S.Session), +c: Bool, +es: {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), c) == Some{s} : Maybe<&2, S.Session>}, +eh: {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, owned), c) == None{} : Maybe<&2, S.Session>}, ih: {Tb.Table.get(S.Session, k, more) == Some{s} : Maybe<&2, S.Session>} -> {Tb.Table.get(S.Session, k, owned) == None{} : Maybe<&2, S.Session>} -> {Tb.Table.get(S.Session, k, orphan) == Some{s} : Maybe<&2, S.Session>}) -> {Tb.Table.get(S.Session, k, orphan) == Some{s} : Maybe<&2, S.Session>}:
+  match c:
+    case True{}:
+      Empty.absurd({Tb.Table.get(S.Session, k, orphan) == Some{s} : Maybe<&2, S.Session>}, P.Refute.none_some(S.Session, t, Equal.sym(Maybe<&2, S.Session>, Some{t}, None{}, eh)))
+    case False{}:
+      ih(es, eh)
+
+def Gs.found(+k: U32, +s: S.Session, +t: S.Session, +more: Tb.Table(S.Session), +owned: Tb.Table(S.Session), +orphan: Tb.Table(S.Session), +c: Bool, +es: {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), c) == Some{s} : Maybe<&2, S.Session>}, +eh: {Tb.Table.get(S.Session, k, owned) == None{} : Maybe<&2, S.Session>}, ih: {Tb.Table.get(S.Session, k, more) == Some{s} : Maybe<&2, S.Session>} -> {Tb.Table.get(S.Session, k, owned) == None{} : Maybe<&2, S.Session>} -> {Tb.Table.get(S.Session, k, orphan) == Some{s} : Maybe<&2, S.Session>}) -> {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, orphan), c) == Some{s} : Maybe<&2, S.Session>}:
+  match c:
+    case True{}:
+      es
+    case False{}:
+      ih(es, eh)
+
+def Gs.orphan_row(+k: U32, +s: S.Session, +k0: U32, +t: S.Session, +more: Tb.Table(S.Session), +owned: Tb.Table(S.Session), +orphan: Tb.Table(S.Session), +b: Bool, +es: {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), U32.is_eq(k0, k)) == Some{s} : Maybe<&2, S.Session>}, +eh: {Tb.Table.get(S.Session, k, Tb.Table.keep(S.Session, k0, t, owned, b)) == None{} : Maybe<&2, S.Session>}, ih: {Tb.Table.get(S.Session, k, more) == Some{s} : Maybe<&2, S.Session>} -> {Tb.Table.get(S.Session, k, owned) == None{} : Maybe<&2, S.Session>} -> {Tb.Table.get(S.Session, k, orphan) == Some{s} : Maybe<&2, S.Session>}) -> {Tb.Table.get(S.Session, k, Tb.Table.keep(S.Session, k0, t, orphan, Bool.not(b))) == Some{s} : Maybe<&2, S.Session>}:
+  match b:
+    case True{}:
+      Gs.lost(k, s, t, more, owned, orphan, U32.is_eq(k0, k), es, eh, ih)
+    case False{}:
+      Gs.found(k, s, t, more, owned, orphan, U32.is_eq(k0, k), es, eh, ih)
+
+def Gs.orphan(+left: Tb.Table(S.Ue), ss: Tb.Table(S.Session), +k: U32, +s: S.Session, +es: {Tb.Table.get(S.Session, k, ss) == Some{s} : Maybe<&2, S.Session>}, +eh: {Tb.Table.get(S.Session, k, S.Sessions.sift(S.SOwned{left}, ss)) == None{} : Maybe<&2, S.Session>}) -> {Tb.Table.get(S.Session, k, S.Sessions.sift(S.SOrphan{left}, ss)) == Some{s} : Maybe<&2, S.Session>}:
+  match ss:
+    case Nil{}:
+      Empty.absurd({Tb.Table.get(S.Session, k, []) == Some{s} : Maybe<&2, S.Session>}, P.Refute.none_some(S.Session, s, es))
+    case (+k0, +t) <> +more:
+      Gs.orphan_row(k, s, k0, t, more, S.Sessions.sift(S.SOwned{left}, more), S.Sessions.sift(S.SOrphan{left}, more), Tb.Table.has(S.Ue, S.Session.ue(t), left), es, eh, e1 => e2 => Gs.orphan(left, more, k, s, e1, e2))
+
 def Gs.down(+st: S.State, +assoc: U32, +k: U32, +s: S.Session, +g: S.Guard, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +eg: {S.SPhase.guard(S.Session.phase(s)) == Some{g} : Maybe<&2, S.Guard>}, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(K.Kernel.assoc_down(st, assoc))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, +ues, +sessions, +pfcp_seq, next_ue, n4}:
       +left = S.Ues.drop_assoc(assoc, ues)
-      +kept = S.Sessions.sift(S.SOwned{left}, sessions)
-      +xs = List.append(&2, N.Act, Up.N4.deletions(S.Sessions.sift(S.SOrphan{left}, sessions), pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}])
-      Gs.stops_app(k, xs, N.Gone.cancels(sessions, kept), Gs.gone(sessions, kept, k, s, g, es, eg, eh))
+      +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
+      +xs = List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}])
+      Gs.stops_app(k, xs, N.Gone.cancels(gone, []), Gs.gone(gone, [], k, s, g, Gs.orphan(left, sessions, k, s, es, eh), eg, {==}))
 
 def L.smf.guard.stopped(st, ev, entropy, k, s, g, es, eg, eh):
   PW.Walk.any(o => {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(o))) == None{} : Maybe<&2, S.Session>} -> {N.Acts.stops(k, K.Kernel.actions(o)) == True{} : Bool}, st, ev, entropy, acts => h => eh => Empty.absurd({N.Acts.stops(k, acts) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh)), +tlvs => eh => Gs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, s, g, es, eg, eh), +a => eh => Gs.up(st, a, k, s, es, eh), +a => eh => Gs.down(st, a, k, s, g, es, eg, eh), +o => eh => Gs.of(st, o, k, s, g, es, eg, eh))(eh)
