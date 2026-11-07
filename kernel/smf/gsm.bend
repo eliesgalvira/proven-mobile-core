@@ -30,6 +30,10 @@ def Gsm.sm(psi: U32, pti: U32, mt: Sm.Sm.Type, fields: List<&2, I.Field>, opts: 
 def Gsm.reject(psi: U32, pti: U32, cause: U32) -> B.Bytes():
   Gsm.sm(psi, pti, Sm.EstablishmentReject{}, [I.FByte{cause}], [])
 
+# A session released by the network: no transaction (TS 24.501 §6.3.3.2), #26.
+def Gsm.release_command(psi: U32) -> B.Bytes():
+  Gsm.sm(psi, 0, Sm.ReleaseCommand{}, [I.FByte{26}], [])
+
 # Modification is not offered: #31, request rejected, unspecified.
 def Gsm.modification_reject(psi: U32, pti: U32) -> B.Bytes():
   Gsm.sm(psi, pti, Sm.ModificationReject{}, [I.FByte{31}], [])
@@ -228,12 +232,20 @@ def Gsm.to_ue_m(key: U32, psi: U32, sm: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut
 def Gsm.to_ue(st: S.State, +key: U32, psi: U32, sm: B.Bytes()) -> N.GOut():
   Gsm.to_ue_m(key, psi, sm, Tb.Table.get(S.Ue, key, S.State.ues(st)))
 
-# A session given up: its UE told why, eUPF told, the row and guard gone.
-def Gsm.abort_m(+skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), Gsm.reject(S.Session.psi(s), pti, cause), m), N.Out.also(Gsm.forget([(skey, s)], seq), N.Guard.cancel(S.SPhase.guard(S.Session.phase(s)))))
+# A session given up: its UE told with the 5GSM message given, eUPF told, the row and guard gone.
+def Gsm.give_up_m(+skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
+  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), N.Out.also(Gsm.forget([(skey, s)], seq), N.Guard.cancel(S.SPhase.guard(S.Session.phase(s)))))
 
+def Gsm.give_up(st: S.State, skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32) -> N.GOut():
+  Gsm.give_up_m(skey, s, sm, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
+
+# Before the Accept went out, the UE is refused the session.
 def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32) -> N.GOut():
-  Gsm.abort_m(skey, s, pti, cause, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
+  Gsm.give_up(st, skey, s, Gsm.reject(S.Session.psi(s), pti, cause), seq)
+
+# After it, the session is released (TS 24.501 §6.3.3).
+def Gsm.drop(st: S.State, skey: U32, +s: S.Session, seq: U32) -> N.GOut():
+  Gsm.give_up(st, skey, s, Gsm.release_command(S.Session.psi(s)), seq)
 
 # Establishment
 # -------------
@@ -403,13 +415,13 @@ def Gsm.established(st: S.State, msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ 
     case Some{(skey, +s)}:
       Gsm.established_phase(st, skey, s, msg, S.Session.phase(s))
 
-# Session Modification accepted: active; refused: the session goes, silently.
-def Gsm.modified_as(st: S.State, +skey: U32, +s: S.Session, guard: S.Guard, ok: Bool) -> N.GOut():
+# Session Modification accepted: active; refused: the session is released.
+def Gsm.modified_as(+st: S.State, +skey: U32, +s: S.Session, guard: S.Guard, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), S.Active{}}}, [N.TimerCancel{S.Guard.timer(guard)}, N.Note{F.Info{}, "5GSM: PDU session active"}])
     case False{}:
-      N.Out.also(Gsm.forget([(skey, s)], S.State.pfcp_seq(st)), [N.TimerCancel{S.Guard.timer(guard)}, N.Note{F.Warn{}, "PFCP: Session Modification refused; session released"}])
+      Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
 
 def Gsm.modified_phase(st: S.State, skey: U32, s: S.Session, msg: Pf.Msg, p: S.SPhase) -> N.GOut():
   match p:
@@ -521,7 +533,7 @@ def Gsm.tunnel_of(r: Ap.Rd(G.PDUSessionResourceSetupResponseTransfer)) -> Maybe<
 def Gsm.modify(st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, pti: U32, +seq: U32, tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> N.GOut():
   match tunnel:
     case None{}:
-      Gsm.abort(st, skey, s, pti, 26, seq)
+      Gsm.drop(st, skey, s, seq)
     case Some{(gnb_teid, gnb_addr)}:
       (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{S.Guard.timer(guard), 0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)}, N.TimerStart{Some{S.Session.ue(s)}, S.Guard.timer(guard), Up.N4.t1_ms()}])
 
@@ -608,16 +620,16 @@ def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err,
 # Guard timers
 # ------------
 
-# No answer in time: before the Accept went out the UE is told (#38); after
-# it, the session is released silently.
+# No answer in time: before the Accept went out the UE is refused (#38);
+# after it, the session is released.
 def Gsm.expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase) -> N.GOut():
   match p:
     case S.Creating{guard, pti, accept}:
       Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))
     case S.Setting{guard, pti}:
-      Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))
+      Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
     case S.Modifying{guard}:
-      N.Out.also(Gsm.forget([(skey, s)], S.State.pfcp_seq(st)), [N.Note{F.Warn{}, "PFCP: no Session Modification Response; session released"}])
+      Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
     case S.Active{}:
       (S.Keep{}, [])
 

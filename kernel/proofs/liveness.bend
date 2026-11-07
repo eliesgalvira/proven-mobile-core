@@ -630,13 +630,18 @@ def Lw.to_ue_m(+st: S.State, +key: U32, +psi: U32, +sm: B.Bytes(), +m: Maybe<&2,
 def Lw.one(+st: S.State, +skey: U32, +s: S.Session, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.srows([(skey, s)], S.State.sessions(st)) == True{} : Bool}:
   P.Bool.and_intro(Lv.owner(S.Session.ue(s), S.State.sessions(st)), True{}, es, {==})
 
-def Lw.abort_m(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +cause: U32, +seq: U32, +m: Maybe<&2, S.Ue>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.abort_m(skey, s, pti, cause, seq, m)) == True{} : Bool}:
-  +sm = Gsm.Gsm.reject(S.Session.psi(s), pti, cause)
+def Lw.give_up_m(+st: S.State, +skey: U32, +s: S.Session, +sm: B.Bytes(), +seq: U32, +m: Maybe<&2, S.Ue>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.give_up_m(skey, s, sm, seq, m)) == True{} : Bool}:
   +more = N.Guard.cancel(S.SPhase.guard(S.Session.phase(s)))
   Lv.join(st, Gsm.Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), N.Out.also(Gsm.Gsm.forget([(skey, s)], seq), more), Lw.to_ue_m(st, S.Session.ue(s), S.Session.psi(s), sm, m, Lv.owner_live(st, S.Session.ue(s), es)), Lv.also(st, Gsm.Gsm.forget([(skey, s)], seq), more, Lw.gsm_forget(st, [(skey, s)], seq, Lw.one(st, skey, s, es)), Lv.cancel(st, S.SPhase.guard(S.Session.phase(s)))))
 
+def Lw.give_up(+st: S.State, +skey: U32, +s: S.Session, +sm: B.Bytes(), +seq: U32, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.give_up(st, skey, s, sm, seq)) == True{} : Bool}:
+  Lw.give_up_m(st, skey, s, sm, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), es)
+
 def Lw.abort(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +cause: U32, +seq: U32, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.abort(st, skey, s, pti, cause, seq)) == True{} : Bool}:
-  Lw.abort_m(st, skey, s, pti, cause, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), es)
+  Lw.give_up(st, skey, s, Gsm.Gsm.reject(S.Session.psi(s), pti, cause), seq, es)
+
+def Lw.drop(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.drop(st, skey, s, seq)) == True{} : Bool}:
+  Lw.give_up(st, skey, s, Gsm.Gsm.release_command(S.Session.psi(s)), seq, es)
 
 
 def Lv.hit_same(+u1: S.Ue, +u2: S.Ue, +m1: Maybe<&2, S.Ue>, +m2: Maybe<&2, S.Ue>, +b: Bool, +e: {Tb.Table.present(S.Ue, m1) == Tb.Table.present(S.Ue, m2) : Bool}) -> {Tb.Table.present(S.Ue, Tb.Table.hit(S.Ue, u1, m1, b)) == Tb.Table.present(S.Ue, Tb.Table.hit(S.Ue, u2, m2, b)) : Bool}:
@@ -1495,7 +1500,7 @@ def Lw.modified_as(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +ok
     case True{}:
       kf
     case False{}:
-      Lv.also(st, Gsm.Gsm.forget([(skey, s)], S.State.pfcp_seq(st)), [N.TimerCancel{S.Guard.timer(guard)}, N.Note{F.Warn{}, "PFCP: Session Modification refused; session released"}], Lw.gsm_forget(st, [(skey, s)], S.State.pfcp_seq(st), Lw.one(st, skey, s, es)), {==})
+      Lw.drop(st, skey, s, S.State.pfcp_seq(st), es)
 
 def Lw.modified_phase(+st: S.State, +skey: U32, +s: S.Session, +msg: Pf.Msg, +p: S.SPhase, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.SPhase.knows(p, S.Session.known(s)), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.modified_phase(st, skey, s, msg, p)) == True{} : Bool}:
   match p:
@@ -1621,7 +1626,7 @@ def Lw.pfcp_data(+st: S.State, +bytes: B.Bytes()) -> {Lv.okf(st, Gsm.Gsm.pfcp_da
 def Lw.modify(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.modify(st, skey, s, guard, pti, seq, tunnel)) == True{} : Bool}:
   match tunnel:
     case None{}:
-      Lw.abort(st, skey, s, pti, 26, seq, es)
+      Lw.drop(st, skey, s, seq, es)
     case Some{(+gnb_teid, +gnb_addr)}:
       +x : N.Act = N.Pfcp{Some{S.Session.ue(s)}, Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)}
       +y : N.Act = N.TimerStart{Some{S.Session.ue(s)}, S.Guard.timer(guard), Up.N4.t1_ms()}
@@ -1718,10 +1723,10 @@ def Lw.gsm_expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase, +es: {
   match p:
     case S.Creating{guard, +pti, accept}:
       Lw.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st), es)
-    case S.Setting{guard, +pti}:
-      Lw.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st), es)
+    case S.Setting{guard, pti}:
+      Lw.drop(st, skey, s, S.State.pfcp_seq(st), es)
     case S.Modifying{guard}:
-      Lv.also(st, Gsm.Gsm.forget([(skey, s)], S.State.pfcp_seq(st)), [N.Note{F.Warn{}, "PFCP: no Session Modification Response; session released"}], Lw.gsm_forget(st, [(skey, s)], S.State.pfcp_seq(st), Lw.one(st, skey, s, es)), {==})
+      Lw.drop(st, skey, s, S.State.pfcp_seq(st), es)
     case S.Active{}:
       {==}
 
