@@ -26,15 +26,11 @@ import ./liveness.bend as PL
 # ---------
 
 # A Path Switch Request is handled by Ps.Ps.of_view.
-def Psw.route(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))) : N.Step()}:
-  sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{0, 25, crit, value}}, ep)
-  %sep : {R.Route.of_pdu(st, assoc, stream, entropy, _) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))) : N.Step()}
-  sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
-  %sei : {R.Route.of_ies(st, assoc, stream, U32.to_nat(0), U32.to_nat(25), entropy, _) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))) : N.Step()}
-  {==}
+def Psw.route(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))) : N.Step()}:
+  PW.Rt.routed(st, entropy, assoc, stream, len, bytes, 0, 25, crit, value, ies, c, ep, ei, {==}, eup)
 
-def Psw.route_view(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +v: V.PathSwitchRequest.View, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev: {V.PathSwitchRequest.view(ies) == Done{v} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v})) : N.Step()}:
-  (%ev : {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, _)) : N.Step()}; Psw.route(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei))
+def Psw.route_view(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +v: V.PathSwitchRequest.View, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev: {V.PathSwitchRequest.view(ies) == Done{v} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v})) : N.Step()}:
+  (%ev : {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, _)) : N.Step()}; Psw.route(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei, eup))
 
 # Failure leaves the state
 # ------------------------
@@ -163,11 +159,10 @@ def Fl.of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err
     case Fail{e}:
       Inl{{==}}
     case Done{V.PathSwitchRequest.View{+ran, +amf, uli, +caps, +items, failed, rrc}}:
-      +ok = S.Assocs.has(assoc, S.State.assocs(st))
       +ts = Sw.Sw.path_tunnels(items)
       +m = Ps.Ps.named(st, amf)
-      +h = PW.Pw.ready(o => Fl.Cls(o), st, assoc, stream, amf, ran, items, ts, ok, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Fl.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh))
-      Fl.also_cls(Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, m, ok), Ps.Ps.caps_note(caps, m), h, Fl.caps_note(caps, m))
+      +h = PW.Pw.claim(o => Fl.Cls(o), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Fl.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh))
+      Fl.also_cls(Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m), Ps.Ps.caps_note(caps, m), h, Fl.caps_note(caps, m))
 
 def Fl.final(+st: S.State, +o: N.GOut(), +h: Fl.Cls(o), +ef: {N.Ngap.any_switch_failure(K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool}) -> {K.Kernel.state(N.Step.of(st, o)) == st : S.State}:
   match o:
@@ -182,13 +177,16 @@ def Fl.final(+st: S.State, +o: N.GOut(), +h: Fl.Cls(o), +ef: {N.Ngap.any_switch_
           nf = Fl.app(acts, gone, e, Fl.gone(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2)))
           Empty.absurd({st2 == st : S.State}, P.Refute.true_false(Equal.trans(Bool, True{}, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), False{}, Equal.sym(Bool, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), True{}, ef), nf)))
 
-def L.amf.path_switch.failure_leaves_state(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei, ef):
+def Fl.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ef: {N.Ngap.any_switch_failure(K.Kernel.actions(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   +o = Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))
-  +r = Psw.route(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei)
+  +r = Psw.route(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei, eup)
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), N.Step.of(st, o), r)
   ef2 : {N.Ngap.any_switch_failure(K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool} = (%r : {N.Ngap.any_switch_failure(K.Kernel.actions(_)) == True{} : Bool}; ef)
   %sr : {K.Kernel.state(_) == st : S.State}
   Fl.final(st, o, Fl.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies)), ef2)
+
+def L.amf.path_switch.failure_leaves_state(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei, ef):
+  PW.Rt.keeps(st, entropy, assoc, stream, len, bytes, 0, 25, crit, value, ies, c, ep, ei, {==}, +eup => Fl.routed(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei, ef, eup))
 
 # The context moves to the requester
 # ----------------------------------
@@ -233,21 +231,23 @@ def Mv.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Byte
   %ekk : Mv.Qt(st, _, assoc, ran, S.Both{PT.Tk.tx(a), S.Put{key, v}})
   Inr{Mv.put(key, ue, assoc, ran, stream, p, PT.Tk.ues(PT.Tk.tx(a), S.State.ues(st)))}
 
-def L.amf.path_switch.moves_owner(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ran, amf, uli, caps, items, failed, rrc, k, ep, ei, ev, eid):
+def Mv.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ran: B.Bytes(), +amf: B.Bytes(), +uli: G.UserLocationInformation, +caps: G.UESecurityCapabilities, +items: G.PDUSessionResourceToBeSwitchedDLList(), +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListPSReq()>, +rrc: Maybe<&2, G.RRCEstablishmentCause()>, +k: U32, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev: {V.PathSwitchRequest.view(ies) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> Mv.Qu(st, k, assoc, ran, S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))):
   +v : V.PathSwitchRequest.View = V.PathSwitchRequest.View{ran, amf, uli, caps, items, failed, rrc}
   +o = Ps.Ps.of_view(st, assoc, stream, Done{v})
-  +ok = S.Assocs.has(assoc, S.State.assocs(st))
   +ts = Sw.Sw.path_tunnels(items)
-  +rr = Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, Ps.Ps.named(st, amf), ok)
+  +rr = Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, Ps.Ps.named(st, amf))
   +n = Ps.Ps.caps_note(caps, Ps.Ps.named(st, amf))
   +step = K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)
-  sr = Equal.sym(N.Step(), step, N.Step.of(st, o), Psw.route_view(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, v, ep, ei, ev))
+  sr = Equal.sym(N.Step(), step, N.Step.of(st, o), Psw.route_view(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, v, ep, ei, ev, eup))
   eu : {S.State.ues(K.Kernel.state(step)) == PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)} = (%sr : {S.State.ues(K.Kernel.state(_)) == PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}; PT.Tk.render(st, o))
   seu = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(step)), PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)), eu)
   %seu : Mv.Qu(st, k, assoc, ran, _)
   sa = Equal.sym(S.Tx, PT.Tk.tx(N.Out.also(rr, n)), PT.Tk.tx(rr), PL.Lv.tx_also(rr, n))
   %sa : Mv.Qt(st, k, assoc, ran, _)
-  PW.Pw.ready(x => Mv.Qt(st, k, assoc, ran, PT.Tk.tx(x)), st, assoc, stream, amf, ran, items, ts, ok, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Mv.go(st, assoc, stream, amf, ran, items, ts, k, eid, key, ue, ctx, nh, ek))
+  PW.Pw.claim(x => Mv.Qt(st, k, assoc, ran, PT.Tk.tx(x)), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Mv.go(st, assoc, stream, amf, ran, items, ts, k, eid, key, ue, ctx, nh, ek))
+
+def L.amf.path_switch.moves_owner(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ran, amf, uli, caps, items, failed, rrc, k, ep, ei, ev, eid):
+  PW.Rt.cases(x => Mv.Qu(st, k, assoc, ran, S.State.ues(K.Kernel.state(x))), st, entropy, assoc, stream, len, bytes, 0, 25, crit, value, ies, c, ep, ei, {==}, Inl{{==}}, +eup => Mv.routed(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ran, amf, uli, caps, items, failed, rrc, k, ep, ei, ev, eid, eup))
 
 # The request's capabilities change nothing
 # -----------------------------------------
@@ -257,18 +257,18 @@ def Psw.also_state(+st: S.State, +o: N.GOut(), +n: List<&2, N.Act>) -> {K.Kernel
     case (tx, acts):
       {==}
 
-def Psw.same_state(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len1: U32, +bytes1: B.Bytes(), +crit1: U32, +value1: B.Bytes(), +ies1: List<&2, Fr.Ie>, +c1: Ap.Cur, +len2: U32, +bytes2: B.Bytes(), +crit2: U32, +value2: B.Bytes(), +ies2: List<&2, Fr.Ie>, +c2: Ap.Cur, +ran: B.Bytes(), +amf: B.Bytes(), +uli: G.UserLocationInformation, +caps1: G.UESecurityCapabilities, +caps2: G.UESecurityCapabilities, +items: G.PDUSessionResourceToBeSwitchedDLList(), +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListPSReq()>, +rrc: Maybe<&2, G.RRCEstablishmentCause()>, +ep1: {Fr.Pdu.read(bytes1) == Done{Fr.Pdu{0, 25, crit1, value1}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei1: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value1), 1n)}) == Done{(ies1, c1)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev1: {V.PathSwitchRequest.view(ies1) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps1, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}, +ep2: {Fr.Pdu.read(bytes2) == Done{Fr.Pdu{0, 25, crit2, value2}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei2: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value2), 1n)}) == Done{(ies2, c2)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev2: {V.PathSwitchRequest.view(ies2) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : S.State}:
+def Psw.same_state(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len1: U32, +bytes1: B.Bytes(), +crit1: U32, +value1: B.Bytes(), +ies1: List<&2, Fr.Ie>, +c1: Ap.Cur, +len2: U32, +bytes2: B.Bytes(), +crit2: U32, +value2: B.Bytes(), +ies2: List<&2, Fr.Ie>, +c2: Ap.Cur, +ran: B.Bytes(), +amf: B.Bytes(), +uli: G.UserLocationInformation, +caps1: G.UESecurityCapabilities, +caps2: G.UESecurityCapabilities, +items: G.PDUSessionResourceToBeSwitchedDLList(), +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListPSReq()>, +rrc: Maybe<&2, G.RRCEstablishmentCause()>, +ep1: {Fr.Pdu.read(bytes1) == Done{Fr.Pdu{0, 25, crit1, value1}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei1: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value1), 1n)}) == Done{(ies1, c1)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev1: {V.PathSwitchRequest.view(ies1) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps1, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}, +ep2: {Fr.Pdu.read(bytes2) == Done{Fr.Pdu{0, 25, crit2, value2}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei2: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value2), 1n)}) == Done{(ies2, c2)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev2: {V.PathSwitchRequest.view(ies2) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : S.State}:
   +v1 : V.PathSwitchRequest.View = V.PathSwitchRequest.View{ran, amf, uli, caps1, items, failed, rrc}
   +v2 : V.PathSwitchRequest.View = V.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}
-  +rr = Ps.Ps.ready(st, assoc, stream, amf, ran, items, Sw.Sw.path_tunnels(items), Ps.Ps.named(st, amf), S.Assocs.has(assoc, S.State.assocs(st)))
+  +rr = Ps.Ps.claim(st, assoc, stream, amf, ran, items, Sw.Sw.path_tunnels(items), Ps.Ps.named(st, amf))
   +n1 = Ps.Ps.caps_note(caps1, Ps.Ps.named(st, amf))
   +n2 = Ps.Ps.caps_note(caps2, Ps.Ps.named(st, amf))
   +step2 = K.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)
-  s1 = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy), N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v1})), Psw.route_view(st, entropy, assoc, stream, len1, bytes1, crit1, value1, ies1, c1, v1, ep1, ei1, ev1))
+  s1 = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy), N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v1})), Psw.route_view(st, entropy, assoc, stream, len1, bytes1, crit1, value1, ies1, c1, v1, ep1, ei1, ev1, eup))
   %s1 : {K.Kernel.state(_) == K.Kernel.state(step2) : S.State}
-  s2 = Equal.sym(N.Step(), step2, N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v2})), Psw.route_view(st, entropy, assoc, stream, len2, bytes2, crit2, value2, ies2, c2, v2, ep2, ei2, ev2))
+  s2 = Equal.sym(N.Step(), step2, N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v2})), Psw.route_view(st, entropy, assoc, stream, len2, bytes2, crit2, value2, ies2, c2, v2, ep2, ei2, ev2, eup))
   %s2 : {K.Kernel.state(N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v1}))) == K.Kernel.state(_) : S.State}
   Equal.trans(S.State, K.Kernel.state(N.Step.of(st, N.Out.also(rr, n1))), K.Kernel.state(N.Step.of(st, rr)), K.Kernel.state(N.Step.of(st, N.Out.also(rr, n2))), Psw.also_state(st, rr, n1), Equal.sym(S.State, K.Kernel.state(N.Step.of(st, N.Out.also(rr, n2))), K.Kernel.state(N.Step.of(st, rr)), Psw.also_state(st, rr, n2)))
 
 def L.amf.path_switch.stored_capabilities(st, entropy, assoc, stream, len1, bytes1, crit1, value1, ies1, c1, len2, bytes2, crit2, value2, ies2, c2, ran, amf, uli, caps1, caps2, items, failed, rrc, key, ue, ctx, nh, released, p, more, cfg, ep1, ei1, ev1, ep2, ei2, ev2):
-  (Psw.same_state(st, entropy, assoc, stream, len1, bytes1, crit1, value1, ies1, c1, len2, bytes2, crit2, value2, ies2, c2, ran, amf, uli, caps1, caps2, items, failed, rrc, ep1, ei1, ev1, ep2, ei2, ev2), {==})
+  (PW.Rt.split({K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : S.State}, assoc, S.State.assocs(st), +ea => PW.Rt.at(x => {K.Kernel.state(x) == K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : S.State}, st, entropy, assoc, stream, len1, bytes1, 0, 25, crit1, value1, ies1, c1, ep1, ei1, {==}, ea, PW.Rt.at(x => {st == K.Kernel.state(x) : S.State}, st, entropy, assoc, stream, len2, bytes2, 0, 25, crit2, value2, ies2, c2, ep2, ei2, {==}, ea, {==})), +eup => Psw.same_state(st, entropy, assoc, stream, len1, bytes1, crit1, value1, ies1, c1, len2, bytes2, crit2, value2, ies2, c2, ran, amf, uli, caps1, caps2, items, failed, rrc, ep1, ei1, ev1, ep2, ei2, ev2, eup)), {==})

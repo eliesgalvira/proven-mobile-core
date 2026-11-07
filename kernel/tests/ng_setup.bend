@@ -173,6 +173,8 @@ def main() -> IO(Unit):
     C.Check.report("Config: the configuration is kept", configured(st1))
     C.Check.report("Config: a PFCP Association Setup Request goes to the UPF", pfcp_type(Pf.Msg.read(P.first_pfcp(a1)), 5, False{}))
     C.Check.report("NgapAssocUp: the association is not set up yet", Bool.not(S.Assocs.has(1, S.State.assocs(st2))))
+    +o_early : N.Step() = K.Kernel.step(st2, data_event(1, bytes_or(first_of("InitialUEMessage", msgs))), A.entropy())
+    C.Check.report("InitialUEMessage before NG Setup: Error Indication and one log line, no context", Bool.and(A.pdu_is(Fr.Pdu.read(send_bytes(one_send(K.Kernel.frames(o_early)))), Fr.Pdu.initiating(), 9), Bool.and(Nat.is_eq(count_logs(K.Kernel.frames(o_early)), 1n), Nat.is_eq(List.length(&2, U32, ue_keys(K.Kernel.state(o_early))), 0n))))
     C.Check.report("NG Setup Request: exactly one NGAP message answers, on stream 0", send_on(one_send(a3), 1, 0))
     C.Check.report("NG Setup Request: the answer is an NG Setup Response", A.pdu_is(Fr.Pdu.read(reply), Fr.Pdu.successful(), 21))
     C.Check.report("NG Setup Request: the response carries the configured GUAMI and AMF name", guami_ok(W.NGSetupResponse.view(A.ies_of(Fr.Pdu.read(reply)))))

@@ -63,12 +63,21 @@ def Route.d2(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies:
     case False{}:
       Route.d3(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_uplink_nas_transport(kind, code))
 
+# NG Setup is the first procedure on an association (TS 38.413 §8.7.1.1):
+# until it has succeeded, every other message is refused.
+def Route.ready(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.Step():
+  match ok:
+    case True{}:
+      N.Step.of(st, Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)))
+    case False{}:
+      (st, N.Ngap.unhandled(assoc))
+
 def Route.d1(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.Step():
   match ok:
     case True{}:
       N.NgSetup.of_view(st, assoc, V.NGSetupRequest.view(ies))
     case False{}:
-      N.Step.of(st, Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)))
+      Route.ready(st, assoc, stream, kind, code, ies, entropy, S.Assocs.has(assoc, S.State.assocs(st)))
 
 def Route.dispatch(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes()) -> N.Step():
   Route.d1(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_ng_setup(kind, code))

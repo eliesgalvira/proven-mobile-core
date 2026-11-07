@@ -2278,11 +2278,10 @@ def Lw.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.
     case Fail{e}:
       {==}
     case Done{V.PathSwitchRequest.View{+ran, +amf, uli, +caps, +items, failed, rrc}}:
-      +ok = S.Assocs.has(assoc, S.State.assocs(st))
       +ts = Sw.Sw.path_tunnels(items)
       +m = Ps.Ps.named(st, amf)
-      +h = PW.Pw.ready(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, stream, amf, ran, items, ts, ok, cause => {==}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Lw.ps_go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, eg))
-      Lv.also(st, Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, m, ok), Ps.Ps.caps_note(caps, m), h, Lw.caps_note(st, caps, m))
+      +h = PW.Pw.claim(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, stream, amf, ran, items, ts, cause => {==}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Lw.ps_go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, eg))
+      Lv.also(st, Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m), Ps.Ps.caps_note(caps, m), h, Lw.caps_note(st, caps, m))
 
 # N2 handover
 # -----------

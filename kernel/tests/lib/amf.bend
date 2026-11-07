@@ -265,16 +265,21 @@ def nas_type(nas: B.Bytes()) -> U32:
     case _:
       0
 
-# The capture replayed up to registration: Config, the association, the
+# The capture replayed up to registration: Config, the associations, the
 # InitialUEMessage, the Authentication Response, the Security Mode Complete,
 # the Initial Context Setup Response and the Registration Complete.
 def after(st: S.State, ev: F.Evt) -> S.State:
   K.Kernel.state(K.Kernel.step(st, ev, entropy()))
 
+# Associations 1 and 2 up, each set up by the capture's NG Setup Request.
+def set_up(st: S.State, +msgs: List<&2, V.Vec>) -> S.State:
+  +request : B.Bytes() = hex_of(entry(8n, msgs), "hex")
+  after(after(after(after(st, F.NgapAssocUp{1}), data_on(1, request)), F.NgapAssocUp{2}), data_on(2, request))
+
 def registered_with(cfg: List<&2, T.Tlv>, +msgs: List<&2, V.Vec>) -> S.State:
   +initial : B.Bytes() = hex_of(entry(14n, msgs), "hex")
   +view : Result<&2, &2, B.Err, W.InitialUEMessage.View> = W.InitialUEMessage.view(ies_of(Fr.Pdu.read(initial)))
-  +st0 : S.State = after(after(after(S.State.initial(), F.Evt.config_make(cfg)), F.Evt.pfcp_make(hex_of(entry(1n, msgs), "hex"))), F.NgapAssocUp{1})
+  +st0 : S.State = set_up(after(after(S.State.initial(), F.Evt.config_make(cfg)), F.Evt.pfcp_make(hex_of(entry(1n, msgs), "hex"))), msgs)
   +st2 : S.State = after(after(st0, data(1, initial)), data(1, uplink(ran_of(view), uli_of(view), hex_of(entry(19n, msgs), "plaintext_hex"))))
   after(after(after(st2, data(1, hex_of(entry(22n, msgs), "hex"))), data(1, hex_of(entry(27n, msgs), "hex"))), data(1, hex_of(entry(28n, msgs), "hex")))
 

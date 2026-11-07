@@ -1173,6 +1173,31 @@ law kernel.bad_pdu.only_error_indication:
   for +e: {Fr.Pdu.read(bytes) == Fail{err} : Result<&2, &2, B.Err, Fr.Pdu>}
   {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.bad_pdu(assoc)) : Ng.Step()}
 
+# TS 38.413 §8.7.1.1: NG Setup is the first NGAP procedure on an
+# association. Every other message from an association that has not
+# completed it, InitialUEMessage and every UE-associated message included,
+# changes no state; the only actions are Error Indication and a log line.
+# The laws below that say what a UE-associated message does take its
+# association as set up; this law says what happens otherwise.
+law amf.ng_setup.first:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +kind: U32
+  for +code: U32
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +en: {Ng.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}
+  for +ea: {St.Assocs.has(assoc, St.State.assocs(st)) == False{} : Bool}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unhandled(assoc)) : Ng.Step()}
+
 # amf (ticket 17)
 # ---------------
 # Identification and 5G-AKA.
@@ -1194,6 +1219,7 @@ law amf.initial_ue.reject_leaves_state:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 15, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.InitialUEMessage.view(ies) == Fail{err} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.bad_view(assoc)) : Ng.Step()}
 
 # GHSA-r9rw-hx33-745g (5G analogue): authentication succeeds only when RES* is
@@ -1269,6 +1295,7 @@ law amf.release.complete_forgets:
   for +ev: {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}
   for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
   for +eo: {Gm.Gmm.owner(st, assoc, k, ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Ue>}
   & {St.Sessions.of_ue(k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == [] : Tb.Table(St.Session)}
 
@@ -1465,6 +1492,7 @@ law amf.ue_key.unknown:
   for +loc: G.UserLocationInformation
   for +eid: {Ng.Ngap.ue_key(amf) == None{} : Maybe<&2, U32>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 42, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseRequest.view(ies) == Done{GV.UEContextReleaseRequest.View{amf, ran, pdus, cause}} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 14, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.InitialContextSetupResponse.view(ies) == Done{GV.InitialContextSetupResponse.View{amf, ran, diag}} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
@@ -1525,6 +1553,7 @@ law smf.establish.reject_leaves_state:
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.EstablishmentRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   for +ef: {St.State.config(st) == Some{cfg} : Maybe<&2, St.Cfg>}
   for +ex: {Gs.Gsm.validate(cfg, psi, opts, sopts, Up.N4.up(st), St.State.sessions(st), entropy) == Gs.Refuse{cause} : Gs.Check}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
   & ({St.State.pfcp_seq(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.pfcp_seq(st) : U32}
   & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), k, St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.reject(psi, pti, cause))))}] : List<&2, Ng.Act>})
@@ -1578,7 +1607,7 @@ law smf.establish.failure_releases:
     & ({St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == None{} : Maybe<&2, St.Session>} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))))))
   & (({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 53 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy))))
-  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
+  & ({St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool} -> {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
 
 # TS 29.244 §6.4: a Session Establishment or Modification Request still
@@ -1657,6 +1686,7 @@ law smf.modification.rejected:
   for +er: {St.Ue.phase(ue) == St.Registered{old, nh, released} : St.Phase}
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.ModificationRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
   & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), k, St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}] : List<&2, Ng.Act>}
 
@@ -1721,8 +1751,9 @@ law smf.teid.unique:
 
 # A Path Switch Request answered with Path Switch Request Failure changes no
 # state: every failure comes before any PFCP request (the UE unknown or not
-# registered, the gNB without NG Setup, the RAN-UE-NGAP-ID taken on it, no
-# session the request names that can be switched).
+# registered, the RAN-UE-NGAP-ID taken on the gNB, no session the request
+# names that can be switched). A gNB without NG Setup is refused before
+# (amf.ng_setup.first).
 law amf.path_switch.failure_leaves_state:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1908,6 +1939,7 @@ law amf.handover.responses_correlated:
   for +t: U32
   for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == None{} : Maybe<&2, U32>} ->
     ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverRequestAcknowledge.view(ies) == Done{GV.HandoverRequestAcknowledge.View{amf, ran, admitted, failed, back, diag, npn}} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
     & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{2, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverFailure.view(ies) == Done{GV.HandoverFailure.View{amf, cause, diag}} : Result<&2, &2, B.Err, GV.HandoverFailure.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
@@ -2012,4 +2044,5 @@ law amf.handover.released_side_completes:
   for +eu: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
   for +ea: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
   for +er: {St.Phase.released(St.Ue.phase(ue), assoc, ran) == True{} : Bool}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, [Ng.Note{F.Info{}, "NGAP: UE Context Release Complete from the side a handover released"}]) : Ng.Step()}
