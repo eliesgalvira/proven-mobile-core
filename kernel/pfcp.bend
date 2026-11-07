@@ -358,8 +358,9 @@ def Fseid.valid(f: Fseid) -> Bool:
     case Fseid{seid, v4, v6}:
       Bool.and(Nat.is_eq(List.length(&2, U32, seid), 8n), Bool.and(Addr.valid(v4, 4n), Addr.valid(v6, 16n)))
 
-def Fseid.flags(v4: Maybe<&2, B.Bytes()>, v6: Maybe<&2, B.Bytes()>) -> U32:
-  U32.or(Flag.bit(Addr.present(v4), 2), Flag.bit(Addr.present(v6), 1))
+# Flag bits: V6 1, V4 2.
+def Fseid.flags(v4: Bool, v6: Bool) -> U32:
+  U32.or(Flag.bit(v4, 2), Flag.bit(v6, 1))
 
 def Fseid.of_v6(seid: B.Bytes(), v4: Maybe<&2, B.Bytes()>, r: B.Read(Maybe<&2, B.Bytes()>)) -> Result<&2, &2, B.Err, Fseid>:
   match r:
@@ -389,12 +390,13 @@ def Fseid.flags_ok(+flags: U32, rest: B.Bytes(), ok: Bool) -> Result<&2, &2, B.E
     case False{}:
       Fail{B.Invalid{flags}}
 
+# The spare bits must be zero: the octet is what its two flag bits write.
 def Fseid.of_flags(r: B.Read(U32)) -> Result<&2, &2, B.Err, Fseid>:
   match r:
     case Fail{e}:
       Fail{e}
     case Done{(+flags, rest)}:
-      Fseid.flags_ok(flags, rest, U32.is_lt(flags, 4))
+      Fseid.flags_ok(flags, rest, U32.is_eq(Fseid.flags(bit(flags, 2), bit(flags, 1)), flags))
 
 def Fseid.read(body: B.Bytes()) -> Result<&2, &2, B.Err, Fseid>:
   Fseid.of_flags(B.u8(body))
@@ -402,7 +404,7 @@ def Fseid.read(body: B.Bytes()) -> Result<&2, &2, B.Err, Fseid>:
 def Fseid.write(f: Fseid) -> B.Bytes():
   match f:
     case Fseid{seid, +v4, +v6}:
-      Fseid.flags(v4, v6) <> List.append(&2, U32, seid, Addr.write(v4, Addr.write(v6, [])))
+      Fseid.flags(Addr.present(v4), Addr.present(v6)) <> List.append(&2, U32, seid, Addr.write(v4, Addr.write(v6, [])))
 
 # F-TEID (§8.2.3): either a TEID with its address(es), or a request that the
 # UP function choose them (CH), optionally tagged with a CHOOSE ID. The CH
@@ -460,10 +462,14 @@ def Fteid.form(+flags: U32, rest: B.Bytes(), ch: Bool) -> Result<&2, &2, B.Err, 
     case False{}:
       Fteid.of_teid(flags, B.u32(rest))
 
-# Flag bits: V4 1, V6 2, CH 4, CHID 8; the spare bits must be zero, an
+# Flag bits: V4 1, V6 2, CH 4, CHID 8.
+def Fteid.flags(v4: Bool, v6: Bool, ch: Bool, chid: Bool) -> U32:
+  U32.or(Flag.bit(v4, 1), U32.or(Flag.bit(v6, 2), U32.or(Flag.bit(ch, 4), Flag.bit(chid, 8))))
+
+# The spare bits must be zero (the octet is what its four flag bits write), an
 # address must be named, and CHID needs CH.
 def Fteid.flags_valid(+flags: U32) -> Bool:
-  Bool.and(U32.is_lt(flags, 16), Bool.and(Bool.or(bit(flags, 1), bit(flags, 2)), Bool.or(bit(flags, 4), Bool.not(bit(flags, 8)))))
+  Bool.and(U32.is_eq(Fteid.flags(bit(flags, 1), bit(flags, 2), bit(flags, 4), bit(flags, 8)), flags), Bool.and(Bool.or(bit(flags, 1), bit(flags, 2)), Bool.or(bit(flags, 4), Bool.not(bit(flags, 8)))))
 
 def Fteid.flags_ok(+flags: U32, rest: B.Bytes(), ok: Bool) -> Result<&2, &2, B.Err, Fteid>:
   match ok:
@@ -489,19 +495,19 @@ def Chid.write(chid: Maybe<&2, U32>) -> B.Bytes():
     case Some{c}:
       [c]
 
-def Chid.flag(chid: Maybe<&2, U32>) -> U32:
+def Chid.present(chid: Maybe<&2, U32>) -> Bool:
   match chid:
     case None{}:
-      0
+      False{}
     case Some{c}:
-      8
+      True{}
 
 def Fteid.write(f: Fteid) -> B.Bytes():
   match f:
     case Teid{teid, +v4, +v6}:
-      U32.or(Flag.bit(Addr.present(v4), 1), Flag.bit(Addr.present(v6), 2)) <> B.write_u32(teid, Addr.write(v4, Addr.write(v6, [])))
+      Fteid.flags(Addr.present(v4), Addr.present(v6), False{}, False{}) <> B.write_u32(teid, Addr.write(v4, Addr.write(v6, [])))
     case Choose{v4, v6, +chid}:
-      U32.or(4, U32.or(Flag.bit(v4, 1), U32.or(Flag.bit(v6, 2), Chid.flag(chid)))) <> Chid.write(chid)
+      Fteid.flags(v4, v6, True{}, Chid.present(chid)) <> Chid.write(chid)
 
 # UE IP Address (§8.2.62): an IPv4 and/or IPv6 address, destination or source.
 # The choose and prefix forms are not supported.

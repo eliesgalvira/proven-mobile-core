@@ -978,13 +978,22 @@ law pfcp.ie.suffix:
   (@ie: T.Tlv -> @rest: B.Bytes() -> {T.Tlv.read(bs) == Done{(ie, rest)} : B.Read(T.Tlv)} -> {List.drop(&2, U32, bs, Nat.add(4n, U32.to_nat(T.Tlv.len(ie)))) == rest : B.Bytes()} & {List.length(&2, U32, T.Tlv.body(ie)) == U32.to_nat(T.Tlv.len(ie)) : Nat})
   & (@kind: U32 -> @len: U32 -> @tail: B.Bytes() -> {T.Tlv.header(bs) == Done{(T.Hdr{kind, len}, tail)} : B.Read(T.Hdr)} -> {B.all_bytes(bs) == True{} : Bool} -> {Nat.is_lt(List.length(&2, U32, tail), U32.to_nat(len)) == True{} : Bool} -> {T.Tlv.read(bs) == Fail{B.Short{}} : B.Read(T.Tlv)})
 
-# GHSA-3mxx-vq7h-x8ff: an F-TEID decodes only when its body is exactly what
-# its flags call for, and the CH form carries no TEID and no address at all.
+# GHSA-3mxx-vq7h-x8ff: an F-TEID or an F-SEID (the one the kernel reads from
+# eUPF) decodes only when its body is exactly what its flags call for: what
+# decodes is valid (each address of its length, an F-TEID naming at least one,
+# its CH form with no TEID and no address by construction, an F-SEID's SEID of
+# eight octets) and re-encodes to the body it was read from.
 law pfcp.fteid.decode_valid:
   for +body: B.Bytes()
   for +f: Pf.Fteid
   for +e: {Pf.Fteid.read(body) == Done{f} : Result<&2, &2, B.Err, Pf.Fteid>}
-  {Pf.Fteid.valid(f) == True{} : Bool}
+  {Pf.Fteid.valid(f) == True{} : Bool} & ({B.all_bytes(body) == True{} : Bool} -> {Pf.Fteid.write(f) == body : B.Bytes()})
+
+law pfcp.fseid.decode_valid:
+  for +body: B.Bytes()
+  for +f: Pf.Fseid
+  for +e: {Pf.Fseid.read(body) == Done{f} : Result<&2, &2, B.Err, Pf.Fseid>}
+  {Pf.Fseid.valid(f) == True{} : Bool} & {Pf.Fseid.write(f) == body : B.Bytes()}
 
 # The length field counts exactly the octets that follow it.
 law pfcp.header.length_consistent:

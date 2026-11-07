@@ -159,6 +159,13 @@ def fseid_v4(r: Result<&2, &2, B.Err, Pf.Fseid>, seid: B.Bytes()) -> Bool:
         case Pf.Fseid{s, v4, v6}:
           Bool.and(B.bytes_eq(s, seid), Bool.and(Pf.Addr.present(v4), Bool.not(Pf.Addr.present(v6))))
 
+def fseid_rewrites(r: Result<&2, &2, B.Err, Pf.Fseid>, body: B.Bytes()) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{f}:
+      B.bytes_eq(Pf.Fseid.write(f), body)
+
 def fteid_fixed(r: Result<&2, &2, B.Err, Pf.Fteid>) -> Bool:
   match r:
     case Fail{e}:
@@ -249,3 +256,6 @@ def main() -> IO(Unit):
     C.Check.report("an F-TEID with CH carrying a TEID is rejected", fails(Pf.Fteid, Pf.Fteid.read([5, 0, 0, 0, 1])))
     C.Check.report("an F-TEID whose flags promise an address it lacks is rejected", fails(Pf.Fteid, Pf.Fteid.read([1, 0, 0, 0, 1])))
     C.Check.report("an F-TEID with a TEID and an IPv4 address decodes", fteid_fixed(Pf.Fteid.read([1, 0, 0, 0, 1, 10, 33, 0, 12])))
+    C.Check.report("an F-TEID with a spare flag bit is rejected", fails(Pf.Fteid, Pf.Fteid.read([17, 0, 0, 0, 1, 10, 33, 0, 12])))
+    C.Check.report("Session Establishment Response: the F-SEID re-encodes to its body", fseid_rewrites(Pf.Fseid.read(body_of(57, resp)), body_of(57, resp)))
+    C.Check.report("an F-SEID with a spare flag bit is rejected", fails(Pf.Fseid, Pf.Fseid.read([6, 0, 0, 0, 0, 0, 0, 0, 2, 10, 33, 0, 12])))

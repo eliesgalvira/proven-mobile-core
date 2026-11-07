@@ -30,110 +30,247 @@ def L.pfcp.ie_header.short_input_fails(bs, e):
 def L.pfcp.ie.suffix(bs):
   (ie => rest => e => PT.Tlv.exact(bs, ie, rest, e), kind => len => tail => eh => ab => lt => PT.Tlv.short(bs, kind, len, tail, eh, ab, lt))
 
+# F-TEID and F-SEID
+# -----------------
+# GHSA-3mxx-vq7h-x8ff: each field is read inside the body, and the body is
+# what the fields write back.
+
+# A value read to the end of its body: nothing is left, and it is the value answered.
+def Exact.spec(-A: Data, -G: Type, +x: A, rest: B.Bytes(), +f: A, e: {Pf.Exact.end(A, x, rest) == Done{f} : Result<&2, &2, B.Err, A>}, k: {rest == [] : B.Bytes()} -> {x == f : A} -> G) -> G:
+  match rest:
+    case Nil{}:
+      k({==}, Equal.cong(Result<&2, &2, B.Err, A>, A, y => P.Res.value(B.Err, A, y, f), Done{x}, Done{f}, e))
+    case b <> more:
+      Empty.absurd(G, P.Refute.fail_done(B.Err, A, B.Invalid{b}, f, e))
+
+def Take.appended(+n: Nat, +bs: B.Bytes(), +tk: B.Bytes(), +rest: B.Bytes(), la: PB.Take.Spec(tk, rest, n, bs)) -> {List.append(&2, U32, tk, rest) == bs : B.Bytes()}:
+  (l, ap) = la
+  ap
+
+# An optional address: of its length, present as its flag says, and the octets it was read from.
+def Addr.Dv(a: Maybe<&2, B.Bytes()>, n: Nat, flag: Bool, bs: B.Bytes(), rest: B.Bytes()) -> Type:
+  {Pf.Addr.valid(a, n) == True{} : Bool} & ({Pf.Addr.present(a) == flag : Bool} & {Pf.Addr.write(a, rest) == bs : B.Bytes()})
+
+def Addr.dv_some(+n: Nat, +bs: B.Bytes(), r: B.Read(B.Bytes()), +ert: {B.take(n, bs) == r : B.Read(B.Bytes())}, +a: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), +e: {Pf.Addr.some(r) == Done{(a, rest)} : B.Read(Maybe<&2, B.Bytes()>)}) -> Addr.Dv(a, n, True{}, bs, rest):
+  match r:
+    case Fail{err}:
+      Empty.absurd(Addr.Dv(a, n, True{}, bs, rest), P.Refute.fail_done(B.Err, B.ReadValue(Maybe<&2, B.Bytes()>), err, (a, rest), e))
+    case Done{(+tk, +rest2)}:
+      ev = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), Maybe<&2, B.Bytes()>, x => P.Read.value(Maybe<&2, B.Bytes()>, x, a), Done{(Some{tk}, rest2)}, Done{(a, rest)}, e)
+      er = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), B.Bytes(), x => P.Read.rest(Maybe<&2, B.Bytes()>, x, rest), Done{(Some{tk}, rest2)}, Done{(a, rest)}, e)
+      %ev : Addr.Dv(_, n, True{}, bs, rest)
+      %er : Addr.Dv(Some{tk}, n, True{}, bs, _)
+      (PB.Take.len_eq(n, bs, tk, rest2, ert), ({==}, Take.appended(n, bs, tk, rest2, L.bytes.take.length(n, bs, tk, rest2, ert))))
+
+def Addr.dv(flag: Bool, +n: Nat, +bs: B.Bytes(), +a: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), +e: {Pf.Addr.read(flag, n, bs) == Done{(a, rest)} : B.Read(Maybe<&2, B.Bytes()>)}) -> Addr.Dv(a, n, flag, bs, rest):
+  match flag:
+    case False{}:
+      ev = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), Maybe<&2, B.Bytes()>, x => P.Read.value(Maybe<&2, B.Bytes()>, x, a), Done{(None{}, bs)}, Done{(a, rest)}, e)
+      er = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), B.Bytes(), x => P.Read.rest(Maybe<&2, B.Bytes()>, x, rest), Done{(None{}, bs)}, Done{(a, rest)}, e)
+      %ev : Addr.Dv(_, n, False{}, bs, rest)
+      %er : Addr.Dv(None{}, n, False{}, bs, _)
+      ({==}, ({==}, {==}))
+    case True{}:
+      Addr.dv_some(n, bs, B.take(n, bs), {==}, a, rest, e)
+
+# F-SEID
+
+def Fseid.Spec(f: Pf.Fseid, body: B.Bytes()) -> Type:
+  {Pf.Fseid.valid(f) == True{} : Bool} & {Pf.Fseid.write(f) == body : B.Bytes()}
+
+def Fseid.wr(+flags: U32, +rest: B.Bytes(), +seid: B.Bytes(), +r1: B.Bytes(), +v4: Maybe<&2, B.Bytes()>, +r2: B.Bytes(), +v6: Maybe<&2, B.Bytes()>, eqf: {Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)) == flags : U32}, ap: {List.append(&2, U32, seid, r1) == rest : B.Bytes()}, p4: {Pf.Addr.present(v4) == Pf.bit(flags, 2) : Bool}, w4: {Pf.Addr.write(v4, r2) == r1 : B.Bytes()}, p6: {Pf.Addr.present(v6) == Pf.bit(flags, 1) : Bool}, w6: {Pf.Addr.write(v6, []) == r2 : B.Bytes()}) -> {Pf.Fseid.write(Pf.Fseid{seid, v4, v6}) == flags <> rest : B.Bytes()}:
+  s6 = Equal.sym(B.Bytes(), Pf.Addr.write(v6, []), r2, w6)
+  s4 = Equal.sym(B.Bytes(), Pf.Addr.write(v4, r2), r1, w4)
+  sa = Equal.sym(B.Bytes(), List.append(&2, U32, seid, r1), rest, ap)
+  sp4 = Equal.sym(Bool, Pf.Addr.present(v4), Pf.bit(flags, 2), p4)
+  sp6 = Equal.sym(Bool, Pf.Addr.present(v6), Pf.bit(flags, 1), p6)
+  sf = Equal.sym(U32, Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)), flags, eqf)
+  %s6 : {Pf.Fseid.flags(Pf.Addr.present(v4), Pf.Addr.present(v6)) <> List.append(&2, U32, seid, Pf.Addr.write(v4, _)) == flags <> rest : B.Bytes()}
+  %s4 : {Pf.Fseid.flags(Pf.Addr.present(v4), Pf.Addr.present(v6)) <> List.append(&2, U32, seid, _) == flags <> rest : B.Bytes()}
+  %sa : {Pf.Fseid.flags(Pf.Addr.present(v4), Pf.Addr.present(v6)) <> _ == flags <> rest : B.Bytes()}
+  %sp4 : {Pf.Fseid.flags(_, Pf.Addr.present(v6)) <> rest == flags <> rest : B.Bytes()}
+  %sp6 : {Pf.Fseid.flags(Pf.bit(flags, 2), _) <> rest == flags <> rest : B.Bytes()}
+  %sf : {_ <> rest == flags <> rest : B.Bytes()}
+  {==}
+
+def Fseid.fin(+flags: U32, +rest: B.Bytes(), +seid: B.Bytes(), +r1: B.Bytes(), +v4: Maybe<&2, B.Bytes()>, +r2: B.Bytes(), +v6: Maybe<&2, B.Bytes()>, eqf: {Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)) == flags : U32}, ls: PB.Take.Spec(seid, r1, 8n, rest), h4: Addr.Dv(v4, 4n, Pf.bit(flags, 2), r1, r2), h6: Addr.Dv(v6, 16n, Pf.bit(flags, 1), r2, [])) -> Fseid.Spec(Pf.Fseid{seid, v4, v6}, flags <> rest):
+  (l8, ap) = ls
+  (ok4, (p4, w4)) = h4
+  (ok6, (p6, w6)) = h6
+  sl = Equal.sym(Nat, List.length(&2, U32, seid), 8n, l8)
+  (P.Bool.and_intro(Nat.is_eq(List.length(&2, U32, seid), 8n), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n)), (%sl : {Nat.is_eq(_, 8n) == True{} : Bool}; P.Nat.is_eq_refl(8n)), P.Bool.and_intro(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n), ok4, ok6)), Fseid.wr(flags, rest, seid, r1, v4, r2, v6, eqf, ap, p4, w4, p6, w6))
+
+def Fseid.v6(+flags: U32, +rest: B.Bytes(), +seid: B.Bytes(), +r1: B.Bytes(), +v4: Maybe<&2, B.Bytes()>, +r2: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 1), 16n, r2) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fseid, e: {Pf.Fseid.of_v6(seid, v4, r) == Done{f} : Result<&2, &2, B.Err, Pf.Fseid>}, eqf: {Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)) == flags : U32}, ls: PB.Take.Spec(seid, r1, 8n, rest), h4: Addr.Dv(v4, 4n, Pf.bit(flags, 2), r1, r2)) -> Fseid.Spec(f, flags <> rest):
+  match r:
+    case Fail{err}:
+      Empty.absurd(Fseid.Spec(f, flags <> rest), P.Refute.fail_done(B.Err, Pf.Fseid, err, f, e))
+    case Done{(+v6, +r3)}:
+      Exact.spec(Pf.Fseid, Fseid.Spec(f, flags <> rest), Pf.Fseid{seid, v4, v6}, r3, f, e, er3 => ex => (%ex : Fseid.Spec(_, flags <> rest); Fseid.fin(flags, rest, seid, r1, v4, r2, v6, eqf, ls, h4, (%er3 : Addr.Dv(v6, 16n, Pf.bit(flags, 1), r2, _); Addr.dv(Pf.bit(flags, 1), 16n, r2, v6, r3, er)))))
+
+def Fseid.v4(+flags: U32, +rest: B.Bytes(), +seid: B.Bytes(), +r1: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 2), 4n, r1) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fseid, e: {Pf.Fseid.of_v4(flags, seid, r) == Done{f} : Result<&2, &2, B.Err, Pf.Fseid>}, eqf: {Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)) == flags : U32}, ls: PB.Take.Spec(seid, r1, 8n, rest)) -> Fseid.Spec(f, flags <> rest):
+  match r:
+    case Fail{err}:
+      Empty.absurd(Fseid.Spec(f, flags <> rest), P.Refute.fail_done(B.Err, Pf.Fseid, err, f, e))
+    case Done{(+v4, +r2)}:
+      Fseid.v6(flags, rest, seid, r1, v4, r2, Pf.Addr.read(Pf.bit(flags, 1), 16n, r2), {==}, f, e, eqf, ls, Addr.dv(Pf.bit(flags, 2), 4n, r1, v4, r2, er))
+
+def Fseid.seid(+flags: U32, +rest: B.Bytes(), r: B.Read(B.Bytes()), +er: {B.take(8n, rest) == r : B.Read(B.Bytes())}, +f: Pf.Fseid, e: {Pf.Fseid.of_seid(flags, r) == Done{f} : Result<&2, &2, B.Err, Pf.Fseid>}, eqf: {Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)) == flags : U32}) -> Fseid.Spec(f, flags <> rest):
+  match r:
+    case Fail{err}:
+      Empty.absurd(Fseid.Spec(f, flags <> rest), P.Refute.fail_done(B.Err, Pf.Fseid, err, f, e))
+    case Done{(+seid, +r1)}:
+      Fseid.v4(flags, rest, seid, r1, Pf.Addr.read(Pf.bit(flags, 2), 4n, r1), {==}, f, e, eqf, L.bytes.take.length(8n, rest, seid, r1, er))
+
+def Fseid.ok(+flags: U32, +rest: B.Bytes(), ok: Bool, eok: {U32.is_eq(Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)), flags) == ok : Bool}, +f: Pf.Fseid, e: {Pf.Fseid.flags_ok(flags, rest, ok) == Done{f} : Result<&2, &2, B.Err, Pf.Fseid>}) -> Fseid.Spec(f, flags <> rest):
+  match ok:
+    case False{}:
+      Empty.absurd(Fseid.Spec(f, flags <> rest), P.Refute.fail_done(B.Err, Pf.Fseid, B.Invalid{flags}, f, e))
+    case True{}:
+      Fseid.seid(flags, rest, B.take(8n, rest), {==}, f, e, P.U32.eq_of_is_eq(Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)), flags, eok))
+
+def L.pfcp.fseid.decode_valid(body, f, e):
+  match body:
+    case Nil{}:
+      Empty.absurd(Fseid.Spec(f, []), P.Refute.fail_done(B.Err, Pf.Fseid, B.Short{}, f, e))
+    case +flags <> +rest:
+      Fseid.ok(flags, rest, U32.is_eq(Pf.Fseid.flags(Pf.bit(flags, 2), Pf.bit(flags, 1)), flags), {==}, f, e)
+
 # F-TEID
-# ------
-# GHSA-3mxx-vq7h-x8ff
 
 def Fteid.Res() -> Data:
   Result<&2, &2, B.Err, Pf.Fteid>
 
-def Addr.Dv(a: Maybe<&2, B.Bytes()>, n: Nat, flag: Bool) -> Type:
-  {Pf.Addr.valid(a, n) == True{} : Bool} & {Pf.Addr.present(a) == flag : Bool}
+def Fteid.Spec(f: Pf.Fteid, body: B.Bytes()) -> Type:
+  {Pf.Fteid.valid(f) == True{} : Bool} & ({B.all_bytes(body) == True{} : Bool} -> {Pf.Fteid.write(f) == body : B.Bytes()})
 
-def Addr.dv_some(+n: Nat, +bs: B.Bytes(), r: B.Read(B.Bytes()), +ert: {B.take(n, bs) == r : B.Read(B.Bytes())}, +a: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), e: {Pf.Addr.some(r) == Done{(a, rest)} : B.Read(Maybe<&2, B.Bytes()>)}) -> Addr.Dv(a, n, True{}):
-  match r:
-    case Fail{err}:
-      Empty.absurd(Addr.Dv(a, n, True{}), P.Refute.fail_done(B.Err, B.ReadValue(Maybe<&2, B.Bytes()>), err, (a, rest), e))
-    case Done{(+tk, +rest2)}:
-      ev = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), Maybe<&2, B.Bytes()>, x => P.Read.value(Maybe<&2, B.Bytes()>, x, a), Done{(Some{tk}, rest2)}, Done{(a, rest)}, e)
-      %ev : Addr.Dv(_, n, True{})
-      (PB.Take.len_eq(n, bs, tk, rest2, ert), {==})
+def Fteid.Bits(+flags: U32) -> U32:
+  Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), Pf.bit(flags, 4), Pf.bit(flags, 8))
 
-def Addr.dv(flag: Bool, +n: Nat, +bs: B.Bytes(), +a: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), e: {Pf.Addr.read(flag, n, bs) == Done{(a, rest)} : B.Read(Maybe<&2, B.Bytes()>)}) -> Addr.Dv(a, n, flag):
-  match flag:
-    case False{}:
-      ev = Equal.cong(B.Read(Maybe<&2, B.Bytes()>), Maybe<&2, B.Bytes()>, x => P.Read.value(Maybe<&2, B.Bytes()>, x, a), Done{(None{}, bs)}, Done{(a, rest)}, e)
-      %ev : Addr.Dv(_, n, False{})
-      ({==}, {==})
-    case True{}:
-      Addr.dv_some(n, bs, B.take(n, bs), {==}, a, rest, e)
+def Fteid.rest_ok(+flags: U32) -> Bool:
+  Bool.and(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.or(Pf.bit(flags, 4), Bool.not(Pf.bit(flags, 8))))
 
 def Fteid.named(+flags: U32, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}:
-  P.Bool.and_true_l(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.or(Pf.bit(flags, 4), Bool.not(Pf.bit(flags, 8))), P.Bool.and_true_r(U32.is_lt(flags, 16), Bool.and(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.or(Pf.bit(flags, 4), Bool.not(Pf.bit(flags, 8)))), fv))
+  P.Bool.and_true_l(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.or(Pf.bit(flags, 4), Bool.not(Pf.bit(flags, 8))), P.Bool.and_true_r(U32.is_eq(Fteid.Bits(flags), flags), Fteid.rest_ok(flags), fv))
 
-def Fteid.dv_end(+x: Pf.Fteid, rest: B.Bytes(), +f: Pf.Fteid, e: {Pf.Exact.end(Pf.Fteid, x, rest) == Done{f} : Fteid.Res()}, v: {Pf.Fteid.valid(x) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+def Fteid.eqf(+flags: U32, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Fteid.Bits(flags) == flags : U32}:
+  P.U32.eq_of_is_eq(Fteid.Bits(flags), flags, P.Bool.and_true_l(U32.is_eq(Fteid.Bits(flags), flags), Fteid.rest_ok(flags), fv))
+
+# Without CH there is no CHID.
+def Fteid.no_chid(+flags: U32, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}, e4: {Pf.bit(flags, 4) == False{} : Bool}) -> {Pf.bit(flags, 8) == False{} : Bool}:
+  c = P.Bool.and_true_r(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.or(Pf.bit(flags, 4), Bool.not(Pf.bit(flags, 8))), P.Bool.and_true_r(U32.is_eq(Fteid.Bits(flags), flags), Fteid.rest_ok(flags), fv))
+  P.Bool.not_true(Pf.bit(flags, 8), (%e4 : {Bool.or(_, Bool.not(Pf.bit(flags, 8))) == True{} : Bool}; c))
+
+def Fteid.flags_at(+flags: U32, +ch: Bool, +chid: Bool, eqf: {Fteid.Bits(flags) == flags : U32}, e4: {Pf.bit(flags, 4) == ch : Bool}, e8: {Pf.bit(flags, 8) == chid : Bool}) -> {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), ch, chid) == flags : U32}:
+  (%e4 : {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), _, chid) == flags : U32}; (%e8 : {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), Pf.bit(flags, 4), _) == flags : U32}; eqf))
+
+def Fteid.teid_write(+flags: U32, +x0: U32, +x1: U32, +x2: U32, +x3: U32, +r1: B.Bytes(), +v4: Maybe<&2, B.Bytes()>, +r2: B.Bytes(), +v6: Maybe<&2, B.Bytes()>, eq0: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), False{}, False{}) == flags : U32}, p4: {Pf.Addr.present(v4) == Pf.bit(flags, 1) : Bool}, p6: {Pf.Addr.present(v6) == Pf.bit(flags, 2) : Bool}, w4: {Pf.Addr.write(v4, r2) == r1 : B.Bytes()}, w6: {Pf.Addr.write(v6, []) == r2 : B.Bytes()}, ab: {B.all_bytes(flags <> x0 <> x1 <> x2 <> x3 <> r1) == True{} : Bool}) -> {Pf.Fteid.write(Pf.Teid{B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), v4, v6}) == flags <> x0 <> x1 <> x2 <> x3 <> r1 : B.Bytes()}:
+  +a0 = P.Bool.and_true_r(B.is_byte(flags), B.all_bytes(x0 <> x1 <> x2 <> x3 <> r1), ab)
+  +a1 = P.Bool.and_true_r(B.is_byte(x0), B.all_bytes(x1 <> x2 <> x3 <> r1), a0)
+  +a2 = P.Bool.and_true_r(B.is_byte(x1), B.all_bytes(x2 <> x3 <> r1), a1)
+  +a3 = P.Bool.and_true_r(B.is_byte(x2), B.all_bytes(x3 <> r1), a2)
+  m0 = P.U32.lt256_mask8(x0, P.Bool.and_true_l(B.is_byte(x0), B.all_bytes(x1 <> x2 <> x3 <> r1), a0))
+  m1 = P.U32.lt256_mask8(x1, P.Bool.and_true_l(B.is_byte(x1), B.all_bytes(x2 <> x3 <> r1), a1))
+  m2 = P.U32.lt256_mask8(x2, P.Bool.and_true_l(B.is_byte(x2), B.all_bytes(x3 <> r1), a2))
+  m3 = P.U32.lt256_mask8(x3, P.Bool.and_true_l(B.is_byte(x3), B.all_bytes(r1), a3))
+  s6 = Equal.sym(B.Bytes(), Pf.Addr.write(v6, []), r2, w6)
+  s4 = Equal.sym(B.Bytes(), Pf.Addr.write(v4, r2), r1, w4)
+  st = Equal.sym(B.Bytes(), B.write_u32(B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), r1), x0 <> x1 <> x2 <> x3 <> r1, P.Bytes.u32_sx(x0, x1, x2, x3, m0, m1, m2, m3, r1))
+  sp4 = Equal.sym(Bool, Pf.Addr.present(v4), Pf.bit(flags, 1), p4)
+  sp6 = Equal.sym(Bool, Pf.Addr.present(v6), Pf.bit(flags, 2), p6)
+  sf = Equal.sym(U32, Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), False{}, False{}), flags, eq0)
+  %s6 : {Pf.Fteid.flags(Pf.Addr.present(v4), Pf.Addr.present(v6), False{}, False{}) <> B.write_u32(B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), Pf.Addr.write(v4, _)) == flags <> x0 <> x1 <> x2 <> x3 <> r1 : B.Bytes()}
+  %s4 : {Pf.Fteid.flags(Pf.Addr.present(v4), Pf.Addr.present(v6), False{}, False{}) <> B.write_u32(B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), _) == flags <> x0 <> x1 <> x2 <> x3 <> r1 : B.Bytes()}
+  %st : {Pf.Fteid.flags(Pf.Addr.present(v4), Pf.Addr.present(v6), False{}, False{}) <> _ == flags <> x0 <> x1 <> x2 <> x3 <> r1 : B.Bytes()}
+  %sp4 : {Pf.Fteid.flags(_, Pf.Addr.present(v6), False{}, False{}) <> x0 <> x1 <> x2 <> x3 <> r1 == flags <> x0 <> x1 <> x2 <> x3 <> r1 : B.Bytes()}
+  %sp6 : {Pf.Fteid.flags(Pf.bit(flags, 1), _, False{}, False{}) <> x0 <> x1 <> x2 <> x3 <> r1 == flags <> x0 <> x1 <> x2 <> x3 <> r1 : B.Bytes()}
+  %sf : {_ <> x0 <> x1 <> x2 <> x3 <> r1 == flags <> x0 <> x1 <> x2 <> x3 <> r1 : B.Bytes()}
+  {==}
+
+def Fteid.teid_fin(+flags: U32, +x0: U32, +x1: U32, +x2: U32, +x3: U32, +r1: B.Bytes(), +v4: Maybe<&2, B.Bytes()>, +r2: B.Bytes(), +v6: Maybe<&2, B.Bytes()>, eq0: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), False{}, False{}) == flags : U32}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}, h4: Addr.Dv(v4, 4n, Pf.bit(flags, 1), r1, r2), h6: Addr.Dv(v6, 16n, Pf.bit(flags, 2), r2, [])) -> Fteid.Spec(Pf.Teid{B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), v4, v6}, flags <> x0 <> x1 <> x2 <> x3 <> r1):
+  (ok4, (+p4, w4)) = h4
+  (ok6, (+p6, w6)) = h6
+  sp4 = Equal.sym(Bool, Pf.Addr.present(v4), Pf.bit(flags, 1), p4)
+  sp6 = Equal.sym(Bool, Pf.Addr.present(v6), Pf.bit(flags, 2), p6)
+  +hv : {Pf.Fteid.valid(Pf.Teid{B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), v4, v6}) == True{} : Bool} = (%sp4 : {Bool.and(Bool.or(_, Pf.Addr.present(v6)), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n))) == True{} : Bool}; (%sp6 : {Bool.and(Bool.or(Pf.bit(flags, 1), _), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n))) == True{} : Bool}; P.Bool.and_intro(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n)), named, P.Bool.and_intro(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n), ok4, ok6))))
+  (hv, ab => Fteid.teid_write(flags, x0, x1, x2, x3, r1, v4, r2, v6, eq0, p4, p6, w4, w6, ab))
+
+def Fteid.v6(+flags: U32, +x0: U32, +x1: U32, +x2: U32, +x3: U32, +r1: B.Bytes(), +v4: Maybe<&2, B.Bytes()>, +r2: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 2), 16n, r2) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fteid, e: {Pf.Fteid.of_v6(B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), v4, r) == Done{f} : Fteid.Res()}, eq0: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), False{}, False{}) == flags : U32}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}, h4: Addr.Dv(v4, 4n, Pf.bit(flags, 1), r1, r2)) -> Fteid.Spec(f, flags <> x0 <> x1 <> x2 <> x3 <> r1):
+  match r:
+    case Fail{err}:
+      Empty.absurd(Fteid.Spec(f, flags <> x0 <> x1 <> x2 <> x3 <> r1), P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
+    case Done{(+v6, +r3)}:
+      Exact.spec(Pf.Fteid, Fteid.Spec(f, flags <> x0 <> x1 <> x2 <> x3 <> r1), Pf.Teid{B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), v4, v6}, r3, f, e, er3 => ex => (%ex : Fteid.Spec(_, flags <> x0 <> x1 <> x2 <> x3 <> r1); Fteid.teid_fin(flags, x0, x1, x2, x3, r1, v4, r2, v6, eq0, named, h4, (%er3 : Addr.Dv(v6, 16n, Pf.bit(flags, 2), r2, _); Addr.dv(Pf.bit(flags, 2), 16n, r2, v6, r3, er)))))
+
+def Fteid.v4(+flags: U32, +x0: U32, +x1: U32, +x2: U32, +x3: U32, +r1: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 1), 4n, r1) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fteid, e: {Pf.Fteid.of_v4(flags, B.cat8(x3, B.cat8(x2, B.cat8(x1, x0))), r) == Done{f} : Fteid.Res()}, eq0: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), False{}, False{}) == flags : U32}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}) -> Fteid.Spec(f, flags <> x0 <> x1 <> x2 <> x3 <> r1):
+  match r:
+    case Fail{err}:
+      Empty.absurd(Fteid.Spec(f, flags <> x0 <> x1 <> x2 <> x3 <> r1), P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
+    case Done{(+v4, +r2)}:
+      Fteid.v6(flags, x0, x1, x2, x3, r1, v4, r2, Pf.Addr.read(Pf.bit(flags, 2), 16n, r2), {==}, f, e, eq0, named, Addr.dv(Pf.bit(flags, 1), 4n, r1, v4, r2, er))
+
+def Fteid.teid(+flags: U32, rest: B.Bytes(), +f: Pf.Fteid, e: {Pf.Fteid.of_teid(flags, B.u32(rest)) == Done{f} : Fteid.Res()}, eq0: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), False{}, False{}) == flags : U32}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}) -> Fteid.Spec(f, flags <> rest):
   match rest:
     case Nil{}:
-      ev = Equal.cong(Fteid.Res(), Pf.Fteid, y => P.Res.value(B.Err, Pf.Fteid, y, f), Done{x}, Done{f}, e)
-      %ev : {Pf.Fteid.valid(_) == True{} : Bool}
-      v
-    case b <> more:
-      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, B.Invalid{b}, f, e))
+      Empty.absurd(Fteid.Spec(f, [flags]), P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
+    case x0 <> Nil{}:
+      Empty.absurd(Fteid.Spec(f, [flags, x0]), P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
+    case x0 <> x1 <> Nil{}:
+      Empty.absurd(Fteid.Spec(f, [flags, x0, x1]), P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
+    case x0 <> x1 <> x2 <> Nil{}:
+      Empty.absurd(Fteid.Spec(f, [flags, x0, x1, x2]), P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
+    case +x0 <> +x1 <> +x2 <> +x3 <> +r1:
+      Fteid.v4(flags, x0, x1, x2, x3, r1, Pf.Addr.read(Pf.bit(flags, 1), 4n, r1), {==}, f, e, eq0, named)
 
-def Fteid.teid_valid(+flags: U32, +teid: U32, +v4: Maybe<&2, B.Bytes()>, +v6: Maybe<&2, B.Bytes()>, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}, h4: Addr.Dv(v4, 4n, Pf.bit(flags, 1)), h6: Addr.Dv(v6, 16n, Pf.bit(flags, 2))) -> {Pf.Fteid.valid(Pf.Teid{teid, v4, v6}) == True{} : Bool}:
-  (ok4, p4) = h4
-  (ok6, p6) = h6
-  sp4 = Equal.sym(Bool, Pf.Addr.present(v4), Pf.bit(flags, 1), p4)
-  %sp4 : {Bool.and(Bool.or(_, Pf.Addr.present(v6)), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n))) == True{} : Bool}
-  sp6 = Equal.sym(Bool, Pf.Addr.present(v6), Pf.bit(flags, 2), p6)
-  %sp6 : {Bool.and(Bool.or(Pf.bit(flags, 1), _), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n))) == True{} : Bool}
-  P.Bool.and_intro(Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)), Bool.and(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n)), Fteid.named(flags, fv), P.Bool.and_intro(Pf.Addr.valid(v4, 4n), Pf.Addr.valid(v6, 16n), ok4, ok6))
+def Fteid.chid_fin(+flags: U32, +c: U32, +r1: B.Bytes(), +f: Pf.Fteid, er1: {r1 == [] : B.Bytes()}, ex: {Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), Some{c}} == f : Pf.Fteid}, eqc: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), True{}, True{}) == flags : U32}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}) -> Fteid.Spec(f, flags <> c <> r1):
+  s1 = Equal.sym(B.Bytes(), r1, [], er1)
+  sf = Equal.sym(U32, Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), True{}, True{}), flags, eqc)
+  %ex : Fteid.Spec(_, flags <> c <> r1)
+  %s1 : Fteid.Spec(Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), Some{c}}, flags <> c <> _)
+  %sf : {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool} & ({B.all_bytes(flags <> c <> []) == True{} : Bool} -> {_ <> c <> [] == flags <> c <> [] : B.Bytes()})
+  (named, ab => {==})
 
-def Fteid.dv_v6(+flags: U32, +teid: U32, +v4: Maybe<&2, B.Bytes()>, +rest: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 2), 16n, rest) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fteid, e: {Pf.Fteid.of_v6(teid, v4, r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}, h4: Addr.Dv(v4, 4n, Pf.bit(flags, 1))) -> {Pf.Fteid.valid(f) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
-    case Done{(+v6, +rest2)}:
-      Fteid.dv_end(Pf.Teid{teid, v4, v6}, rest2, f, e, Fteid.teid_valid(flags, teid, v4, v6, fv, h4, Addr.dv(Pf.bit(flags, 2), 16n, rest, v6, rest2, er)))
+def Fteid.chid(+flags: U32, rest: B.Bytes(), +f: Pf.Fteid, e: {Pf.Fteid.of_chid(Pf.bit(flags, 1), Pf.bit(flags, 2), B.u8(rest)) == Done{f} : Fteid.Res()}, eqc: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), True{}, True{}) == flags : U32}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}) -> Fteid.Spec(f, flags <> rest):
+  match rest:
+    case Nil{}:
+      Empty.absurd(Fteid.Spec(f, [flags]), P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
+    case +c <> +r1:
+      Exact.spec(Pf.Fteid, Fteid.Spec(f, flags <> c <> r1), Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), Some{c}}, r1, f, e, er1 => ex => Fteid.chid_fin(flags, c, r1, f, er1, ex, eqc, named))
 
-def Fteid.dv_v4(+flags: U32, +teid: U32, +rest: B.Bytes(), r: B.Read(Maybe<&2, B.Bytes()>), +er: {Pf.Addr.read(Pf.bit(flags, 1), 4n, rest) == r : B.Read(Maybe<&2, B.Bytes()>)}, +f: Pf.Fteid, e: {Pf.Fteid.of_v4(flags, teid, r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
-    case Done{(+v4, +rest2)}:
-      Fteid.dv_v6(flags, teid, v4, rest2, Pf.Addr.read(Pf.bit(flags, 2), 16n, rest2), {==}, f, e, fv, Addr.dv(Pf.bit(flags, 1), 4n, rest, v4, rest2, er))
+def Fteid.none_fin(+flags: U32, +rest: B.Bytes(), +f: Pf.Fteid, er: {rest == [] : B.Bytes()}, ex: {Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), None{}} == f : Pf.Fteid}, eqc: {Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), True{}, False{}) == flags : U32}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}) -> Fteid.Spec(f, flags <> rest):
+  sr = Equal.sym(B.Bytes(), rest, [], er)
+  sf = Equal.sym(U32, Pf.Fteid.flags(Pf.bit(flags, 1), Pf.bit(flags, 2), True{}, False{}), flags, eqc)
+  %ex : Fteid.Spec(_, flags <> rest)
+  %sr : Fteid.Spec(Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), None{}}, flags <> _)
+  %sf : {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool} & ({B.all_bytes([flags]) == True{} : Bool} -> {[_] == [flags] : B.Bytes()})
+  (named, ab => {==})
 
-def Fteid.dv_teid(+flags: U32, r: B.Read(U32), +f: Pf.Fteid, e: {Pf.Fteid.of_teid(flags, r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
-    case Done{(+teid, +rest)}:
-      Fteid.dv_v4(flags, teid, rest, Pf.Addr.read(Pf.bit(flags, 1), 4n, rest), {==}, f, e, fv)
-
-def Fteid.dv_chid(+flags: U32, r: B.Read(U32), +f: Pf.Fteid, e: {Pf.Fteid.of_chid(Pf.bit(flags, 1), Pf.bit(flags, 2), r) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
-  match r:
-    case Fail{err}:
-      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, err, f, e))
-    case Done{(+chid, rest)}:
-      Fteid.dv_end(Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), Some{chid}}, rest, f, e, Fteid.named(flags, fv))
-
-def Fteid.dv_choose(+flags: U32, rest: B.Bytes(), chid: Bool, +f: Pf.Fteid, e: {Pf.Fteid.choose(flags, rest, chid) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+def Fteid.choose(+flags: U32, +rest: B.Bytes(), chid: Bool, e8: {Pf.bit(flags, 8) == chid : Bool}, +f: Pf.Fteid, e: {Pf.Fteid.choose(flags, rest, chid) == Done{f} : Fteid.Res()}, eqf: {Fteid.Bits(flags) == flags : U32}, e4: {Pf.bit(flags, 4) == True{} : Bool}, named: {Bool.or(Pf.bit(flags, 1), Pf.bit(flags, 2)) == True{} : Bool}) -> Fteid.Spec(f, flags <> rest):
   match chid:
     case True{}:
-      Fteid.dv_chid(flags, B.u8(rest), f, e, fv)
+      Fteid.chid(flags, rest, f, e, Fteid.flags_at(flags, True{}, True{}, eqf, e4, e8), named)
     case False{}:
-      Fteid.dv_end(Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), None{}}, rest, f, e, Fteid.named(flags, fv))
+      Exact.spec(Pf.Fteid, Fteid.Spec(f, flags <> rest), Pf.Choose{Pf.bit(flags, 1), Pf.bit(flags, 2), None{}}, rest, f, e, er => ex => Fteid.none_fin(flags, rest, f, er, ex, Fteid.flags_at(flags, True{}, False{}, eqf, e4, e8), named))
 
-def Fteid.dv_form(+flags: U32, rest: B.Bytes(), ch: Bool, +f: Pf.Fteid, e: {Pf.Fteid.form(flags, rest, ch) == Done{f} : Fteid.Res()}, fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+def Fteid.form(+flags: U32, +rest: B.Bytes(), ch: Bool, +e4: {Pf.bit(flags, 4) == ch : Bool}, +f: Pf.Fteid, e: {Pf.Fteid.form(flags, rest, ch) == Done{f} : Fteid.Res()}, +fv: {Pf.Fteid.flags_valid(flags) == True{} : Bool}) -> Fteid.Spec(f, flags <> rest):
   match ch:
     case True{}:
-      Fteid.dv_choose(flags, rest, Pf.bit(flags, 8), f, e, fv)
+      Fteid.choose(flags, rest, Pf.bit(flags, 8), {==}, f, e, Fteid.eqf(flags, fv), e4, Fteid.named(flags, fv))
     case False{}:
-      Fteid.dv_teid(flags, B.u32(rest), f, e, fv)
+      Fteid.teid(flags, rest, f, e, Fteid.flags_at(flags, False{}, False{}, Fteid.eqf(flags, fv), e4, Fteid.no_chid(flags, fv, e4)), Fteid.named(flags, fv))
 
-def Fteid.dv_ok(+flags: U32, rest: B.Bytes(), ok: Bool, eok: {Pf.Fteid.flags_valid(flags) == ok : Bool}, +f: Pf.Fteid, e: {Pf.Fteid.flags_ok(flags, rest, ok) == Done{f} : Fteid.Res()}) -> {Pf.Fteid.valid(f) == True{} : Bool}:
+def Fteid.ok(+flags: U32, +rest: B.Bytes(), ok: Bool, eok: {Pf.Fteid.flags_valid(flags) == ok : Bool}, +f: Pf.Fteid, e: {Pf.Fteid.flags_ok(flags, rest, ok) == Done{f} : Fteid.Res()}) -> Fteid.Spec(f, flags <> rest):
   match ok:
     case False{}:
-      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, B.Invalid{flags}, f, e))
+      Empty.absurd(Fteid.Spec(f, flags <> rest), P.Refute.fail_done(B.Err, Pf.Fteid, B.Invalid{flags}, f, e))
     case True{}:
-      Fteid.dv_form(flags, rest, Pf.bit(flags, 4), f, e, eok)
+      Fteid.form(flags, rest, Pf.bit(flags, 4), {==}, f, e, eok)
 
 def L.pfcp.fteid.decode_valid(body, f, e):
   match body:
     case Nil{}:
-      Empty.absurd({Pf.Fteid.valid(f) == True{} : Bool}, P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
-    case +flags <> rest:
-      Fteid.dv_ok(flags, rest, Pf.Fteid.flags_valid(flags), {==}, f, e)
+      Empty.absurd(Fteid.Spec(f, []), P.Refute.fail_done(B.Err, Pf.Fteid, B.Short{}, f, e))
+    case +flags <> +rest:
+      Fteid.ok(flags, rest, Pf.Fteid.flags_valid(flags), {==}, f, e)
 
 # Messages
 # --------
