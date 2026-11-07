@@ -27,26 +27,7 @@
         };
 
         # PacketRusher v2.0.0 runs the two gNBs and the UE of the handover capture.
-        # The patch adds a control action that prepares an N2 handover and answers
-        # the Handover Command with a Handover Cancel.
-        packetrusher = pkgs.buildGoModule {
-          pname = "packetrusher";
-          version = "2.0.0";
-          src = pkgs.fetchFromGitHub {
-            owner = "HewlettPackard";
-            repo = "PacketRusher";
-            rev = "6fef144296d4b1595e690a3d8e55c2a25407077b";
-            hash = "sha256-DDVNlYBSGbaXu8RZ5/vaG+AdoPIxk77/yuhrlNlTEE0=";
-          };
-          patches = [ ./packetrusher/handover-cancel.patch ];
-          vendorHash = "sha256-cwG0HhWD/lTcYIlDn5Fa+AgRuoU0ogXW3yBbLVTt0m0=";
-          subPackages = [ "cmd" ];
-          env.CGO_ENABLED = 0;
-          ldflags = [ "-X main.version=v2.0.0+handover-cancel" ];
-          # Upstream's tests open SCTP sockets and tunnels; the capture exercises the binary.
-          doCheck = false;
-          postInstall = "mv $out/bin/cmd $out/bin/packetrusher";
-        };
+        packetrusher = pkgs.callPackage ./packetrusher/package.nix { };
 
         packetrusher-image = pkgs.dockerTools.buildLayeredImage {
           name = "speck5g-packetrusher";
