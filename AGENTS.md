@@ -14,7 +14,7 @@ A property counts as proven only when it passes `bend --verdict`. The everyday c
 - voice calls
 - roaming between operators
 - policy and billing
-- handover between antennas (the first planned extension)
+- handover beyond milestone 2's scope (inter-AMF, inter-UPF, indirect forwarding, conditional handover, DAPS)
 
 When the user asks what is missing, list these as deliberately left out, separately from the gaps that are actually open.
 
@@ -35,7 +35,7 @@ The human reviews each draft, turns the ones worth keeping into issues here labe
 
 ## The implementation loop
 
-The milestone spec is `docs/spec/milestone-1.md`; its tickets are `docs/spec/tickets/NN-*.md`. `loop/progress.md` tracks their status (`todo`, `in-progress`, `done`, `blocked`, `needs-human`). The loop runs unattended in a cloud session, and any new session resumes it from the files alone.
+The milestone specs are `docs/spec/milestone-1.md` and `docs/spec/milestone-2.md`; their tickets are `docs/spec/tickets/NN-*.md`, taken in the order of `loop/progress.md`. `loop/progress.md` tracks their status (`todo`, `in-progress`, `done`, `blocked`, `needs-human`). The loop runs unattended in a cloud session, and any new session resumes it from the files alone.
 
 1. **Branch.** Work on `loop/m1`. If it exists on origin, check it out and pull; otherwise create it from `origin/main`. Never push to `main`.
 2. **Before each ticket.** `git fetch origin`.

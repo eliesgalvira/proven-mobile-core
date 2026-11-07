@@ -26,12 +26,16 @@ TRANSFERS = ["PDUSessionResourceSetupRequestTransfer", "PDUSessionResourceSetupR
 INBOUND = {"NGSetupRequest", "InitialUEMessage", "UplinkNASTransport", "InitialContextSetupResponse",
            "InitialContextSetupFailure", "UEContextReleaseRequest", "UEContextReleaseComplete",
            "PDUSessionResourceSetupResponse", "ErrorIndication", "PDUSessionResourceSetupResponseTransfer"}
+# Optional IEs the milestone's SMF needs beyond the tiers: the PDU session setup
+# results (75, 58) it receives and the aggregate bit rates (110, 130) it sends.
+EXTRA_IES = {58, 75, 110, 130}
 EXT_CONTAINERS = {"iE-Extensions", "choice-Extensions"}
 CONTAINER_TYPES = {"ProtocolIE-Container", "ProtocolIE-SingleContainer", "ProtocolIE-Field",
                    "ProtocolExtensionContainer", "ProtocolExtensionField"}
 TIERS = {"M": "reached from mandatory IEs (and from the fixed components of the types reached)",
          "R": "also reached from optional IEs with criticality reject in messages the AMF receives;\n"
-              "#   an AMF that does not comprehend such an IE must reject the procedure (TS 38.413 10.3.4-10.3.5)",
+              "#   an AMF that does not comprehend such an IE must reject the procedure (TS 38.413 10.3.4-10.3.5);\n"
+              "#   and from the optional IEs the SMF needs (EXTRA_IES)",
          "O": "also reached from the remaining optional IEs",
          "X": "also reached through iE-Extensions / choice-Extensions rows"}
 TIER_ORDER = "MROX"
@@ -47,6 +51,17 @@ def find(name):
         if not mod_name.startswith("_") and name in mod:
             return mod[name]
     raise KeyError(name)
+
+
+def procedures():
+    """(PDU kind index, procedure code) -> message type name, from NGAP-ELEMENTARY-PROCEDURES."""
+    val = GLOBAL.MOD["NGAP-PDU-Descriptions"]["NGAP-ELEMENTARY-PROCEDURES"]._val
+    out = {}
+    for row in list(val["root"]) + list(val["ext"] or []):
+        for kind, key in enumerate(("InitiatingMessage", "SuccessfulOutcome", "UnsuccessfulOutcome")):
+            if key in row:
+                out[(kind, row["procedureCode"])] = ref_name(row[key])
+    return out
 
 
 def ie_names():
@@ -149,7 +164,7 @@ def render(obj):
 
 
 def wanted(row, tier, inbound):
-    if row["presence"] == "mandatory" or tier in "OX":
+    if row["presence"] == "mandatory" or tier in "OX" or row["id"] in EXTRA_IES:
         return True
     return tier == "R" and inbound and row["criticality"] == "reject"
 

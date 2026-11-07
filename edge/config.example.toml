@@ -1,0 +1,44 @@
+# The edge's configuration: the capture bench of test-vectors/capture/NOTES.md.
+# Every key is required except [[subscriber]], which repeats.
+
+[kernel]
+path = "build/kernel"   # built with `bend kernel/main.bend -o build/kernel`
+port = 7000             # the kernel listens here on 127.0.0.1
+
+[n2]
+address = "10.33.0.11"  # SCTP listener for the gNB, port 38412
+
+[n4]
+smf = "10.33.0.12"      # our PFCP address, UDP 8805
+upf = "10.33.0.20"      # eUPF's N4 address; datagrams from any other source are dropped
+
+[network]
+mcc = "001"
+mnc = "01"
+amf_region_id = 2
+amf_set_id = 1
+amf_pointer = 0
+tac = 1
+amf_name = "speck-amf0"
+
+[slice]
+sst = 1
+dnn = "internet"
+ue_pool = "10.45.0.0/16"
+dns = "8.8.8.8"
+upf_n3 = "10.33.0.20"   # where the gNB sends GTP-U
+
+[suci]
+private_key = "582f931fcf8f2b7f911debb6224f71e72b9d4a62eed38d129ffd778c3016d36a"  # Profile A, test key only
+key_id = 1
+
+[nas]
+ciphering = [2]         # NEA ids in order of preference; NEA0 would allow a downgrade
+integrity = [2]         # NIA ids in order of preference
+
+[[subscriber]]
+supi = "001010000000001"
+k = "465b5ce8b199b49faa5f0a2ee238a6bc"
+opc = "e8ed289deba952e4283b54e88e6183ca"
+amf = "8000"
+sqn = "000000000040"

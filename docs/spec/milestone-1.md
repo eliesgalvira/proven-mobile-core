@@ -19,8 +19,11 @@ eUPF  <-------- UDP 8805 / PFCP ---+
 ## The step function
 
 ```
-Kernel.step(state: State, event: Event, entropy: Bytes32) -> State & List<Action>
+Kernel.step(state: State, event: Event, entropy: Bytes32) -> Step
+Kernel.frames(step: Step) -> List<Action>
 ```
+
+`Step` holds the new state and semantic actions that name the UE context they come from, so laws can talk about them. `Kernel.frames` renders those actions as the frame protocol's actions.
 
 - Total, pure, no `@unsafe`. Every law about procedures is a law about `step`.
 - `entropy` is 32 bytes of fresh OS randomness that the edge attaches to every event. The kernel never asks for randomness any other way. It uses entropy for RAND, 5G-TMSI and TEID/SEID choice.
