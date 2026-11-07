@@ -149,8 +149,8 @@ def Guard.retries(g: Guard) -> U32:
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
 # security mode, T3550 setting up the context, and the wait for the gNB's UE
 # Context Release Complete), so no context waits forever. Created is a context
-# the InitialUEMessage has just made, before its first procedure; every outcome
-# of that message replaces it, so no stored context is in it. The SUPI a SUCI
+# the InitialUEMessage has just made, before its first procedure places it;
+# no stored context is in it (amf.contexts.guarded). The SUPI a SUCI
 # de-conceals to stays in Authenticating, out of the SUPI index, until 5G-AKA
 # verifies it.
 type Phase is Data:
@@ -178,6 +178,16 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       None{}
     case Releasing{guard}:
       Some{guard}
+
+# Registered, or waiting under its guard; Created is neither.
+def Phase.guarded(p: Phase) -> Bool:
+  match p:
+    case Created{}:
+      False{}
+    case Registered{ctx}:
+      True{}
+    case other:
+      Tb.Table.present(Guard, Phase.guard(other))
 
 def Phase.with_guard(p: Phase, g: Guard) -> Phase:
   match p:
@@ -326,13 +336,13 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
     case Active{}:
       None{}
 
-# A session still waiting on eUPF or the gNB, so its guard runs.
-def SPhase.pending(p: SPhase) -> Bool:
+# eUPF knows a session exactly when it is past Creating.
+def SPhase.knows(p: SPhase, +known: Bool) -> Bool:
   match p:
-    case Active{}:
-      False{}
+    case Creating{guard, pti, accept}:
+      Bool.not(known)
     case _:
-      True{}
+      known
 
 # The UP function's SEID, the sequence number of the PFCP request pending, the phase.
 type SVar is Data:
@@ -411,6 +421,10 @@ def Session.seq(s: Session) -> U32:
 
 def Session.phase(s: Session) -> SPhase:
   SVar.phase(Session.var(s))
+
+# eUPF knows a session once it has answered with its UP SEID, eight octets.
+def Session.known(s: Session) -> Bool:
+  Nat.is_eq(List.length(&2, U32, Session.up_seid(s)), 8n)
 
 # The PFCP association with eUPF, which the SMF starts: being asked for (T1
 # running, so many tries), paused after too many tries, or up (heartbeats).
@@ -624,6 +638,14 @@ def Ues.unique(ues: Tb.Table(Ue)) -> Bool:
     case (+key, +u) <> +more:
       Bool.and(Ues.clear(key, u, more), Ues.unique(more))
 
+# Every context is registered or waits under its guard.
+def Ues.guarded(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, u) <> more:
+      Bool.and(Phase.guarded(Ue.phase(u)), Ues.guarded(more))
+
 type Sieve is Data:
   Others{assoc: U32}
   Clear{key: U32, u: Ue}
@@ -710,6 +732,14 @@ def Sessions.owned(sessions: Tb.Table(Session), +ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (k, s) <> more:
       Bool.and(Tb.Table.has(Ue, Session.ue(s), ues), Sessions.owned(more, ues))
+
+# eUPF knows every session past Creating and none being created.
+def Sessions.known(sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      True{}
+    case (k, +s) <> more:
+      Bool.and(SPhase.knows(Session.phase(s), Session.known(s)), Sessions.known(more))
 
 # Which sessions to keep: those of other UEs, those of one UE, those whose UE
 # exists, the orphans, those clear of a session, the victims of one, all but a key.
