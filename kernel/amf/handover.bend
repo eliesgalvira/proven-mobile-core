@@ -65,9 +65,9 @@ def Ho.handed_ies(ts: List<&2, S.Tunnel>) -> List<&2, Fr.Ie>:
 def Ho.command(key: U32, ran: B.Bytes(), ts: List<&2, S.Tunnel>, container: B.Bytes()) -> B.Bytes():
   N.Ngap.pdu(Fr.Pdu.successful(), G.Proc.HandoverPreparation(), Fr.Criticality.reject(), List.append(&2, Fr.Ie, Ho.ids(key, ran, Fr.Criticality.reject()), N.Ngap.ie(G.Id.HandoverType(), Fr.Criticality.reject(), Ho.intra()) <> List.append(&2, Fr.Ie, Ho.handed_ies(ts), [N.Ngap.ie(G.Id.TargetToSource_TransparentContainer(), Fr.Criticality.reject(), G.TargetToSource_TransparentContainer.write(container, 0n, []))])))
 
-# Handover Preparation Failure (§9.2.3.3).
-def Ho.preparation_failure(key: U32, ran: B.Bytes(), cause: G.Cause) -> B.Bytes():
-  N.Ngap.pdu(Fr.Pdu.unsuccessful(), G.Proc.HandoverPreparation(), Fr.Criticality.reject(), List.append(&2, Fr.Ie, Ho.ids(key, ran, Fr.Criticality.ignore()), [N.Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))]))
+# Handover Preparation Failure (§9.2.3.3) to the UE's owner, the source.
+def Ho.preparation_failure(+key: U32, +ue: S.Ue, cause: G.Cause) -> N.Act:
+  N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, N.Ngap.pdu(Fr.Pdu.unsuccessful(), G.Proc.HandoverPreparation(), Fr.Criticality.reject(), List.append(&2, Fr.Ie, Ho.ids(key, S.Ue.ran_id(ue), Fr.Criticality.ignore()), [N.Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))]))}
 
 # Handover Cancel Acknowledge (§9.2.3.12).
 def Ho.cancel_ack(key: U32, ran: B.Bytes()) -> B.Bytes():
@@ -77,16 +77,11 @@ def Ho.cancel_ack(key: U32, ran: B.Bytes()) -> B.Bytes():
 def Ho.dl_status(key: U32, ran: B.Bytes(), container: G.RANStatusTransfer_TransparentContainer) -> B.Bytes():
   N.Ngap.pdu(Fr.Pdu.initiating(), G.Proc.DownlinkRANStatusTransfer(), Fr.Criticality.ignore(), List.append(&2, Fr.Ie, Ho.ids(key, ran, Fr.Criticality.reject()), [N.Ngap.ie(G.Id.RANStatusTransfer_TransparentContainer(), Fr.Criticality.reject(), G.RANStatusTransfer_TransparentContainer.write(container, 0n, []))]))
 
-# UE Context Release Command by AMF-UE-NGAP-ID alone, for a target that has
-# not given its RAN-UE-NGAP-ID.
-def Ho.release_amf(key: U32, cause: G.Cause) -> B.Bytes():
-  N.Ngap.pdu(Fr.Pdu.initiating(), G.Proc.UEContextRelease(), Fr.Criticality.reject(), [N.Ngap.ie(G.Id.UE_NGAP_IDs(), Fr.Criticality.reject(), G.UE_NGAP_IDs.write(G.UE_NGAP_IDs_aMF_UE_NGAP_ID{N.Ngap.big(key)}, 0n, [])), N.Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))])
-
 # The target released: by AMF-UE-NGAP-ID before it answered, by both IDs after.
 def Ho.drop(+key: U32, leg: S.Leg, cause: G.Cause) -> List<&2, N.Act>:
   match leg:
     case S.Asked{t}:
-      [N.UeSend{t, Ho.stream(), key, Ho.release_amf(key, cause)}]
+      [N.UeSend{t, Ho.stream(), key, N.Ngap.release_command(G.UE_NGAP_IDs_aMF_UE_NGAP_ID{N.Ngap.big(key)}, cause)}]
     case S.Acked{t, r, s, ts}:
       [N.Release{t, s, key, r, cause}]
 
@@ -102,7 +97,7 @@ def Ho.leg_drop(+key: U32, p: S.Phase, cause: G.Cause) -> List<&2, N.Act>:
 # -----------
 
 def Ho.fail(+key: U32, +ue: S.Ue, cause: G.Cause) -> N.GOut():
-  (S.Keep{}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.preparation_failure(key, S.Ue.ran_id(ue), cause)}, N.Note{F.Warn{}, "NGAP: Handover Required refused"}])
+  (S.Keep{}, [Ho.preparation_failure(key, ue, cause), N.Note{F.Warn{}, "NGAP: Handover Required refused"}])
 
 def Ho.listed(+psi: U32, items: G.PDUSessionResourceListHORqd()) -> Bool:
   match items:
@@ -273,7 +268,7 @@ def Ho.ack(+st: S.State, +assoc: U32, +stream: U32, v: V.HandoverRequestAcknowle
 def Ho.failure_phase(+assoc: U32, +key: U32, +ue: S.Ue, cause: G.Cause, p: S.Phase) -> N.GOut():
   match p:
     case S.Handover{guard, ctx, nh, source, S.Asked{t}}:
-      (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.preparation_failure(key, S.Ue.ran_id(ue), cause)}, N.TimerCancel{key}, N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}])
+      (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [Ho.preparation_failure(key, ue, cause), N.TimerCancel{key}, N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}])
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
 
@@ -401,9 +396,9 @@ def Ho.status(+st: S.State, +assoc: U32, v: V.UplinkRANStatusTransfer.View) -> N
 def Ho.expiry(+key: U32, +ue: S.Ue, leg: S.Leg) -> List<&2, N.Act>:
   match leg:
     case S.Asked{t}:
-      [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.preparation_failure(key, S.Ue.ran_id(ue), Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry()))}, N.UeSend{t, Ho.stream(), key, Ho.release_amf(key, Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry()))}]
+      Ho.preparation_failure(key, ue, Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry())) <> Ho.drop(key, S.Asked{t}, Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry()))
     case S.Acked{t, r, s, ts}:
-      [N.Release{t, s, key, r, Ho.radio(G.CauseRadioNetwork.tngrelocoverall_expiry())}]
+      Ho.drop(key, S.Acked{t, r, s, ts}, Ho.radio(G.CauseRadioNetwork.tngrelocoverall_expiry()))
 
 # A guard at its retry limit releases the context, as in every phase.
 def Ho.expired(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg, ok: Bool) -> N.GOut():
@@ -422,7 +417,7 @@ def Ho.expired(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg, ok
 def Ho.lost(+k: U32, +u: S.Ue, leg: S.Leg) -> List<&2, N.Act>:
   match leg:
     case S.Asked{t}:
-      [N.UeSend{S.Ue.assoc(u), S.Ue.stream(u), k, Ho.preparation_failure(k, S.Ue.ran_id(u), Ho.radio(G.CauseRadioNetwork.ho_failure_in_target_5GC_ngran_node_or_target_system()))}]
+      [Ho.preparation_failure(k, u, Ho.radio(G.CauseRadioNetwork.ho_failure_in_target_5GC_ngran_node_or_target_system()))]
     case S.Acked{t, r, s, ts}:
       []
 

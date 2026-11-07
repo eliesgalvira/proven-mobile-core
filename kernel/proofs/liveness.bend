@@ -719,7 +719,7 @@ def Lv.by_psi(+ue: U32, +psi: U32, +ss: Tb.Table(S.Session)) -> {Lv.found(S.Sess
 def Lw.ho_drop(+st: S.State, +key: U32, +leg: S.Leg, +cause: G.Cause, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.acts(st, Ho.Ho.drop(key, leg, cause)) == True{} : Bool}:
   match leg:
     case S.Asked{+t}:
-      Lv.cons(st, N.UeSend{t, Ho.Ho.stream(), key, Ho.Ho.release_amf(key, cause)}, [], ek, {==})
+      Lv.cons(st, N.UeSend{t, Ho.Ho.stream(), key, N.Ngap.release_command(G.UE_NGAP_IDs_aMF_UE_NGAP_ID{N.Ngap.big(key)}, cause)}, [], ek, {==})
     case S.Acked{+t, +r, +s, ts}:
       Lv.cons(st, N.Release{t, s, key, r, cause}, [], ek, {==})
 
@@ -1734,11 +1734,10 @@ def Lw.release_complete_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.
 def Lw.ho_expiry(+st: S.State, +key: U32, +ue: S.Ue, +leg: S.Leg, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.acts(st, Ho.Ho.expiry(key, ue, leg)) == True{} : Bool}:
   match leg:
     case S.Asked{+t}:
-      +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.preparation_failure(key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry()))}
-      +y : N.Act = N.UeSend{t, Ho.Ho.stream(), key, Ho.Ho.release_amf(key, Ho.Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry()))}
-      Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], ek, {==}))
-    case S.Acked{+t, +r, +s, ts}:
-      Lv.cons(st, N.Release{t, s, key, r, Ho.Ho.radio(G.CauseRadioNetwork.tngrelocoverall_expiry())}, [], ek, {==})
+      +c = Ho.Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry())
+      Lv.cons(st, Ho.Ho.preparation_failure(key, ue, c), Ho.Ho.drop(key, S.Asked{t}, c), ek, Lw.ho_drop(st, key, S.Asked{t}, c, ek))
+    case S.Acked{+t, +r, +s, +ts}:
+      Lw.ho_drop(st, key, S.Acked{t, r, s, ts}, Ho.Ho.radio(G.CauseRadioNetwork.tngrelocoverall_expiry()), ek)
 
 def Lw.ho_expired(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +ok: Bool, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.expired(key, ue, ctx, nh, leg, ok)) == True{} : Bool}:
   match ok:
@@ -2368,7 +2367,7 @@ def Lw.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.
 # under its own key by Handover Notify.
 
 def Lw.ho_fail(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.fail(key, ue, cause)) == True{} : Bool}:
-  +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.preparation_failure(key, S.Ue.ran_id(ue), cause)}
+  +x = Ho.Ho.preparation_failure(key, ue, cause)
   +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Required refused"}
   Lv.leaf(st, S.Keep{}, [x, n], Lv.cons(st, x, [n], ek, {==}), {==})
 
@@ -2549,7 +2548,7 @@ def Lw.ho_failure_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause:
     case S.Handover{guard, +ctx, +nh, source, leg}:
       match leg:
         case S.Asked{t}:
-          +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.preparation_failure(key, S.Ue.ran_id(ue), cause)}
+          +x = Ho.Ho.preparation_failure(key, ue, cause)
           +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}
           Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, None{}}}, [x, N.TimerCancel{key}, n], Lv.cons(st, x, [N.TimerCancel{key}, n], ek, {==}), {==})
         case S.Acked{t, r, s, ts}:
@@ -2797,7 +2796,7 @@ def Lv.quiet_sessions(+tx: S.Tx, +st: S.State, +e: {Lv.quiet(tx) == True{} : Boo
 def Lw.ho_lost(+st: S.State, +k: U32, +u: S.Ue, +leg: S.Leg, +ek: {Lv.live(st, k) == True{} : Bool}) -> {Lv.acts(st, Ho.Ho.lost(k, u, leg)) == True{} : Bool}:
   match leg:
     case S.Asked{t}:
-      Lv.cons(st, N.UeSend{S.Ue.assoc(u), S.Ue.stream(u), k, Ho.Ho.preparation_failure(k, S.Ue.ran_id(u), Ho.Ho.radio(G.CauseRadioNetwork.ho_failure_in_target_5GC_ngran_node_or_target_system()))}, [], ek, {==})
+      Lv.cons(st, Ho.Ho.preparation_failure(k, u, Ho.Ho.radio(G.CauseRadioNetwork.ho_failure_in_target_5GC_ngran_node_or_target_system())), [], ek, {==})
     case S.Acked{t, r, s, ts}:
       {==}
 

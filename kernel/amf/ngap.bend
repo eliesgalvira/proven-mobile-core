@@ -235,8 +235,10 @@ def Ngap.ue_key(+bs: B.Bytes()) -> Maybe<&2, U32>:
 def Ngap.dl_nas_transport(key: U32, ran_id: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), G.Proc.DownlinkNASTransport(), Fr.Criticality.ignore(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.NAS_PDU(), Fr.Criticality.reject(), G.NAS_PDU.write(nas, 0n, []))])
 
-def Ngap.release_command(key: U32, ran_id: B.Bytes(), cause: G.Cause) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.initiating(), G.Proc.UEContextRelease(), Fr.Criticality.reject(), [Ngap.ie(G.Id.UE_NGAP_IDs(), Fr.Criticality.reject(), G.UE_NGAP_IDs.write(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, 0n, [])), Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))])
+# UE Context Release Command, naming the UE by both IDs or, to a gNB that has
+# not given its RAN-UE-NGAP-ID, by AMF-UE-NGAP-ID alone.
+def Ngap.release_command(ids: G.UE_NGAP_IDs, cause: G.Cause) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.initiating(), G.Proc.UEContextRelease(), Fr.Criticality.reject(), [Ngap.ie(G.Id.UE_NGAP_IDs(), Fr.Criticality.reject(), G.UE_NGAP_IDs.write(ids, 0n, [])), Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))])
 
 # The UE security capability IE (TS 24.501 §9.11.3.54: 5G EA, 5G IA, EPS EEA,
 # EPS EIA octets, the first bit algorithm 0) as NGAP bit strings, whose first
@@ -374,7 +376,7 @@ def Act.render(a: Act) -> F.Action:
     case PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
       Ngap.send(assoc, stream, Ngap.pdu_setup(key, ran_id, psi, sst, nas, transfer))
     case Release{assoc, stream, key, ran_id, cause}:
-      Ngap.send(assoc, stream, Ngap.release_command(key, ran_id, cause))
+      Ngap.send(assoc, stream, Ngap.release_command(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, cause))
     case SwitchAck{assoc, stream, key, ran_id, caps, nh, switched, released, sst}:
       Ngap.send(assoc, stream, Ngap.path_switch_ack(key, ran_id, caps, nh, switched, released, sst))
     case SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
