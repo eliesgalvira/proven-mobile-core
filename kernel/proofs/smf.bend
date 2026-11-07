@@ -26,23 +26,6 @@ import ./kernel.bend as PK
 
 # Proofs of the SMF's laws (ticket 19).
 
-def Bool.or_false_l(a: Bool, b: Bool, e: {Bool.or(a, b) == False{} : Bool}) -> {a == False{} : Bool}:
-  match a:
-    case True{}:
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.true_false(e))
-    case False{}:
-      {==}
-
-def Bool.or_false_r(a: Bool, b: Bool, e: {Bool.or(a, b) == False{} : Bool}) -> {b == False{} : Bool}:
-  match a:
-    case True{}:
-      Empty.absurd({b == False{} : Bool}, P.Refute.true_false(e))
-    case False{}:
-      e
-
-# Session sieves
-# --------------
-
 def SClear.keep(+key: U32, +s: S.Session, +k: U32, +t: S.Session, +rest: Tb.Table(S.Session), b: Bool, e1: {Bool.not(S.SRow.conflicts(key, s, k, t)) == True{} : Bool}, ih: {S.Sessions.clear(key, s, rest) == True{} : Bool}) -> {S.Sessions.clear(key, s, Tb.Table.keep(S.Session, k, t, rest, b)) == True{} : Bool}:
   match b:
     case True{}:
@@ -88,7 +71,7 @@ def SClear.own(+key: U32, +s: S.Session, sessions: Tb.Table(S.Session)) -> {S.Se
 def SDel.keep(+key: U32, +k: U32, +t: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(U32.is_eq(k, key)) == b : Bool}, ih: {Tb.Table.get(S.Session, key, rest) == None{} : Maybe<&2, S.Session>}) -> {Tb.Table.get(S.Session, key, Tb.Table.keep(S.Session, k, t, rest, b)) == None{} : Maybe<&2, S.Session>}:
   match b:
     case True{}:
-      ne = Equal.sym(Bool, U32.is_eq(k, key), False{}, PK.Bool.not_true(U32.is_eq(k, key), eb))
+      ne = Equal.sym(Bool, U32.is_eq(k, key), False{}, P.Bool.not_true(U32.is_eq(k, key), eb))
       %ne : {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, key, rest), _) == None{} : Maybe<&2, S.Session>}
       ih
     case False{}:
@@ -292,10 +275,10 @@ def L.smf.ip_pool.unique(st, ev, entropy, e):
   ({==}, Step.sunique(st, ev, entropy, e))
 
 def L.smf.teid.unique(key, s, k, t, more, e):
-  e1 = PK.Bool.not_true(S.SRow.conflicts(key, s, k, t), P.Bool.and_true_l(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, more), e))
-  e2 = Bool.or_false_r(U32.is_eq(k, key), S.Session.conflicts(s, t), e1)
-  e3 = Bool.or_false_r(U32.is_eq(S.Session.ip(s), S.Session.ip(t)), Bool.or(U32.is_eq(S.Session.teid(s), S.Session.teid(t)), Bool.and(U32.is_eq(S.Session.ue(s), S.Session.ue(t)), U32.is_eq(S.Session.psi(s), S.Session.psi(t)))), e2)
-  Bool.or_false_l(U32.is_eq(S.Session.teid(s), S.Session.teid(t)), Bool.and(U32.is_eq(S.Session.ue(s), S.Session.ue(t)), U32.is_eq(S.Session.psi(s), S.Session.psi(t))), e3)
+  e1 = P.Bool.not_true(S.SRow.conflicts(key, s, k, t), P.Bool.and_true_l(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, more), e))
+  e2 = P.Bool.or_false_r(U32.is_eq(k, key), S.Session.conflicts(s, t), e1)
+  e3 = P.Bool.or_false_r(U32.is_eq(S.Session.ip(s), S.Session.ip(t)), Bool.or(U32.is_eq(S.Session.teid(s), S.Session.teid(t)), Bool.and(U32.is_eq(S.Session.ue(s), S.Session.ue(t)), U32.is_eq(S.Session.psi(s), S.Session.psi(t)))), e2)
+  P.Bool.or_false_l(U32.is_eq(S.Session.teid(s), S.Session.teid(t)), Bool.and(U32.is_eq(S.Session.ue(s), S.Session.ue(t)), U32.is_eq(S.Session.psi(s), S.Session.psi(t))), e3)
 
 # Packet filters and the ePCO
 # ---------------------------

@@ -71,6 +71,27 @@ def Bool.and_true_r(a: Bool, b: Bool, e: {Bool.and(a, b) == True{} : Bool}) -> {
     case False{}:
       Empty.absurd({b == True{} : Bool}, Refute.bool(e))
 
+def Bool.not_true(a: Bool, e: {Bool.not(a) == True{} : Bool}) -> {a == False{} : Bool}:
+  match a:
+    case True{}:
+      Empty.absurd({True{} == False{} : Bool}, Refute.bool(e))
+    case False{}:
+      {==}
+
+def Bool.or_false_l(a: Bool, b: Bool, e: {Bool.or(a, b) == False{} : Bool}) -> {a == False{} : Bool}:
+  match a:
+    case True{}:
+      Empty.absurd({True{} == False{} : Bool}, Refute.bool(Equal.sym(Bool, True{}, False{}, e)))
+    case False{}:
+      {==}
+
+def Bool.or_false_r(a: Bool, b: Bool, e: {Bool.or(a, b) == False{} : Bool}) -> {b == False{} : Bool}:
+  match a:
+    case True{}:
+      Empty.absurd({b == False{} : Bool}, Refute.bool(Equal.sym(Bool, True{}, False{}, e)))
+    case False{}:
+      e
+
 # Cmp
 # ---
 

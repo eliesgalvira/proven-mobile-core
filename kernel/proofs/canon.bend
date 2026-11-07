@@ -16,13 +16,6 @@ def Fst(-A: Type, -B: Type, p: A & B) -> A:
   (a, b) = p
   a
 
-def Bool.false_of_not(x: Bool, e: {Bool.not(x) == True{} : Bool}) -> {x == False{} : Bool}:
-  match x:
-    case True{}:
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.bool(e))
-    case False{}:
-      {==}
-
 def Nat.not_lt_of_le(a: Nat, b: Nat, e: {Nat.is_le(a, b) == True{} : Bool}) -> {Nat.is_lt(b, a) == False{} : Bool}:
   match a b:
     case 0n 0n:
@@ -817,7 +810,7 @@ def XBits.sx.out(+n: Nat, +rem: Nat, +rest: Ap.Bits(), +bs: Ap.Bits(), +r3: Nat,
       eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
       er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
       %ev : Canon(True{} <> rest, Ap.XBits.write(n, _, rem, bits2), rem2, Ap.XBits.after(n, _, rem))
-      sne = Equal.sym(Bool, Nat.is_eq(List.length(&2, Bool, bs), n), False{}, Bool.false_of_not(Nat.is_eq(List.length(&2, Bool, bs), n), eok))
+      sne = Equal.sym(Bool, Nat.is_eq(List.length(&2, Bool, bs), n), False{}, P.Bool.not_true(Nat.is_eq(List.length(&2, Bool, bs), n), eok))
       %sne : Canon(True{} <> rest, Ap.XBits.body(bs, rem, bits2, _), rem2, Ap.XBits.rem(bs, rem, _))
       (Equal.cong(Ap.Bits(), Ap.Bits(), l => True{} <> l, rest, Ap.UBitStr.write(bs, Ap.Rem.next(rem), bits2), (%eb : {rest == Ap.UBitStr.write(bs, Ap.Rem.next(rem), _) : Ap.Bits()}; u1)), (%er : {_ == Ap.Rem.add(List.length(&2, Bool, bs), 0n) : Nat}; u2))
 
@@ -858,7 +851,7 @@ def XBitStr.sx.out(+al: Bool, +n: Nat, +lo: Nat, +diff: Nat, +rem: Nat, +rest: A
       eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
       er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
       %ev : Canon(True{} <> rest, Ap.XBitStr.write(al, n, lo, diff, _, rem, bits2), rem2, Ap.XBitStr.after(_, rem))
-      sne = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), False{}, Bool.false_of_not(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), eok))
+      sne = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), False{}, P.Bool.not_true(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), eok))
       %sne : Canon(True{} <> rest, Ap.XBitStr.body(al, n, lo, bs, rem, bits2, _), rem2, Ap.XBitStr.after(bs, rem))
       (Equal.cong(Ap.Bits(), Ap.Bits(), l => True{} <> l, rest, Ap.UBitStr.write(bs, Ap.Rem.next(rem), bits2), (%eb : {rest == Ap.UBitStr.write(bs, Ap.Rem.next(rem), _) : Ap.Bits()}; u1)), (%er : {_ == Ap.Rem.add(List.length(&2, Bool, bs), 0n) : Nat}; u2))
 
@@ -899,7 +892,7 @@ def XStr.sx.out(+al: Bool, +n: Nat, +lo: Nat, +diff: Nat, +rem: Nat, +rest: Ap.B
       eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
       er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
       %ev : Canon(True{} <> rest, Ap.XStr.write(al, n, lo, diff, _, rem, bits2), rem2, Ap.XStr.after(rem))
-      sne = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, U32, s)), False{}, Bool.false_of_not(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), eok))
+      sne = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, U32, s)), False{}, P.Bool.not_true(Ap.Size.valid(lo, diff, List.length(&2, U32, s)), eok))
       %sne : Canon(True{} <> rest, Ap.XStr.body(al, n, lo, s, rem, bits2, _), rem2, Ap.XStr.after(rem))
       (Equal.cong(Ap.Bits(), Ap.Bits(), l => True{} <> l, rest, Ap.UStr.write(s, Ap.Rem.next(rem), bits2), (%eb : {rest == Ap.UStr.write(s, Ap.Rem.next(rem), _) : Ap.Bits()}; u1)), (%er : {_ == 0n : Nat}; u2))
 

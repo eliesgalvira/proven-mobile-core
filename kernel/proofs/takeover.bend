@@ -25,7 +25,6 @@ import ../amf/route.bend as R
 import ../LAWS.bend as L
 import ./lib.bend as P
 import ./kernel.bend as PK
-import ./smf.bend as PS
 
 # Proof of amf.takeover.authenticated (ticket 32). A transaction keeps the row
 # of another association's context unless it puts a context that conflicts
@@ -296,14 +295,14 @@ def Tk.spares(+k: U32, +u: S.Ue, +tx: S.Tx) -> Bool:
 def Tk.spared(+k: U32, +u: S.Ue, +tx: S.Tx, +ues: Tb.Table(S.Ue), +eu: {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}, +es: {Tk.spares(k, u, tx) == True{} : Bool}) -> {Tb.Table.get(S.Ue, k, Tk.ues(tx, ues)) == Some{u} : Maybe<&2, S.Ue>}:
   match tx:
     case S.Put{+key, +v}:
-      nc = PK.Bool.not_true(S.Row.conflicts(key, v, k, u), es)
-      nk = PS.Bool.or_false_l(U32.is_eq(k, key), S.Ue.conflicts(v, u), nc)
+      nc = P.Bool.not_true(S.Row.conflicts(key, v, k, u), es)
+      nk = P.Bool.or_false_l(U32.is_eq(k, key), S.Ue.conflicts(v, u), nc)
       sk = Equal.trans(Bool, U32.is_eq(key, k), U32.is_eq(k, key), False{}, U32.sym(key, k), nk)
       ssk = Equal.sym(Bool, U32.is_eq(key, k), False{}, sk)
       %ssk : {Tb.Table.hit(S.Ue, v, Tb.Table.get(S.Ue, k, S.Ues.sift(S.Clear{key, v}, ues)), _) == Some{u} : Maybe<&2, S.Ue>}
       Sift.get(S.Clear{key, v}, k, u, ues, eu, es)
     case S.Rephase{+key, +phase}:
-      Rephase.get(key, phase, k, u, ues, eu, PK.Bool.not_true(U32.is_eq(k, key), es))
+      Rephase.get(key, phase, k, u, ues, eu, P.Bool.not_true(U32.is_eq(k, key), es))
     case S.Del{+key}:
       Sift.get(S.Except{key}, k, u, ues, eu, es)
     case S.Both{+a, +b}:
@@ -438,7 +437,7 @@ def Tk.keeps_clear(+k: U32, +u: S.Ue, +key: U32, +v: S.Ue, +nk: {U32.is_eq(k, ke
 def Tk.apart(+u: S.Ue, +v: S.Ue, +c: Bool, +ec: {c == False{} : Bool}, +h: {Bool.or(Bool.not(S.Ue.conflicts(v, u)), c) == True{} : Bool}) -> {S.Ue.conflicts(v, u) == False{} : Bool}:
   match c:
     case False{}:
-      PK.Bool.not_true(S.Ue.conflicts(v, u), PK.Bool.or_false(Bool.not(S.Ue.conflicts(v, u)), h))
+      P.Bool.not_true(S.Ue.conflicts(v, u), PK.Bool.or_false(Bool.not(S.Ue.conflicts(v, u)), h))
     case True{}:
       Empty.absurd({S.Ue.conflicts(v, u) == False{} : Bool}, P.Refute.true_false(ec))
 
@@ -480,7 +479,7 @@ def Tk.place(+k: U32, +u: S.Ue, +st: S.State, +key: U32, +v: S.Ue, +eu: {Tb.Tabl
 def Uniq.clear_row(+key0: U32, +w: S.Ue, +k: U32, +u: S.Ue, +k1: U32, +x: S.Ue, +more: Tb.Table(S.Ue), +hk: Bool, +ehk: {U32.is_eq(k1, k) == hk : Bool}, +ec: {Bool.and(Bool.not(S.Row.conflicts(key0, w, k1, x)), S.Ues.clear(key0, w, more)) == True{} : Bool}, +eu: {Tb.Table.hit(S.Ue, x, Tb.Table.get(S.Ue, k, more), hk) == Some{u} : Maybe<&2, S.Ue>}, ih: {S.Ues.clear(key0, w, more) == True{} : Bool} -> {Tb.Table.get(S.Ue, k, more) == Some{u} : Maybe<&2, S.Ue>} -> {S.Row.conflicts(key0, w, k, u) == False{} : Bool}) -> {S.Row.conflicts(key0, w, k, u) == False{} : Bool}:
   match hk:
     case True{}:
-      r = PK.Bool.not_true(S.Row.conflicts(key0, w, k1, x), P.Bool.and_true_l(Bool.not(S.Row.conflicts(key0, w, k1, x)), S.Ues.clear(key0, w, more), ec))
+      r = P.Bool.not_true(S.Row.conflicts(key0, w, k1, x), P.Bool.and_true_l(Bool.not(S.Row.conflicts(key0, w, k1, x)), S.Ues.clear(key0, w, more), ec))
       ek = P.U32.eq_of_is_eq(k1, k, ehk)
       %ek : {S.Row.conflicts(key0, w, _, u) == False{} : Bool}
       ex = Some.inj(S.Ue, x, u, eu)
@@ -504,13 +503,13 @@ def Uniq.row(+key: U32, +k: U32, +v: S.Ue, +u: S.Ue, +k0: U32, +w: S.Ue, +more: 
       Empty.absurd({S.Ue.conflicts(v, u) == False{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(k, key), True{}, Equal.sym(Bool, U32.is_eq(k, key), False{}, ne), U32.eq_true(k, key, kk))))
     case True{} False{}:
       ec = P.Bool.and_true_l(S.Ues.clear(k0, w, more), S.Ues.unique(more), eun)
-      r = PS.Bool.or_false_r(U32.is_eq(k, k0), S.Ue.conflicts(w, u), Uniq.clear_get(k0, w, more, k, u, ec, eu))
+      r = P.Bool.or_false_r(U32.is_eq(k, k0), S.Ue.conflicts(w, u), Uniq.clear_get(k0, w, more, k, u, ec, eu))
       ew = Some.inj(S.Ue, w, v, ev)
       %ew : {S.Ue.conflicts(_, u) == False{} : Bool}
       r
     case False{} True{}:
       ec = P.Bool.and_true_l(S.Ues.clear(k0, w, more), S.Ues.unique(more), eun)
-      r = PS.Bool.or_false_r(U32.is_eq(key, k0), S.Ue.conflicts(w, v), Uniq.clear_get(k0, w, more, key, v, ec, ev))
+      r = P.Bool.or_false_r(U32.is_eq(key, k0), S.Ue.conflicts(w, v), Uniq.clear_get(k0, w, more, key, v, ec, ev))
       ew = Some.inj(S.Ue, w, u, eu)
       %ew : {S.Ue.conflicts(v, _) == False{} : Bool}
       Equal.trans(Bool, S.Ue.conflicts(v, w), S.Ue.conflicts(w, v), False{}, Ue.conflicts_sym(v, w), r)
@@ -609,9 +608,9 @@ def Tmsi.row(+t: U32, +k: U32, +u: S.Ue, +k0: U32, +w: S.Ue, +more: Tb.Table(S.U
     case True{}:
       ew = Some.inj(S.Ue, w, u, eu)
       %ew : {S.Maybe.same_u32(Some{t}, S.Ue.tmsi(_)) == False{} : Bool}
-      PS.Bool.or_false_l(S.Maybe.same_u32(Some{t}, S.Ue.tmsi(w)), S.Ues.has_tmsi(t, more), ef)
+      P.Bool.or_false_l(S.Maybe.same_u32(Some{t}, S.Ue.tmsi(w)), S.Ues.has_tmsi(t, more), ef)
     case False{}:
-      ih(PS.Bool.or_false_r(S.Maybe.same_u32(Some{t}, S.Ue.tmsi(w)), S.Ues.has_tmsi(t, more), ef), eu)
+      ih(P.Bool.or_false_r(S.Maybe.same_u32(Some{t}, S.Ue.tmsi(w)), S.Ues.has_tmsi(t, more), ef), eu)
 
 # A 5G-TMSI no context holds is not u's.
 def Tmsi.apart(+t: U32, +ues: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +ef: {S.Ues.has_tmsi(t, ues) == False{} : Bool}, +eu: {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}) -> {S.Maybe.same_u32(Some{t}, S.Ue.tmsi(u)) == False{} : Bool}:
@@ -662,7 +661,7 @@ def Tk.h_secure(+ue: S.Ue, +s: B.Digits(), +g: S.Guard, +c: Sec.Nas.Ctx, +ka: B.
   match ue:
     case S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       +rest = Bool.or(S.Maybe.same_u32(tmsi, S.Ue.tmsi(u)), Bool.and(U32.is_eq(assoc, S.Ue.assoc(u)), B.bytes_eq(ran_id, S.Ue.ran_id(u))))
-      Tk.or_and(S.Maybe.same_bytes(Some{s}, S.Ue.supi(u)), rest, PS.Bool.or_false_r(S.Maybe.same_bytes(supi, S.Ue.supi(u)), rest, h2))
+      Tk.or_and(S.Maybe.same_bytes(Some{s}, S.Ue.supi(u)), rest, P.Bool.or_false_r(S.Maybe.same_bytes(supi, S.Ue.supi(u)), rest, h2))
 
 def Tk.or3(+x: Bool, +y: Bool, +z: Bool, +ex: {x == False{} : Bool}, +ey: {y == False{} : Bool}, +ez: {z == False{} : Bool}) -> {Bool.or(x, Bool.or(y, z)) == False{} : Bool}:
   sx = Equal.sym(Bool, x, False{}, ex)
@@ -680,8 +679,8 @@ def Tk.h_tmsi(+ue: S.Ue, +p: S.Phase, +dl: B.Bytes(), +reg: B.Bytes(), +t: U32, 
       +x = S.Maybe.same_bytes(supi, S.Ue.supi(u))
       +z = Bool.and(U32.is_eq(assoc, S.Ue.assoc(u)), B.bytes_eq(ran_id, S.Ue.ran_id(u)))
       +yz = Bool.or(S.Maybe.same_u32(tmsi, S.Ue.tmsi(u)), z)
-      ex = PS.Bool.or_false_l(x, yz, h2)
-      ez = PS.Bool.or_false_r(S.Maybe.same_u32(tmsi, S.Ue.tmsi(u)), z, PS.Bool.or_false_r(x, yz, h2))
+      ex = P.Bool.or_false_l(x, yz, h2)
+      ez = P.Bool.or_false_r(S.Maybe.same_u32(tmsi, S.Ue.tmsi(u)), z, P.Bool.or_false_r(x, yz, h2))
       Tk.h_apart(S.Ue{assoc, ran_id, stream, supi, Some{t}, reg, ngksi, p, dl}, u, Tk.or3(x, S.Maybe.same_u32(Some{t}, S.Ue.tmsi(u)), z, ex, ht, ez))
 
 # A context the InitialUEMessage creates has no SUPI, no 5G-TMSI and another association.
@@ -1220,7 +1219,7 @@ def W.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +k_amf: B
       +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.registration_accept(c, tmsi))
       +ph : S.Phase = S.ContextSetup{S.Guard{timer, 0}, Sec.Nas.Protected.ctx(p), False{}, False{}}
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi)
-      ht = Tmsi.apart(tmsi, S.State.ues(st), k, u, PK.Bool.not_true(S.Ues.has_tmsi(tmsi, S.State.ues(st)), hm), eu)
+      ht = Tmsi.apart(tmsi, S.State.ues(st), k, u, P.Bool.not_true(S.Ues.has_tmsi(tmsi, S.State.ues(st)), hm), eu)
       Tk.ok_join(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, ue2), (S.BumpTimer{}, [N.TimerCancel{S.Guard.timer(guard)}, N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.Gmm.caps(ue2), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(p)}, N.TimerStart{Some{key}, timer, Gmm.Gmm.guard_ms()}]), Tk.place(k, u, st, key, ue2, eu, Tk.h_tmsi(ue, ph, Sec.Nas.Protected.msg(p), reg, tmsi, u, h2, ht)))
     case Some{c} None{}:
       W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2)

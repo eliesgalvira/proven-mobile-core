@@ -29,13 +29,6 @@ def Bool.or_false(a: Bool, e: {Bool.or(a, False{}) == True{} : Bool}) -> {a == T
     case False{}:
       Empty.absurd({False{} == True{} : Bool}, P.Refute.bool(e))
 
-def Bool.not_true(a: Bool, e: {Bool.not(a) == True{} : Bool}) -> {a == False{} : Bool}:
-  match a:
-    case True{}:
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.bool(e))
-    case False{}:
-      {==}
-
 # An undecodable PDU
 # ------------------
 
@@ -110,7 +103,7 @@ def Clear.own(+key: U32, +u: S.Ue, ues: Tb.Table(S.Ue)) -> {S.Ues.clear(key, u, 
 def Del.keep(+key: U32, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(U32.is_eq(k, key)) == b : Bool}, ih: {Tb.Table.get(S.Ue, key, rest) == None{} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, key, Tb.Table.keep(S.Ue, k, v, rest, b)) == None{} : Maybe<&2, S.Ue>}:
   match b:
     case True{}:
-      ne = Equal.sym(Bool, U32.is_eq(k, key), False{}, Bool.not_true(U32.is_eq(k, key), eb))
+      ne = Equal.sym(Bool, U32.is_eq(k, key), False{}, P.Bool.not_true(U32.is_eq(k, key), eb))
       %ne : {Tb.Table.hit(S.Ue, v, Tb.Table.get(S.Ue, key, rest), _) == None{} : Maybe<&2, S.Ue>}
       ih
     case False{}:
@@ -126,7 +119,7 @@ def Del.get(+key: U32, ues: Tb.Table(S.Ue)) -> {Tb.Table.get(S.Ue, key, S.Ues.de
 def Sessions.drop_keep(+ue: U32, +k: U32, +s: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(U32.is_eq(S.Session.ue(s), ue)) == b : Bool}, ih: {S.Sessions.sift(S.SOf{ue}, rest) == [] : Tb.Table(S.Session)}) -> {S.Sessions.sift(S.SOf{ue}, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : Tb.Table(S.Session)}:
   match b:
     case True{}:
-      ne = Equal.sym(Bool, U32.is_eq(S.Session.ue(s), ue), False{}, Bool.not_true(U32.is_eq(S.Session.ue(s), ue), eb))
+      ne = Equal.sym(Bool, U32.is_eq(S.Session.ue(s), ue), False{}, P.Bool.not_true(U32.is_eq(S.Session.ue(s), ue), eb))
       %ne : {Tb.Table.keep(S.Session, k, s, S.Sessions.sift(S.SOf{ue}, rest), _) == [] : Tb.Table(S.Session)}
       ih
     case False{}:

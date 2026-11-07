@@ -12,30 +12,6 @@ import ../ngap/gen/proofs.bend as PG
 def View.absurd(-A: Data, -G: Type, err: B.Err, v: A, e: {Fail{err} == Done{v} : Result<&2, &2, B.Err, A>}) -> G:
   Empty.absurd(G, P.Refute.fail_done(B.Err, A, err, v, e))
 
-def Bool.not_true(x: Bool, e: {Bool.not(x) == True{} : Bool}) -> {x == False{} : Bool}:
-  match x:
-    case True{}:
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.bool(e))
-    case False{}:
-      {==}
-
-def Bool.or_false_l(a: Bool, +b: Bool, e: {Bool.or(a, b) == False{} : Bool}) -> {a == False{} : Bool}:
-  match a:
-    case True{}:
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.true_false(e))
-    case False{}:
-      {==}
-
-def Bool.or_false_r(a: Bool, +b: Bool, e: {Bool.or(a, b) == False{} : Bool}) -> {b == False{} : Bool}:
-  match a:
-    case True{}:
-      Empty.absurd({b == False{} : Bool}, P.Refute.true_false(e))
-    case False{}:
-      e
-
-# The prelude
-# -----------
-
 def Prelude.dv(+known: List<&2, U32>, +ies: List<&2, Fr.Ie>, ok: Bool, eok: {Bool.and(Fr.Ies.no_dups(ies), Fr.Ies.comprehended(known, ies)) == ok : Bool}, +ies2: List<&2, Fr.Ie>, +e: {Fr.View.gate(ies, ok) == Done{ies2} : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}) -> {Fr.Ies.no_dups(ies) == True{} : Bool}:
   match ok:
     case False{}:
@@ -54,9 +30,9 @@ def Ies.absent(+id: U32, ies: List<&2, Fr.Ie>, +h: {Fr.Ies.has(id, ies) == False
     case Nil{}:
       {==}
     case +ie <> +more:
-      sh = Equal.sym(Bool, U32.is_eq(Fr.Ie.id(ie), id), False{}, Bool.or_false_l(U32.is_eq(Fr.Ie.id(ie), id), Fr.Ies.has(id, more), h))
+      sh = Equal.sym(Bool, U32.is_eq(Fr.Ie.id(ie), id), False{}, P.Bool.or_false_l(U32.is_eq(Fr.Ie.id(ie), id), Fr.Ies.has(id, more), h))
       %sh : {Fr.Ies.bump(Fr.Ies.occurrences(id, more), _) == 0n : Nat}
-      Ies.absent(id, more, Bool.or_false_r(U32.is_eq(Fr.Ie.id(ie), id), Fr.Ies.has(id, more), h))
+      Ies.absent(id, more, P.Bool.or_false_r(U32.is_eq(Fr.Ie.id(ie), id), Fr.Ies.has(id, more), h))
 
 def Ies.lookup_step(+id: U32, +ie: Fr.Ie, +more: List<&2, Fr.Ie>, +v: B.Bytes(), hit: Bool, +eh: {U32.is_eq(Fr.Ie.id(ie), id) == hit : Bool}, +nd: {Bool.and(Bool.not(Fr.Ies.has(Fr.Ie.id(ie), more)), Fr.Ies.no_dups(more)) == True{} : Bool}, +e: {Fr.Ies.pick(ie, Fr.Ies.lookup(id, more), hit) == Some{v} : Maybe<&2, B.Bytes()>}, ih: {Fr.Ies.lookup(id, more) == Some{v} : Maybe<&2, B.Bytes()>} -> {Fr.Ies.occurrences(id, more) == 1n : Nat}) -> {Fr.Ies.bump(Fr.Ies.occurrences(id, more), U32.is_eq(Fr.Ie.id(ie), id)) == 1n : Nat}:
   match hit:
@@ -64,7 +40,7 @@ def Ies.lookup_step(+id: U32, +ie: Fr.Ie, +more: List<&2, Fr.Ie>, +v: B.Bytes(),
       seh = Equal.sym(Bool, U32.is_eq(Fr.Ie.id(ie), id), True{}, eh)
       %seh : {Fr.Ies.bump(Fr.Ies.occurrences(id, more), _) == 1n : Nat}
       hid = P.U32.eq_of_is_eq(Fr.Ie.id(ie), id, eh)
-      h0 = Bool.not_true(Fr.Ies.has(Fr.Ie.id(ie), more), P.Bool.and_true_l(Bool.not(Fr.Ies.has(Fr.Ie.id(ie), more)), Fr.Ies.no_dups(more), nd))
+      h0 = P.Bool.not_true(Fr.Ies.has(Fr.Ie.id(ie), more), P.Bool.and_true_l(Bool.not(Fr.Ies.has(Fr.Ie.id(ie), more)), Fr.Ies.no_dups(more), nd))
       Equal.cong(Nat, Nat, n => 1n+n, Fr.Ies.occurrences(id, more), 0n, Ies.absent(id, more, (%hid : {Fr.Ies.has(_, more) == False{} : Bool}; h0)))
     case False{}:
       seh = Equal.sym(Bool, U32.is_eq(Fr.Ie.id(ie), id), False{}, eh)

@@ -1619,7 +1619,7 @@ def Lv.no_response(+st: S.State, +as: List<&2, N.Act>, +h: {Lv.acts(st, as) == T
     case Nil{}:
       {==}
     case +a <> +more:
-      +hn = PK.Bool.not_true(N.Ngap.is_ng_setup_response(a), P.Bool.and_true_l(Bool.not(N.Ngap.is_ng_setup_response(a)), Lv.tag(st, N.Act.ue(a)), P.Bool.and_true_l(Lv.act(st, a), Lv.acts(st, more), h)))
+      +hn = P.Bool.not_true(N.Ngap.is_ng_setup_response(a), P.Bool.and_true_l(Bool.not(N.Ngap.is_ng_setup_response(a)), Lv.tag(st, N.Act.ue(a)), P.Bool.and_true_l(Lv.act(st, a), Lv.acts(st, more), h)))
       sn = Equal.sym(Bool, N.Ngap.is_ng_setup_response(a), False{}, hn)
       %sn : {Bool.or(_, N.Ngap.any_ng_setup_response(more)) == False{} : Bool}
       Lv.no_response(st, more, P.Bool.and_true_r(Lv.act(st, a), Lv.acts(st, more), h))
