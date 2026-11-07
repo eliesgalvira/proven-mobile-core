@@ -12,102 +12,6 @@ import ../table.bend as Tb
 # The AMF's NGAP side: PDUs in, PDUs out. Non-UE-associated signalling uses
 # stream 0 (TS 38.412 §7).
 
-# Procedure codes and protocol IE ids (TS 38.413 §9.4.7)
-# --------------------------------------------------------
-
-def Proc.downlink_nas_transport() -> U32:
-  4
-
-def Proc.error_indication() -> U32:
-  9
-
-def Proc.initial_context_setup() -> U32:
-  14
-
-def Proc.initial_ue_message() -> U32:
-  15
-
-def Proc.ng_setup() -> U32:
-  21
-
-def Proc.pdu_session_resource_setup() -> U32:
-  29
-
-def Proc.ue_context_release() -> U32:
-  41
-
-def Proc.ue_context_release_request() -> U32:
-  42
-
-def Proc.uplink_nas_transport() -> U32:
-  46
-
-def Id.allowed_nssai() -> U32:
-  0
-
-def Id.amf_name() -> U32:
-  1
-
-def Id.amf_ue_ngap_id() -> U32:
-  10
-
-def Id.cause() -> U32:
-  15
-
-def Id.guami() -> U32:
-  28
-
-def Id.nas_pdu() -> U32:
-  38
-
-def Id.pdu_session_resource_failed_to_setup_list_su_res() -> U32:
-  58
-
-def Id.pdu_session_resource_setup_list_su_req() -> U32:
-  74
-
-def Id.plmn_support_list() -> U32:
-  80
-
-def Id.ran_ue_ngap_id() -> U32:
-  85
-
-def Id.relative_amf_capacity() -> U32:
-  86
-
-def Id.rrc_establishment_cause() -> U32:
-  90
-
-def Id.security_key() -> U32:
-  94
-
-def Id.served_guami_list() -> U32:
-  96
-
-def Id.ue_aggregate_maximum_bit_rate() -> U32:
-  110
-
-def Id.ue_ngap_ids() -> U32:
-  114
-
-def Id.ue_security_capabilities() -> U32:
-  119
-
-def Id.user_location_information() -> U32:
-  121
-
-def Id.pdu_session_aggregate_maximum_bit_rate() -> U32:
-  130
-
-def Id.pdu_session_type() -> U32:
-  134
-
-def Id.qos_flow_setup_request_list() -> U32:
-  136
-
-def Id.ul_ngu_up_tnl_information() -> U32:
-  139
-
 # Building PDUs
 # -------------
 
@@ -123,7 +27,7 @@ def Ngap.send(assoc: U32, stream: U32, bytes: B.Bytes()) -> F.Action:
 
 # Error Indication (§9.2.7.1) over the association, cause only.
 def Ngap.error_indication(assoc: U32, cause: G.Cause) -> F.Action:
-  Ngap.send(assoc, 0, Ngap.pdu(Fr.Pdu.initiating(), Proc.error_indication(), Fr.Criticality.ignore(), [Ngap.ie(Id.cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))]))
+  Ngap.send(assoc, 0, Ngap.pdu(Fr.Pdu.initiating(), G.Proc.ErrorIndication(), Fr.Criticality.ignore(), [Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))]))
 
 def Ngap.protocol(index: U32) -> G.Cause:
   G.Cause_protocol{Ap.Root{index}}
@@ -158,10 +62,10 @@ def NgSetup.slices(cfg: S.Cfg) -> G.SliceSupportList():
 
 # NG Setup Response: AMF name, served GUAMI, relative capacity 255, PLMN support.
 def NgSetup.response(+cfg: S.Cfg) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.successful(), Proc.ng_setup(), Fr.Criticality.reject(), [Ngap.ie(Id.amf_name(), Fr.Criticality.reject(), G.AMFName.write(S.Cfg.name(cfg), 0n, [])), Ngap.ie(Id.served_guami_list(), Fr.Criticality.reject(), G.ServedGUAMIList.write([G.ServedGUAMIItem{NgSetup.guami(cfg), None{}, None{}}], 0n, [])), Ngap.ie(Id.relative_amf_capacity(), Fr.Criticality.ignore(), G.RelativeAMFCapacity.write(255, 0n, [])), Ngap.ie(Id.plmn_support_list(), Fr.Criticality.reject(), G.PLMNSupportList.write([G.PLMNSupportItem{S.Cfg.plmn(cfg), NgSetup.slices(cfg), None{}}], 0n, []))])
+  Ngap.pdu(Fr.Pdu.successful(), G.Proc.NGSetup(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMFName(), Fr.Criticality.reject(), G.AMFName.write(S.Cfg.name(cfg), 0n, [])), Ngap.ie(G.Id.ServedGUAMIList(), Fr.Criticality.reject(), G.ServedGUAMIList.write([G.ServedGUAMIItem{NgSetup.guami(cfg), None{}, None{}}], 0n, [])), Ngap.ie(G.Id.RelativeAMFCapacity(), Fr.Criticality.ignore(), G.RelativeAMFCapacity.write(255, 0n, [])), Ngap.ie(G.Id.PLMNSupportList(), Fr.Criticality.reject(), G.PLMNSupportList.write([G.PLMNSupportItem{S.Cfg.plmn(cfg), NgSetup.slices(cfg), None{}}], 0n, []))])
 
 def NgSetup.failure(misc: U32) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.unsuccessful(), Proc.ng_setup(), Fr.Criticality.reject(), [Ngap.ie(Id.cause(), Fr.Criticality.ignore(), G.Cause.write(Ngap.misc(misc), 0n, []))])
+  Ngap.pdu(Fr.Pdu.unsuccessful(), G.Proc.NGSetup(), Fr.Criticality.reject(), [Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(Ngap.misc(misc), 0n, []))])
 
 def NgSetup.answer(cfg: S.Cfg, supported: Bool) -> B.Bytes():
   match supported:
@@ -184,25 +88,25 @@ def Ngap.is_procedure(kind: Nat, code: Nat, k: U32, c: U32) -> Bool:
 
 # The messages Route tells apart, by PDU kind and procedure code.
 def Ngap.is_ng_setup(+kind: Nat, +code: Nat) -> Bool:
-  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), Proc.ng_setup())
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.NGSetup())
 
 def Ngap.is_initial_ue_message(+kind: Nat, +code: Nat) -> Bool:
-  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), Proc.initial_ue_message())
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.InitialUEMessage())
 
 def Ngap.is_uplink_nas_transport(+kind: Nat, +code: Nat) -> Bool:
-  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), Proc.uplink_nas_transport())
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.UplinkNASTransport())
 
 def Ngap.is_initial_context_setup_response(+kind: Nat, +code: Nat) -> Bool:
-  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), Proc.initial_context_setup())
+  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), G.Proc.InitialContextSetup())
 
 def Ngap.is_ue_context_release_request(+kind: Nat, +code: Nat) -> Bool:
-  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), Proc.ue_context_release_request())
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.UEContextReleaseRequest())
 
 def Ngap.is_ue_context_release_complete(+kind: Nat, +code: Nat) -> Bool:
-  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), Proc.ue_context_release())
+  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), G.Proc.UEContextRelease())
 
 def Ngap.is_pdu_session_resource_setup_response(+kind: Nat, +code: Nat) -> Bool:
-  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), Proc.pdu_session_resource_setup())
+  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), G.Proc.PDUSessionResourceSetup())
 
 # What the laws ask of a reply: whether an action carries an NG Setup Response,
 # and whether a request's supported TA list names the configured PLMN and TAC.
@@ -300,10 +204,10 @@ def Ngap.ue_key(+bs: B.Bytes()) -> Maybe<&2, U32>:
   Ngap.key_if(bs, Nat.is_le(List.length(&2, U32, bs), 4n))
 
 def Ngap.dl_nas_transport(key: U32, ran_id: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.initiating(), Proc.downlink_nas_transport(), Fr.Criticality.ignore(), [Ngap.ie(Id.amf_ue_ngap_id(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(Id.ran_ue_ngap_id(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(Id.nas_pdu(), Fr.Criticality.reject(), G.NAS_PDU.write(nas, 0n, []))])
+  Ngap.pdu(Fr.Pdu.initiating(), G.Proc.DownlinkNASTransport(), Fr.Criticality.ignore(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.NAS_PDU(), Fr.Criticality.reject(), G.NAS_PDU.write(nas, 0n, []))])
 
 def Ngap.release_command(key: U32, ran_id: B.Bytes(), cause: G.Cause) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.initiating(), Proc.ue_context_release(), Fr.Criticality.reject(), [Ngap.ie(Id.ue_ngap_ids(), Fr.Criticality.reject(), G.UE_NGAP_IDs.write(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, 0n, [])), Ngap.ie(Id.cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))])
+  Ngap.pdu(Fr.Pdu.initiating(), G.Proc.UEContextRelease(), Fr.Criticality.reject(), [Ngap.ie(G.Id.UE_NGAP_IDs(), Fr.Criticality.reject(), G.UE_NGAP_IDs.write(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, 0n, [])), Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(cause, 0n, []))])
 
 # The UE security capability IE (TS 24.501 §9.11.3.54: 5G EA, 5G IA, EPS EEA,
 # EPS EIA octets, the first bit algorithm 0) as NGAP bit strings, whose first
@@ -325,7 +229,7 @@ def Ngap.ue_caps(+caps: B.Bytes()) -> G.UESecurityCapabilities:
   G.UESecurityCapabilities{Ngap.alg_bits(Ngap.cap_byte(caps, 0n)), Ngap.alg_bits(Ngap.cap_byte(caps, 1n)), Ngap.alg_bits(Ngap.cap_byte(caps, 2n)), Ngap.alg_bits(Ngap.cap_byte(caps, 3n)), None{}}
 
 def Ngap.ics_request(key: U32, ran_id: B.Bytes(), +cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.initiating(), Proc.initial_context_setup(), Fr.Criticality.reject(), [Ngap.ie(Id.amf_ue_ngap_id(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(Id.ran_ue_ngap_id(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(Id.guami(), Fr.Criticality.reject(), G.GUAMI.write(NgSetup.guami(cfg), 0n, [])), Ngap.ie(Id.allowed_nssai(), Fr.Criticality.reject(), G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{S.Cfg.sst(cfg), None{}, None{}}, None{}}], 0n, [])), Ngap.ie(Id.ue_security_capabilities(), Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(Id.security_key(), Fr.Criticality.reject(), G.SecurityKey.write(Ap.unpack(k_gnb), 0n, [])), Ngap.ie(Id.nas_pdu(), Fr.Criticality.ignore(), G.NAS_PDU.write(nas, 0n, []))])
+  Ngap.pdu(Fr.Pdu.initiating(), G.Proc.InitialContextSetup(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.GUAMI(), Fr.Criticality.reject(), G.GUAMI.write(NgSetup.guami(cfg), 0n, [])), Ngap.ie(G.Id.AllowedNSSAI(), Fr.Criticality.reject(), G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{S.Cfg.sst(cfg), None{}, None{}}, None{}}], 0n, [])), Ngap.ie(G.Id.UESecurityCapabilities(), Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(G.Id.SecurityKey(), Fr.Criticality.reject(), G.SecurityKey.write(Ap.unpack(k_gnb), 0n, [])), Ngap.ie(G.Id.NAS_PDU(), Fr.Criticality.ignore(), G.NAS_PDU.write(nas, 0n, []))])
 
 # 1 Gbit/s, the aggregate maximum bit rate of a UE and of its one session.
 def Ngap.gbps() -> G.BitRate():
@@ -336,7 +240,7 @@ def Ngap.ue_ambr() -> Ap.Bits():
 
 # PDU Session Resource Setup Request: one session, its NAS-PDU and transfer, the UE's AMBR.
 def Ngap.pdu_setup(key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.initiating(), Proc.pdu_session_resource_setup(), Fr.Criticality.reject(), [Ngap.ie(Id.amf_ue_ngap_id(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(Id.ran_ue_ngap_id(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(Id.pdu_session_resource_setup_list_su_req(), Fr.Criticality.reject(), G.PDUSessionResourceSetupListSUReq.write([G.PDUSessionResourceSetupItemSUReq{psi, Some{nas}, G.S_NSSAI{sst, None{}, None{}}, transfer, None{}}], 0n, [])), Ngap.ie(Id.ue_aggregate_maximum_bit_rate(), Fr.Criticality.ignore(), Ngap.ue_ambr())])
+  Ngap.pdu(Fr.Pdu.initiating(), G.Proc.PDUSessionResourceSetup(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.PDUSessionResourceSetupListSUReq(), Fr.Criticality.reject(), G.PDUSessionResourceSetupListSUReq.write([G.PDUSessionResourceSetupItemSUReq{psi, Some{nas}, G.S_NSSAI{sst, None{}, None{}}, transfer, None{}}], 0n, [])), Ngap.ie(G.Id.UEAggregateMaximumBitRate(), Fr.Criticality.ignore(), Ngap.ue_ambr())])
 
 # What a step asks for, rendered to frame actions for the edge (Kernel.frames). Each
 # action names the UE context it is built from, if any: the AMF-UE-NGAP-ID of
@@ -430,7 +334,7 @@ def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
 def Ngap.is_ng_setup_response(a: Act) -> Bool:
   match a:
     case Setup{assoc, answer}:
-      Ngap.header_is(answer, 32, Proc.ng_setup())
+      Ngap.header_is(answer, 32, G.Proc.NGSetup())
     case _:
       False{}
 

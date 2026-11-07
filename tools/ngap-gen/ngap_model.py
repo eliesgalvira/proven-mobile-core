@@ -81,13 +81,10 @@ def procedures():
     return out
 
 
-def ie_names():
-    """ProtocolIE-ID value -> constant name, from NGAP-Constants."""
-    names = {}
-    for name, obj in GLOBAL.MOD["NGAP-Constants"].items():
-        if name.startswith("id-") and obj._typeref is not None and obj._typeref.called[1] == "ProtocolIE-ID":
-            names[obj._val] = name
-    return names
+def constants(typ):
+    """Value -> name of the NGAP-Constants of type typ (ProcedureCode, ProtocolIE-ID)."""
+    return {obj._val: name for name, obj in GLOBAL.MOD["NGAP-Constants"].items()
+            if name.startswith("id-") and obj._typeref is not None and obj._typeref.called[1] == typ}
 
 
 def ref_name(obj):
@@ -235,7 +232,7 @@ def message_ies(msg):
 
 
 def cmd_ies(msgs):
-    names = ie_names()
+    names = constants("ProtocolIE-ID")
     for msg in msgs:
         print(f"== {msg}")
         ies = message_ies(msg)
@@ -277,7 +274,7 @@ def cmd_closure():
     print("#")
     print("# IE rows. 'adds' = named types the IE's value reaches beyond tier M+R")
     print("# (root only, CONTAINING followed), i.e. the cost of comprehending that optional IE.")
-    names = ie_names()
+    names = constants("ProtocolIE-ID")
     for msg in MESSAGES + TRANSFERS:
         if "protocolIEs" not in deref(find(msg))._cont:
             continue
