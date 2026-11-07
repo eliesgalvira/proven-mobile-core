@@ -113,6 +113,24 @@ def Ngap.is_pdu_session_resource_setup_response(+kind: Nat, +code: Nat) -> Bool:
 def Ngap.is_path_switch_request(+kind: Nat, +code: Nat) -> Bool:
   Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.PathSwitchRequest())
 
+def Ngap.is_handover_required(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.HandoverPreparation())
+
+def Ngap.is_handover_request_acknowledge(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), G.Proc.HandoverResourceAllocation())
+
+def Ngap.is_handover_failure(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.unsuccessful(), G.Proc.HandoverResourceAllocation())
+
+def Ngap.is_handover_notify(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.HandoverNotification())
+
+def Ngap.is_handover_cancel(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.HandoverCancel())
+
+def Ngap.is_uplink_ran_status_transfer(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.UplinkRANStatusTransfer())
+
 # What the laws ask of a reply: whether an action carries an NG Setup Response,
 # and whether a request's supported TA list names the configured PLMN and TAC.
 # A PDU's first two octets are its kind (in the top bits) and procedure code.
@@ -122,6 +140,12 @@ def Ngap.header_is(bs: B.Bytes(), +k: U32, +c: U32) -> Bool:
       Bool.and(U32.is_eq(b0, k), U32.is_eq(b1, c))
     case _:
       False{}
+
+# The gNB's Global RAN Node ID, as NGAP encodes it.
+def NgSetup.node(v: V.NGSetupRequest.View) -> B.Bytes():
+  match v:
+    case V.NGSetupRequest.View{globalrannodeid, supportedtalist, defaultpagingdrx}:
+      Ap.pack(G.GlobalRANNodeID.write(globalrannodeid, 0n, []))
 
 def NgSetup.supported_view(config: Maybe<&2, S.Cfg>, v: V.NGSetupRequest.View) -> Bool:
   match config:
@@ -305,10 +329,13 @@ def Ngap.security_context(c: S.Nh) -> G.SecurityContext:
     case S.Nh{k_amf, nh, ncc}:
       G.SecurityContext{ncc, Ap.unpack(nh), None{}}
 
+def Ngap.allowed_nssai(sst: B.Bytes()) -> Ap.Bits():
+  G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{sst, None{}, None{}}, None{}}], 0n, [])
+
 # Path Switch Request Acknowledge: the UE security capabilities the AMF holds,
 # the next {NH, NCC}, the sessions switched and those released, the slice.
 def Ngap.path_switch_ack(key: U32, ran_id: B.Bytes(), +caps: B.Bytes(), nh: S.Nh, switched: List<&2, U32>, released: List<&2, U32>, sst: B.Bytes()) -> B.Bytes():
-  Ngap.pdu(Fr.Pdu.successful(), G.Proc.PathSwitchRequest(), Fr.Criticality.reject(), List.append(&2, Fr.Ie, [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.UESecurityCapabilities(), Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(G.Id.SecurityContext(), Fr.Criticality.reject(), G.SecurityContext.write(Ngap.security_context(nh), 0n, [])), Ngap.ie(G.Id.PDUSessionResourceSwitchedList(), Fr.Criticality.ignore(), G.PDUSessionResourceSwitchedList.write(Ngap.switched(switched), 0n, []))], List.append(&2, Fr.Ie, Ngap.released_ies(released), [Ngap.ie(G.Id.AllowedNSSAI(), Fr.Criticality.reject(), G.AllowedNSSAI.write([G.AllowedNSSAI_Item{G.S_NSSAI{sst, None{}, None{}}, None{}}], 0n, []))])))
+  Ngap.pdu(Fr.Pdu.successful(), G.Proc.PathSwitchRequest(), Fr.Criticality.reject(), List.append(&2, Fr.Ie, [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.UESecurityCapabilities(), Fr.Criticality.reject(), G.UESecurityCapabilities.write(Ngap.ue_caps(caps), 0n, [])), Ngap.ie(G.Id.SecurityContext(), Fr.Criticality.reject(), G.SecurityContext.write(Ngap.security_context(nh), 0n, [])), Ngap.ie(G.Id.PDUSessionResourceSwitchedList(), Fr.Criticality.ignore(), G.PDUSessionResourceSwitchedList.write(Ngap.switched(switched), 0n, []))], List.append(&2, Fr.Ie, Ngap.released_ies(released), [Ngap.ie(G.Id.AllowedNSSAI(), Fr.Criticality.reject(), Ngap.allowed_nssai(sst))])))
 
 # Path Switch Request Failure: the PDU sessions named, released with a cause.
 def Ngap.path_switch_failure(amf: B.Bytes(), ran_id: B.Bytes(), psis: List<&2, U32>, cause: G.Cause) -> B.Bytes():
@@ -317,7 +344,8 @@ def Ngap.path_switch_failure(amf: B.Bytes(), ran_id: B.Bytes(), psis: List<&2, U
 # What a step asks for, rendered to frame actions for the edge (Kernel.frames). Each
 # action names the UE context it is built from, if any: the AMF-UE-NGAP-ID of
 # a UE-associated NGAP message, the UE of a PFCP session message or a guard. A
-# Path Switch Request Failure that echoes the request's IDs names none.
+# Path Switch Request Failure that echoes the request's IDs names none. A
+# UE-associated message of the N2 handover goes out built (UeSend).
 type Act is Data:
   DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
   Ics{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()}
@@ -325,6 +353,7 @@ type Act is Data:
   Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
   SwitchAck{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), caps: B.Bytes(), nh: S.Nh, switched: List<&2, U32>, released: List<&2, U32>, sst: B.Bytes()}
   SwitchFail{assoc: U32, stream: U32, ue: Maybe<&2, U32>, amf: B.Bytes(), ran_id: B.Bytes(), psis: List<&2, U32>, cause: G.Cause}
+  UeSend{assoc: U32, stream: U32, key: U32, bytes: B.Bytes()}
   ErrInd{assoc: U32, cause: G.Cause}
   Setup{assoc: U32, answer: B.Bytes()}
   Pfcp{ue: Maybe<&2, U32>, bytes: B.Bytes()}
@@ -350,6 +379,8 @@ def Act.render(a: Act) -> F.Action:
       Ngap.send(assoc, stream, Ngap.path_switch_ack(key, ran_id, caps, nh, switched, released, sst))
     case SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
       Ngap.send(assoc, stream, Ngap.path_switch_failure(amf, ran_id, psis, cause))
+    case UeSend{assoc, stream, key, bytes}:
+      Ngap.send(assoc, stream, bytes)
     case ErrInd{assoc, cause}:
       Ngap.error_indication(assoc, cause)
     case Setup{assoc, answer}:
@@ -377,6 +408,8 @@ def Act.ue(a: Act) -> Maybe<&2, U32>:
       Some{key}
     case SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
       ue
+    case UeSend{assoc, stream, key, bytes}:
+      Some{key}
     case Pfcp{ue, bytes}:
       ue
     case TimerStart{ue, timer, ms}:
@@ -391,6 +424,21 @@ def Act.stops(+k: U32, a: Act) -> Bool:
       U32.is_eq(t, k)
     case _:
       False{}
+
+# Some action starts the timer k.
+def Act.starts(+k: U32, a: Act) -> Bool:
+  match a:
+    case TimerStart{ue, t, ms}:
+      U32.is_eq(t, k)
+    case _:
+      False{}
+
+def Acts.starts(+k: U32, acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Act.starts(k, a), Acts.starts(k, more))
 
 def Acts.stops(+k: U32, acts: List<&2, Act>) -> Bool:
   match acts:
@@ -559,4 +607,4 @@ def NgSetup.of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetu
     case Fail{e}:
       (st, Ngap.bad_view(assoc))
     case Done{+v}:
-      (S.State.ready(st, assoc, NgSetup.supported_view(S.State.config(st), v)), [Setup{assoc, NgSetup.reply(S.State.config(st), v)}])
+      (S.State.ready(st, assoc, NgSetup.node(v), NgSetup.supported_view(S.State.config(st), v)), [Setup{assoc, NgSetup.reply(S.State.config(st), v)}])

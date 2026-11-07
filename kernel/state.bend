@@ -171,11 +171,32 @@ def Nh.next(c: Nh) -> Nh:
 def Nh.initial(k_amf: B.Bytes(), k_gnb: B.Bytes()) -> Nh:
   Nh.next(Nh{k_amf, k_gnb, 0})
 
+# A target gNB's downlink NG-U tunnel for a PDU session: the session's
+# identity, the TEID and the IPv4 address.
+type Tunnel is Data:
+  Tunnel{psi: U32, teid: U32, addr: B.Bytes()}
+
+# The target of an N2 handover (TS 23.502 §4.9.1.3), which knows the UE by
+# its AMF-UE-NGAP-ID too: asked with Handover Request, or acknowledged, having
+# acknowledged with its RAN-UE-NGAP-ID, on a stream, with its tunnels.
+type Leg is Data:
+  Asked{target: U32}
+  Acked{target: U32, ran: B.Bytes(), stream: U32, tunnels: List<&2, Tunnel>}
+
+def Leg.target(l: Leg) -> U32:
+  match l:
+    case Asked{target}:
+      target
+    case Acked{target, ran, stream, tunnels}:
+      target
+
 # Where a UE is in registration. Every phase but Registered carries the guard
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
 # security mode, T3550 setting up the context, the Path Switch waiting on the
-# UPF, and the wait for the gNB's UE Context Release Complete), so no context
-# waits forever. Created is a context
+# UPF, the N2 handover's preparation then completion, and the wait for the
+# gNB's UE Context Release Complete), so no context waits forever. A UE in N2
+# handover stays with its owner, the source, until the target's Handover
+# Notify; it holds the {NH, NCC} sent to the target. Created is a context
 # the InitialUEMessage has just made, before its first procedure places it;
 # no stored context is in it (amf.contexts.guarded). The SUPI a SUCI
 # de-conceals to stays in Authenticating, out of the SUPI index, until 5G-AKA
@@ -188,6 +209,7 @@ type Phase is Data:
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
   Registered{ctx: N.Nas.Ctx, nh: Nh}
   Switching{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, released: List<&2, U32>}
+  Handover{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, leg: Leg}
   Releasing{guard: Guard}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
@@ -205,6 +227,8 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
     case Registered{ctx, nh}:
       None{}
     case Switching{guard, ctx, nh, released}:
+      Some{guard}
+    case Handover{guard, ctx, nh, leg}:
       Some{guard}
     case Releasing{guard}:
       Some{guard}
@@ -235,6 +259,8 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       Registered{ctx, nh}
     case Switching{guard, ctx, nh, released}:
       Switching{g, ctx, nh, released}
+    case Handover{guard, ctx, nh, leg}:
+      Handover{g, ctx, nh, leg}
     case Releasing{guard}:
       Releasing{g}
 
@@ -249,6 +275,8 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
       Some{ctx}
     case Switching{guard, ctx, nh, released}:
       Some{ctx}
+    case Handover{guard, ctx, nh, leg}:
+      Some{ctx}
     case _:
       None{}
 
@@ -262,8 +290,18 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
       Registered{c, nh}
     case Switching{guard, ctx, nh, released}:
       Switching{guard, c, nh, released}
+    case Handover{guard, ctx, nh, leg}:
+      Handover{guard, c, nh, leg}
     case other:
       other
+
+# The target of the N2 handover pending, if any.
+def Phase.pending(p: Phase) -> Maybe<&2, U32>:
+  match p:
+    case Handover{guard, ctx, nh, leg}:
+      Some{Leg.target(leg)}
+    case _:
+      None{}
 
 # A UE context: the NGAP association that owns it, its RAN-UE-NGAP-ID there,
 # the stream its InitialUEMessage arrived on, its SUPI once authenticated and
@@ -351,6 +389,31 @@ def Ue.moved(u: Ue, a: U32, r: B.Bytes(), s: U32, p: Phase) -> Ue:
   match u:
     case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       Ue{a, r, s, supi, tmsi, reg, ngksi, p, last_dl}
+
+def Ue.pending(m: Maybe<&2, Ue>) -> Maybe<&2, U32>:
+  match m:
+    case None{}:
+      None{}
+    case Some{u}:
+      Phase.pending(Ue.phase(u))
+
+# Both absent, or both owned by the same association under the same RAN-UE-NGAP-ID.
+def Ue.same_owner(a: Maybe<&2, Ue>, b: Maybe<&2, Ue>) -> Bool:
+  match a b:
+    case None{} None{}:
+      True{}
+    case Some{+u} Some{+v}:
+      Bool.and(U32.is_eq(Ue.assoc(u), Ue.assoc(v)), B.bytes_eq(Ue.ran_id(u), Ue.ran_id(v)))
+    case _ _:
+      False{}
+
+# Present, and owned by association a.
+def Ue.on(m: Maybe<&2, Ue>, +a: U32) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{u}:
+      U32.is_eq(Ue.assoc(u), a)
 
 # A PDU session, keyed by its local SEID. Its identity (the UE, the PDU
 # session identity, the UE IPv4 address, the N3 uplink TEID) never changes;
@@ -509,7 +572,7 @@ def N4.with_link(n: N4, l: Link) -> N4:
       N4{recovery, l}
 
 type State is Data:
-  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, n4: N4}
+  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: Tb.Table(B.Bytes()), ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, n4: N4}
 
 def State.initial() -> State:
   State{None{}, [], [], [], [], 1, 1, N4{[], Idle{}}}
@@ -524,7 +587,7 @@ def State.subs(st: State) -> List<&2, Au.Subscriber>:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       subs
 
-def State.assocs(st: State) -> List<&2, U32>:
+def State.assocs(st: State) -> Tb.Table(B.Bytes()):
   match st:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       assocs
@@ -556,55 +619,43 @@ def State.n4(st: State) -> N4:
 
 # Associations
 # ------------
-# The NGAP associations whose gNB has completed NG Setup (TS 38.413 §8.7.1).
+# The NGAP associations whose gNB has completed NG Setup (TS 38.413 §8.7.1),
+# each with its Global RAN Node ID as NGAP encodes it.
 
-def Assocs.has(+a: U32, as: List<&2, U32>) -> Bool:
-  match as:
-    case Nil{}:
-      False{}
-    case b <> more:
-      Bool.or(U32.is_eq(b, a), Assocs.has(a, more))
+def Assocs.has(+a: U32, as: Tb.Table(B.Bytes())) -> Bool:
+  Tb.Table.has(B.Bytes(), a, as)
 
-def Assocs.add_if(a: U32, as: List<&2, U32>, known: Bool) -> List<&2, U32>:
-  match known:
-    case True{}:
-      as
-    case False{}:
-      a <> as
-
-def Assocs.add(+a: U32, +as: List<&2, U32>) -> List<&2, U32>:
-  Assocs.add_if(a, as, Assocs.has(a, as))
-
-def Assocs.drop_if(b: U32, rest: List<&2, U32>, hit: Bool) -> List<&2, U32>:
-  match hit:
-    case True{}:
-      rest
-    case False{}:
-      b <> rest
-
-def Assocs.drop(+a: U32, as: List<&2, U32>) -> List<&2, U32>:
+def Assocs.drop(+a: U32, as: Tb.Table(B.Bytes())) -> Tb.Table(B.Bytes()):
   match as:
     case Nil{}:
       []
-    case +b <> more:
-      Assocs.drop_if(b, Assocs.drop(a, more), U32.is_eq(b, a))
+    case (+b, id) <> more:
+      Tb.Table.keep(B.Bytes(), b, id, Assocs.drop(a, more), Bool.not(U32.is_eq(b, a)))
 
-def State.with_assocs(st: State, as: List<&2, U32>) -> State:
+def Assocs.set(+a: U32, id: B.Bytes(), +as: Tb.Table(B.Bytes()), ok: Bool) -> Tb.Table(B.Bytes()):
+  match ok:
+    case True{}:
+      (a, id) <> Assocs.drop(a, as)
+    case False{}:
+      Assocs.drop(a, as)
+
+# The association of the gNB with a Global RAN Node ID, the latest set up.
+def Assocs.of(+id: B.Bytes(), as: Tb.Table(B.Bytes())) -> Maybe<&2, U32>:
+  match as:
+    case Nil{}:
+      None{}
+    case (a, gid) <> more:
+      Tb.Table.hit(U32, a, Assocs.of(id, more), B.bytes_eq(gid, id))
+
+def State.with_assocs(st: State, as: Tb.Table(B.Bytes())) -> State:
   match st:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       State{config, subs, as, ues, sessions, pfcp_seq, next_ue, n4}
 
-def Assocs.set(+a: U32, +as: List<&2, U32>, ok: Bool) -> List<&2, U32>:
-  match ok:
-    case True{}:
-      Assocs.add(a, as)
-    case False{}:
-      Assocs.drop(a, as)
-
 # NG Setup answered: the association is set up when it succeeded, and not
 # otherwise, since a new NG Setup replaces what the last one set up.
-def State.ready(+st: State, +a: U32, ok: Bool) -> State:
-  State.with_assocs(st, Assocs.set(a, State.assocs(st), ok))
+def State.ready(+st: State, +a: U32, id: B.Bytes(), ok: Bool) -> State:
+  State.with_assocs(st, Assocs.set(a, id, State.assocs(st), ok))
 
 # UE contexts of an association
 # -----------------------------

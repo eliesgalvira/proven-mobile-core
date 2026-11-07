@@ -238,6 +238,8 @@ def phase_of(p: S.Phase) -> String:
       "registered"
     case S.Switching{g, ctx, nh, released}:
       "switching"
+    case S.Handover{g, ctx, nh, leg}:
+      "handover"
     case S.Created{}:
       "created"
     case S.Releasing{g}:

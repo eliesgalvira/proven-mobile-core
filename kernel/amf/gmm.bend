@@ -16,6 +16,7 @@ import ../ausf.bend as Au
 import ../smf/n4.bend as Up
 import ../smf/gsm.bend as Gsm
 import ./ngap.bend as N
+import ./handover.bend as Ho
 
 # Registration (TS 24.501 §5.5.1, §5.4.1 to §5.4.3, §5.5.2) and UE context
 # release (TS 38.413 §8.3.2, §8.3.3): the UE is identified by its SUCI,
@@ -607,8 +608,9 @@ def Gmm.retry_if(st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, p: S.Phase,
       Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
 
 # The guard fired: retransmit the last downlink message, or give up and
-# release; a Path Switch the UPF never finished is given up at once; a
-# release the gNB never completed ends here, sessions deleted.
+# release; a Path Switch the UPF never finished is given up at once; an N2
+# handover ends with the UE at its owner; a release the gNB never completed
+# ends here, sessions deleted.
 def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
   match p:
     case S.Created{}:
@@ -625,5 +627,7 @@ def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
       (S.Keep{}, [])
     case S.Switching{guard, ctx, nh, released}:
       Gmm.release(st, key, ue, N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))
+    case S.Handover{+guard, ctx, nh, leg}:
+      Ho.Ho.expired(key, ue, ctx, nh, leg, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
     case S.Releasing{guard}:
       N.Out.also(Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}])

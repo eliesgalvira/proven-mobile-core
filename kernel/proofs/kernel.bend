@@ -559,7 +559,7 @@ def Cfgv.up(st: S.State, assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
 
-def Cfgv.assocs(st: S.State, as: List<&2, U32>) -> {S.State.config(S.State.with_assocs(st, as)) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+def Cfgv.assocs(st: S.State, as: Tb.Table(B.Bytes())) -> {S.State.config(S.State.with_assocs(st, as)) == S.State.config(st) : Maybe<&2, S.Cfg>}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}

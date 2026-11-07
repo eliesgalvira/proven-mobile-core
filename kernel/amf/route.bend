@@ -8,24 +8,25 @@ import ./ngap.bend as N
 import ./gmm.bend as Gmm
 import ../smf/gsm.bend as Gsm
 import ./path_switch.bend as Ps
+import ./handover.bend as Ho
 
 # Incoming NGAP PDUs: decode, then tell the procedures apart by comparing the
 # PDU kind and procedure code in turn, so that a proof can follow each branch.
 # Every UE procedure answers with a transaction; NG Setup alone answers directly.
 
-def Route.d8(st: S.State, +assoc: U32, stream: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+def Route.d8(st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))
     case False{}:
-      (S.Keep{}, N.Ngap.unhandled(assoc))
+      Ho.Ho.route(st, assoc, stream, kind, code, ies)
 
 def Route.d7(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gsm.Gsm.setup_response_of_view(st, assoc, V.PDUSessionResourceSetupResponse.view(ies))
     case False{}:
-      Route.d8(st, assoc, stream, ies, N.Ngap.is_path_switch_request(kind, code))
+      Route.d8(st, assoc, stream, kind, code, ies, N.Ngap.is_path_switch_request(kind, code))
 
 def Route.d6(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:

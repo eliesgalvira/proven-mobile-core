@@ -138,14 +138,17 @@ def Gsm.dl_transport(psi: U32, +sm: B.Bytes()) -> B.Bytes():
 def Gsm.dl(key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, psi: U32, sm: B.Bytes()) -> N.GOut():
   N.Out.dl(key, ue, ctx, Gsm.dl_transport(psi, sm))
 
-# The N2 transfer: the session's AMBR, the N3 tunnel, IPv4, QoS flow 1 (5QI 9,
-# ARP priority 8: a constrained INTEGER is held as its offset from the lower
-# bound, 1 here, so 7).
+# The N2 transfer: the session's AMBR, the N3 tunnel, the IEs given, IPv4,
+# QoS flow 1 (5QI 9, ARP priority 8: a constrained INTEGER is held as its
+# offset from the lower bound, 1 here, so 7).
 def Gsm.flow() -> G.QosFlowSetupRequestItem:
   G.QosFlowSetupRequestItem{Ap.IRoot{1}, G.QosFlowLevelQosParameters{G.QosCharacteristics_nonDynamic5QI{G.NonDynamic5QIDescriptor{Ap.IRoot{9}, None{}, None{}, None{}, None{}}}, G.AllocationAndRetentionPriority{7, Ap.Root{0}, Ap.Root{0}, None{}}, None{}, None{}, None{}, None{}}, None{}, None{}}
 
+def Gsm.transfer_with(cfg: S.Cfg, teid: U32, more: List<&2, Fr.Ie>) -> B.Bytes():
+  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write(N.Ngap.ie(G.Id.PDUSessionAggregateMaximumBitRate(), Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])) <> N.Ngap.ie(G.Id.UL_NGU_UP_TNLInformation(), Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])) <> List.append(&2, Fr.Ie, more, [N.Ngap.ie(G.Id.PDUSessionType(), Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(G.Id.QosFlowSetupRequestList(), Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))]), 0n, []))
+
 def Gsm.transfer(cfg: S.Cfg, teid: U32) -> B.Bytes():
-  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write([N.Ngap.ie(G.Id.PDUSessionAggregateMaximumBitRate(), Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])), N.Ngap.ie(G.Id.UL_NGU_UP_TNLInformation(), Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])), N.Ngap.ie(G.Id.PDUSessionType(), Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(G.Id.QosFlowSetupRequestList(), Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))], 0n, []))
+  Gsm.transfer_with(cfg, teid, [])
 
 # Allocation
 # ----------

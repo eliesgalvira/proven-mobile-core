@@ -36,45 +36,60 @@ def Ps.psis(+items: G.PDUSessionResourceToBeSwitchedDLList()) -> List<&2, U32>:
 def Ps.fail(assoc: U32, stream: U32, +amf: B.Bytes(), ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), cause: G.Cause) -> N.GOut():
   (S.Keep{}, [N.SwitchFail{assoc, stream, None{}, amf, ran, Ps.psis(items), cause}, N.Note{F.Warn{}, "NGAP: Path Switch Request refused"}])
 
-# The target's downlink tunnel for a session: the session active and named
-# with a transfer that reads.
-def Ps.transfer(+psi: U32, +items: G.PDUSessionResourceToBeSwitchedDLList()) -> Maybe<&2, B.Bytes()>:
-  match items:
-    case Nil{}:
-      None{}
-    case G.PDUSessionResourceToBeSwitchedDLItem{+p, transfer, x} <> more:
-      Tb.Table.hit(B.Bytes(), transfer, Ps.transfer(psi, more), U32.is_eq(p, psi))
+# The target's downlink tunnel for each session the request names with a
+# transfer that reads.
+def Ps.tunnel_in(psi: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, more: List<&2, S.Tunnel>) -> List<&2, S.Tunnel>:
+  match m:
+    case None{}:
+      more
+    case Some{(teid, addr)}:
+      S.Tunnel{psi, teid, addr} <> more
 
-def Ps.tunnel_of(r: Ap.Rd(G.PathSwitchRequestTransfer)) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+def Ps.tunnel_of(psi: U32, r: Ap.Rd(G.PathSwitchRequestTransfer), more: List<&2, S.Tunnel>) -> List<&2, S.Tunnel>:
   match r:
     case Fail{e}:
-      None{}
+      more
     case Done{(G.PathSwitchRequestTransfer{dl, reused, security, flows, x}, c)}:
-      Gsm.Gsm.tunnel_up(dl)
+      Ps.tunnel_in(psi, Gsm.Gsm.tunnel_up(dl), more)
 
-def Ps.tunnel(p: S.SPhase, m: Maybe<&2, B.Bytes()>) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+def Ps.tunnels(items: G.PDUSessionResourceToBeSwitchedDLList()) -> List<&2, S.Tunnel>:
+  match items:
+    case Nil{}:
+      []
+    case G.PDUSessionResourceToBeSwitchedDLItem{psi, transfer, x} <> more:
+      Ps.tunnel_of(psi, G.PathSwitchRequestTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)}), Ps.tunnels(more))
+
+def Ps.find(+psi: U32, ts: List<&2, S.Tunnel>) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+  match ts:
+    case Nil{}:
+      None{}
+    case S.Tunnel{+p, teid, addr} <> more:
+      Tb.Table.hit(Sigma<&2, &2, U32, _ => B.Bytes()>, (teid, addr), Ps.find(psi, more), U32.is_eq(p, psi))
+
+# A session's new downlink tunnel: the session active, and a tunnel given for it.
+def Ps.tunnel(p: S.SPhase, m: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
   match p m:
     case S.Active{} Some{t}:
-      Ps.tunnel_of(G.PathSwitchRequestTransfer.read(Ap.Cur{0n, Ap.unpack(t)}))
+      Some{t}
     case _ _:
       None{}
 
-def Ps.tunnel_for(+items: G.PDUSessionResourceToBeSwitchedDLList(), +s: S.Session) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
-  Ps.tunnel(S.Session.phase(s), Ps.transfer(S.Session.psi(s), items))
+def Ps.tunnel_for(+ts: List<&2, S.Tunnel>, +s: S.Session) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+  Ps.tunnel(S.Session.phase(s), Ps.find(S.Session.psi(s), ts))
 
-def Ps.any(+items: G.PDUSessionResourceToBeSwitchedDLList(), rows: Tb.Table(S.Session)) -> Bool:
+def Ps.any(+ts: List<&2, S.Tunnel>, rows: Tb.Table(S.Session)) -> Bool:
   match rows:
     case Nil{}:
       False{}
     case (skey, +s) <> more:
-      Bool.or(Tb.Table.present(Sigma<&2, &2, U32, _ => B.Bytes()>, Ps.tunnel_for(items, s)), Ps.any(items, more))
+      Bool.or(Tb.Table.present(Sigma<&2, &2, U32, _ => B.Bytes()>, Ps.tunnel_for(ts, s)), Ps.any(ts, more))
 
-def Ps.released(+items: G.PDUSessionResourceToBeSwitchedDLList(), rows: Tb.Table(S.Session)) -> List<&2, U32>:
+def Ps.released(+ts: List<&2, S.Tunnel>, rows: Tb.Table(S.Session)) -> List<&2, U32>:
   match rows:
     case Nil{}:
       []
     case (skey, +s) <> more:
-      Gsm.Gsm.psi_if(S.Session.psi(s), Ps.released(items, more), Bool.not(Tb.Table.present(Sigma<&2, &2, U32, _ => B.Bytes()>, Ps.tunnel_for(items, s))))
+      Gsm.Gsm.psi_if(S.Session.psi(s), Ps.released(ts, more), Bool.not(Tb.Table.present(Sigma<&2, &2, U32, _ => B.Bytes()>, Ps.tunnel_for(ts, s))))
 
 # One PFCP Session Modification repoints a session's downlink FAR, under the
 # session's guard; a session with no tunnel is released.
@@ -86,20 +101,20 @@ def Ps.session(+skey: U32, +s: S.Session, +seq: U32, t: Maybe<&2, Sigma<&2, &2, 
       +request = Up.N4.modify(S.Session.up_seid(s), teid, addr, seq)
       (S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Repointing{S.Guard{0}, request}}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
 
-def Ps.sessions(+items: G.PDUSessionResourceToBeSwitchedDLList(), rows: Tb.Table(S.Session), +seq: U32) -> N.GOut():
+def Ps.sessions(+ts: List<&2, S.Tunnel>, rows: Tb.Table(S.Session), +seq: U32) -> N.GOut():
   match rows:
     case Nil{}:
       (S.Keep{}, [])
     case (+skey, +s) <> more:
-      N.Out.join(N.Out.join((S.BumpSeq{1}, []), Ps.session(skey, s, seq, Ps.tunnel_for(items, s))), Ps.sessions(items, more, U32.add(seq, 1)))
+      N.Out.join(N.Out.join((S.BumpSeq{1}, []), Ps.session(skey, s, seq, Ps.tunnel_for(ts, s))), Ps.sessions(ts, more, U32.add(seq, 1)))
 
 def Ps.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +rows: Tb.Table(S.Session), ok: Bool) -> N.GOut():
   match ok:
     case False{}:
       Ps.fail(assoc, stream, amf, ran, items, N.Ngap.radio_cause(G.CauseRadioNetwork.unknown_PDU_session_ID()))
     case True{}:
-      +moved = S.Ue.moved(ue, assoc, ran, stream, S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Ps.released(items, rows)})
-      N.Out.also(N.Out.join(Ps.sessions(items, rows, S.State.pfcp_seq(st)), (S.Put{key, moved}, [])), [N.TimerStart{Some{key}, key, Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}])
+      +moved = S.Ue.moved(ue, assoc, ran, stream, S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Ps.released(Ps.tunnels(items), rows)})
+      N.Out.also(N.Out.join(Ps.sessions(Ps.tunnels(items), rows, S.State.pfcp_seq(st)), (S.Put{key, moved}, [])), [N.TimerStart{Some{key}, key, Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}])
 
 def Ps.unknown() -> G.Cause:
   N.Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID())
@@ -118,7 +133,7 @@ def Ps.free(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.By
       Ps.fail(assoc, stream, amf, ran, items, N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))
     case True{}:
       +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, Ps.any(items, rows))
+      Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, Ps.any(Ps.tunnels(items), rows))
 
 # Only a registered UE, whose SUPI 5G-AKA has verified, is switched.
 def Ps.identified(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, supi: Maybe<&2, B.Digits()>) -> N.GOut():

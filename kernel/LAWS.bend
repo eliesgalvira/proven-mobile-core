@@ -1813,3 +1813,141 @@ law amf.path_switch.stored_capabilities:
   for +ev2: {GV.PathSwitchRequest.view(ies2) == Done{GV.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
   {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : St.State}
   & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{ctx, nh}}, [Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)}, Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}]) : Ng.GOut()}
+
+# amf (ticket 28)
+# ---------------
+# N2 handover (TS 23.502 §4.9.1.3, TS 38.413 §8.4.1 to §8.4.3, §8.4.5 to
+# §8.4.7). The target knows the UE by its AMF-UE-NGAP-ID too; the UE stays
+# with its owner, the source, until the target's Handover Notify.
+
+# GHSA-wpwr-xj64-h6cp: Handover Required, Handover Cancel and Uplink RAN
+# Status Transfer change state only when they come from the UE's owner, under
+# its RAN-UE-NGAP-ID there; Handover Request Acknowledge, Handover Failure and
+# Handover Notify only when they come from the target of the UE's pending
+# handover.
+law amf.handover.owner_only:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +k: U32
+  for +kind: G.HandoverType()
+  for +cause: G.Cause
+  for +id: G.TargetID
+  for +direct: Maybe<&2, G.DirectForwardingPathAvailability()>
+  for +items: G.PDUSessionResourceListHORqd()
+  for +container: B.Bytes()
+  for +status: G.RANStatusTransfer_TransparentContainer
+  for +admitted: G.PDUSessionResourceAdmittedList()
+  for +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListHOAck()>
+  for +back: B.Bytes()
+  for +diag: Maybe<&2, G.CriticalityDiagnostics>
+  for +npn: Maybe<&2, G.NPN_AccessInformation>
+  for +uli: G.UserLocationInformation
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  ({Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == None{} : Maybe<&2, St.Ue>} ->
+    ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 12, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverRequired.view(ies) == Done{GV.HandoverRequired.View{amf, ran, kind, cause, id, direct, items, container}} : Result<&2, &2, B.Err, GV.HandoverRequired.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+    & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 10, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverCancel.view(ies) == Done{GV.HandoverCancel.View{amf, ran, cause}} : Result<&2, &2, B.Err, GV.HandoverCancel.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+    & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 49, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UplinkRANStatusTransfer.view(ies) == Done{GV.UplinkRANStatusTransfer.View{amf, ran, status}} : Result<&2, &2, B.Err, GV.UplinkRANStatusTransfer.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}))
+  & ({St.Maybe.same_u32(St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))), Some{assoc}) == False{} : Bool} ->
+    ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverRequestAcknowledge.view(ies) == Done{GV.HandoverRequestAcknowledge.View{amf, ran, admitted, failed, back, diag, npn}} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+    & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{2, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverFailure.view(ies) == Done{GV.HandoverFailure.View{amf, cause, diag}} : Result<&2, &2, B.Err, GV.HandoverFailure.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
+    & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverNotify.view(ies) == Done{GV.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, GV.HandoverNotify.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}))
+
+# GHSA-v6fv-hmw8-6ffv: a Handover Request Acknowledge, Handover Failure or
+# Handover Notify for a UE with no handover pending, as after a cancel or the
+# guard firing (amf.handover.guarded), changes no state: the only actions are
+# Error Indication and a log line, so no PFCP message goes out. After a
+# Handover Cancel from the UE's owner no handover is pending.
+law amf.handover.responses_correlated:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +k: U32
+  for +u: St.Ue
+  for +cause: G.Cause
+  for +admitted: G.PDUSessionResourceAdmittedList()
+  for +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListHOAck()>
+  for +back: B.Bytes()
+  for +diag: Maybe<&2, G.CriticalityDiagnostics>
+  for +npn: Maybe<&2, G.NPN_AccessInformation>
+  for +uli: G.UserLocationInformation
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == None{} : Maybe<&2, U32>} ->
+    ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverRequestAcknowledge.view(ies) == Done{GV.HandoverRequestAcknowledge.View{amf, ran, admitted, failed, back, diag, npn}} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+    & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{2, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverFailure.view(ies) == Done{GV.HandoverFailure.View{amf, cause, diag}} : Result<&2, &2, B.Err, GV.HandoverFailure.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+    & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverNotify.view(ies) == Done{GV.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, GV.HandoverNotify.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()}))
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 10, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverCancel.view(ies) == Done{GV.HandoverCancel.View{amf, ran, cause}} : Result<&2, &2, B.Err, GV.HandoverCancel.View>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{u} : Maybe<&2, St.Ue>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == None{} : Maybe<&2, U32>})
+
+# At every reachable state each UE is one context, owned by one association
+# (amf.indexes.unique). A pending handover names its target but leaves the UE
+# with its owner: Handover Required, Handover Request Acknowledge, Handover
+# Failure, Handover Cancel and Uplink RAN Status Transfer, and the guard of a
+# pending handover firing, leave every context owned by the association, and
+# under the RAN-UE-NGAP-ID, it had. Only a Handover Notify moves the UE it
+# names, and then to the target of its pending handover.
+law amf.handover.single_owner:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +j: U32
+  for +k: U32
+  for +t: U32
+  ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 12, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {St.Ue.same_owner(Tb.Table.get(St.Ue, j, St.State.ues(st)), Tb.Table.get(St.Ue, j, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == True{} : Bool})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {St.Ue.same_owner(Tb.Table.get(St.Ue, j, St.State.ues(st)), Tb.Table.get(St.Ue, j, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == True{} : Bool})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{2, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {St.Ue.same_owner(Tb.Table.get(St.Ue, j, St.State.ues(st)), Tb.Table.get(St.Ue, j, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == True{} : Bool})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 10, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {St.Ue.same_owner(Tb.Table.get(St.Ue, j, St.State.ues(st)), Tb.Table.get(St.Ue, j, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == True{} : Bool})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 49, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {St.Ue.same_owner(Tb.Table.get(St.Ue, j, St.State.ues(st)), Tb.Table.get(St.Ue, j, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == True{} : Bool})
+  & ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{t} : Maybe<&2, U32>} -> {St.Ue.same_owner(Tb.Table.get(St.Ue, j, St.State.ues(st)), Tb.Table.get(St.Ue, j, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) == True{} : Bool})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.HandoverNotify.view(ies) == Done{GV.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, GV.HandoverNotify.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{t} : Maybe<&2, U32>} -> {Bool.or(St.Ue.same_owner(Tb.Table.get(St.Ue, k, St.State.ues(st)), Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))), St.Ue.on(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))), t)) == True{} : Bool})
+
+# Every pending handover waits under its guard, whose timer is the context's
+# key, which no other row shares (state.ids.free). A Handover Required or a
+# Handover Request Acknowledge that changes a context starts that timer, the
+# preparation guard or the completion guard; when the guard of a pending
+# handover fires, no handover is pending any more.
+law amf.handover.guarded:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +k: U32
+  for +t: U32
+  for +p: St.Phase
+  ({St.Phase.pending(p) == Some{t} : Maybe<&2, U32>} -> {Tb.Table.present(St.Guard, St.Phase.guard(p)) == True{} : Bool})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 12, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
+  & ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{t} : Maybe<&2, U32>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) == None{} : Maybe<&2, U32>})
