@@ -1,6 +1,6 @@
 //! The loop: one event at a time to the kernel, its actions applied to the
 //! sockets and the timers. Socket threads feed the loop through a channel;
-//! timers are the channel's receive timeout.
+//! every timer due fires after each message and when the receive times out.
 
 use std::collections::HashMap;
 use std::fmt;
@@ -110,11 +110,19 @@ impl Edge {
     }
 
     fn turn(&mut self, rx: &Receiver<Msg>) -> Result<(), Error> {
-        let now = Instant::now();
         let msg = match self.timers.deadline() {
-            Some(at) => rx.recv_timeout(at.saturating_duration_since(now)),
+            Some(at) => rx.recv_timeout(at.saturating_duration_since(Instant::now())),
             None => rx.recv().map_err(|_| RecvTimeoutError::Disconnected),
         };
+        self.receive(msg)?;
+        let now = Instant::now();
+        while let Some(id) = self.timers.pop_due(now) {
+            self.step(&Event::TimerFired(id))?;
+        }
+        Ok(())
+    }
+
+    fn receive(&mut self, msg: Result<Msg, RecvTimeoutError>) -> Result<(), Error> {
         match msg {
             Ok(Msg::Up(id, assoc)) => {
                 self.assocs.insert(id, assoc);
@@ -129,10 +137,7 @@ impl Edge {
                 Ok(())
             }
             Ok(Msg::Fatal(why)) => Err(Error::Fatal(why)),
-            Err(RecvTimeoutError::Timeout) => match self.timers.pop_due(Instant::now()) {
-                Some(id) => self.step(&Event::TimerFired(id)),
-                None => Ok(()),
-            },
+            Err(RecvTimeoutError::Timeout) => Ok(()),
             Err(RecvTimeoutError::Disconnected) => Err(Error::Fatal("every socket thread has stopped".to_string())),
         }
     }

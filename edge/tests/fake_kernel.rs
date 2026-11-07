@@ -108,3 +108,27 @@ fn the_loop_runs_timers_and_keeps_n4_to_the_upf() {
     drop(edge);
     assert_eq!(kernel.join().unwrap(), vec![Event::Config(vec![]), Event::PfcpData(vec![0x20, 0x03]), Event::TimerFired(2)]);
 }
+
+#[test]
+fn expired_timers_fire_between_queued_events() {
+    let upf = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    let upf_addr = match upf.local_addr().unwrap() {
+        SocketAddr::V4(a) => a,
+        _ => unreachable!(),
+    };
+    let (port, kernel) = fake_kernel(Box::new(|e| match e {
+        Event::Config(_) => Some(vec![Action::TimerStart { timer: 1, ms: 0 }]),
+        _ => Some(vec![]),
+    }));
+    let mut edge = Edge::new(connect(port), UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(), upf_addr);
+    edge.step(&Event::Config(vec![])).unwrap();
+    let (tx, rx) = mpsc::channel();
+    for b in [1, 2, 3] {
+        tx.send(Msg::Pfcp(vec![b], SocketAddr::V4(upf_addr))).unwrap();
+    }
+    drop(tx);
+    edge.serve(&rx);
+    drop(edge);
+    let pfcp = |b| Event::PfcpData(vec![b]);
+    assert_eq!(kernel.join().unwrap(), vec![Event::Config(vec![]), pfcp(1), Event::TimerFired(1), pfcp(2), pfcp(3)]);
+}
