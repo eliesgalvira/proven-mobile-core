@@ -10,75 +10,6 @@ import ./views.bend as GV
 # generated type; kernel/ngap/gen/proofs.bend proves them. `suffix` is
 # canonical decoding: the bits a value was read from are its encoding.
 
-law ngap.NGSetupRequest.roundtrip:
-  for +v: G.NGSetupRequest()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.NGSetupRequest.valid(v) == True{} : Bool}
-  {G.NGSetupRequest.read(Ap.Cur{rem, G.NGSetupRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NGSetupRequest.after(v, rem), rest})} : Ap.Rd(G.NGSetupRequest())}
-
-law ngap.NGSetupRequest.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.NGSetupRequest()
-  for +c2: Ap.Cur
-  for +e: {G.NGSetupRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.NGSetupRequest())}
-  {G.NGSetupRequest.valid(v) == True{} : Bool}
-
-law ngap.NGSetupRequest.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.NGSetupRequest()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.NGSetupRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NGSetupRequest())}
-  {bits == G.NGSetupRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NGSetupRequest.after(v, rem) : Nat}
-
-law ngap.PagingDRX.roundtrip:
-  for +v: G.PagingDRX()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PagingDRX.valid(v) == True{} : Bool}
-  {G.PagingDRX.read(Ap.Cur{rem, G.PagingDRX.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PagingDRX.after(v, rem), rest})} : Ap.Rd(G.PagingDRX())}
-
-law ngap.PagingDRX.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PagingDRX()
-  for +c2: Ap.Cur
-  for +e: {G.PagingDRX.read(c) == Done{(v, c2)} : Ap.Rd(G.PagingDRX())}
-  {G.PagingDRX.valid(v) == True{} : Bool}
-
-law ngap.PagingDRX.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PagingDRX()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PagingDRX.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PagingDRX())}
-  {bits == G.PagingDRX.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PagingDRX.after(v, rem) : Nat}
-
-law ngap.TAC.roundtrip:
-  for +v: G.TAC()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.TAC.valid(v) == True{} : Bool}
-  {G.TAC.read(Ap.Cur{rem, G.TAC.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TAC.after(v, rem), rest})} : Ap.Rd(G.TAC())}
-
-law ngap.TAC.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.TAC()
-  for +c2: Ap.Cur
-  for +e: {G.TAC.read(c) == Done{(v, c2)} : Ap.Rd(G.TAC())}
-  {G.TAC.valid(v) == True{} : Bool}
-
-law ngap.TAC.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.TAC()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.TAC.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TAC())}
-  {bits == G.TAC.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TAC.after(v, rem) : Nat}
-
 law ngap.PLMNIdentity.roundtrip:
   for +v: G.PLMNIdentity()
   for +rem: Nat
@@ -101,213 +32,6 @@ law ngap.PLMNIdentity.suffix:
   for +bits2: Ap.Bits()
   for +e: {G.PLMNIdentity.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PLMNIdentity())}
   {bits == G.PLMNIdentity.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PLMNIdentity.after(v, rem) : Nat}
-
-law ngap.SST.roundtrip:
-  for +v: G.SST()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SST.valid(v) == True{} : Bool}
-  {G.SST.read(Ap.Cur{rem, G.SST.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SST.after(v, rem), rest})} : Ap.Rd(G.SST())}
-
-law ngap.SST.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SST()
-  for +c2: Ap.Cur
-  for +e: {G.SST.read(c) == Done{(v, c2)} : Ap.Rd(G.SST())}
-  {G.SST.valid(v) == True{} : Bool}
-
-law ngap.SST.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SST()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SST.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SST())}
-  {bits == G.SST.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SST.after(v, rem) : Nat}
-
-law ngap.SD.roundtrip:
-  for +v: G.SD()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SD.valid(v) == True{} : Bool}
-  {G.SD.read(Ap.Cur{rem, G.SD.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SD.after(v, rem), rest})} : Ap.Rd(G.SD())}
-
-law ngap.SD.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SD()
-  for +c2: Ap.Cur
-  for +e: {G.SD.read(c) == Done{(v, c2)} : Ap.Rd(G.SD())}
-  {G.SD.valid(v) == True{} : Bool}
-
-law ngap.SD.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SD()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SD.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SD())}
-  {bits == G.SD.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SD.after(v, rem) : Nat}
-
-law ngap.S_NSSAI.roundtrip:
-  for +v: G.S_NSSAI
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.S_NSSAI.valid(v) == True{} : Bool}
-  {G.S_NSSAI.read(Ap.Cur{rem, G.S_NSSAI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.S_NSSAI.after(v, rem), rest})} : Ap.Rd(G.S_NSSAI)}
-
-law ngap.S_NSSAI.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.S_NSSAI
-  for +c2: Ap.Cur
-  for +e: {G.S_NSSAI.read(c) == Done{(v, c2)} : Ap.Rd(G.S_NSSAI)}
-  {G.S_NSSAI.valid(v) == True{} : Bool}
-
-law ngap.S_NSSAI.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.S_NSSAI
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.S_NSSAI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.S_NSSAI)}
-  {bits == G.S_NSSAI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.S_NSSAI.after(v, rem) : Nat}
-
-law ngap.SliceSupportItem.roundtrip:
-  for +v: G.SliceSupportItem
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SliceSupportItem.valid(v) == True{} : Bool}
-  {G.SliceSupportItem.read(Ap.Cur{rem, G.SliceSupportItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SliceSupportItem.after(v, rem), rest})} : Ap.Rd(G.SliceSupportItem)}
-
-law ngap.SliceSupportItem.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SliceSupportItem
-  for +c2: Ap.Cur
-  for +e: {G.SliceSupportItem.read(c) == Done{(v, c2)} : Ap.Rd(G.SliceSupportItem)}
-  {G.SliceSupportItem.valid(v) == True{} : Bool}
-
-law ngap.SliceSupportItem.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SliceSupportItem
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SliceSupportItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SliceSupportItem)}
-  {bits == G.SliceSupportItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SliceSupportItem.after(v, rem) : Nat}
-
-law ngap.SliceSupportList.roundtrip:
-  for +v: G.SliceSupportList()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SliceSupportList.valid(v) == True{} : Bool}
-  {G.SliceSupportList.read(Ap.Cur{rem, G.SliceSupportList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SliceSupportList.after(v, rem), rest})} : Ap.Rd(G.SliceSupportList())}
-
-law ngap.SliceSupportList.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SliceSupportList()
-  for +c2: Ap.Cur
-  for +e: {G.SliceSupportList.read(c) == Done{(v, c2)} : Ap.Rd(G.SliceSupportList())}
-  {G.SliceSupportList.valid(v) == True{} : Bool}
-
-law ngap.SliceSupportList.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SliceSupportList()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SliceSupportList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SliceSupportList())}
-  {bits == G.SliceSupportList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SliceSupportList.after(v, rem) : Nat}
-
-law ngap.BroadcastPLMNItem.roundtrip:
-  for +v: G.BroadcastPLMNItem
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.BroadcastPLMNItem.valid(v) == True{} : Bool}
-  {G.BroadcastPLMNItem.read(Ap.Cur{rem, G.BroadcastPLMNItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.BroadcastPLMNItem.after(v, rem), rest})} : Ap.Rd(G.BroadcastPLMNItem)}
-
-law ngap.BroadcastPLMNItem.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.BroadcastPLMNItem
-  for +c2: Ap.Cur
-  for +e: {G.BroadcastPLMNItem.read(c) == Done{(v, c2)} : Ap.Rd(G.BroadcastPLMNItem)}
-  {G.BroadcastPLMNItem.valid(v) == True{} : Bool}
-
-law ngap.BroadcastPLMNItem.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.BroadcastPLMNItem
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.BroadcastPLMNItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.BroadcastPLMNItem)}
-  {bits == G.BroadcastPLMNItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.BroadcastPLMNItem.after(v, rem) : Nat}
-
-law ngap.BroadcastPLMNList.roundtrip:
-  for +v: G.BroadcastPLMNList()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.BroadcastPLMNList.valid(v) == True{} : Bool}
-  {G.BroadcastPLMNList.read(Ap.Cur{rem, G.BroadcastPLMNList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.BroadcastPLMNList.after(v, rem), rest})} : Ap.Rd(G.BroadcastPLMNList())}
-
-law ngap.BroadcastPLMNList.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.BroadcastPLMNList()
-  for +c2: Ap.Cur
-  for +e: {G.BroadcastPLMNList.read(c) == Done{(v, c2)} : Ap.Rd(G.BroadcastPLMNList())}
-  {G.BroadcastPLMNList.valid(v) == True{} : Bool}
-
-law ngap.BroadcastPLMNList.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.BroadcastPLMNList()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.BroadcastPLMNList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.BroadcastPLMNList())}
-  {bits == G.BroadcastPLMNList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.BroadcastPLMNList.after(v, rem) : Nat}
-
-law ngap.SupportedTAItem.roundtrip:
-  for +v: G.SupportedTAItem
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SupportedTAItem.valid(v) == True{} : Bool}
-  {G.SupportedTAItem.read(Ap.Cur{rem, G.SupportedTAItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SupportedTAItem.after(v, rem), rest})} : Ap.Rd(G.SupportedTAItem)}
-
-law ngap.SupportedTAItem.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SupportedTAItem
-  for +c2: Ap.Cur
-  for +e: {G.SupportedTAItem.read(c) == Done{(v, c2)} : Ap.Rd(G.SupportedTAItem)}
-  {G.SupportedTAItem.valid(v) == True{} : Bool}
-
-law ngap.SupportedTAItem.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SupportedTAItem
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SupportedTAItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SupportedTAItem)}
-  {bits == G.SupportedTAItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SupportedTAItem.after(v, rem) : Nat}
-
-law ngap.SupportedTAList.roundtrip:
-  for +v: G.SupportedTAList()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SupportedTAList.valid(v) == True{} : Bool}
-  {G.SupportedTAList.read(Ap.Cur{rem, G.SupportedTAList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SupportedTAList.after(v, rem), rest})} : Ap.Rd(G.SupportedTAList())}
-
-law ngap.SupportedTAList.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SupportedTAList()
-  for +c2: Ap.Cur
-  for +e: {G.SupportedTAList.read(c) == Done{(v, c2)} : Ap.Rd(G.SupportedTAList())}
-  {G.SupportedTAList.valid(v) == True{} : Bool}
-
-law ngap.SupportedTAList.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SupportedTAList()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SupportedTAList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SupportedTAList())}
-  {bits == G.SupportedTAList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SupportedTAList.after(v, rem) : Nat}
 
 law ngap.GNB_ID_gNB_ID.roundtrip:
   for +v: G.GNB_ID_gNB_ID()
@@ -585,97 +309,304 @@ law ngap.GlobalRANNodeID.suffix:
   for +e: {G.GlobalRANNodeID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.GlobalRANNodeID)}
   {bits == G.GlobalRANNodeID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.GlobalRANNodeID.after(v, rem) : Nat}
 
-law ngap.NGSetupResponse.roundtrip:
-  for +v: G.NGSetupResponse()
+law ngap.TAC.roundtrip:
+  for +v: G.TAC()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.NGSetupResponse.valid(v) == True{} : Bool}
-  {G.NGSetupResponse.read(Ap.Cur{rem, G.NGSetupResponse.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NGSetupResponse.after(v, rem), rest})} : Ap.Rd(G.NGSetupResponse())}
+  for +ok: {G.TAC.valid(v) == True{} : Bool}
+  {G.TAC.read(Ap.Cur{rem, G.TAC.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TAC.after(v, rem), rest})} : Ap.Rd(G.TAC())}
 
-law ngap.NGSetupResponse.decode_valid:
+law ngap.TAC.decode_valid:
   for +c: Ap.Cur
-  for +v: G.NGSetupResponse()
+  for +v: G.TAC()
   for +c2: Ap.Cur
-  for +e: {G.NGSetupResponse.read(c) == Done{(v, c2)} : Ap.Rd(G.NGSetupResponse())}
-  {G.NGSetupResponse.valid(v) == True{} : Bool}
+  for +e: {G.TAC.read(c) == Done{(v, c2)} : Ap.Rd(G.TAC())}
+  {G.TAC.valid(v) == True{} : Bool}
 
-law ngap.NGSetupResponse.suffix:
+law ngap.TAC.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.NGSetupResponse()
+  for +v: G.TAC()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.NGSetupResponse.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NGSetupResponse())}
-  {bits == G.NGSetupResponse.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NGSetupResponse.after(v, rem) : Nat}
+  for +e: {G.TAC.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TAC())}
+  {bits == G.TAC.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TAC.after(v, rem) : Nat}
 
-law ngap.PLMNSupportItem.roundtrip:
-  for +v: G.PLMNSupportItem
+law ngap.SST.roundtrip:
+  for +v: G.SST()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PLMNSupportItem.valid(v) == True{} : Bool}
-  {G.PLMNSupportItem.read(Ap.Cur{rem, G.PLMNSupportItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PLMNSupportItem.after(v, rem), rest})} : Ap.Rd(G.PLMNSupportItem)}
+  for +ok: {G.SST.valid(v) == True{} : Bool}
+  {G.SST.read(Ap.Cur{rem, G.SST.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SST.after(v, rem), rest})} : Ap.Rd(G.SST())}
 
-law ngap.PLMNSupportItem.decode_valid:
+law ngap.SST.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PLMNSupportItem
+  for +v: G.SST()
   for +c2: Ap.Cur
-  for +e: {G.PLMNSupportItem.read(c) == Done{(v, c2)} : Ap.Rd(G.PLMNSupportItem)}
-  {G.PLMNSupportItem.valid(v) == True{} : Bool}
+  for +e: {G.SST.read(c) == Done{(v, c2)} : Ap.Rd(G.SST())}
+  {G.SST.valid(v) == True{} : Bool}
 
-law ngap.PLMNSupportItem.suffix:
+law ngap.SST.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PLMNSupportItem
+  for +v: G.SST()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PLMNSupportItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PLMNSupportItem)}
-  {bits == G.PLMNSupportItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PLMNSupportItem.after(v, rem) : Nat}
+  for +e: {G.SST.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SST())}
+  {bits == G.SST.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SST.after(v, rem) : Nat}
 
-law ngap.PLMNSupportList.roundtrip:
-  for +v: G.PLMNSupportList()
+law ngap.SD.roundtrip:
+  for +v: G.SD()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PLMNSupportList.valid(v) == True{} : Bool}
-  {G.PLMNSupportList.read(Ap.Cur{rem, G.PLMNSupportList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PLMNSupportList.after(v, rem), rest})} : Ap.Rd(G.PLMNSupportList())}
+  for +ok: {G.SD.valid(v) == True{} : Bool}
+  {G.SD.read(Ap.Cur{rem, G.SD.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SD.after(v, rem), rest})} : Ap.Rd(G.SD())}
 
-law ngap.PLMNSupportList.decode_valid:
+law ngap.SD.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PLMNSupportList()
+  for +v: G.SD()
   for +c2: Ap.Cur
-  for +e: {G.PLMNSupportList.read(c) == Done{(v, c2)} : Ap.Rd(G.PLMNSupportList())}
-  {G.PLMNSupportList.valid(v) == True{} : Bool}
+  for +e: {G.SD.read(c) == Done{(v, c2)} : Ap.Rd(G.SD())}
+  {G.SD.valid(v) == True{} : Bool}
 
-law ngap.PLMNSupportList.suffix:
+law ngap.SD.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PLMNSupportList()
+  for +v: G.SD()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PLMNSupportList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PLMNSupportList())}
-  {bits == G.PLMNSupportList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PLMNSupportList.after(v, rem) : Nat}
+  for +e: {G.SD.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SD())}
+  {bits == G.SD.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SD.after(v, rem) : Nat}
 
-law ngap.RelativeAMFCapacity.roundtrip:
-  for +v: G.RelativeAMFCapacity()
+law ngap.S_NSSAI.roundtrip:
+  for +v: G.S_NSSAI
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.RelativeAMFCapacity.valid(v) == True{} : Bool}
-  {G.RelativeAMFCapacity.read(Ap.Cur{rem, G.RelativeAMFCapacity.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.RelativeAMFCapacity.after(v, rem), rest})} : Ap.Rd(G.RelativeAMFCapacity())}
+  for +ok: {G.S_NSSAI.valid(v) == True{} : Bool}
+  {G.S_NSSAI.read(Ap.Cur{rem, G.S_NSSAI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.S_NSSAI.after(v, rem), rest})} : Ap.Rd(G.S_NSSAI)}
 
-law ngap.RelativeAMFCapacity.decode_valid:
+law ngap.S_NSSAI.decode_valid:
   for +c: Ap.Cur
-  for +v: G.RelativeAMFCapacity()
+  for +v: G.S_NSSAI
   for +c2: Ap.Cur
-  for +e: {G.RelativeAMFCapacity.read(c) == Done{(v, c2)} : Ap.Rd(G.RelativeAMFCapacity())}
-  {G.RelativeAMFCapacity.valid(v) == True{} : Bool}
+  for +e: {G.S_NSSAI.read(c) == Done{(v, c2)} : Ap.Rd(G.S_NSSAI)}
+  {G.S_NSSAI.valid(v) == True{} : Bool}
 
-law ngap.RelativeAMFCapacity.suffix:
+law ngap.S_NSSAI.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.RelativeAMFCapacity()
+  for +v: G.S_NSSAI
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.RelativeAMFCapacity.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.RelativeAMFCapacity())}
-  {bits == G.RelativeAMFCapacity.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.RelativeAMFCapacity.after(v, rem) : Nat}
+  for +e: {G.S_NSSAI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.S_NSSAI)}
+  {bits == G.S_NSSAI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.S_NSSAI.after(v, rem) : Nat}
+
+law ngap.SliceSupportItem.roundtrip:
+  for +v: G.SliceSupportItem
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SliceSupportItem.valid(v) == True{} : Bool}
+  {G.SliceSupportItem.read(Ap.Cur{rem, G.SliceSupportItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SliceSupportItem.after(v, rem), rest})} : Ap.Rd(G.SliceSupportItem)}
+
+law ngap.SliceSupportItem.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SliceSupportItem
+  for +c2: Ap.Cur
+  for +e: {G.SliceSupportItem.read(c) == Done{(v, c2)} : Ap.Rd(G.SliceSupportItem)}
+  {G.SliceSupportItem.valid(v) == True{} : Bool}
+
+law ngap.SliceSupportItem.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SliceSupportItem
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SliceSupportItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SliceSupportItem)}
+  {bits == G.SliceSupportItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SliceSupportItem.after(v, rem) : Nat}
+
+law ngap.SliceSupportList.roundtrip:
+  for +v: G.SliceSupportList()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SliceSupportList.valid(v) == True{} : Bool}
+  {G.SliceSupportList.read(Ap.Cur{rem, G.SliceSupportList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SliceSupportList.after(v, rem), rest})} : Ap.Rd(G.SliceSupportList())}
+
+law ngap.SliceSupportList.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SliceSupportList()
+  for +c2: Ap.Cur
+  for +e: {G.SliceSupportList.read(c) == Done{(v, c2)} : Ap.Rd(G.SliceSupportList())}
+  {G.SliceSupportList.valid(v) == True{} : Bool}
+
+law ngap.SliceSupportList.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SliceSupportList()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SliceSupportList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SliceSupportList())}
+  {bits == G.SliceSupportList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SliceSupportList.after(v, rem) : Nat}
+
+law ngap.BroadcastPLMNItem.roundtrip:
+  for +v: G.BroadcastPLMNItem
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.BroadcastPLMNItem.valid(v) == True{} : Bool}
+  {G.BroadcastPLMNItem.read(Ap.Cur{rem, G.BroadcastPLMNItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.BroadcastPLMNItem.after(v, rem), rest})} : Ap.Rd(G.BroadcastPLMNItem)}
+
+law ngap.BroadcastPLMNItem.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.BroadcastPLMNItem
+  for +c2: Ap.Cur
+  for +e: {G.BroadcastPLMNItem.read(c) == Done{(v, c2)} : Ap.Rd(G.BroadcastPLMNItem)}
+  {G.BroadcastPLMNItem.valid(v) == True{} : Bool}
+
+law ngap.BroadcastPLMNItem.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.BroadcastPLMNItem
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.BroadcastPLMNItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.BroadcastPLMNItem)}
+  {bits == G.BroadcastPLMNItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.BroadcastPLMNItem.after(v, rem) : Nat}
+
+law ngap.BroadcastPLMNList.roundtrip:
+  for +v: G.BroadcastPLMNList()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.BroadcastPLMNList.valid(v) == True{} : Bool}
+  {G.BroadcastPLMNList.read(Ap.Cur{rem, G.BroadcastPLMNList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.BroadcastPLMNList.after(v, rem), rest})} : Ap.Rd(G.BroadcastPLMNList())}
+
+law ngap.BroadcastPLMNList.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.BroadcastPLMNList()
+  for +c2: Ap.Cur
+  for +e: {G.BroadcastPLMNList.read(c) == Done{(v, c2)} : Ap.Rd(G.BroadcastPLMNList())}
+  {G.BroadcastPLMNList.valid(v) == True{} : Bool}
+
+law ngap.BroadcastPLMNList.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.BroadcastPLMNList()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.BroadcastPLMNList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.BroadcastPLMNList())}
+  {bits == G.BroadcastPLMNList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.BroadcastPLMNList.after(v, rem) : Nat}
+
+law ngap.SupportedTAItem.roundtrip:
+  for +v: G.SupportedTAItem
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SupportedTAItem.valid(v) == True{} : Bool}
+  {G.SupportedTAItem.read(Ap.Cur{rem, G.SupportedTAItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SupportedTAItem.after(v, rem), rest})} : Ap.Rd(G.SupportedTAItem)}
+
+law ngap.SupportedTAItem.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SupportedTAItem
+  for +c2: Ap.Cur
+  for +e: {G.SupportedTAItem.read(c) == Done{(v, c2)} : Ap.Rd(G.SupportedTAItem)}
+  {G.SupportedTAItem.valid(v) == True{} : Bool}
+
+law ngap.SupportedTAItem.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SupportedTAItem
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SupportedTAItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SupportedTAItem)}
+  {bits == G.SupportedTAItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SupportedTAItem.after(v, rem) : Nat}
+
+law ngap.SupportedTAList.roundtrip:
+  for +v: G.SupportedTAList()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SupportedTAList.valid(v) == True{} : Bool}
+  {G.SupportedTAList.read(Ap.Cur{rem, G.SupportedTAList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SupportedTAList.after(v, rem), rest})} : Ap.Rd(G.SupportedTAList())}
+
+law ngap.SupportedTAList.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SupportedTAList()
+  for +c2: Ap.Cur
+  for +e: {G.SupportedTAList.read(c) == Done{(v, c2)} : Ap.Rd(G.SupportedTAList())}
+  {G.SupportedTAList.valid(v) == True{} : Bool}
+
+law ngap.SupportedTAList.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SupportedTAList()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SupportedTAList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SupportedTAList())}
+  {bits == G.SupportedTAList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SupportedTAList.after(v, rem) : Nat}
+
+law ngap.PagingDRX.roundtrip:
+  for +v: G.PagingDRX()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PagingDRX.valid(v) == True{} : Bool}
+  {G.PagingDRX.read(Ap.Cur{rem, G.PagingDRX.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PagingDRX.after(v, rem), rest})} : Ap.Rd(G.PagingDRX())}
+
+law ngap.PagingDRX.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PagingDRX()
+  for +c2: Ap.Cur
+  for +e: {G.PagingDRX.read(c) == Done{(v, c2)} : Ap.Rd(G.PagingDRX())}
+  {G.PagingDRX.valid(v) == True{} : Bool}
+
+law ngap.PagingDRX.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PagingDRX()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PagingDRX.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PagingDRX())}
+  {bits == G.PagingDRX.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PagingDRX.after(v, rem) : Nat}
+
+law ngap.NGSetupRequest.roundtrip:
+  for +v: G.NGSetupRequest()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.NGSetupRequest.valid(v) == True{} : Bool}
+  {G.NGSetupRequest.read(Ap.Cur{rem, G.NGSetupRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NGSetupRequest.after(v, rem), rest})} : Ap.Rd(G.NGSetupRequest())}
+
+law ngap.NGSetupRequest.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.NGSetupRequest()
+  for +c2: Ap.Cur
+  for +e: {G.NGSetupRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.NGSetupRequest())}
+  {G.NGSetupRequest.valid(v) == True{} : Bool}
+
+law ngap.NGSetupRequest.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.NGSetupRequest()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.NGSetupRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NGSetupRequest())}
+  {bits == G.NGSetupRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NGSetupRequest.after(v, rem) : Nat}
+
+law ngap.AMFName.roundtrip:
+  for +v: G.AMFName()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.AMFName.valid(v) == True{} : Bool}
+  {G.AMFName.read(Ap.Cur{rem, G.AMFName.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AMFName.after(v, rem), rest})} : Ap.Rd(G.AMFName())}
+
+law ngap.AMFName.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.AMFName()
+  for +c2: Ap.Cur
+  for +e: {G.AMFName.read(c) == Done{(v, c2)} : Ap.Rd(G.AMFName())}
+  {G.AMFName.valid(v) == True{} : Bool}
+
+law ngap.AMFName.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.AMFName()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.AMFName.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AMFName())}
+  {bits == G.AMFName.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AMFName.after(v, rem) : Nat}
 
 law ngap.AMFRegionID.roundtrip:
   for +v: G.AMFRegionID()
@@ -769,29 +700,6 @@ law ngap.GUAMI.suffix:
   for +e: {G.GUAMI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.GUAMI)}
   {bits == G.GUAMI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.GUAMI.after(v, rem) : Nat}
 
-law ngap.AMFName.roundtrip:
-  for +v: G.AMFName()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.AMFName.valid(v) == True{} : Bool}
-  {G.AMFName.read(Ap.Cur{rem, G.AMFName.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AMFName.after(v, rem), rest})} : Ap.Rd(G.AMFName())}
-
-law ngap.AMFName.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.AMFName()
-  for +c2: Ap.Cur
-  for +e: {G.AMFName.read(c) == Done{(v, c2)} : Ap.Rd(G.AMFName())}
-  {G.AMFName.valid(v) == True{} : Bool}
-
-law ngap.AMFName.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.AMFName()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.AMFName.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AMFName())}
-  {bits == G.AMFName.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AMFName.after(v, rem) : Nat}
-
 law ngap.ServedGUAMIItem.roundtrip:
   for +v: G.ServedGUAMIItem
   for +rem: Nat
@@ -838,28 +746,281 @@ law ngap.ServedGUAMIList.suffix:
   for +e: {G.ServedGUAMIList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ServedGUAMIList())}
   {bits == G.ServedGUAMIList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ServedGUAMIList.after(v, rem) : Nat}
 
-law ngap.NGSetupFailure.roundtrip:
-  for +v: G.NGSetupFailure()
+law ngap.RelativeAMFCapacity.roundtrip:
+  for +v: G.RelativeAMFCapacity()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.NGSetupFailure.valid(v) == True{} : Bool}
-  {G.NGSetupFailure.read(Ap.Cur{rem, G.NGSetupFailure.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NGSetupFailure.after(v, rem), rest})} : Ap.Rd(G.NGSetupFailure())}
+  for +ok: {G.RelativeAMFCapacity.valid(v) == True{} : Bool}
+  {G.RelativeAMFCapacity.read(Ap.Cur{rem, G.RelativeAMFCapacity.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.RelativeAMFCapacity.after(v, rem), rest})} : Ap.Rd(G.RelativeAMFCapacity())}
 
-law ngap.NGSetupFailure.decode_valid:
+law ngap.RelativeAMFCapacity.decode_valid:
   for +c: Ap.Cur
-  for +v: G.NGSetupFailure()
+  for +v: G.RelativeAMFCapacity()
   for +c2: Ap.Cur
-  for +e: {G.NGSetupFailure.read(c) == Done{(v, c2)} : Ap.Rd(G.NGSetupFailure())}
-  {G.NGSetupFailure.valid(v) == True{} : Bool}
+  for +e: {G.RelativeAMFCapacity.read(c) == Done{(v, c2)} : Ap.Rd(G.RelativeAMFCapacity())}
+  {G.RelativeAMFCapacity.valid(v) == True{} : Bool}
 
-law ngap.NGSetupFailure.suffix:
+law ngap.RelativeAMFCapacity.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.NGSetupFailure()
+  for +v: G.RelativeAMFCapacity()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.NGSetupFailure.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NGSetupFailure())}
-  {bits == G.NGSetupFailure.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NGSetupFailure.after(v, rem) : Nat}
+  for +e: {G.RelativeAMFCapacity.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.RelativeAMFCapacity())}
+  {bits == G.RelativeAMFCapacity.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.RelativeAMFCapacity.after(v, rem) : Nat}
+
+law ngap.PLMNSupportItem.roundtrip:
+  for +v: G.PLMNSupportItem
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PLMNSupportItem.valid(v) == True{} : Bool}
+  {G.PLMNSupportItem.read(Ap.Cur{rem, G.PLMNSupportItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PLMNSupportItem.after(v, rem), rest})} : Ap.Rd(G.PLMNSupportItem)}
+
+law ngap.PLMNSupportItem.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PLMNSupportItem
+  for +c2: Ap.Cur
+  for +e: {G.PLMNSupportItem.read(c) == Done{(v, c2)} : Ap.Rd(G.PLMNSupportItem)}
+  {G.PLMNSupportItem.valid(v) == True{} : Bool}
+
+law ngap.PLMNSupportItem.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PLMNSupportItem
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PLMNSupportItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PLMNSupportItem)}
+  {bits == G.PLMNSupportItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PLMNSupportItem.after(v, rem) : Nat}
+
+law ngap.PLMNSupportList.roundtrip:
+  for +v: G.PLMNSupportList()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PLMNSupportList.valid(v) == True{} : Bool}
+  {G.PLMNSupportList.read(Ap.Cur{rem, G.PLMNSupportList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PLMNSupportList.after(v, rem), rest})} : Ap.Rd(G.PLMNSupportList())}
+
+law ngap.PLMNSupportList.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PLMNSupportList()
+  for +c2: Ap.Cur
+  for +e: {G.PLMNSupportList.read(c) == Done{(v, c2)} : Ap.Rd(G.PLMNSupportList())}
+  {G.PLMNSupportList.valid(v) == True{} : Bool}
+
+law ngap.PLMNSupportList.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PLMNSupportList()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PLMNSupportList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PLMNSupportList())}
+  {bits == G.PLMNSupportList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PLMNSupportList.after(v, rem) : Nat}
+
+law ngap.ProcedureCode.roundtrip:
+  for +v: G.ProcedureCode()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.ProcedureCode.valid(v) == True{} : Bool}
+  {G.ProcedureCode.read(Ap.Cur{rem, G.ProcedureCode.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.ProcedureCode.after(v, rem), rest})} : Ap.Rd(G.ProcedureCode())}
+
+law ngap.ProcedureCode.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.ProcedureCode()
+  for +c2: Ap.Cur
+  for +e: {G.ProcedureCode.read(c) == Done{(v, c2)} : Ap.Rd(G.ProcedureCode())}
+  {G.ProcedureCode.valid(v) == True{} : Bool}
+
+law ngap.ProcedureCode.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.ProcedureCode()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.ProcedureCode.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ProcedureCode())}
+  {bits == G.ProcedureCode.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ProcedureCode.after(v, rem) : Nat}
+
+law ngap.TriggeringMessage.roundtrip:
+  for +v: G.TriggeringMessage()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.TriggeringMessage.valid(v) == True{} : Bool}
+  {G.TriggeringMessage.read(Ap.Cur{rem, G.TriggeringMessage.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TriggeringMessage.after(v, rem), rest})} : Ap.Rd(G.TriggeringMessage())}
+
+law ngap.TriggeringMessage.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.TriggeringMessage()
+  for +c2: Ap.Cur
+  for +e: {G.TriggeringMessage.read(c) == Done{(v, c2)} : Ap.Rd(G.TriggeringMessage())}
+  {G.TriggeringMessage.valid(v) == True{} : Bool}
+
+law ngap.TriggeringMessage.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.TriggeringMessage()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.TriggeringMessage.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TriggeringMessage())}
+  {bits == G.TriggeringMessage.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TriggeringMessage.after(v, rem) : Nat}
+
+law ngap.Criticality.roundtrip:
+  for +v: G.Criticality()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.Criticality.valid(v) == True{} : Bool}
+  {G.Criticality.read(Ap.Cur{rem, G.Criticality.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.Criticality.after(v, rem), rest})} : Ap.Rd(G.Criticality())}
+
+law ngap.Criticality.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.Criticality()
+  for +c2: Ap.Cur
+  for +e: {G.Criticality.read(c) == Done{(v, c2)} : Ap.Rd(G.Criticality())}
+  {G.Criticality.valid(v) == True{} : Bool}
+
+law ngap.Criticality.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.Criticality()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.Criticality.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.Criticality())}
+  {bits == G.Criticality.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.Criticality.after(v, rem) : Nat}
+
+law ngap.ProtocolIE_ID.roundtrip:
+  for +v: G.ProtocolIE_ID()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.ProtocolIE_ID.valid(v) == True{} : Bool}
+  {G.ProtocolIE_ID.read(Ap.Cur{rem, G.ProtocolIE_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.ProtocolIE_ID.after(v, rem), rest})} : Ap.Rd(G.ProtocolIE_ID())}
+
+law ngap.ProtocolIE_ID.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.ProtocolIE_ID()
+  for +c2: Ap.Cur
+  for +e: {G.ProtocolIE_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.ProtocolIE_ID())}
+  {G.ProtocolIE_ID.valid(v) == True{} : Bool}
+
+law ngap.ProtocolIE_ID.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.ProtocolIE_ID()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.ProtocolIE_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ProtocolIE_ID())}
+  {bits == G.ProtocolIE_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ProtocolIE_ID.after(v, rem) : Nat}
+
+law ngap.TypeOfError.roundtrip:
+  for +v: G.TypeOfError()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.TypeOfError.valid(v) == True{} : Bool}
+  {G.TypeOfError.read(Ap.Cur{rem, G.TypeOfError.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TypeOfError.after(v, rem), rest})} : Ap.Rd(G.TypeOfError())}
+
+law ngap.TypeOfError.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.TypeOfError()
+  for +c2: Ap.Cur
+  for +e: {G.TypeOfError.read(c) == Done{(v, c2)} : Ap.Rd(G.TypeOfError())}
+  {G.TypeOfError.valid(v) == True{} : Bool}
+
+law ngap.TypeOfError.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.TypeOfError()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.TypeOfError.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TypeOfError())}
+  {bits == G.TypeOfError.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TypeOfError.after(v, rem) : Nat}
+
+law ngap.CriticalityDiagnostics_IE_Item.roundtrip:
+  for +v: G.CriticalityDiagnostics_IE_Item
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}
+  {G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, G.CriticalityDiagnostics_IE_Item.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(v, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
+
+law ngap.CriticalityDiagnostics_IE_Item.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.CriticalityDiagnostics_IE_Item
+  for +c2: Ap.Cur
+  for +e: {G.CriticalityDiagnostics_IE_Item.read(c) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
+  {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}
+
+law ngap.CriticalityDiagnostics_IE_Item.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.CriticalityDiagnostics_IE_Item
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
+  {bits == G.CriticalityDiagnostics_IE_Item.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics_IE_Item.after(v, rem) : Nat}
+
+law ngap.CriticalityDiagnostics_IE_List.roundtrip:
+  for +v: G.CriticalityDiagnostics_IE_List()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.CriticalityDiagnostics_IE_List.valid(v) == True{} : Bool}
+  {G.CriticalityDiagnostics_IE_List.read(Ap.Cur{rem, G.CriticalityDiagnostics_IE_List.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CriticalityDiagnostics_IE_List.after(v, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_List())}
+
+law ngap.CriticalityDiagnostics_IE_List.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.CriticalityDiagnostics_IE_List()
+  for +c2: Ap.Cur
+  for +e: {G.CriticalityDiagnostics_IE_List.read(c) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_List())}
+  {G.CriticalityDiagnostics_IE_List.valid(v) == True{} : Bool}
+
+law ngap.CriticalityDiagnostics_IE_List.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.CriticalityDiagnostics_IE_List()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.CriticalityDiagnostics_IE_List.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_List())}
+  {bits == G.CriticalityDiagnostics_IE_List.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics_IE_List.after(v, rem) : Nat}
+
+law ngap.CriticalityDiagnostics.roundtrip:
+  for +v: G.CriticalityDiagnostics
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.CriticalityDiagnostics.valid(v) == True{} : Bool}
+  {G.CriticalityDiagnostics.read(Ap.Cur{rem, G.CriticalityDiagnostics.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CriticalityDiagnostics.after(v, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}
+
+law ngap.CriticalityDiagnostics.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.CriticalityDiagnostics
+  for +c2: Ap.Cur
+  for +e: {G.CriticalityDiagnostics.read(c) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}
+  {G.CriticalityDiagnostics.valid(v) == True{} : Bool}
+
+law ngap.CriticalityDiagnostics.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.CriticalityDiagnostics
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.CriticalityDiagnostics.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}
+  {bits == G.CriticalityDiagnostics.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics.after(v, rem) : Nat}
+
+law ngap.NGSetupResponse.roundtrip:
+  for +v: G.NGSetupResponse()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.NGSetupResponse.valid(v) == True{} : Bool}
+  {G.NGSetupResponse.read(Ap.Cur{rem, G.NGSetupResponse.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NGSetupResponse.after(v, rem), rest})} : Ap.Rd(G.NGSetupResponse())}
+
+law ngap.NGSetupResponse.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.NGSetupResponse()
+  for +c2: Ap.Cur
+  for +e: {G.NGSetupResponse.read(c) == Done{(v, c2)} : Ap.Rd(G.NGSetupResponse())}
+  {G.NGSetupResponse.valid(v) == True{} : Bool}
+
+law ngap.NGSetupResponse.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.NGSetupResponse()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.NGSetupResponse.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NGSetupResponse())}
+  {bits == G.NGSetupResponse.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NGSetupResponse.after(v, rem) : Nat}
 
 law ngap.CauseRadioNetwork.roundtrip:
   for +v: G.CauseRadioNetwork()
@@ -999,258 +1160,74 @@ law ngap.Cause.suffix:
   for +e: {G.Cause.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.Cause)}
   {bits == G.Cause.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.Cause.after(v, rem) : Nat}
 
-law ngap.InitialUEMessage.roundtrip:
-  for +v: G.InitialUEMessage()
+law ngap.NGSetupFailure.roundtrip:
+  for +v: G.NGSetupFailure()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.InitialUEMessage.valid(v) == True{} : Bool}
-  {G.InitialUEMessage.read(Ap.Cur{rem, G.InitialUEMessage.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.InitialUEMessage.after(v, rem), rest})} : Ap.Rd(G.InitialUEMessage())}
+  for +ok: {G.NGSetupFailure.valid(v) == True{} : Bool}
+  {G.NGSetupFailure.read(Ap.Cur{rem, G.NGSetupFailure.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NGSetupFailure.after(v, rem), rest})} : Ap.Rd(G.NGSetupFailure())}
 
-law ngap.InitialUEMessage.decode_valid:
+law ngap.NGSetupFailure.decode_valid:
   for +c: Ap.Cur
-  for +v: G.InitialUEMessage()
+  for +v: G.NGSetupFailure()
   for +c2: Ap.Cur
-  for +e: {G.InitialUEMessage.read(c) == Done{(v, c2)} : Ap.Rd(G.InitialUEMessage())}
-  {G.InitialUEMessage.valid(v) == True{} : Bool}
+  for +e: {G.NGSetupFailure.read(c) == Done{(v, c2)} : Ap.Rd(G.NGSetupFailure())}
+  {G.NGSetupFailure.valid(v) == True{} : Bool}
 
-law ngap.InitialUEMessage.suffix:
+law ngap.NGSetupFailure.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.InitialUEMessage()
+  for +v: G.NGSetupFailure()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.InitialUEMessage.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.InitialUEMessage())}
-  {bits == G.InitialUEMessage.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.InitialUEMessage.after(v, rem) : Nat}
+  for +e: {G.NGSetupFailure.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NGSetupFailure())}
+  {bits == G.NGSetupFailure.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NGSetupFailure.after(v, rem) : Nat}
 
-law ngap.CAG_ID.roundtrip:
-  for +v: G.CAG_ID()
+law ngap.RAN_UE_NGAP_ID.roundtrip:
+  for +v: G.RAN_UE_NGAP_ID()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.CAG_ID.valid(v) == True{} : Bool}
-  {G.CAG_ID.read(Ap.Cur{rem, G.CAG_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CAG_ID.after(v, rem), rest})} : Ap.Rd(G.CAG_ID())}
+  for +ok: {G.RAN_UE_NGAP_ID.valid(v) == True{} : Bool}
+  {G.RAN_UE_NGAP_ID.read(Ap.Cur{rem, G.RAN_UE_NGAP_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.RAN_UE_NGAP_ID.after(v, rem), rest})} : Ap.Rd(G.RAN_UE_NGAP_ID())}
 
-law ngap.CAG_ID.decode_valid:
+law ngap.RAN_UE_NGAP_ID.decode_valid:
   for +c: Ap.Cur
-  for +v: G.CAG_ID()
+  for +v: G.RAN_UE_NGAP_ID()
   for +c2: Ap.Cur
-  for +e: {G.CAG_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.CAG_ID())}
-  {G.CAG_ID.valid(v) == True{} : Bool}
+  for +e: {G.RAN_UE_NGAP_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.RAN_UE_NGAP_ID())}
+  {G.RAN_UE_NGAP_ID.valid(v) == True{} : Bool}
 
-law ngap.CAG_ID.suffix:
+law ngap.RAN_UE_NGAP_ID.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.CAG_ID()
+  for +v: G.RAN_UE_NGAP_ID()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.CAG_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CAG_ID())}
-  {bits == G.CAG_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CAG_ID.after(v, rem) : Nat}
+  for +e: {G.RAN_UE_NGAP_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.RAN_UE_NGAP_ID())}
+  {bits == G.RAN_UE_NGAP_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.RAN_UE_NGAP_ID.after(v, rem) : Nat}
 
-law ngap.CellCAGList.roundtrip:
-  for +v: G.CellCAGList()
+law ngap.NAS_PDU.roundtrip:
+  for +v: G.NAS_PDU()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.CellCAGList.valid(v) == True{} : Bool}
-  {G.CellCAGList.read(Ap.Cur{rem, G.CellCAGList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CellCAGList.after(v, rem), rest})} : Ap.Rd(G.CellCAGList())}
+  for +ok: {G.NAS_PDU.valid(v) == True{} : Bool}
+  {G.NAS_PDU.read(Ap.Cur{rem, G.NAS_PDU.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NAS_PDU.after(v, rem), rest})} : Ap.Rd(G.NAS_PDU())}
 
-law ngap.CellCAGList.decode_valid:
+law ngap.NAS_PDU.decode_valid:
   for +c: Ap.Cur
-  for +v: G.CellCAGList()
+  for +v: G.NAS_PDU()
   for +c2: Ap.Cur
-  for +e: {G.CellCAGList.read(c) == Done{(v, c2)} : Ap.Rd(G.CellCAGList())}
-  {G.CellCAGList.valid(v) == True{} : Bool}
+  for +e: {G.NAS_PDU.read(c) == Done{(v, c2)} : Ap.Rd(G.NAS_PDU())}
+  {G.NAS_PDU.valid(v) == True{} : Bool}
 
-law ngap.CellCAGList.suffix:
+law ngap.NAS_PDU.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.CellCAGList()
+  for +v: G.NAS_PDU()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.CellCAGList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CellCAGList())}
-  {bits == G.CellCAGList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CellCAGList.after(v, rem) : Nat}
-
-law ngap.NPN_AccessInformation.roundtrip:
-  for +v: G.NPN_AccessInformation
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.NPN_AccessInformation.valid(v) == True{} : Bool}
-  {G.NPN_AccessInformation.read(Ap.Cur{rem, G.NPN_AccessInformation.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NPN_AccessInformation.after(v, rem), rest})} : Ap.Rd(G.NPN_AccessInformation)}
-
-law ngap.NPN_AccessInformation.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.NPN_AccessInformation
-  for +c2: Ap.Cur
-  for +e: {G.NPN_AccessInformation.read(c) == Done{(v, c2)} : Ap.Rd(G.NPN_AccessInformation)}
-  {G.NPN_AccessInformation.valid(v) == True{} : Bool}
-
-law ngap.NPN_AccessInformation.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.NPN_AccessInformation
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.NPN_AccessInformation.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NPN_AccessInformation)}
-  {bits == G.NPN_AccessInformation.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NPN_AccessInformation.after(v, rem) : Nat}
-
-law ngap.CEmodeBSupport_Indicator.roundtrip:
-  for +v: G.CEmodeBSupport_Indicator()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.CEmodeBSupport_Indicator.valid(v) == True{} : Bool}
-  {G.CEmodeBSupport_Indicator.read(Ap.Cur{rem, G.CEmodeBSupport_Indicator.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CEmodeBSupport_Indicator.after(v, rem), rest})} : Ap.Rd(G.CEmodeBSupport_Indicator())}
-
-law ngap.CEmodeBSupport_Indicator.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.CEmodeBSupport_Indicator()
-  for +c2: Ap.Cur
-  for +e: {G.CEmodeBSupport_Indicator.read(c) == Done{(v, c2)} : Ap.Rd(G.CEmodeBSupport_Indicator())}
-  {G.CEmodeBSupport_Indicator.valid(v) == True{} : Bool}
-
-law ngap.CEmodeBSupport_Indicator.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.CEmodeBSupport_Indicator()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.CEmodeBSupport_Indicator.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CEmodeBSupport_Indicator())}
-  {bits == G.CEmodeBSupport_Indicator.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CEmodeBSupport_Indicator.after(v, rem) : Nat}
-
-law ngap.IABNodeIndication.roundtrip:
-  for +v: G.IABNodeIndication()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.IABNodeIndication.valid(v) == True{} : Bool}
-  {G.IABNodeIndication.read(Ap.Cur{rem, G.IABNodeIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.IABNodeIndication.after(v, rem), rest})} : Ap.Rd(G.IABNodeIndication())}
-
-law ngap.IABNodeIndication.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.IABNodeIndication()
-  for +c2: Ap.Cur
-  for +e: {G.IABNodeIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.IABNodeIndication())}
-  {G.IABNodeIndication.valid(v) == True{} : Bool}
-
-law ngap.IABNodeIndication.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.IABNodeIndication()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.IABNodeIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.IABNodeIndication())}
-  {bits == G.IABNodeIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.IABNodeIndication.after(v, rem) : Nat}
-
-law ngap.AllowedNSSAI_Item.roundtrip:
-  for +v: G.AllowedNSSAI_Item
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.AllowedNSSAI_Item.valid(v) == True{} : Bool}
-  {G.AllowedNSSAI_Item.read(Ap.Cur{rem, G.AllowedNSSAI_Item.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AllowedNSSAI_Item.after(v, rem), rest})} : Ap.Rd(G.AllowedNSSAI_Item)}
-
-law ngap.AllowedNSSAI_Item.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.AllowedNSSAI_Item
-  for +c2: Ap.Cur
-  for +e: {G.AllowedNSSAI_Item.read(c) == Done{(v, c2)} : Ap.Rd(G.AllowedNSSAI_Item)}
-  {G.AllowedNSSAI_Item.valid(v) == True{} : Bool}
-
-law ngap.AllowedNSSAI_Item.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.AllowedNSSAI_Item
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.AllowedNSSAI_Item.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AllowedNSSAI_Item)}
-  {bits == G.AllowedNSSAI_Item.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AllowedNSSAI_Item.after(v, rem) : Nat}
-
-law ngap.AllowedNSSAI.roundtrip:
-  for +v: G.AllowedNSSAI()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.AllowedNSSAI.valid(v) == True{} : Bool}
-  {G.AllowedNSSAI.read(Ap.Cur{rem, G.AllowedNSSAI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AllowedNSSAI.after(v, rem), rest})} : Ap.Rd(G.AllowedNSSAI())}
-
-law ngap.AllowedNSSAI.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.AllowedNSSAI()
-  for +c2: Ap.Cur
-  for +e: {G.AllowedNSSAI.read(c) == Done{(v, c2)} : Ap.Rd(G.AllowedNSSAI())}
-  {G.AllowedNSSAI.valid(v) == True{} : Bool}
-
-law ngap.AllowedNSSAI.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.AllowedNSSAI()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.AllowedNSSAI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AllowedNSSAI())}
-  {bits == G.AllowedNSSAI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AllowedNSSAI.after(v, rem) : Nat}
-
-law ngap.FiveG_TMSI.roundtrip:
-  for +v: G.FiveG_TMSI()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.FiveG_TMSI.valid(v) == True{} : Bool}
-  {G.FiveG_TMSI.read(Ap.Cur{rem, G.FiveG_TMSI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.FiveG_TMSI.after(v, rem), rest})} : Ap.Rd(G.FiveG_TMSI())}
-
-law ngap.FiveG_TMSI.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.FiveG_TMSI()
-  for +c2: Ap.Cur
-  for +e: {G.FiveG_TMSI.read(c) == Done{(v, c2)} : Ap.Rd(G.FiveG_TMSI())}
-  {G.FiveG_TMSI.valid(v) == True{} : Bool}
-
-law ngap.FiveG_TMSI.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.FiveG_TMSI()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.FiveG_TMSI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.FiveG_TMSI())}
-  {bits == G.FiveG_TMSI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.FiveG_TMSI.after(v, rem) : Nat}
-
-law ngap.FiveG_S_TMSI.roundtrip:
-  for +v: G.FiveG_S_TMSI
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.FiveG_S_TMSI.valid(v) == True{} : Bool}
-  {G.FiveG_S_TMSI.read(Ap.Cur{rem, G.FiveG_S_TMSI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.FiveG_S_TMSI.after(v, rem), rest})} : Ap.Rd(G.FiveG_S_TMSI)}
-
-law ngap.FiveG_S_TMSI.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.FiveG_S_TMSI
-  for +c2: Ap.Cur
-  for +e: {G.FiveG_S_TMSI.read(c) == Done{(v, c2)} : Ap.Rd(G.FiveG_S_TMSI)}
-  {G.FiveG_S_TMSI.valid(v) == True{} : Bool}
-
-law ngap.FiveG_S_TMSI.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.FiveG_S_TMSI
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.FiveG_S_TMSI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.FiveG_S_TMSI)}
-  {bits == G.FiveG_S_TMSI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.FiveG_S_TMSI.after(v, rem) : Nat}
-
-law ngap.RRCEstablishmentCause.roundtrip:
-  for +v: G.RRCEstablishmentCause()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.RRCEstablishmentCause.valid(v) == True{} : Bool}
-  {G.RRCEstablishmentCause.read(Ap.Cur{rem, G.RRCEstablishmentCause.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.RRCEstablishmentCause.after(v, rem), rest})} : Ap.Rd(G.RRCEstablishmentCause())}
-
-law ngap.RRCEstablishmentCause.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.RRCEstablishmentCause()
-  for +c2: Ap.Cur
-  for +e: {G.RRCEstablishmentCause.read(c) == Done{(v, c2)} : Ap.Rd(G.RRCEstablishmentCause())}
-  {G.RRCEstablishmentCause.valid(v) == True{} : Bool}
-
-law ngap.RRCEstablishmentCause.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.RRCEstablishmentCause()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.RRCEstablishmentCause.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.RRCEstablishmentCause())}
-  {bits == G.RRCEstablishmentCause.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.RRCEstablishmentCause.after(v, rem) : Nat}
+  for +e: {G.NAS_PDU.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NAS_PDU())}
+  {bits == G.NAS_PDU.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NAS_PDU.after(v, rem) : Nat}
 
 law ngap.EUTRACellIdentity.roundtrip:
   for +v: G.EUTRACellIdentity()
@@ -1528,74 +1505,281 @@ law ngap.UserLocationInformation.suffix:
   for +e: {G.UserLocationInformation.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UserLocationInformation)}
   {bits == G.UserLocationInformation.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UserLocationInformation.after(v, rem) : Nat}
 
-law ngap.NAS_PDU.roundtrip:
-  for +v: G.NAS_PDU()
+law ngap.RRCEstablishmentCause.roundtrip:
+  for +v: G.RRCEstablishmentCause()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.NAS_PDU.valid(v) == True{} : Bool}
-  {G.NAS_PDU.read(Ap.Cur{rem, G.NAS_PDU.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NAS_PDU.after(v, rem), rest})} : Ap.Rd(G.NAS_PDU())}
+  for +ok: {G.RRCEstablishmentCause.valid(v) == True{} : Bool}
+  {G.RRCEstablishmentCause.read(Ap.Cur{rem, G.RRCEstablishmentCause.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.RRCEstablishmentCause.after(v, rem), rest})} : Ap.Rd(G.RRCEstablishmentCause())}
 
-law ngap.NAS_PDU.decode_valid:
+law ngap.RRCEstablishmentCause.decode_valid:
   for +c: Ap.Cur
-  for +v: G.NAS_PDU()
+  for +v: G.RRCEstablishmentCause()
   for +c2: Ap.Cur
-  for +e: {G.NAS_PDU.read(c) == Done{(v, c2)} : Ap.Rd(G.NAS_PDU())}
-  {G.NAS_PDU.valid(v) == True{} : Bool}
+  for +e: {G.RRCEstablishmentCause.read(c) == Done{(v, c2)} : Ap.Rd(G.RRCEstablishmentCause())}
+  {G.RRCEstablishmentCause.valid(v) == True{} : Bool}
 
-law ngap.NAS_PDU.suffix:
+law ngap.RRCEstablishmentCause.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.NAS_PDU()
+  for +v: G.RRCEstablishmentCause()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.NAS_PDU.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NAS_PDU())}
-  {bits == G.NAS_PDU.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NAS_PDU.after(v, rem) : Nat}
+  for +e: {G.RRCEstablishmentCause.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.RRCEstablishmentCause())}
+  {bits == G.RRCEstablishmentCause.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.RRCEstablishmentCause.after(v, rem) : Nat}
 
-law ngap.RAN_UE_NGAP_ID.roundtrip:
-  for +v: G.RAN_UE_NGAP_ID()
+law ngap.FiveG_TMSI.roundtrip:
+  for +v: G.FiveG_TMSI()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.RAN_UE_NGAP_ID.valid(v) == True{} : Bool}
-  {G.RAN_UE_NGAP_ID.read(Ap.Cur{rem, G.RAN_UE_NGAP_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.RAN_UE_NGAP_ID.after(v, rem), rest})} : Ap.Rd(G.RAN_UE_NGAP_ID())}
+  for +ok: {G.FiveG_TMSI.valid(v) == True{} : Bool}
+  {G.FiveG_TMSI.read(Ap.Cur{rem, G.FiveG_TMSI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.FiveG_TMSI.after(v, rem), rest})} : Ap.Rd(G.FiveG_TMSI())}
 
-law ngap.RAN_UE_NGAP_ID.decode_valid:
+law ngap.FiveG_TMSI.decode_valid:
   for +c: Ap.Cur
-  for +v: G.RAN_UE_NGAP_ID()
+  for +v: G.FiveG_TMSI()
   for +c2: Ap.Cur
-  for +e: {G.RAN_UE_NGAP_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.RAN_UE_NGAP_ID())}
-  {G.RAN_UE_NGAP_ID.valid(v) == True{} : Bool}
+  for +e: {G.FiveG_TMSI.read(c) == Done{(v, c2)} : Ap.Rd(G.FiveG_TMSI())}
+  {G.FiveG_TMSI.valid(v) == True{} : Bool}
 
-law ngap.RAN_UE_NGAP_ID.suffix:
+law ngap.FiveG_TMSI.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.RAN_UE_NGAP_ID()
+  for +v: G.FiveG_TMSI()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.RAN_UE_NGAP_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.RAN_UE_NGAP_ID())}
-  {bits == G.RAN_UE_NGAP_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.RAN_UE_NGAP_ID.after(v, rem) : Nat}
+  for +e: {G.FiveG_TMSI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.FiveG_TMSI())}
+  {bits == G.FiveG_TMSI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.FiveG_TMSI.after(v, rem) : Nat}
 
-law ngap.DownlinkNASTransport.roundtrip:
-  for +v: G.DownlinkNASTransport()
+law ngap.FiveG_S_TMSI.roundtrip:
+  for +v: G.FiveG_S_TMSI
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.DownlinkNASTransport.valid(v) == True{} : Bool}
-  {G.DownlinkNASTransport.read(Ap.Cur{rem, G.DownlinkNASTransport.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.DownlinkNASTransport.after(v, rem), rest})} : Ap.Rd(G.DownlinkNASTransport())}
+  for +ok: {G.FiveG_S_TMSI.valid(v) == True{} : Bool}
+  {G.FiveG_S_TMSI.read(Ap.Cur{rem, G.FiveG_S_TMSI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.FiveG_S_TMSI.after(v, rem), rest})} : Ap.Rd(G.FiveG_S_TMSI)}
 
-law ngap.DownlinkNASTransport.decode_valid:
+law ngap.FiveG_S_TMSI.decode_valid:
   for +c: Ap.Cur
-  for +v: G.DownlinkNASTransport()
+  for +v: G.FiveG_S_TMSI
   for +c2: Ap.Cur
-  for +e: {G.DownlinkNASTransport.read(c) == Done{(v, c2)} : Ap.Rd(G.DownlinkNASTransport())}
-  {G.DownlinkNASTransport.valid(v) == True{} : Bool}
+  for +e: {G.FiveG_S_TMSI.read(c) == Done{(v, c2)} : Ap.Rd(G.FiveG_S_TMSI)}
+  {G.FiveG_S_TMSI.valid(v) == True{} : Bool}
 
-law ngap.DownlinkNASTransport.suffix:
+law ngap.FiveG_S_TMSI.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.DownlinkNASTransport()
+  for +v: G.FiveG_S_TMSI
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.DownlinkNASTransport.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.DownlinkNASTransport())}
-  {bits == G.DownlinkNASTransport.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.DownlinkNASTransport.after(v, rem) : Nat}
+  for +e: {G.FiveG_S_TMSI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.FiveG_S_TMSI)}
+  {bits == G.FiveG_S_TMSI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.FiveG_S_TMSI.after(v, rem) : Nat}
+
+law ngap.AllowedNSSAI_Item.roundtrip:
+  for +v: G.AllowedNSSAI_Item
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.AllowedNSSAI_Item.valid(v) == True{} : Bool}
+  {G.AllowedNSSAI_Item.read(Ap.Cur{rem, G.AllowedNSSAI_Item.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AllowedNSSAI_Item.after(v, rem), rest})} : Ap.Rd(G.AllowedNSSAI_Item)}
+
+law ngap.AllowedNSSAI_Item.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.AllowedNSSAI_Item
+  for +c2: Ap.Cur
+  for +e: {G.AllowedNSSAI_Item.read(c) == Done{(v, c2)} : Ap.Rd(G.AllowedNSSAI_Item)}
+  {G.AllowedNSSAI_Item.valid(v) == True{} : Bool}
+
+law ngap.AllowedNSSAI_Item.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.AllowedNSSAI_Item
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.AllowedNSSAI_Item.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AllowedNSSAI_Item)}
+  {bits == G.AllowedNSSAI_Item.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AllowedNSSAI_Item.after(v, rem) : Nat}
+
+law ngap.AllowedNSSAI.roundtrip:
+  for +v: G.AllowedNSSAI()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.AllowedNSSAI.valid(v) == True{} : Bool}
+  {G.AllowedNSSAI.read(Ap.Cur{rem, G.AllowedNSSAI.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AllowedNSSAI.after(v, rem), rest})} : Ap.Rd(G.AllowedNSSAI())}
+
+law ngap.AllowedNSSAI.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.AllowedNSSAI()
+  for +c2: Ap.Cur
+  for +e: {G.AllowedNSSAI.read(c) == Done{(v, c2)} : Ap.Rd(G.AllowedNSSAI())}
+  {G.AllowedNSSAI.valid(v) == True{} : Bool}
+
+law ngap.AllowedNSSAI.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.AllowedNSSAI()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.AllowedNSSAI.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AllowedNSSAI())}
+  {bits == G.AllowedNSSAI.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AllowedNSSAI.after(v, rem) : Nat}
+
+law ngap.IABNodeIndication.roundtrip:
+  for +v: G.IABNodeIndication()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.IABNodeIndication.valid(v) == True{} : Bool}
+  {G.IABNodeIndication.read(Ap.Cur{rem, G.IABNodeIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.IABNodeIndication.after(v, rem), rest})} : Ap.Rd(G.IABNodeIndication())}
+
+law ngap.IABNodeIndication.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.IABNodeIndication()
+  for +c2: Ap.Cur
+  for +e: {G.IABNodeIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.IABNodeIndication())}
+  {G.IABNodeIndication.valid(v) == True{} : Bool}
+
+law ngap.IABNodeIndication.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.IABNodeIndication()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.IABNodeIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.IABNodeIndication())}
+  {bits == G.IABNodeIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.IABNodeIndication.after(v, rem) : Nat}
+
+law ngap.CEmodeBSupport_Indicator.roundtrip:
+  for +v: G.CEmodeBSupport_Indicator()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.CEmodeBSupport_Indicator.valid(v) == True{} : Bool}
+  {G.CEmodeBSupport_Indicator.read(Ap.Cur{rem, G.CEmodeBSupport_Indicator.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CEmodeBSupport_Indicator.after(v, rem), rest})} : Ap.Rd(G.CEmodeBSupport_Indicator())}
+
+law ngap.CEmodeBSupport_Indicator.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.CEmodeBSupport_Indicator()
+  for +c2: Ap.Cur
+  for +e: {G.CEmodeBSupport_Indicator.read(c) == Done{(v, c2)} : Ap.Rd(G.CEmodeBSupport_Indicator())}
+  {G.CEmodeBSupport_Indicator.valid(v) == True{} : Bool}
+
+law ngap.CEmodeBSupport_Indicator.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.CEmodeBSupport_Indicator()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.CEmodeBSupport_Indicator.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CEmodeBSupport_Indicator())}
+  {bits == G.CEmodeBSupport_Indicator.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CEmodeBSupport_Indicator.after(v, rem) : Nat}
+
+law ngap.CAG_ID.roundtrip:
+  for +v: G.CAG_ID()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.CAG_ID.valid(v) == True{} : Bool}
+  {G.CAG_ID.read(Ap.Cur{rem, G.CAG_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CAG_ID.after(v, rem), rest})} : Ap.Rd(G.CAG_ID())}
+
+law ngap.CAG_ID.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.CAG_ID()
+  for +c2: Ap.Cur
+  for +e: {G.CAG_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.CAG_ID())}
+  {G.CAG_ID.valid(v) == True{} : Bool}
+
+law ngap.CAG_ID.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.CAG_ID()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.CAG_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CAG_ID())}
+  {bits == G.CAG_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CAG_ID.after(v, rem) : Nat}
+
+law ngap.CellCAGList.roundtrip:
+  for +v: G.CellCAGList()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.CellCAGList.valid(v) == True{} : Bool}
+  {G.CellCAGList.read(Ap.Cur{rem, G.CellCAGList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CellCAGList.after(v, rem), rest})} : Ap.Rd(G.CellCAGList())}
+
+law ngap.CellCAGList.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.CellCAGList()
+  for +c2: Ap.Cur
+  for +e: {G.CellCAGList.read(c) == Done{(v, c2)} : Ap.Rd(G.CellCAGList())}
+  {G.CellCAGList.valid(v) == True{} : Bool}
+
+law ngap.CellCAGList.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.CellCAGList()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.CellCAGList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CellCAGList())}
+  {bits == G.CellCAGList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CellCAGList.after(v, rem) : Nat}
+
+law ngap.NPN_AccessInformation.roundtrip:
+  for +v: G.NPN_AccessInformation
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.NPN_AccessInformation.valid(v) == True{} : Bool}
+  {G.NPN_AccessInformation.read(Ap.Cur{rem, G.NPN_AccessInformation.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NPN_AccessInformation.after(v, rem), rest})} : Ap.Rd(G.NPN_AccessInformation)}
+
+law ngap.NPN_AccessInformation.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.NPN_AccessInformation
+  for +c2: Ap.Cur
+  for +e: {G.NPN_AccessInformation.read(c) == Done{(v, c2)} : Ap.Rd(G.NPN_AccessInformation)}
+  {G.NPN_AccessInformation.valid(v) == True{} : Bool}
+
+law ngap.NPN_AccessInformation.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.NPN_AccessInformation
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.NPN_AccessInformation.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NPN_AccessInformation)}
+  {bits == G.NPN_AccessInformation.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NPN_AccessInformation.after(v, rem) : Nat}
+
+law ngap.InitialUEMessage.roundtrip:
+  for +v: G.InitialUEMessage()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.InitialUEMessage.valid(v) == True{} : Bool}
+  {G.InitialUEMessage.read(Ap.Cur{rem, G.InitialUEMessage.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.InitialUEMessage.after(v, rem), rest})} : Ap.Rd(G.InitialUEMessage())}
+
+law ngap.InitialUEMessage.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.InitialUEMessage()
+  for +c2: Ap.Cur
+  for +e: {G.InitialUEMessage.read(c) == Done{(v, c2)} : Ap.Rd(G.InitialUEMessage())}
+  {G.InitialUEMessage.valid(v) == True{} : Bool}
+
+law ngap.InitialUEMessage.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.InitialUEMessage()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.InitialUEMessage.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.InitialUEMessage())}
+  {bits == G.InitialUEMessage.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.InitialUEMessage.after(v, rem) : Nat}
+
+law ngap.AMF_UE_NGAP_ID.roundtrip:
+  for +v: G.AMF_UE_NGAP_ID()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.AMF_UE_NGAP_ID.valid(v) == True{} : Bool}
+  {G.AMF_UE_NGAP_ID.read(Ap.Cur{rem, G.AMF_UE_NGAP_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AMF_UE_NGAP_ID.after(v, rem), rest})} : Ap.Rd(G.AMF_UE_NGAP_ID())}
+
+law ngap.AMF_UE_NGAP_ID.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.AMF_UE_NGAP_ID()
+  for +c2: Ap.Cur
+  for +e: {G.AMF_UE_NGAP_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.AMF_UE_NGAP_ID())}
+  {G.AMF_UE_NGAP_ID.valid(v) == True{} : Bool}
+
+law ngap.AMF_UE_NGAP_ID.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.AMF_UE_NGAP_ID()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.AMF_UE_NGAP_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AMF_UE_NGAP_ID())}
+  {bits == G.AMF_UE_NGAP_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AMF_UE_NGAP_ID.after(v, rem) : Nat}
 
 law ngap.BitRate.roundtrip:
   for +v: G.BitRate()
@@ -1643,28 +1827,28 @@ law ngap.UEAggregateMaximumBitRate.suffix:
   for +e: {G.UEAggregateMaximumBitRate.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEAggregateMaximumBitRate)}
   {bits == G.UEAggregateMaximumBitRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEAggregateMaximumBitRate.after(v, rem) : Nat}
 
-law ngap.AMF_UE_NGAP_ID.roundtrip:
-  for +v: G.AMF_UE_NGAP_ID()
+law ngap.DownlinkNASTransport.roundtrip:
+  for +v: G.DownlinkNASTransport()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.AMF_UE_NGAP_ID.valid(v) == True{} : Bool}
-  {G.AMF_UE_NGAP_ID.read(Ap.Cur{rem, G.AMF_UE_NGAP_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.AMF_UE_NGAP_ID.after(v, rem), rest})} : Ap.Rd(G.AMF_UE_NGAP_ID())}
+  for +ok: {G.DownlinkNASTransport.valid(v) == True{} : Bool}
+  {G.DownlinkNASTransport.read(Ap.Cur{rem, G.DownlinkNASTransport.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.DownlinkNASTransport.after(v, rem), rest})} : Ap.Rd(G.DownlinkNASTransport())}
 
-law ngap.AMF_UE_NGAP_ID.decode_valid:
+law ngap.DownlinkNASTransport.decode_valid:
   for +c: Ap.Cur
-  for +v: G.AMF_UE_NGAP_ID()
+  for +v: G.DownlinkNASTransport()
   for +c2: Ap.Cur
-  for +e: {G.AMF_UE_NGAP_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.AMF_UE_NGAP_ID())}
-  {G.AMF_UE_NGAP_ID.valid(v) == True{} : Bool}
+  for +e: {G.DownlinkNASTransport.read(c) == Done{(v, c2)} : Ap.Rd(G.DownlinkNASTransport())}
+  {G.DownlinkNASTransport.valid(v) == True{} : Bool}
 
-law ngap.AMF_UE_NGAP_ID.suffix:
+law ngap.DownlinkNASTransport.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.AMF_UE_NGAP_ID()
+  for +v: G.DownlinkNASTransport()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.AMF_UE_NGAP_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.AMF_UE_NGAP_ID())}
-  {bits == G.AMF_UE_NGAP_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.AMF_UE_NGAP_ID.after(v, rem) : Nat}
+  for +e: {G.DownlinkNASTransport.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.DownlinkNASTransport())}
+  {bits == G.DownlinkNASTransport.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.DownlinkNASTransport.after(v, rem) : Nat}
 
 law ngap.UplinkNASTransport.roundtrip:
   for +v: G.UplinkNASTransport()
@@ -1688,52 +1872,6 @@ law ngap.UplinkNASTransport.suffix:
   for +bits2: Ap.Bits()
   for +e: {G.UplinkNASTransport.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UplinkNASTransport())}
   {bits == G.UplinkNASTransport.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UplinkNASTransport.after(v, rem) : Nat}
-
-law ngap.InitialContextSetupRequest.roundtrip:
-  for +v: G.InitialContextSetupRequest()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.InitialContextSetupRequest.valid(v) == True{} : Bool}
-  {G.InitialContextSetupRequest.read(Ap.Cur{rem, G.InitialContextSetupRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.InitialContextSetupRequest.after(v, rem), rest})} : Ap.Rd(G.InitialContextSetupRequest())}
-
-law ngap.InitialContextSetupRequest.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.InitialContextSetupRequest()
-  for +c2: Ap.Cur
-  for +e: {G.InitialContextSetupRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.InitialContextSetupRequest())}
-  {G.InitialContextSetupRequest.valid(v) == True{} : Bool}
-
-law ngap.InitialContextSetupRequest.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.InitialContextSetupRequest()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.InitialContextSetupRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.InitialContextSetupRequest())}
-  {bits == G.InitialContextSetupRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.InitialContextSetupRequest.after(v, rem) : Nat}
-
-law ngap.SecurityKey.roundtrip:
-  for +v: G.SecurityKey()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SecurityKey.valid(v) == True{} : Bool}
-  {G.SecurityKey.read(Ap.Cur{rem, G.SecurityKey.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SecurityKey.after(v, rem), rest})} : Ap.Rd(G.SecurityKey())}
-
-law ngap.SecurityKey.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SecurityKey()
-  for +c2: Ap.Cur
-  for +e: {G.SecurityKey.read(c) == Done{(v, c2)} : Ap.Rd(G.SecurityKey())}
-  {G.SecurityKey.valid(v) == True{} : Bool}
-
-law ngap.SecurityKey.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SecurityKey()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SecurityKey.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SecurityKey())}
-  {bits == G.SecurityKey.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SecurityKey.after(v, rem) : Nat}
 
 law ngap.NRencryptionAlgorithms.roundtrip:
   for +v: G.NRencryptionAlgorithms()
@@ -1850,6 +1988,52 @@ law ngap.UESecurityCapabilities.suffix:
   for +e: {G.UESecurityCapabilities.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UESecurityCapabilities)}
   {bits == G.UESecurityCapabilities.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UESecurityCapabilities.after(v, rem) : Nat}
 
+law ngap.SecurityKey.roundtrip:
+  for +v: G.SecurityKey()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SecurityKey.valid(v) == True{} : Bool}
+  {G.SecurityKey.read(Ap.Cur{rem, G.SecurityKey.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SecurityKey.after(v, rem), rest})} : Ap.Rd(G.SecurityKey())}
+
+law ngap.SecurityKey.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SecurityKey()
+  for +c2: Ap.Cur
+  for +e: {G.SecurityKey.read(c) == Done{(v, c2)} : Ap.Rd(G.SecurityKey())}
+  {G.SecurityKey.valid(v) == True{} : Bool}
+
+law ngap.SecurityKey.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SecurityKey()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SecurityKey.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SecurityKey())}
+  {bits == G.SecurityKey.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SecurityKey.after(v, rem) : Nat}
+
+law ngap.InitialContextSetupRequest.roundtrip:
+  for +v: G.InitialContextSetupRequest()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.InitialContextSetupRequest.valid(v) == True{} : Bool}
+  {G.InitialContextSetupRequest.read(Ap.Cur{rem, G.InitialContextSetupRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.InitialContextSetupRequest.after(v, rem), rest})} : Ap.Rd(G.InitialContextSetupRequest())}
+
+law ngap.InitialContextSetupRequest.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.InitialContextSetupRequest()
+  for +c2: Ap.Cur
+  for +e: {G.InitialContextSetupRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.InitialContextSetupRequest())}
+  {G.InitialContextSetupRequest.valid(v) == True{} : Bool}
+
+law ngap.InitialContextSetupRequest.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.InitialContextSetupRequest()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.InitialContextSetupRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.InitialContextSetupRequest())}
+  {bits == G.InitialContextSetupRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.InitialContextSetupRequest.after(v, rem) : Nat}
+
 law ngap.InitialContextSetupResponse.roundtrip:
   for +v: G.InitialContextSetupResponse()
   for +rem: Nat
@@ -1895,29 +2079,6 @@ law ngap.InitialContextSetupFailure.suffix:
   for +bits2: Ap.Bits()
   for +e: {G.InitialContextSetupFailure.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.InitialContextSetupFailure())}
   {bits == G.InitialContextSetupFailure.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.InitialContextSetupFailure.after(v, rem) : Nat}
-
-law ngap.UEContextReleaseRequest.roundtrip:
-  for +v: G.UEContextReleaseRequest()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.UEContextReleaseRequest.valid(v) == True{} : Bool}
-  {G.UEContextReleaseRequest.read(Ap.Cur{rem, G.UEContextReleaseRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UEContextReleaseRequest.after(v, rem), rest})} : Ap.Rd(G.UEContextReleaseRequest())}
-
-law ngap.UEContextReleaseRequest.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.UEContextReleaseRequest()
-  for +c2: Ap.Cur
-  for +e: {G.UEContextReleaseRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.UEContextReleaseRequest())}
-  {G.UEContextReleaseRequest.valid(v) == True{} : Bool}
-
-law ngap.UEContextReleaseRequest.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.UEContextReleaseRequest()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.UEContextReleaseRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEContextReleaseRequest())}
-  {bits == G.UEContextReleaseRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEContextReleaseRequest.after(v, rem) : Nat}
 
 law ngap.PDUSessionID.roundtrip:
   for +v: G.PDUSessionID()
@@ -1988,28 +2149,28 @@ law ngap.PDUSessionResourceListCxtRelReq.suffix:
   for +e: {G.PDUSessionResourceListCxtRelReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceListCxtRelReq())}
   {bits == G.PDUSessionResourceListCxtRelReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceListCxtRelReq.after(v, rem) : Nat}
 
-law ngap.UEContextReleaseCommand.roundtrip:
-  for +v: G.UEContextReleaseCommand()
+law ngap.UEContextReleaseRequest.roundtrip:
+  for +v: G.UEContextReleaseRequest()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.UEContextReleaseCommand.valid(v) == True{} : Bool}
-  {G.UEContextReleaseCommand.read(Ap.Cur{rem, G.UEContextReleaseCommand.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UEContextReleaseCommand.after(v, rem), rest})} : Ap.Rd(G.UEContextReleaseCommand())}
+  for +ok: {G.UEContextReleaseRequest.valid(v) == True{} : Bool}
+  {G.UEContextReleaseRequest.read(Ap.Cur{rem, G.UEContextReleaseRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UEContextReleaseRequest.after(v, rem), rest})} : Ap.Rd(G.UEContextReleaseRequest())}
 
-law ngap.UEContextReleaseCommand.decode_valid:
+law ngap.UEContextReleaseRequest.decode_valid:
   for +c: Ap.Cur
-  for +v: G.UEContextReleaseCommand()
+  for +v: G.UEContextReleaseRequest()
   for +c2: Ap.Cur
-  for +e: {G.UEContextReleaseCommand.read(c) == Done{(v, c2)} : Ap.Rd(G.UEContextReleaseCommand())}
-  {G.UEContextReleaseCommand.valid(v) == True{} : Bool}
+  for +e: {G.UEContextReleaseRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.UEContextReleaseRequest())}
+  {G.UEContextReleaseRequest.valid(v) == True{} : Bool}
 
-law ngap.UEContextReleaseCommand.suffix:
+law ngap.UEContextReleaseRequest.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.UEContextReleaseCommand()
+  for +v: G.UEContextReleaseRequest()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.UEContextReleaseCommand.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEContextReleaseCommand())}
-  {bits == G.UEContextReleaseCommand.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEContextReleaseCommand.after(v, rem) : Nat}
+  for +e: {G.UEContextReleaseRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEContextReleaseRequest())}
+  {bits == G.UEContextReleaseRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEContextReleaseRequest.after(v, rem) : Nat}
 
 law ngap.UE_NGAP_ID_pair.roundtrip:
   for +v: G.UE_NGAP_ID_pair
@@ -2057,28 +2218,28 @@ law ngap.UE_NGAP_IDs.suffix:
   for +e: {G.UE_NGAP_IDs.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UE_NGAP_IDs)}
   {bits == G.UE_NGAP_IDs.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UE_NGAP_IDs.after(v, rem) : Nat}
 
-law ngap.UEContextReleaseComplete.roundtrip:
-  for +v: G.UEContextReleaseComplete()
+law ngap.UEContextReleaseCommand.roundtrip:
+  for +v: G.UEContextReleaseCommand()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.UEContextReleaseComplete.valid(v) == True{} : Bool}
-  {G.UEContextReleaseComplete.read(Ap.Cur{rem, G.UEContextReleaseComplete.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UEContextReleaseComplete.after(v, rem), rest})} : Ap.Rd(G.UEContextReleaseComplete())}
+  for +ok: {G.UEContextReleaseCommand.valid(v) == True{} : Bool}
+  {G.UEContextReleaseCommand.read(Ap.Cur{rem, G.UEContextReleaseCommand.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UEContextReleaseCommand.after(v, rem), rest})} : Ap.Rd(G.UEContextReleaseCommand())}
 
-law ngap.UEContextReleaseComplete.decode_valid:
+law ngap.UEContextReleaseCommand.decode_valid:
   for +c: Ap.Cur
-  for +v: G.UEContextReleaseComplete()
+  for +v: G.UEContextReleaseCommand()
   for +c2: Ap.Cur
-  for +e: {G.UEContextReleaseComplete.read(c) == Done{(v, c2)} : Ap.Rd(G.UEContextReleaseComplete())}
-  {G.UEContextReleaseComplete.valid(v) == True{} : Bool}
+  for +e: {G.UEContextReleaseCommand.read(c) == Done{(v, c2)} : Ap.Rd(G.UEContextReleaseCommand())}
+  {G.UEContextReleaseCommand.valid(v) == True{} : Bool}
 
-law ngap.UEContextReleaseComplete.suffix:
+law ngap.UEContextReleaseCommand.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.UEContextReleaseComplete()
+  for +v: G.UEContextReleaseCommand()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.UEContextReleaseComplete.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEContextReleaseComplete())}
-  {bits == G.UEContextReleaseComplete.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEContextReleaseComplete.after(v, rem) : Nat}
+  for +e: {G.UEContextReleaseCommand.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEContextReleaseCommand())}
+  {bits == G.UEContextReleaseCommand.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEContextReleaseCommand.after(v, rem) : Nat}
 
 law ngap.PDUSessionResourceItemCxtRelCpl.roundtrip:
   for +v: G.PDUSessionResourceItemCxtRelCpl
@@ -2126,120 +2287,235 @@ law ngap.PDUSessionResourceListCxtRelCpl.suffix:
   for +e: {G.PDUSessionResourceListCxtRelCpl.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceListCxtRelCpl())}
   {bits == G.PDUSessionResourceListCxtRelCpl.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceListCxtRelCpl.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceSetupRequest.roundtrip:
-  for +v: G.PDUSessionResourceSetupRequest()
+law ngap.UEContextReleaseComplete.roundtrip:
+  for +v: G.UEContextReleaseComplete()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupRequest.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupRequest.read(Ap.Cur{rem, G.PDUSessionResourceSetupRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupRequest.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupRequest())}
+  for +ok: {G.UEContextReleaseComplete.valid(v) == True{} : Bool}
+  {G.UEContextReleaseComplete.read(Ap.Cur{rem, G.UEContextReleaseComplete.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UEContextReleaseComplete.after(v, rem), rest})} : Ap.Rd(G.UEContextReleaseComplete())}
 
-law ngap.PDUSessionResourceSetupRequest.decode_valid:
+law ngap.UEContextReleaseComplete.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupRequest()
+  for +v: G.UEContextReleaseComplete()
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupRequest())}
-  {G.PDUSessionResourceSetupRequest.valid(v) == True{} : Bool}
+  for +e: {G.UEContextReleaseComplete.read(c) == Done{(v, c2)} : Ap.Rd(G.UEContextReleaseComplete())}
+  {G.UEContextReleaseComplete.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceSetupRequest.suffix:
+law ngap.UEContextReleaseComplete.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupRequest()
+  for +v: G.UEContextReleaseComplete()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupRequest())}
-  {bits == G.PDUSessionResourceSetupRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupRequest.after(v, rem) : Nat}
+  for +e: {G.UEContextReleaseComplete.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UEContextReleaseComplete())}
+  {bits == G.UEContextReleaseComplete.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UEContextReleaseComplete.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.roundtrip:
-  for +v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()
+law ngap.PDUSessionAggregateMaximumBitRate.roundtrip:
+  for +v: G.PDUSessionAggregateMaximumBitRate
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())}
+  for +ok: {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}
+  {G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{rem, G.PDUSessionAggregateMaximumBitRate.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.after(v, rem), rest})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
 
-law ngap.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.decode_valid:
+law ngap.PDUSessionAggregateMaximumBitRate.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()
+  for +v: G.PDUSessionAggregateMaximumBitRate
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())}
-  {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionAggregateMaximumBitRate.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
+  {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.suffix:
+law ngap.PDUSessionAggregateMaximumBitRate.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()
+  for +v: G.PDUSessionAggregateMaximumBitRate
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())}
-  {bits == G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.after(v, rem) : Nat}
+  for +e: {G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
+  {bits == G.PDUSessionAggregateMaximumBitRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionAggregateMaximumBitRate.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceSetupItemSUReq.roundtrip:
-  for +v: G.PDUSessionResourceSetupItemSUReq
+law ngap.GTP_TEID.roundtrip:
+  for +v: G.GTP_TEID()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupItemSUReq.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupItemSUReq.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSUReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSUReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq)}
+  for +ok: {G.GTP_TEID.valid(v) == True{} : Bool}
+  {G.GTP_TEID.read(Ap.Cur{rem, G.GTP_TEID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.GTP_TEID.after(v, rem), rest})} : Ap.Rd(G.GTP_TEID())}
 
-law ngap.PDUSessionResourceSetupItemSUReq.decode_valid:
+law ngap.GTP_TEID.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupItemSUReq
+  for +v: G.GTP_TEID()
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupItemSUReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq)}
-  {G.PDUSessionResourceSetupItemSUReq.valid(v) == True{} : Bool}
+  for +e: {G.GTP_TEID.read(c) == Done{(v, c2)} : Ap.Rd(G.GTP_TEID())}
+  {G.GTP_TEID.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceSetupItemSUReq.suffix:
+law ngap.GTP_TEID.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupItemSUReq
+  for +v: G.GTP_TEID()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupItemSUReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq)}
-  {bits == G.PDUSessionResourceSetupItemSUReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSUReq.after(v, rem) : Nat}
+  for +e: {G.GTP_TEID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.GTP_TEID())}
+  {bits == G.GTP_TEID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.GTP_TEID.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceSetupListSUReq.roundtrip:
-  for +v: G.PDUSessionResourceSetupListSUReq()
+law ngap.GTPTunnel.roundtrip:
+  for +v: G.GTPTunnel
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupListSUReq.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupListSUReq.read(Ap.Cur{rem, G.PDUSessionResourceSetupListSUReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupListSUReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupListSUReq())}
+  for +ok: {G.GTPTunnel.valid(v) == True{} : Bool}
+  {G.GTPTunnel.read(Ap.Cur{rem, G.GTPTunnel.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.GTPTunnel.after(v, rem), rest})} : Ap.Rd(G.GTPTunnel)}
 
-law ngap.PDUSessionResourceSetupListSUReq.decode_valid:
+law ngap.GTPTunnel.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupListSUReq()
+  for +v: G.GTPTunnel
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupListSUReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupListSUReq())}
-  {G.PDUSessionResourceSetupListSUReq.valid(v) == True{} : Bool}
+  for +e: {G.GTPTunnel.read(c) == Done{(v, c2)} : Ap.Rd(G.GTPTunnel)}
+  {G.GTPTunnel.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceSetupListSUReq.suffix:
+law ngap.GTPTunnel.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupListSUReq()
+  for +v: G.GTPTunnel
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupListSUReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupListSUReq())}
-  {bits == G.PDUSessionResourceSetupListSUReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupListSUReq.after(v, rem) : Nat}
+  for +e: {G.GTPTunnel.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.GTPTunnel)}
+  {bits == G.GTPTunnel.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.GTPTunnel.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceSetupRequestTransfer.roundtrip:
-  for +v: G.PDUSessionResourceSetupRequestTransfer()
+law ngap.UPTransportLayerInformation.roundtrip:
+  for +v: G.UPTransportLayerInformation
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupRequestTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupRequestTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())}
+  for +ok: {G.UPTransportLayerInformation.valid(v) == True{} : Bool}
+  {G.UPTransportLayerInformation.read(Ap.Cur{rem, G.UPTransportLayerInformation.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UPTransportLayerInformation.after(v, rem), rest})} : Ap.Rd(G.UPTransportLayerInformation)}
 
-law ngap.PDUSessionResourceSetupRequestTransfer.decode_valid:
+law ngap.UPTransportLayerInformation.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupRequestTransfer()
+  for +v: G.UPTransportLayerInformation
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupRequestTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())}
-  {G.PDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
+  for +e: {G.UPTransportLayerInformation.read(c) == Done{(v, c2)} : Ap.Rd(G.UPTransportLayerInformation)}
+  {G.UPTransportLayerInformation.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceSetupRequestTransfer.suffix:
+law ngap.UPTransportLayerInformation.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupRequestTransfer()
+  for +v: G.UPTransportLayerInformation
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())}
-  {bits == G.PDUSessionResourceSetupRequestTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupRequestTransfer.after(v, rem) : Nat}
+  for +e: {G.UPTransportLayerInformation.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UPTransportLayerInformation)}
+  {bits == G.UPTransportLayerInformation.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UPTransportLayerInformation.after(v, rem) : Nat}
+
+law ngap.PDUSessionType.roundtrip:
+  for +v: G.PDUSessionType()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionType.valid(v) == True{} : Bool}
+  {G.PDUSessionType.read(Ap.Cur{rem, G.PDUSessionType.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionType.after(v, rem), rest})} : Ap.Rd(G.PDUSessionType())}
+
+law ngap.PDUSessionType.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionType()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionType.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionType())}
+  {G.PDUSessionType.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionType.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionType()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionType.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionType())}
+  {bits == G.PDUSessionType.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionType.after(v, rem) : Nat}
+
+law ngap.IntegrityProtectionIndication.roundtrip:
+  for +v: G.IntegrityProtectionIndication()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.IntegrityProtectionIndication.valid(v) == True{} : Bool}
+  {G.IntegrityProtectionIndication.read(Ap.Cur{rem, G.IntegrityProtectionIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.IntegrityProtectionIndication.after(v, rem), rest})} : Ap.Rd(G.IntegrityProtectionIndication())}
+
+law ngap.IntegrityProtectionIndication.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.IntegrityProtectionIndication()
+  for +c2: Ap.Cur
+  for +e: {G.IntegrityProtectionIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.IntegrityProtectionIndication())}
+  {G.IntegrityProtectionIndication.valid(v) == True{} : Bool}
+
+law ngap.IntegrityProtectionIndication.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.IntegrityProtectionIndication()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.IntegrityProtectionIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.IntegrityProtectionIndication())}
+  {bits == G.IntegrityProtectionIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.IntegrityProtectionIndication.after(v, rem) : Nat}
+
+law ngap.ConfidentialityProtectionIndication.roundtrip:
+  for +v: G.ConfidentialityProtectionIndication()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.ConfidentialityProtectionIndication.valid(v) == True{} : Bool}
+  {G.ConfidentialityProtectionIndication.read(Ap.Cur{rem, G.ConfidentialityProtectionIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.ConfidentialityProtectionIndication.after(v, rem), rest})} : Ap.Rd(G.ConfidentialityProtectionIndication())}
+
+law ngap.ConfidentialityProtectionIndication.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.ConfidentialityProtectionIndication()
+  for +c2: Ap.Cur
+  for +e: {G.ConfidentialityProtectionIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.ConfidentialityProtectionIndication())}
+  {G.ConfidentialityProtectionIndication.valid(v) == True{} : Bool}
+
+law ngap.ConfidentialityProtectionIndication.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.ConfidentialityProtectionIndication()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.ConfidentialityProtectionIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ConfidentialityProtectionIndication())}
+  {bits == G.ConfidentialityProtectionIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ConfidentialityProtectionIndication.after(v, rem) : Nat}
+
+law ngap.MaximumIntegrityProtectedDataRate.roundtrip:
+  for +v: G.MaximumIntegrityProtectedDataRate()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.MaximumIntegrityProtectedDataRate.valid(v) == True{} : Bool}
+  {G.MaximumIntegrityProtectedDataRate.read(Ap.Cur{rem, G.MaximumIntegrityProtectedDataRate.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.MaximumIntegrityProtectedDataRate.after(v, rem), rest})} : Ap.Rd(G.MaximumIntegrityProtectedDataRate())}
+
+law ngap.MaximumIntegrityProtectedDataRate.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.MaximumIntegrityProtectedDataRate()
+  for +c2: Ap.Cur
+  for +e: {G.MaximumIntegrityProtectedDataRate.read(c) == Done{(v, c2)} : Ap.Rd(G.MaximumIntegrityProtectedDataRate())}
+  {G.MaximumIntegrityProtectedDataRate.valid(v) == True{} : Bool}
+
+law ngap.MaximumIntegrityProtectedDataRate.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.MaximumIntegrityProtectedDataRate()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.MaximumIntegrityProtectedDataRate.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.MaximumIntegrityProtectedDataRate())}
+  {bits == G.MaximumIntegrityProtectedDataRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.MaximumIntegrityProtectedDataRate.after(v, rem) : Nat}
+
+law ngap.SecurityIndication.roundtrip:
+  for +v: G.SecurityIndication
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SecurityIndication.valid(v) == True{} : Bool}
+  {G.SecurityIndication.read(Ap.Cur{rem, G.SecurityIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SecurityIndication.after(v, rem), rest})} : Ap.Rd(G.SecurityIndication)}
+
+law ngap.SecurityIndication.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SecurityIndication
+  for +c2: Ap.Cur
+  for +e: {G.SecurityIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.SecurityIndication)}
+  {G.SecurityIndication.valid(v) == True{} : Bool}
+
+law ngap.SecurityIndication.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SecurityIndication
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SecurityIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SecurityIndication)}
+  {bits == G.SecurityIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SecurityIndication.after(v, rem) : Nat}
 
 law ngap.QosFlowIdentifier.roundtrip:
   for +v: G.QosFlowIdentifier()
@@ -2839,488 +3115,143 @@ law ngap.QosFlowSetupRequestList.suffix:
   for +e: {G.QosFlowSetupRequestList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.QosFlowSetupRequestList())}
   {bits == G.QosFlowSetupRequestList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.QosFlowSetupRequestList.after(v, rem) : Nat}
 
-law ngap.PDUSessionType.roundtrip:
-  for +v: G.PDUSessionType()
+law ngap.DirectForwardingPathAvailability.roundtrip:
+  for +v: G.DirectForwardingPathAvailability()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionType.valid(v) == True{} : Bool}
-  {G.PDUSessionType.read(Ap.Cur{rem, G.PDUSessionType.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionType.after(v, rem), rest})} : Ap.Rd(G.PDUSessionType())}
+  for +ok: {G.DirectForwardingPathAvailability.valid(v) == True{} : Bool}
+  {G.DirectForwardingPathAvailability.read(Ap.Cur{rem, G.DirectForwardingPathAvailability.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.DirectForwardingPathAvailability.after(v, rem), rest})} : Ap.Rd(G.DirectForwardingPathAvailability())}
 
-law ngap.PDUSessionType.decode_valid:
+law ngap.DirectForwardingPathAvailability.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionType()
+  for +v: G.DirectForwardingPathAvailability()
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionType.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionType())}
-  {G.PDUSessionType.valid(v) == True{} : Bool}
+  for +e: {G.DirectForwardingPathAvailability.read(c) == Done{(v, c2)} : Ap.Rd(G.DirectForwardingPathAvailability())}
+  {G.DirectForwardingPathAvailability.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionType.suffix:
+law ngap.DirectForwardingPathAvailability.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionType()
+  for +v: G.DirectForwardingPathAvailability()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionType.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionType())}
-  {bits == G.PDUSessionType.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionType.after(v, rem) : Nat}
+  for +e: {G.DirectForwardingPathAvailability.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.DirectForwardingPathAvailability())}
+  {bits == G.DirectForwardingPathAvailability.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.DirectForwardingPathAvailability.after(v, rem) : Nat}
 
-law ngap.GTP_TEID.roundtrip:
-  for +v: G.GTP_TEID()
+law ngap.PDUSessionResourceSetupRequestTransfer.roundtrip:
+  for +v: G.PDUSessionResourceSetupRequestTransfer()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.GTP_TEID.valid(v) == True{} : Bool}
-  {G.GTP_TEID.read(Ap.Cur{rem, G.GTP_TEID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.GTP_TEID.after(v, rem), rest})} : Ap.Rd(G.GTP_TEID())}
+  for +ok: {G.PDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupRequestTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupRequestTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())}
 
-law ngap.GTP_TEID.decode_valid:
+law ngap.PDUSessionResourceSetupRequestTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.GTP_TEID()
+  for +v: G.PDUSessionResourceSetupRequestTransfer()
   for +c2: Ap.Cur
-  for +e: {G.GTP_TEID.read(c) == Done{(v, c2)} : Ap.Rd(G.GTP_TEID())}
-  {G.GTP_TEID.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceSetupRequestTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())}
+  {G.PDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
 
-law ngap.GTP_TEID.suffix:
+law ngap.PDUSessionResourceSetupRequestTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.GTP_TEID()
+  for +v: G.PDUSessionResourceSetupRequestTransfer()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.GTP_TEID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.GTP_TEID())}
-  {bits == G.GTP_TEID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.GTP_TEID.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())}
+  {bits == G.PDUSessionResourceSetupRequestTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupRequestTransfer.after(v, rem) : Nat}
 
-law ngap.GTPTunnel.roundtrip:
-  for +v: G.GTPTunnel
+law ngap.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.roundtrip:
+  for +v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.GTPTunnel.valid(v) == True{} : Bool}
-  {G.GTPTunnel.read(Ap.Cur{rem, G.GTPTunnel.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.GTPTunnel.after(v, rem), rest})} : Ap.Rd(G.GTPTunnel)}
+  for +ok: {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())}
 
-law ngap.GTPTunnel.decode_valid:
+law ngap.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.GTPTunnel
+  for +v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()
   for +c2: Ap.Cur
-  for +e: {G.GTPTunnel.read(c) == Done{(v, c2)} : Ap.Rd(G.GTPTunnel)}
-  {G.GTPTunnel.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())}
+  {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.valid(v) == True{} : Bool}
 
-law ngap.GTPTunnel.suffix:
+law ngap.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.GTPTunnel
+  for +v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.GTPTunnel.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.GTPTunnel)}
-  {bits == G.GTPTunnel.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.GTPTunnel.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())}
+  {bits == G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.after(v, rem) : Nat}
 
-law ngap.UPTransportLayerInformation.roundtrip:
-  for +v: G.UPTransportLayerInformation
+law ngap.PDUSessionResourceSetupItemSUReq.roundtrip:
+  for +v: G.PDUSessionResourceSetupItemSUReq
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.UPTransportLayerInformation.valid(v) == True{} : Bool}
-  {G.UPTransportLayerInformation.read(Ap.Cur{rem, G.UPTransportLayerInformation.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UPTransportLayerInformation.after(v, rem), rest})} : Ap.Rd(G.UPTransportLayerInformation)}
+  for +ok: {G.PDUSessionResourceSetupItemSUReq.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupItemSUReq.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSUReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSUReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq)}
 
-law ngap.UPTransportLayerInformation.decode_valid:
+law ngap.PDUSessionResourceSetupItemSUReq.decode_valid:
   for +c: Ap.Cur
-  for +v: G.UPTransportLayerInformation
+  for +v: G.PDUSessionResourceSetupItemSUReq
   for +c2: Ap.Cur
-  for +e: {G.UPTransportLayerInformation.read(c) == Done{(v, c2)} : Ap.Rd(G.UPTransportLayerInformation)}
-  {G.UPTransportLayerInformation.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceSetupItemSUReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq)}
+  {G.PDUSessionResourceSetupItemSUReq.valid(v) == True{} : Bool}
 
-law ngap.UPTransportLayerInformation.suffix:
+law ngap.PDUSessionResourceSetupItemSUReq.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.UPTransportLayerInformation
+  for +v: G.PDUSessionResourceSetupItemSUReq
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.UPTransportLayerInformation.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UPTransportLayerInformation)}
-  {bits == G.UPTransportLayerInformation.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UPTransportLayerInformation.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceSetupItemSUReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSUReq)}
+  {bits == G.PDUSessionResourceSetupItemSUReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSUReq.after(v, rem) : Nat}
 
-law ngap.PDUSessionAggregateMaximumBitRate.roundtrip:
-  for +v: G.PDUSessionAggregateMaximumBitRate
+law ngap.PDUSessionResourceSetupListSUReq.roundtrip:
+  for +v: G.PDUSessionResourceSetupListSUReq()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}
-  {G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{rem, G.PDUSessionAggregateMaximumBitRate.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionAggregateMaximumBitRate.after(v, rem), rest})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
+  for +ok: {G.PDUSessionResourceSetupListSUReq.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupListSUReq.read(Ap.Cur{rem, G.PDUSessionResourceSetupListSUReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupListSUReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupListSUReq())}
 
-law ngap.PDUSessionAggregateMaximumBitRate.decode_valid:
+law ngap.PDUSessionResourceSetupListSUReq.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionAggregateMaximumBitRate
+  for +v: G.PDUSessionResourceSetupListSUReq()
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionAggregateMaximumBitRate.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
-  {G.PDUSessionAggregateMaximumBitRate.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceSetupListSUReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupListSUReq())}
+  {G.PDUSessionResourceSetupListSUReq.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionAggregateMaximumBitRate.suffix:
+law ngap.PDUSessionResourceSetupListSUReq.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionAggregateMaximumBitRate
+  for +v: G.PDUSessionResourceSetupListSUReq()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionAggregateMaximumBitRate)}
-  {bits == G.PDUSessionAggregateMaximumBitRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionAggregateMaximumBitRate.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceSetupListSUReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupListSUReq())}
+  {bits == G.PDUSessionResourceSetupListSUReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupListSUReq.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceSetupResponse.roundtrip:
-  for +v: G.PDUSessionResourceSetupResponse()
+law ngap.PDUSessionResourceSetupRequest.roundtrip:
+  for +v: G.PDUSessionResourceSetupRequest()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupResponse.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupResponse.read(Ap.Cur{rem, G.PDUSessionResourceSetupResponse.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupResponse.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupResponse())}
+  for +ok: {G.PDUSessionResourceSetupRequest.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupRequest.read(Ap.Cur{rem, G.PDUSessionResourceSetupRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupRequest.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupRequest())}
 
-law ngap.PDUSessionResourceSetupResponse.decode_valid:
+law ngap.PDUSessionResourceSetupRequest.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupResponse()
+  for +v: G.PDUSessionResourceSetupRequest()
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupResponse.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupResponse())}
-  {G.PDUSessionResourceSetupResponse.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceSetupRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupRequest())}
+  {G.PDUSessionResourceSetupRequest.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceSetupResponse.suffix:
+law ngap.PDUSessionResourceSetupRequest.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupResponse()
+  for +v: G.PDUSessionResourceSetupRequest()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupResponse.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupResponse())}
-  {bits == G.PDUSessionResourceSetupResponse.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupResponse.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}
-
-law ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}
-  {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}
-  {bits == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupItemSURes.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupItemSURes
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
-
-law ngap.PDUSessionResourceFailedToSetupItemSURes.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupItemSURes
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupItemSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
-  {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupItemSURes.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupItemSURes
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
-  {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemSURes.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupListSURes.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupListSURes()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupListSURes.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())}
-
-law ngap.PDUSessionResourceFailedToSetupListSURes.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupListSURes()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupListSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())}
-  {G.PDUSessionResourceFailedToSetupListSURes.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupListSURes.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupListSURes()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())}
-  {bits == G.PDUSessionResourceFailedToSetupListSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListSURes.after(v, rem) : Nat}
-
-law ngap.ProcedureCode.roundtrip:
-  for +v: G.ProcedureCode()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.ProcedureCode.valid(v) == True{} : Bool}
-  {G.ProcedureCode.read(Ap.Cur{rem, G.ProcedureCode.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.ProcedureCode.after(v, rem), rest})} : Ap.Rd(G.ProcedureCode())}
-
-law ngap.ProcedureCode.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.ProcedureCode()
-  for +c2: Ap.Cur
-  for +e: {G.ProcedureCode.read(c) == Done{(v, c2)} : Ap.Rd(G.ProcedureCode())}
-  {G.ProcedureCode.valid(v) == True{} : Bool}
-
-law ngap.ProcedureCode.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.ProcedureCode()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.ProcedureCode.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ProcedureCode())}
-  {bits == G.ProcedureCode.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ProcedureCode.after(v, rem) : Nat}
-
-law ngap.TriggeringMessage.roundtrip:
-  for +v: G.TriggeringMessage()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.TriggeringMessage.valid(v) == True{} : Bool}
-  {G.TriggeringMessage.read(Ap.Cur{rem, G.TriggeringMessage.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TriggeringMessage.after(v, rem), rest})} : Ap.Rd(G.TriggeringMessage())}
-
-law ngap.TriggeringMessage.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.TriggeringMessage()
-  for +c2: Ap.Cur
-  for +e: {G.TriggeringMessage.read(c) == Done{(v, c2)} : Ap.Rd(G.TriggeringMessage())}
-  {G.TriggeringMessage.valid(v) == True{} : Bool}
-
-law ngap.TriggeringMessage.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.TriggeringMessage()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.TriggeringMessage.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TriggeringMessage())}
-  {bits == G.TriggeringMessage.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TriggeringMessage.after(v, rem) : Nat}
-
-law ngap.Criticality.roundtrip:
-  for +v: G.Criticality()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.Criticality.valid(v) == True{} : Bool}
-  {G.Criticality.read(Ap.Cur{rem, G.Criticality.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.Criticality.after(v, rem), rest})} : Ap.Rd(G.Criticality())}
-
-law ngap.Criticality.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.Criticality()
-  for +c2: Ap.Cur
-  for +e: {G.Criticality.read(c) == Done{(v, c2)} : Ap.Rd(G.Criticality())}
-  {G.Criticality.valid(v) == True{} : Bool}
-
-law ngap.Criticality.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.Criticality()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.Criticality.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.Criticality())}
-  {bits == G.Criticality.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.Criticality.after(v, rem) : Nat}
-
-law ngap.ProtocolIE_ID.roundtrip:
-  for +v: G.ProtocolIE_ID()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.ProtocolIE_ID.valid(v) == True{} : Bool}
-  {G.ProtocolIE_ID.read(Ap.Cur{rem, G.ProtocolIE_ID.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.ProtocolIE_ID.after(v, rem), rest})} : Ap.Rd(G.ProtocolIE_ID())}
-
-law ngap.ProtocolIE_ID.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.ProtocolIE_ID()
-  for +c2: Ap.Cur
-  for +e: {G.ProtocolIE_ID.read(c) == Done{(v, c2)} : Ap.Rd(G.ProtocolIE_ID())}
-  {G.ProtocolIE_ID.valid(v) == True{} : Bool}
-
-law ngap.ProtocolIE_ID.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.ProtocolIE_ID()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.ProtocolIE_ID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ProtocolIE_ID())}
-  {bits == G.ProtocolIE_ID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ProtocolIE_ID.after(v, rem) : Nat}
-
-law ngap.TypeOfError.roundtrip:
-  for +v: G.TypeOfError()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.TypeOfError.valid(v) == True{} : Bool}
-  {G.TypeOfError.read(Ap.Cur{rem, G.TypeOfError.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TypeOfError.after(v, rem), rest})} : Ap.Rd(G.TypeOfError())}
-
-law ngap.TypeOfError.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.TypeOfError()
-  for +c2: Ap.Cur
-  for +e: {G.TypeOfError.read(c) == Done{(v, c2)} : Ap.Rd(G.TypeOfError())}
-  {G.TypeOfError.valid(v) == True{} : Bool}
-
-law ngap.TypeOfError.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.TypeOfError()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.TypeOfError.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TypeOfError())}
-  {bits == G.TypeOfError.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TypeOfError.after(v, rem) : Nat}
-
-law ngap.CriticalityDiagnostics_IE_Item.roundtrip:
-  for +v: G.CriticalityDiagnostics_IE_Item
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}
-  {G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, G.CriticalityDiagnostics_IE_Item.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CriticalityDiagnostics_IE_Item.after(v, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
-
-law ngap.CriticalityDiagnostics_IE_Item.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.CriticalityDiagnostics_IE_Item
-  for +c2: Ap.Cur
-  for +e: {G.CriticalityDiagnostics_IE_Item.read(c) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
-  {G.CriticalityDiagnostics_IE_Item.valid(v) == True{} : Bool}
-
-law ngap.CriticalityDiagnostics_IE_Item.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.CriticalityDiagnostics_IE_Item
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.CriticalityDiagnostics_IE_Item.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_Item)}
-  {bits == G.CriticalityDiagnostics_IE_Item.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics_IE_Item.after(v, rem) : Nat}
-
-law ngap.CriticalityDiagnostics_IE_List.roundtrip:
-  for +v: G.CriticalityDiagnostics_IE_List()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.CriticalityDiagnostics_IE_List.valid(v) == True{} : Bool}
-  {G.CriticalityDiagnostics_IE_List.read(Ap.Cur{rem, G.CriticalityDiagnostics_IE_List.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CriticalityDiagnostics_IE_List.after(v, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics_IE_List())}
-
-law ngap.CriticalityDiagnostics_IE_List.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.CriticalityDiagnostics_IE_List()
-  for +c2: Ap.Cur
-  for +e: {G.CriticalityDiagnostics_IE_List.read(c) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics_IE_List())}
-  {G.CriticalityDiagnostics_IE_List.valid(v) == True{} : Bool}
-
-law ngap.CriticalityDiagnostics_IE_List.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.CriticalityDiagnostics_IE_List()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.CriticalityDiagnostics_IE_List.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics_IE_List())}
-  {bits == G.CriticalityDiagnostics_IE_List.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics_IE_List.after(v, rem) : Nat}
-
-law ngap.CriticalityDiagnostics.roundtrip:
-  for +v: G.CriticalityDiagnostics
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.CriticalityDiagnostics.valid(v) == True{} : Bool}
-  {G.CriticalityDiagnostics.read(Ap.Cur{rem, G.CriticalityDiagnostics.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.CriticalityDiagnostics.after(v, rem), rest})} : Ap.Rd(G.CriticalityDiagnostics)}
-
-law ngap.CriticalityDiagnostics.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.CriticalityDiagnostics
-  for +c2: Ap.Cur
-  for +e: {G.CriticalityDiagnostics.read(c) == Done{(v, c2)} : Ap.Rd(G.CriticalityDiagnostics)}
-  {G.CriticalityDiagnostics.valid(v) == True{} : Bool}
-
-law ngap.CriticalityDiagnostics.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.CriticalityDiagnostics
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.CriticalityDiagnostics.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.CriticalityDiagnostics)}
-  {bits == G.CriticalityDiagnostics.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.CriticalityDiagnostics.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceSetupUnsuccessfulTransfer.roundtrip:
-  for +v: G.PDUSessionResourceSetupUnsuccessfulTransfer
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
-
-law ngap.PDUSessionResourceSetupUnsuccessfulTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupUnsuccessfulTransfer
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
-  {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceSetupUnsuccessfulTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupUnsuccessfulTransfer
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
-  {bits == G.PDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrip:
-  for +v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}
-
-law ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}
-  {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}
-  {bits == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceSetupItemSURes.roundtrip:
-  for +v: G.PDUSessionResourceSetupItemSURes
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
-
-law ngap.PDUSessionResourceSetupItemSURes.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupItemSURes
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupItemSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
-  {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceSetupItemSURes.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupItemSURes
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
-  {bits == G.PDUSessionResourceSetupItemSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSURes.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceSetupListSURes.roundtrip:
-  for +v: G.PDUSessionResourceSetupListSURes()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceSetupListSURes.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceSetupListSURes.read(Ap.Cur{rem, G.PDUSessionResourceSetupListSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupListSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupListSURes())}
-
-law ngap.PDUSessionResourceSetupListSURes.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceSetupListSURes()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceSetupListSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupListSURes())}
-  {G.PDUSessionResourceSetupListSURes.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceSetupListSURes.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceSetupListSURes()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceSetupListSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupListSURes())}
-  {bits == G.PDUSessionResourceSetupListSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupListSURes.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceSetupRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupRequest())}
+  {bits == G.PDUSessionResourceSetupRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupRequest.after(v, rem) : Nat}
 
 law ngap.AssociatedQosFlowItem_qosFlowMappingIndication.roundtrip:
   for +v: G.AssociatedQosFlowItem_qosFlowMappingIndication()
@@ -3598,6 +3529,190 @@ law ngap.PDUSessionResourceSetupResponseTransfer.suffix:
   for +e: {G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupResponseTransfer)}
   {bits == G.PDUSessionResourceSetupResponseTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupResponseTransfer.after(v, rem) : Nat}
 
+law ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.roundtrip:
+  for +v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}
+
+law ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}
+  {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())}
+  {bits == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceSetupItemSURes.roundtrip:
+  for +v: G.PDUSessionResourceSetupItemSURes
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceSetupItemSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupItemSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
+
+law ngap.PDUSessionResourceSetupItemSURes.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceSetupItemSURes
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceSetupItemSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
+  {G.PDUSessionResourceSetupItemSURes.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceSetupItemSURes.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceSetupItemSURes
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceSetupItemSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupItemSURes)}
+  {bits == G.PDUSessionResourceSetupItemSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupItemSURes.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceSetupListSURes.roundtrip:
+  for +v: G.PDUSessionResourceSetupListSURes()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceSetupListSURes.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupListSURes.read(Ap.Cur{rem, G.PDUSessionResourceSetupListSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupListSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupListSURes())}
+
+law ngap.PDUSessionResourceSetupListSURes.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceSetupListSURes()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceSetupListSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupListSURes())}
+  {G.PDUSessionResourceSetupListSURes.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceSetupListSURes.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceSetupListSURes()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceSetupListSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupListSURes())}
+  {bits == G.PDUSessionResourceSetupListSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupListSURes.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceSetupUnsuccessfulTransfer.roundtrip:
+  for +v: G.PDUSessionResourceSetupUnsuccessfulTransfer
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
+
+law ngap.PDUSessionResourceSetupUnsuccessfulTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceSetupUnsuccessfulTransfer
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
+  {G.PDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceSetupUnsuccessfulTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceSetupUnsuccessfulTransfer
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)}
+  {bits == G.PDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}
+
+law ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}
+  {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())}
+  {bits == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupItemSURes.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupItemSURes
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
+
+law ngap.PDUSessionResourceFailedToSetupItemSURes.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupItemSURes
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupItemSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
+  {G.PDUSessionResourceFailedToSetupItemSURes.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupItemSURes.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupItemSURes
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupItemSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)}
+  {bits == G.PDUSessionResourceFailedToSetupItemSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemSURes.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupListSURes.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupListSURes()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupListSURes.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListSURes.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupListSURes.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())}
+
+law ngap.PDUSessionResourceFailedToSetupListSURes.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupListSURes()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupListSURes.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())}
+  {G.PDUSessionResourceFailedToSetupListSURes.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupListSURes.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupListSURes()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupListSURes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())}
+  {bits == G.PDUSessionResourceFailedToSetupListSURes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListSURes.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceSetupResponse.roundtrip:
+  for +v: G.PDUSessionResourceSetupResponse()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceSetupResponse.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceSetupResponse.read(Ap.Cur{rem, G.PDUSessionResourceSetupResponse.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceSetupResponse.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceSetupResponse())}
+
+law ngap.PDUSessionResourceSetupResponse.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceSetupResponse()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceSetupResponse.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceSetupResponse())}
+  {G.PDUSessionResourceSetupResponse.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceSetupResponse.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceSetupResponse()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceSetupResponse.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupResponse())}
+  {bits == G.PDUSessionResourceSetupResponse.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupResponse.after(v, rem) : Nat}
+
 law ngap.ErrorIndication.roundtrip:
   for +v: G.ErrorIndication()
   for +rem: Nat
@@ -3621,190 +3736,6 @@ law ngap.ErrorIndication.suffix:
   for +e: {G.ErrorIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ErrorIndication())}
   {bits == G.ErrorIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ErrorIndication.after(v, rem) : Nat}
 
-law ngap.PathSwitchRequest.roundtrip:
-  for +v: G.PathSwitchRequest()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PathSwitchRequest.valid(v) == True{} : Bool}
-  {G.PathSwitchRequest.read(Ap.Cur{rem, G.PathSwitchRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequest.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequest())}
-
-law ngap.PathSwitchRequest.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PathSwitchRequest()
-  for +c2: Ap.Cur
-  for +e: {G.PathSwitchRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequest())}
-  {G.PathSwitchRequest.valid(v) == True{} : Bool}
-
-law ngap.PathSwitchRequest.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PathSwitchRequest()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PathSwitchRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequest())}
-  {bits == G.PathSwitchRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequest.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())}
-
-law ngap.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())}
-  {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())}
-  {bits == G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupItemPSReq.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupItemPSReq
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupItemPSReq.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupItemPSReq.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemPSReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemPSReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq)}
-
-law ngap.PDUSessionResourceFailedToSetupItemPSReq.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupItemPSReq
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq)}
-  {G.PDUSessionResourceFailedToSetupItemPSReq.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupItemPSReq.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupItemPSReq
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq)}
-  {bits == G.PDUSessionResourceFailedToSetupItemPSReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemPSReq.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupListPSReq.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupListPSReq()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupListPSReq.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupListPSReq.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListPSReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupListPSReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListPSReq())}
-
-law ngap.PDUSessionResourceFailedToSetupListPSReq.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupListPSReq()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupListPSReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupListPSReq())}
-  {G.PDUSessionResourceFailedToSetupListPSReq.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupListPSReq.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupListPSReq()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupListPSReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListPSReq())}
-  {bits == G.PDUSessionResourceFailedToSetupListPSReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListPSReq.after(v, rem) : Nat}
-
-law ngap.PathSwitchRequestSetupFailedTransfer.roundtrip:
-  for +v: G.PathSwitchRequestSetupFailedTransfer
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
-  {G.PathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, G.PathSwitchRequestSetupFailedTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestSetupFailedTransfer.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestSetupFailedTransfer)}
-
-law ngap.PathSwitchRequestSetupFailedTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PathSwitchRequestSetupFailedTransfer
-  for +c2: Ap.Cur
-  for +e: {G.PathSwitchRequestSetupFailedTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestSetupFailedTransfer)}
-  {G.PathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
-
-law ngap.PathSwitchRequestSetupFailedTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PathSwitchRequestSetupFailedTransfer
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestSetupFailedTransfer)}
-  {bits == G.PathSwitchRequestSetupFailedTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestSetupFailedTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.roundtrip:
-  for +v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.read(Ap.Cur{rem, G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())}
-
-law ngap.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())}
-  {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())}
-  {bits == G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceToBeSwitchedDLItem.roundtrip:
-  for +v: G.PDUSessionResourceToBeSwitchedDLItem
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceToBeSwitchedDLItem.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceToBeSwitchedDLItem.read(Ap.Cur{rem, G.PDUSessionResourceToBeSwitchedDLItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceToBeSwitchedDLItem.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem)}
-
-law ngap.PDUSessionResourceToBeSwitchedDLItem.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceToBeSwitchedDLItem
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceToBeSwitchedDLItem.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem)}
-  {G.PDUSessionResourceToBeSwitchedDLItem.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceToBeSwitchedDLItem.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceToBeSwitchedDLItem
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceToBeSwitchedDLItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem)}
-  {bits == G.PDUSessionResourceToBeSwitchedDLItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToBeSwitchedDLItem.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceToBeSwitchedDLList.roundtrip:
-  for +v: G.PDUSessionResourceToBeSwitchedDLList()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceToBeSwitchedDLList.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceToBeSwitchedDLList.read(Ap.Cur{rem, G.PDUSessionResourceToBeSwitchedDLList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceToBeSwitchedDLList.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLList())}
-
-law ngap.PDUSessionResourceToBeSwitchedDLList.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceToBeSwitchedDLList()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceToBeSwitchedDLList.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLList())}
-  {G.PDUSessionResourceToBeSwitchedDLList.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceToBeSwitchedDLList.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceToBeSwitchedDLList()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceToBeSwitchedDLList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLList())}
-  {bits == G.PDUSessionResourceToBeSwitchedDLList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToBeSwitchedDLList.after(v, rem) : Nat}
-
 law ngap.DL_NGU_TNLInformationReused.roundtrip:
   for +v: G.DL_NGU_TNLInformationReused()
   for +rem: Nat
@@ -3827,98 +3758,6 @@ law ngap.DL_NGU_TNLInformationReused.suffix:
   for +bits2: Ap.Bits()
   for +e: {G.DL_NGU_TNLInformationReused.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.DL_NGU_TNLInformationReused())}
   {bits == G.DL_NGU_TNLInformationReused.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.DL_NGU_TNLInformationReused.after(v, rem) : Nat}
-
-law ngap.IntegrityProtectionIndication.roundtrip:
-  for +v: G.IntegrityProtectionIndication()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.IntegrityProtectionIndication.valid(v) == True{} : Bool}
-  {G.IntegrityProtectionIndication.read(Ap.Cur{rem, G.IntegrityProtectionIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.IntegrityProtectionIndication.after(v, rem), rest})} : Ap.Rd(G.IntegrityProtectionIndication())}
-
-law ngap.IntegrityProtectionIndication.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.IntegrityProtectionIndication()
-  for +c2: Ap.Cur
-  for +e: {G.IntegrityProtectionIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.IntegrityProtectionIndication())}
-  {G.IntegrityProtectionIndication.valid(v) == True{} : Bool}
-
-law ngap.IntegrityProtectionIndication.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.IntegrityProtectionIndication()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.IntegrityProtectionIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.IntegrityProtectionIndication())}
-  {bits == G.IntegrityProtectionIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.IntegrityProtectionIndication.after(v, rem) : Nat}
-
-law ngap.ConfidentialityProtectionIndication.roundtrip:
-  for +v: G.ConfidentialityProtectionIndication()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.ConfidentialityProtectionIndication.valid(v) == True{} : Bool}
-  {G.ConfidentialityProtectionIndication.read(Ap.Cur{rem, G.ConfidentialityProtectionIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.ConfidentialityProtectionIndication.after(v, rem), rest})} : Ap.Rd(G.ConfidentialityProtectionIndication())}
-
-law ngap.ConfidentialityProtectionIndication.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.ConfidentialityProtectionIndication()
-  for +c2: Ap.Cur
-  for +e: {G.ConfidentialityProtectionIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.ConfidentialityProtectionIndication())}
-  {G.ConfidentialityProtectionIndication.valid(v) == True{} : Bool}
-
-law ngap.ConfidentialityProtectionIndication.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.ConfidentialityProtectionIndication()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.ConfidentialityProtectionIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.ConfidentialityProtectionIndication())}
-  {bits == G.ConfidentialityProtectionIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.ConfidentialityProtectionIndication.after(v, rem) : Nat}
-
-law ngap.MaximumIntegrityProtectedDataRate.roundtrip:
-  for +v: G.MaximumIntegrityProtectedDataRate()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.MaximumIntegrityProtectedDataRate.valid(v) == True{} : Bool}
-  {G.MaximumIntegrityProtectedDataRate.read(Ap.Cur{rem, G.MaximumIntegrityProtectedDataRate.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.MaximumIntegrityProtectedDataRate.after(v, rem), rest})} : Ap.Rd(G.MaximumIntegrityProtectedDataRate())}
-
-law ngap.MaximumIntegrityProtectedDataRate.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.MaximumIntegrityProtectedDataRate()
-  for +c2: Ap.Cur
-  for +e: {G.MaximumIntegrityProtectedDataRate.read(c) == Done{(v, c2)} : Ap.Rd(G.MaximumIntegrityProtectedDataRate())}
-  {G.MaximumIntegrityProtectedDataRate.valid(v) == True{} : Bool}
-
-law ngap.MaximumIntegrityProtectedDataRate.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.MaximumIntegrityProtectedDataRate()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.MaximumIntegrityProtectedDataRate.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.MaximumIntegrityProtectedDataRate())}
-  {bits == G.MaximumIntegrityProtectedDataRate.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.MaximumIntegrityProtectedDataRate.after(v, rem) : Nat}
-
-law ngap.SecurityIndication.roundtrip:
-  for +v: G.SecurityIndication
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.SecurityIndication.valid(v) == True{} : Bool}
-  {G.SecurityIndication.read(Ap.Cur{rem, G.SecurityIndication.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SecurityIndication.after(v, rem), rest})} : Ap.Rd(G.SecurityIndication)}
-
-law ngap.SecurityIndication.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.SecurityIndication
-  for +c2: Ap.Cur
-  for +e: {G.SecurityIndication.read(c) == Done{(v, c2)} : Ap.Rd(G.SecurityIndication)}
-  {G.SecurityIndication.valid(v) == True{} : Bool}
-
-law ngap.SecurityIndication.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.SecurityIndication
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.SecurityIndication.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SecurityIndication)}
-  {bits == G.SecurityIndication.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SecurityIndication.after(v, rem) : Nat}
 
 law ngap.UserPlaneSecurityInformation.roundtrip:
   for +v: G.UserPlaneSecurityInformation
@@ -4012,120 +3851,258 @@ law ngap.PathSwitchRequestTransfer.suffix:
   for +e: {G.PathSwitchRequestTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestTransfer)}
   {bits == G.PathSwitchRequestTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestTransfer.after(v, rem) : Nat}
 
-law ngap.PathSwitchRequestAcknowledge.roundtrip:
-  for +v: G.PathSwitchRequestAcknowledge()
+law ngap.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.roundtrip:
+  for +v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PathSwitchRequestAcknowledge.valid(v) == True{} : Bool}
-  {G.PathSwitchRequestAcknowledge.read(Ap.Cur{rem, G.PathSwitchRequestAcknowledge.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestAcknowledge.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestAcknowledge())}
+  for +ok: {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.read(Ap.Cur{rem, G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())}
 
-law ngap.PathSwitchRequestAcknowledge.decode_valid:
+law ngap.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PathSwitchRequestAcknowledge()
+  for +v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()
   for +c2: Ap.Cur
-  for +e: {G.PathSwitchRequestAcknowledge.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestAcknowledge())}
-  {G.PathSwitchRequestAcknowledge.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())}
+  {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.valid(v) == True{} : Bool}
 
-law ngap.PathSwitchRequestAcknowledge.suffix:
+law ngap.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PathSwitchRequestAcknowledge()
+  for +v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PathSwitchRequestAcknowledge.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestAcknowledge())}
-  {bits == G.PathSwitchRequestAcknowledge.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestAcknowledge.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())}
+  {bits == G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.roundtrip:
-  for +v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()
+law ngap.PDUSessionResourceToBeSwitchedDLItem.roundtrip:
+  for +v: G.PDUSessionResourceToBeSwitchedDLItem
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())}
+  for +ok: {G.PDUSessionResourceToBeSwitchedDLItem.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceToBeSwitchedDLItem.read(Ap.Cur{rem, G.PDUSessionResourceToBeSwitchedDLItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceToBeSwitchedDLItem.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem)}
 
-law ngap.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.decode_valid:
+law ngap.PDUSessionResourceToBeSwitchedDLItem.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()
+  for +v: G.PDUSessionResourceToBeSwitchedDLItem
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())}
-  {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceToBeSwitchedDLItem.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem)}
+  {G.PDUSessionResourceToBeSwitchedDLItem.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.suffix:
+law ngap.PDUSessionResourceToBeSwitchedDLItem.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()
+  for +v: G.PDUSessionResourceToBeSwitchedDLItem
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())}
-  {bits == G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceToBeSwitchedDLItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem)}
+  {bits == G.PDUSessionResourceToBeSwitchedDLItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToBeSwitchedDLItem.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceReleasedItemPSAck.roundtrip:
-  for +v: G.PDUSessionResourceReleasedItemPSAck
+law ngap.PDUSessionResourceToBeSwitchedDLList.roundtrip:
+  for +v: G.PDUSessionResourceToBeSwitchedDLList()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceReleasedItemPSAck.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceReleasedItemPSAck.read(Ap.Cur{rem, G.PDUSessionResourceReleasedItemPSAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceReleasedItemPSAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck)}
+  for +ok: {G.PDUSessionResourceToBeSwitchedDLList.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceToBeSwitchedDLList.read(Ap.Cur{rem, G.PDUSessionResourceToBeSwitchedDLList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceToBeSwitchedDLList.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLList())}
 
-law ngap.PDUSessionResourceReleasedItemPSAck.decode_valid:
+law ngap.PDUSessionResourceToBeSwitchedDLList.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceReleasedItemPSAck
+  for +v: G.PDUSessionResourceToBeSwitchedDLList()
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceReleasedItemPSAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck)}
-  {G.PDUSessionResourceReleasedItemPSAck.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceToBeSwitchedDLList.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLList())}
+  {G.PDUSessionResourceToBeSwitchedDLList.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceReleasedItemPSAck.suffix:
+law ngap.PDUSessionResourceToBeSwitchedDLList.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceReleasedItemPSAck
+  for +v: G.PDUSessionResourceToBeSwitchedDLList()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceReleasedItemPSAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck)}
-  {bits == G.PDUSessionResourceReleasedItemPSAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedItemPSAck.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceToBeSwitchedDLList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToBeSwitchedDLList())}
+  {bits == G.PDUSessionResourceToBeSwitchedDLList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToBeSwitchedDLList.after(v, rem) : Nat}
 
-law ngap.PDUSessionResourceReleasedListPSAck.roundtrip:
-  for +v: G.PDUSessionResourceReleasedListPSAck()
+law ngap.PathSwitchRequestSetupFailedTransfer.roundtrip:
+  for +v: G.PathSwitchRequestSetupFailedTransfer
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceReleasedListPSAck.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceReleasedListPSAck.read(Ap.Cur{rem, G.PDUSessionResourceReleasedListPSAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceReleasedListPSAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedListPSAck())}
+  for +ok: {G.PathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
+  {G.PathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, G.PathSwitchRequestSetupFailedTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestSetupFailedTransfer.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestSetupFailedTransfer)}
 
-law ngap.PDUSessionResourceReleasedListPSAck.decode_valid:
+law ngap.PathSwitchRequestSetupFailedTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PDUSessionResourceReleasedListPSAck()
+  for +v: G.PathSwitchRequestSetupFailedTransfer
   for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceReleasedListPSAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedListPSAck())}
-  {G.PDUSessionResourceReleasedListPSAck.valid(v) == True{} : Bool}
+  for +e: {G.PathSwitchRequestSetupFailedTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestSetupFailedTransfer)}
+  {G.PathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
 
-law ngap.PDUSessionResourceReleasedListPSAck.suffix:
+law ngap.PathSwitchRequestSetupFailedTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceReleasedListPSAck()
+  for +v: G.PathSwitchRequestSetupFailedTransfer
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceReleasedListPSAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedListPSAck())}
-  {bits == G.PDUSessionResourceReleasedListPSAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedListPSAck.after(v, rem) : Nat}
+  for +e: {G.PathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestSetupFailedTransfer)}
+  {bits == G.PathSwitchRequestSetupFailedTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestSetupFailedTransfer.after(v, rem) : Nat}
 
-law ngap.PathSwitchRequestUnsuccessfulTransfer.roundtrip:
-  for +v: G.PathSwitchRequestUnsuccessfulTransfer
+law ngap.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
-  {G.PathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, G.PathSwitchRequestUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestUnsuccessfulTransfer)}
+  for +ok: {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())}
 
-law ngap.PathSwitchRequestUnsuccessfulTransfer.decode_valid:
+law ngap.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PathSwitchRequestUnsuccessfulTransfer
+  for +v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()
   for +c2: Ap.Cur
-  for +e: {G.PathSwitchRequestUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestUnsuccessfulTransfer)}
-  {G.PathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())}
+  {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.valid(v) == True{} : Bool}
 
-law ngap.PathSwitchRequestUnsuccessfulTransfer.suffix:
+law ngap.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PathSwitchRequestUnsuccessfulTransfer
+  for +v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestUnsuccessfulTransfer)}
-  {bits == G.PathSwitchRequestUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestUnsuccessfulTransfer.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())}
+  {bits == G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupItemPSReq.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupItemPSReq
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupItemPSReq.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupItemPSReq.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemPSReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemPSReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq)}
+
+law ngap.PDUSessionResourceFailedToSetupItemPSReq.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupItemPSReq
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq)}
+  {G.PDUSessionResourceFailedToSetupItemPSReq.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupItemPSReq.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupItemPSReq
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupItemPSReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq)}
+  {bits == G.PDUSessionResourceFailedToSetupItemPSReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemPSReq.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupListPSReq.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupListPSReq()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupListPSReq.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupListPSReq.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListPSReq.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupListPSReq.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListPSReq())}
+
+law ngap.PDUSessionResourceFailedToSetupListPSReq.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupListPSReq()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupListPSReq.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupListPSReq())}
+  {G.PDUSessionResourceFailedToSetupListPSReq.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupListPSReq.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupListPSReq()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupListPSReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListPSReq())}
+  {bits == G.PDUSessionResourceFailedToSetupListPSReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListPSReq.after(v, rem) : Nat}
+
+law ngap.PathSwitchRequest.roundtrip:
+  for +v: G.PathSwitchRequest()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PathSwitchRequest.valid(v) == True{} : Bool}
+  {G.PathSwitchRequest.read(Ap.Cur{rem, G.PathSwitchRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequest.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequest())}
+
+law ngap.PathSwitchRequest.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PathSwitchRequest()
+  for +c2: Ap.Cur
+  for +e: {G.PathSwitchRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequest())}
+  {G.PathSwitchRequest.valid(v) == True{} : Bool}
+
+law ngap.PathSwitchRequest.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PathSwitchRequest()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PathSwitchRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequest())}
+  {bits == G.PathSwitchRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequest.after(v, rem) : Nat}
+
+law ngap.NextHopChainingCount.roundtrip:
+  for +v: G.NextHopChainingCount()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.NextHopChainingCount.valid(v) == True{} : Bool}
+  {G.NextHopChainingCount.read(Ap.Cur{rem, G.NextHopChainingCount.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NextHopChainingCount.after(v, rem), rest})} : Ap.Rd(G.NextHopChainingCount())}
+
+law ngap.NextHopChainingCount.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.NextHopChainingCount()
+  for +c2: Ap.Cur
+  for +e: {G.NextHopChainingCount.read(c) == Done{(v, c2)} : Ap.Rd(G.NextHopChainingCount())}
+  {G.NextHopChainingCount.valid(v) == True{} : Bool}
+
+law ngap.NextHopChainingCount.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.NextHopChainingCount()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.NextHopChainingCount.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NextHopChainingCount())}
+  {bits == G.NextHopChainingCount.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NextHopChainingCount.after(v, rem) : Nat}
+
+law ngap.SecurityContext.roundtrip:
+  for +v: G.SecurityContext
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SecurityContext.valid(v) == True{} : Bool}
+  {G.SecurityContext.read(Ap.Cur{rem, G.SecurityContext.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SecurityContext.after(v, rem), rest})} : Ap.Rd(G.SecurityContext)}
+
+law ngap.SecurityContext.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SecurityContext
+  for +c2: Ap.Cur
+  for +e: {G.SecurityContext.read(c) == Done{(v, c2)} : Ap.Rd(G.SecurityContext)}
+  {G.SecurityContext.valid(v) == True{} : Bool}
+
+law ngap.SecurityContext.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SecurityContext
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SecurityContext.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SecurityContext)}
+  {bits == G.SecurityContext.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SecurityContext.after(v, rem) : Nat}
+
+law ngap.PathSwitchRequestAcknowledgeTransfer.roundtrip:
+  for +v: G.PathSwitchRequestAcknowledgeTransfer
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PathSwitchRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
+  {G.PathSwitchRequestAcknowledgeTransfer.read(Ap.Cur{rem, G.PathSwitchRequestAcknowledgeTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestAcknowledgeTransfer.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestAcknowledgeTransfer)}
+
+law ngap.PathSwitchRequestAcknowledgeTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PathSwitchRequestAcknowledgeTransfer
+  for +c2: Ap.Cur
+  for +e: {G.PathSwitchRequestAcknowledgeTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestAcknowledgeTransfer)}
+  {G.PathSwitchRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
+
+law ngap.PathSwitchRequestAcknowledgeTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PathSwitchRequestAcknowledgeTransfer
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PathSwitchRequestAcknowledgeTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestAcknowledgeTransfer)}
+  {bits == G.PathSwitchRequestAcknowledgeTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestAcknowledgeTransfer.after(v, rem) : Nat}
 
 law ngap.PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.roundtrip:
   for +v: G.PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer()
@@ -4196,97 +4173,120 @@ law ngap.PDUSessionResourceSwitchedList.suffix:
   for +e: {G.PDUSessionResourceSwitchedList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSwitchedList())}
   {bits == G.PDUSessionResourceSwitchedList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSwitchedList.after(v, rem) : Nat}
 
-law ngap.PathSwitchRequestAcknowledgeTransfer.roundtrip:
-  for +v: G.PathSwitchRequestAcknowledgeTransfer
+law ngap.PathSwitchRequestUnsuccessfulTransfer.roundtrip:
+  for +v: G.PathSwitchRequestUnsuccessfulTransfer
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PathSwitchRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
-  {G.PathSwitchRequestAcknowledgeTransfer.read(Ap.Cur{rem, G.PathSwitchRequestAcknowledgeTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestAcknowledgeTransfer.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestAcknowledgeTransfer)}
+  for +ok: {G.PathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  {G.PathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, G.PathSwitchRequestUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestUnsuccessfulTransfer)}
 
-law ngap.PathSwitchRequestAcknowledgeTransfer.decode_valid:
+law ngap.PathSwitchRequestUnsuccessfulTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PathSwitchRequestAcknowledgeTransfer
+  for +v: G.PathSwitchRequestUnsuccessfulTransfer
   for +c2: Ap.Cur
-  for +e: {G.PathSwitchRequestAcknowledgeTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestAcknowledgeTransfer)}
-  {G.PathSwitchRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
+  for +e: {G.PathSwitchRequestUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestUnsuccessfulTransfer)}
+  {G.PathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
 
-law ngap.PathSwitchRequestAcknowledgeTransfer.suffix:
+law ngap.PathSwitchRequestUnsuccessfulTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PathSwitchRequestAcknowledgeTransfer
+  for +v: G.PathSwitchRequestUnsuccessfulTransfer
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PathSwitchRequestAcknowledgeTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestAcknowledgeTransfer)}
-  {bits == G.PathSwitchRequestAcknowledgeTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestAcknowledgeTransfer.after(v, rem) : Nat}
+  for +e: {G.PathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestUnsuccessfulTransfer)}
+  {bits == G.PathSwitchRequestUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestUnsuccessfulTransfer.after(v, rem) : Nat}
 
-law ngap.NextHopChainingCount.roundtrip:
-  for +v: G.NextHopChainingCount()
+law ngap.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.roundtrip:
+  for +v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.NextHopChainingCount.valid(v) == True{} : Bool}
-  {G.NextHopChainingCount.read(Ap.Cur{rem, G.NextHopChainingCount.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.NextHopChainingCount.after(v, rem), rest})} : Ap.Rd(G.NextHopChainingCount())}
+  for +ok: {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())}
 
-law ngap.NextHopChainingCount.decode_valid:
+law ngap.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.NextHopChainingCount()
+  for +v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()
   for +c2: Ap.Cur
-  for +e: {G.NextHopChainingCount.read(c) == Done{(v, c2)} : Ap.Rd(G.NextHopChainingCount())}
-  {G.NextHopChainingCount.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())}
+  {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.valid(v) == True{} : Bool}
 
-law ngap.NextHopChainingCount.suffix:
+law ngap.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.NextHopChainingCount()
+  for +v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.NextHopChainingCount.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.NextHopChainingCount())}
-  {bits == G.NextHopChainingCount.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.NextHopChainingCount.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())}
+  {bits == G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.after(v, rem) : Nat}
 
-law ngap.SecurityContext.roundtrip:
-  for +v: G.SecurityContext
+law ngap.PDUSessionResourceReleasedItemPSAck.roundtrip:
+  for +v: G.PDUSessionResourceReleasedItemPSAck
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.SecurityContext.valid(v) == True{} : Bool}
-  {G.SecurityContext.read(Ap.Cur{rem, G.SecurityContext.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SecurityContext.after(v, rem), rest})} : Ap.Rd(G.SecurityContext)}
+  for +ok: {G.PDUSessionResourceReleasedItemPSAck.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceReleasedItemPSAck.read(Ap.Cur{rem, G.PDUSessionResourceReleasedItemPSAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceReleasedItemPSAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck)}
 
-law ngap.SecurityContext.decode_valid:
+law ngap.PDUSessionResourceReleasedItemPSAck.decode_valid:
   for +c: Ap.Cur
-  for +v: G.SecurityContext
+  for +v: G.PDUSessionResourceReleasedItemPSAck
   for +c2: Ap.Cur
-  for +e: {G.SecurityContext.read(c) == Done{(v, c2)} : Ap.Rd(G.SecurityContext)}
-  {G.SecurityContext.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceReleasedItemPSAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck)}
+  {G.PDUSessionResourceReleasedItemPSAck.valid(v) == True{} : Bool}
 
-law ngap.SecurityContext.suffix:
+law ngap.PDUSessionResourceReleasedItemPSAck.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.SecurityContext
+  for +v: G.PDUSessionResourceReleasedItemPSAck
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.SecurityContext.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SecurityContext)}
-  {bits == G.SecurityContext.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SecurityContext.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceReleasedItemPSAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemPSAck)}
+  {bits == G.PDUSessionResourceReleasedItemPSAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedItemPSAck.after(v, rem) : Nat}
 
-law ngap.PathSwitchRequestFailure.roundtrip:
-  for +v: G.PathSwitchRequestFailure()
+law ngap.PDUSessionResourceReleasedListPSAck.roundtrip:
+  for +v: G.PDUSessionResourceReleasedListPSAck()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.PathSwitchRequestFailure.valid(v) == True{} : Bool}
-  {G.PathSwitchRequestFailure.read(Ap.Cur{rem, G.PathSwitchRequestFailure.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestFailure.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestFailure())}
+  for +ok: {G.PDUSessionResourceReleasedListPSAck.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceReleasedListPSAck.read(Ap.Cur{rem, G.PDUSessionResourceReleasedListPSAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceReleasedListPSAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedListPSAck())}
 
-law ngap.PathSwitchRequestFailure.decode_valid:
+law ngap.PDUSessionResourceReleasedListPSAck.decode_valid:
   for +c: Ap.Cur
-  for +v: G.PathSwitchRequestFailure()
+  for +v: G.PDUSessionResourceReleasedListPSAck()
   for +c2: Ap.Cur
-  for +e: {G.PathSwitchRequestFailure.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestFailure())}
-  {G.PathSwitchRequestFailure.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceReleasedListPSAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedListPSAck())}
+  {G.PDUSessionResourceReleasedListPSAck.valid(v) == True{} : Bool}
 
-law ngap.PathSwitchRequestFailure.suffix:
+law ngap.PDUSessionResourceReleasedListPSAck.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.PathSwitchRequestFailure()
+  for +v: G.PDUSessionResourceReleasedListPSAck()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.PathSwitchRequestFailure.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestFailure())}
-  {bits == G.PathSwitchRequestFailure.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestFailure.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceReleasedListPSAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedListPSAck())}
+  {bits == G.PDUSessionResourceReleasedListPSAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedListPSAck.after(v, rem) : Nat}
+
+law ngap.PathSwitchRequestAcknowledge.roundtrip:
+  for +v: G.PathSwitchRequestAcknowledge()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PathSwitchRequestAcknowledge.valid(v) == True{} : Bool}
+  {G.PathSwitchRequestAcknowledge.read(Ap.Cur{rem, G.PathSwitchRequestAcknowledge.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestAcknowledge.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestAcknowledge())}
+
+law ngap.PathSwitchRequestAcknowledge.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PathSwitchRequestAcknowledge()
+  for +c2: Ap.Cur
+  for +e: {G.PathSwitchRequestAcknowledge.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestAcknowledge())}
+  {G.PathSwitchRequestAcknowledge.valid(v) == True{} : Bool}
+
+law ngap.PathSwitchRequestAcknowledge.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PathSwitchRequestAcknowledge()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PathSwitchRequestAcknowledge.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestAcknowledge())}
+  {bits == G.PathSwitchRequestAcknowledge.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestAcknowledge.after(v, rem) : Nat}
 
 law ngap.PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.roundtrip:
   for +v: G.PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer()
@@ -4357,166 +4357,51 @@ law ngap.PDUSessionResourceReleasedListPSFail.suffix:
   for +e: {G.PDUSessionResourceReleasedListPSFail.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedListPSFail())}
   {bits == G.PDUSessionResourceReleasedListPSFail.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedListPSFail.after(v, rem) : Nat}
 
-law ngap.HandoverRequired.roundtrip:
-  for +v: G.HandoverRequired()
+law ngap.PathSwitchRequestFailure.roundtrip:
+  for +v: G.PathSwitchRequestFailure()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.HandoverRequired.valid(v) == True{} : Bool}
-  {G.HandoverRequired.read(Ap.Cur{rem, G.HandoverRequired.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequired.after(v, rem), rest})} : Ap.Rd(G.HandoverRequired())}
+  for +ok: {G.PathSwitchRequestFailure.valid(v) == True{} : Bool}
+  {G.PathSwitchRequestFailure.read(Ap.Cur{rem, G.PathSwitchRequestFailure.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PathSwitchRequestFailure.after(v, rem), rest})} : Ap.Rd(G.PathSwitchRequestFailure())}
 
-law ngap.HandoverRequired.decode_valid:
+law ngap.PathSwitchRequestFailure.decode_valid:
   for +c: Ap.Cur
-  for +v: G.HandoverRequired()
+  for +v: G.PathSwitchRequestFailure()
   for +c2: Ap.Cur
-  for +e: {G.HandoverRequired.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequired())}
-  {G.HandoverRequired.valid(v) == True{} : Bool}
+  for +e: {G.PathSwitchRequestFailure.read(c) == Done{(v, c2)} : Ap.Rd(G.PathSwitchRequestFailure())}
+  {G.PathSwitchRequestFailure.valid(v) == True{} : Bool}
 
-law ngap.HandoverRequired.suffix:
+law ngap.PathSwitchRequestFailure.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.HandoverRequired()
+  for +v: G.PathSwitchRequestFailure()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.HandoverRequired.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequired())}
-  {bits == G.HandoverRequired.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequired.after(v, rem) : Nat}
+  for +e: {G.PathSwitchRequestFailure.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PathSwitchRequestFailure())}
+  {bits == G.PathSwitchRequestFailure.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PathSwitchRequestFailure.after(v, rem) : Nat}
 
-law ngap.SourceToTarget_TransparentContainer.roundtrip:
-  for +v: G.SourceToTarget_TransparentContainer()
+law ngap.HandoverType.roundtrip:
+  for +v: G.HandoverType()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.SourceToTarget_TransparentContainer.valid(v) == True{} : Bool}
-  {G.SourceToTarget_TransparentContainer.read(Ap.Cur{rem, G.SourceToTarget_TransparentContainer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SourceToTarget_TransparentContainer.after(v, rem), rest})} : Ap.Rd(G.SourceToTarget_TransparentContainer())}
+  for +ok: {G.HandoverType.valid(v) == True{} : Bool}
+  {G.HandoverType.read(Ap.Cur{rem, G.HandoverType.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverType.after(v, rem), rest})} : Ap.Rd(G.HandoverType())}
 
-law ngap.SourceToTarget_TransparentContainer.decode_valid:
+law ngap.HandoverType.decode_valid:
   for +c: Ap.Cur
-  for +v: G.SourceToTarget_TransparentContainer()
+  for +v: G.HandoverType()
   for +c2: Ap.Cur
-  for +e: {G.SourceToTarget_TransparentContainer.read(c) == Done{(v, c2)} : Ap.Rd(G.SourceToTarget_TransparentContainer())}
-  {G.SourceToTarget_TransparentContainer.valid(v) == True{} : Bool}
+  for +e: {G.HandoverType.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverType())}
+  {G.HandoverType.valid(v) == True{} : Bool}
 
-law ngap.SourceToTarget_TransparentContainer.suffix:
+law ngap.HandoverType.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.SourceToTarget_TransparentContainer()
+  for +v: G.HandoverType()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.SourceToTarget_TransparentContainer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SourceToTarget_TransparentContainer())}
-  {bits == G.SourceToTarget_TransparentContainer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SourceToTarget_TransparentContainer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceItemHORqd_handoverRequiredTransfer.roundtrip:
-  for +v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.read(Ap.Cur{rem, G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceItemHORqd_handoverRequiredTransfer())}
-
-law ngap.PDUSessionResourceItemHORqd_handoverRequiredTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceItemHORqd_handoverRequiredTransfer())}
-  {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceItemHORqd_handoverRequiredTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceItemHORqd_handoverRequiredTransfer())}
-  {bits == G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceItemHORqd.roundtrip:
-  for +v: G.PDUSessionResourceItemHORqd
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceItemHORqd.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceItemHORqd.read(Ap.Cur{rem, G.PDUSessionResourceItemHORqd.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceItemHORqd.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceItemHORqd)}
-
-law ngap.PDUSessionResourceItemHORqd.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceItemHORqd
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceItemHORqd.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceItemHORqd)}
-  {G.PDUSessionResourceItemHORqd.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceItemHORqd.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceItemHORqd
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceItemHORqd.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceItemHORqd)}
-  {bits == G.PDUSessionResourceItemHORqd.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceItemHORqd.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceListHORqd.roundtrip:
-  for +v: G.PDUSessionResourceListHORqd()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceListHORqd.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceListHORqd.read(Ap.Cur{rem, G.PDUSessionResourceListHORqd.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceListHORqd.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceListHORqd())}
-
-law ngap.PDUSessionResourceListHORqd.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceListHORqd()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceListHORqd.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceListHORqd())}
-  {G.PDUSessionResourceListHORqd.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceListHORqd.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceListHORqd()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceListHORqd.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceListHORqd())}
-  {bits == G.PDUSessionResourceListHORqd.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceListHORqd.after(v, rem) : Nat}
-
-law ngap.DirectForwardingPathAvailability.roundtrip:
-  for +v: G.DirectForwardingPathAvailability()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.DirectForwardingPathAvailability.valid(v) == True{} : Bool}
-  {G.DirectForwardingPathAvailability.read(Ap.Cur{rem, G.DirectForwardingPathAvailability.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.DirectForwardingPathAvailability.after(v, rem), rest})} : Ap.Rd(G.DirectForwardingPathAvailability())}
-
-law ngap.DirectForwardingPathAvailability.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.DirectForwardingPathAvailability()
-  for +c2: Ap.Cur
-  for +e: {G.DirectForwardingPathAvailability.read(c) == Done{(v, c2)} : Ap.Rd(G.DirectForwardingPathAvailability())}
-  {G.DirectForwardingPathAvailability.valid(v) == True{} : Bool}
-
-law ngap.DirectForwardingPathAvailability.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.DirectForwardingPathAvailability()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.DirectForwardingPathAvailability.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.DirectForwardingPathAvailability())}
-  {bits == G.DirectForwardingPathAvailability.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.DirectForwardingPathAvailability.after(v, rem) : Nat}
-
-law ngap.HandoverRequiredTransfer.roundtrip:
-  for +v: G.HandoverRequiredTransfer
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.HandoverRequiredTransfer.valid(v) == True{} : Bool}
-  {G.HandoverRequiredTransfer.read(Ap.Cur{rem, G.HandoverRequiredTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequiredTransfer.after(v, rem), rest})} : Ap.Rd(G.HandoverRequiredTransfer)}
-
-law ngap.HandoverRequiredTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.HandoverRequiredTransfer
-  for +c2: Ap.Cur
-  for +e: {G.HandoverRequiredTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequiredTransfer)}
-  {G.HandoverRequiredTransfer.valid(v) == True{} : Bool}
-
-law ngap.HandoverRequiredTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.HandoverRequiredTransfer
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.HandoverRequiredTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequiredTransfer)}
-  {bits == G.HandoverRequiredTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequiredTransfer.after(v, rem) : Nat}
+  for +e: {G.HandoverType.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverType())}
+  {bits == G.HandoverType.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverType.after(v, rem) : Nat}
 
 law ngap.TargetRANNodeID.roundtrip:
   for +v: G.TargetRANNodeID
@@ -4633,51 +4518,143 @@ law ngap.TargetID.suffix:
   for +e: {G.TargetID.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TargetID)}
   {bits == G.TargetID.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TargetID.after(v, rem) : Nat}
 
-law ngap.HandoverType.roundtrip:
-  for +v: G.HandoverType()
+law ngap.HandoverRequiredTransfer.roundtrip:
+  for +v: G.HandoverRequiredTransfer
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.HandoverType.valid(v) == True{} : Bool}
-  {G.HandoverType.read(Ap.Cur{rem, G.HandoverType.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverType.after(v, rem), rest})} : Ap.Rd(G.HandoverType())}
+  for +ok: {G.HandoverRequiredTransfer.valid(v) == True{} : Bool}
+  {G.HandoverRequiredTransfer.read(Ap.Cur{rem, G.HandoverRequiredTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequiredTransfer.after(v, rem), rest})} : Ap.Rd(G.HandoverRequiredTransfer)}
 
-law ngap.HandoverType.decode_valid:
+law ngap.HandoverRequiredTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.HandoverType()
+  for +v: G.HandoverRequiredTransfer
   for +c2: Ap.Cur
-  for +e: {G.HandoverType.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverType())}
-  {G.HandoverType.valid(v) == True{} : Bool}
+  for +e: {G.HandoverRequiredTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequiredTransfer)}
+  {G.HandoverRequiredTransfer.valid(v) == True{} : Bool}
 
-law ngap.HandoverType.suffix:
+law ngap.HandoverRequiredTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.HandoverType()
+  for +v: G.HandoverRequiredTransfer
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.HandoverType.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverType())}
-  {bits == G.HandoverType.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverType.after(v, rem) : Nat}
+  for +e: {G.HandoverRequiredTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequiredTransfer)}
+  {bits == G.HandoverRequiredTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequiredTransfer.after(v, rem) : Nat}
 
-law ngap.HandoverRequest.roundtrip:
-  for +v: G.HandoverRequest()
+law ngap.PDUSessionResourceItemHORqd_handoverRequiredTransfer.roundtrip:
+  for +v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.HandoverRequest.valid(v) == True{} : Bool}
-  {G.HandoverRequest.read(Ap.Cur{rem, G.HandoverRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequest.after(v, rem), rest})} : Ap.Rd(G.HandoverRequest())}
+  for +ok: {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.read(Ap.Cur{rem, G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceItemHORqd_handoverRequiredTransfer())}
 
-law ngap.HandoverRequest.decode_valid:
+law ngap.PDUSessionResourceItemHORqd_handoverRequiredTransfer.decode_valid:
   for +c: Ap.Cur
-  for +v: G.HandoverRequest()
+  for +v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer()
   for +c2: Ap.Cur
-  for +e: {G.HandoverRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequest())}
-  {G.HandoverRequest.valid(v) == True{} : Bool}
+  for +e: {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceItemHORqd_handoverRequiredTransfer())}
+  {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.valid(v) == True{} : Bool}
 
-law ngap.HandoverRequest.suffix:
+law ngap.PDUSessionResourceItemHORqd_handoverRequiredTransfer.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.HandoverRequest()
+  for +v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.HandoverRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequest())}
-  {bits == G.HandoverRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequest.after(v, rem) : Nat}
+  for +e: {G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceItemHORqd_handoverRequiredTransfer())}
+  {bits == G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceItemHORqd_handoverRequiredTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceItemHORqd.roundtrip:
+  for +v: G.PDUSessionResourceItemHORqd
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceItemHORqd.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceItemHORqd.read(Ap.Cur{rem, G.PDUSessionResourceItemHORqd.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceItemHORqd.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceItemHORqd)}
+
+law ngap.PDUSessionResourceItemHORqd.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceItemHORqd
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceItemHORqd.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceItemHORqd)}
+  {G.PDUSessionResourceItemHORqd.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceItemHORqd.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceItemHORqd
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceItemHORqd.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceItemHORqd)}
+  {bits == G.PDUSessionResourceItemHORqd.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceItemHORqd.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceListHORqd.roundtrip:
+  for +v: G.PDUSessionResourceListHORqd()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceListHORqd.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceListHORqd.read(Ap.Cur{rem, G.PDUSessionResourceListHORqd.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceListHORqd.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceListHORqd())}
+
+law ngap.PDUSessionResourceListHORqd.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceListHORqd()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceListHORqd.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceListHORqd())}
+  {G.PDUSessionResourceListHORqd.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceListHORqd.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceListHORqd()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceListHORqd.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceListHORqd())}
+  {bits == G.PDUSessionResourceListHORqd.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceListHORqd.after(v, rem) : Nat}
+
+law ngap.SourceToTarget_TransparentContainer.roundtrip:
+  for +v: G.SourceToTarget_TransparentContainer()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.SourceToTarget_TransparentContainer.valid(v) == True{} : Bool}
+  {G.SourceToTarget_TransparentContainer.read(Ap.Cur{rem, G.SourceToTarget_TransparentContainer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.SourceToTarget_TransparentContainer.after(v, rem), rest})} : Ap.Rd(G.SourceToTarget_TransparentContainer())}
+
+law ngap.SourceToTarget_TransparentContainer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.SourceToTarget_TransparentContainer()
+  for +c2: Ap.Cur
+  for +e: {G.SourceToTarget_TransparentContainer.read(c) == Done{(v, c2)} : Ap.Rd(G.SourceToTarget_TransparentContainer())}
+  {G.SourceToTarget_TransparentContainer.valid(v) == True{} : Bool}
+
+law ngap.SourceToTarget_TransparentContainer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.SourceToTarget_TransparentContainer()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.SourceToTarget_TransparentContainer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.SourceToTarget_TransparentContainer())}
+  {bits == G.SourceToTarget_TransparentContainer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.SourceToTarget_TransparentContainer.after(v, rem) : Nat}
+
+law ngap.HandoverRequired.roundtrip:
+  for +v: G.HandoverRequired()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.HandoverRequired.valid(v) == True{} : Bool}
+  {G.HandoverRequired.read(Ap.Cur{rem, G.HandoverRequired.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequired.after(v, rem), rest})} : Ap.Rd(G.HandoverRequired())}
+
+law ngap.HandoverRequired.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.HandoverRequired()
+  for +c2: Ap.Cur
+  for +e: {G.HandoverRequired.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequired())}
+  {G.HandoverRequired.valid(v) == True{} : Bool}
+
+law ngap.HandoverRequired.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.HandoverRequired()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.HandoverRequired.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequired())}
+  {bits == G.HandoverRequired.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequired.after(v, rem) : Nat}
 
 law ngap.PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.roundtrip:
   for +v: G.PDUSessionResourceSetupItemHOReq_handoverRequestTransfer()
@@ -4748,212 +4725,28 @@ law ngap.PDUSessionResourceSetupListHOReq.suffix:
   for +e: {G.PDUSessionResourceSetupListHOReq.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceSetupListHOReq())}
   {bits == G.PDUSessionResourceSetupListHOReq.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceSetupListHOReq.after(v, rem) : Nat}
 
-law ngap.HandoverRequestAcknowledge.roundtrip:
-  for +v: G.HandoverRequestAcknowledge()
+law ngap.HandoverRequest.roundtrip:
+  for +v: G.HandoverRequest()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.HandoverRequestAcknowledge.valid(v) == True{} : Bool}
-  {G.HandoverRequestAcknowledge.read(Ap.Cur{rem, G.HandoverRequestAcknowledge.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequestAcknowledge.after(v, rem), rest})} : Ap.Rd(G.HandoverRequestAcknowledge())}
+  for +ok: {G.HandoverRequest.valid(v) == True{} : Bool}
+  {G.HandoverRequest.read(Ap.Cur{rem, G.HandoverRequest.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequest.after(v, rem), rest})} : Ap.Rd(G.HandoverRequest())}
 
-law ngap.HandoverRequestAcknowledge.decode_valid:
+law ngap.HandoverRequest.decode_valid:
   for +c: Ap.Cur
-  for +v: G.HandoverRequestAcknowledge()
+  for +v: G.HandoverRequest()
   for +c2: Ap.Cur
-  for +e: {G.HandoverRequestAcknowledge.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequestAcknowledge())}
-  {G.HandoverRequestAcknowledge.valid(v) == True{} : Bool}
+  for +e: {G.HandoverRequest.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequest())}
+  {G.HandoverRequest.valid(v) == True{} : Bool}
 
-law ngap.HandoverRequestAcknowledge.suffix:
+law ngap.HandoverRequest.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.HandoverRequestAcknowledge()
+  for +v: G.HandoverRequest()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.HandoverRequestAcknowledge.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequestAcknowledge())}
-  {bits == G.HandoverRequestAcknowledge.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequestAcknowledge.after(v, rem) : Nat}
-
-law ngap.TargetToSource_TransparentContainer.roundtrip:
-  for +v: G.TargetToSource_TransparentContainer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.TargetToSource_TransparentContainer.valid(v) == True{} : Bool}
-  {G.TargetToSource_TransparentContainer.read(Ap.Cur{rem, G.TargetToSource_TransparentContainer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TargetToSource_TransparentContainer.after(v, rem), rest})} : Ap.Rd(G.TargetToSource_TransparentContainer())}
-
-law ngap.TargetToSource_TransparentContainer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.TargetToSource_TransparentContainer()
-  for +c2: Ap.Cur
-  for +e: {G.TargetToSource_TransparentContainer.read(c) == Done{(v, c2)} : Ap.Rd(G.TargetToSource_TransparentContainer())}
-  {G.TargetToSource_TransparentContainer.valid(v) == True{} : Bool}
-
-law ngap.TargetToSource_TransparentContainer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.TargetToSource_TransparentContainer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.TargetToSource_TransparentContainer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TargetToSource_TransparentContainer())}
-  {bits == G.TargetToSource_TransparentContainer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TargetToSource_TransparentContainer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())}
-
-law ngap.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())}
-  {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())}
-  {bits == G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupItemHOAck.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupItemHOAck
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupItemHOAck.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupItemHOAck.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemHOAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemHOAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck)}
-
-law ngap.PDUSessionResourceFailedToSetupItemHOAck.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupItemHOAck
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck)}
-  {G.PDUSessionResourceFailedToSetupItemHOAck.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupItemHOAck.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupItemHOAck
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck)}
-  {bits == G.PDUSessionResourceFailedToSetupItemHOAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemHOAck.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceFailedToSetupListHOAck.roundtrip:
-  for +v: G.PDUSessionResourceFailedToSetupListHOAck()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceFailedToSetupListHOAck.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceFailedToSetupListHOAck.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListHOAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupListHOAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListHOAck())}
-
-law ngap.PDUSessionResourceFailedToSetupListHOAck.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceFailedToSetupListHOAck()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceFailedToSetupListHOAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupListHOAck())}
-  {G.PDUSessionResourceFailedToSetupListHOAck.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceFailedToSetupListHOAck.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceFailedToSetupListHOAck()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceFailedToSetupListHOAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListHOAck())}
-  {bits == G.PDUSessionResourceFailedToSetupListHOAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListHOAck.after(v, rem) : Nat}
-
-law ngap.HandoverResourceAllocationUnsuccessfulTransfer.roundtrip:
-  for +v: G.HandoverResourceAllocationUnsuccessfulTransfer
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.HandoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
-  {G.HandoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, G.HandoverResourceAllocationUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverResourceAllocationUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.HandoverResourceAllocationUnsuccessfulTransfer)}
-
-law ngap.HandoverResourceAllocationUnsuccessfulTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.HandoverResourceAllocationUnsuccessfulTransfer
-  for +c2: Ap.Cur
-  for +e: {G.HandoverResourceAllocationUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverResourceAllocationUnsuccessfulTransfer)}
-  {G.HandoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
-
-law ngap.HandoverResourceAllocationUnsuccessfulTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.HandoverResourceAllocationUnsuccessfulTransfer
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.HandoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverResourceAllocationUnsuccessfulTransfer)}
-  {bits == G.HandoverResourceAllocationUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverResourceAllocationUnsuccessfulTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.roundtrip:
-  for +v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.read(Ap.Cur{rem, G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())}
-
-law ngap.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())}
-  {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())}
-  {bits == G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceAdmittedItem.roundtrip:
-  for +v: G.PDUSessionResourceAdmittedItem
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceAdmittedItem.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceAdmittedItem.read(Ap.Cur{rem, G.PDUSessionResourceAdmittedItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceAdmittedItem.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceAdmittedItem)}
-
-law ngap.PDUSessionResourceAdmittedItem.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceAdmittedItem
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceAdmittedItem.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceAdmittedItem)}
-  {G.PDUSessionResourceAdmittedItem.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceAdmittedItem.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceAdmittedItem
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceAdmittedItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceAdmittedItem)}
-  {bits == G.PDUSessionResourceAdmittedItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceAdmittedItem.after(v, rem) : Nat}
-
-law ngap.PDUSessionResourceAdmittedList.roundtrip:
-  for +v: G.PDUSessionResourceAdmittedList()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.PDUSessionResourceAdmittedList.valid(v) == True{} : Bool}
-  {G.PDUSessionResourceAdmittedList.read(Ap.Cur{rem, G.PDUSessionResourceAdmittedList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceAdmittedList.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceAdmittedList())}
-
-law ngap.PDUSessionResourceAdmittedList.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.PDUSessionResourceAdmittedList()
-  for +c2: Ap.Cur
-  for +e: {G.PDUSessionResourceAdmittedList.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceAdmittedList())}
-  {G.PDUSessionResourceAdmittedList.valid(v) == True{} : Bool}
-
-law ngap.PDUSessionResourceAdmittedList.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.PDUSessionResourceAdmittedList()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.PDUSessionResourceAdmittedList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceAdmittedList())}
-  {bits == G.PDUSessionResourceAdmittedList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceAdmittedList.after(v, rem) : Nat}
+  for +e: {G.HandoverRequest.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequest())}
+  {bits == G.HandoverRequest.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequest.after(v, rem) : Nat}
 
 law ngap.DataForwardingAccepted.roundtrip:
   for +v: G.DataForwardingAccepted()
@@ -5116,6 +4909,213 @@ law ngap.HandoverRequestAcknowledgeTransfer.suffix:
   for +e: {G.HandoverRequestAcknowledgeTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequestAcknowledgeTransfer)}
   {bits == G.HandoverRequestAcknowledgeTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequestAcknowledgeTransfer.after(v, rem) : Nat}
 
+law ngap.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.roundtrip:
+  for +v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.read(Ap.Cur{rem, G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())}
+
+law ngap.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())}
+  {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())}
+  {bits == G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceAdmittedItem.roundtrip:
+  for +v: G.PDUSessionResourceAdmittedItem
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceAdmittedItem.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceAdmittedItem.read(Ap.Cur{rem, G.PDUSessionResourceAdmittedItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceAdmittedItem.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceAdmittedItem)}
+
+law ngap.PDUSessionResourceAdmittedItem.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceAdmittedItem
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceAdmittedItem.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceAdmittedItem)}
+  {G.PDUSessionResourceAdmittedItem.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceAdmittedItem.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceAdmittedItem
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceAdmittedItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceAdmittedItem)}
+  {bits == G.PDUSessionResourceAdmittedItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceAdmittedItem.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceAdmittedList.roundtrip:
+  for +v: G.PDUSessionResourceAdmittedList()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceAdmittedList.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceAdmittedList.read(Ap.Cur{rem, G.PDUSessionResourceAdmittedList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceAdmittedList.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceAdmittedList())}
+
+law ngap.PDUSessionResourceAdmittedList.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceAdmittedList()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceAdmittedList.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceAdmittedList())}
+  {G.PDUSessionResourceAdmittedList.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceAdmittedList.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceAdmittedList()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceAdmittedList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceAdmittedList())}
+  {bits == G.PDUSessionResourceAdmittedList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceAdmittedList.after(v, rem) : Nat}
+
+law ngap.HandoverResourceAllocationUnsuccessfulTransfer.roundtrip:
+  for +v: G.HandoverResourceAllocationUnsuccessfulTransfer
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.HandoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  {G.HandoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, G.HandoverResourceAllocationUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverResourceAllocationUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.HandoverResourceAllocationUnsuccessfulTransfer)}
+
+law ngap.HandoverResourceAllocationUnsuccessfulTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.HandoverResourceAllocationUnsuccessfulTransfer
+  for +c2: Ap.Cur
+  for +e: {G.HandoverResourceAllocationUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverResourceAllocationUnsuccessfulTransfer)}
+  {G.HandoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
+
+law ngap.HandoverResourceAllocationUnsuccessfulTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.HandoverResourceAllocationUnsuccessfulTransfer
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.HandoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverResourceAllocationUnsuccessfulTransfer)}
+  {bits == G.HandoverResourceAllocationUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverResourceAllocationUnsuccessfulTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())}
+
+law ngap.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())}
+  {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())}
+  {bits == G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupItemHOAck.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupItemHOAck
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupItemHOAck.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupItemHOAck.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupItemHOAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupItemHOAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck)}
+
+law ngap.PDUSessionResourceFailedToSetupItemHOAck.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupItemHOAck
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck)}
+  {G.PDUSessionResourceFailedToSetupItemHOAck.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupItemHOAck.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupItemHOAck
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupItemHOAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck)}
+  {bits == G.PDUSessionResourceFailedToSetupItemHOAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupItemHOAck.after(v, rem) : Nat}
+
+law ngap.PDUSessionResourceFailedToSetupListHOAck.roundtrip:
+  for +v: G.PDUSessionResourceFailedToSetupListHOAck()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.PDUSessionResourceFailedToSetupListHOAck.valid(v) == True{} : Bool}
+  {G.PDUSessionResourceFailedToSetupListHOAck.read(Ap.Cur{rem, G.PDUSessionResourceFailedToSetupListHOAck.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.PDUSessionResourceFailedToSetupListHOAck.after(v, rem), rest})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListHOAck())}
+
+law ngap.PDUSessionResourceFailedToSetupListHOAck.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.PDUSessionResourceFailedToSetupListHOAck()
+  for +c2: Ap.Cur
+  for +e: {G.PDUSessionResourceFailedToSetupListHOAck.read(c) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceFailedToSetupListHOAck())}
+  {G.PDUSessionResourceFailedToSetupListHOAck.valid(v) == True{} : Bool}
+
+law ngap.PDUSessionResourceFailedToSetupListHOAck.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.PDUSessionResourceFailedToSetupListHOAck()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.PDUSessionResourceFailedToSetupListHOAck.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceFailedToSetupListHOAck())}
+  {bits == G.PDUSessionResourceFailedToSetupListHOAck.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceFailedToSetupListHOAck.after(v, rem) : Nat}
+
+law ngap.TargetToSource_TransparentContainer.roundtrip:
+  for +v: G.TargetToSource_TransparentContainer()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.TargetToSource_TransparentContainer.valid(v) == True{} : Bool}
+  {G.TargetToSource_TransparentContainer.read(Ap.Cur{rem, G.TargetToSource_TransparentContainer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.TargetToSource_TransparentContainer.after(v, rem), rest})} : Ap.Rd(G.TargetToSource_TransparentContainer())}
+
+law ngap.TargetToSource_TransparentContainer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.TargetToSource_TransparentContainer()
+  for +c2: Ap.Cur
+  for +e: {G.TargetToSource_TransparentContainer.read(c) == Done{(v, c2)} : Ap.Rd(G.TargetToSource_TransparentContainer())}
+  {G.TargetToSource_TransparentContainer.valid(v) == True{} : Bool}
+
+law ngap.TargetToSource_TransparentContainer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.TargetToSource_TransparentContainer()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.TargetToSource_TransparentContainer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.TargetToSource_TransparentContainer())}
+  {bits == G.TargetToSource_TransparentContainer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.TargetToSource_TransparentContainer.after(v, rem) : Nat}
+
+law ngap.HandoverRequestAcknowledge.roundtrip:
+  for +v: G.HandoverRequestAcknowledge()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.HandoverRequestAcknowledge.valid(v) == True{} : Bool}
+  {G.HandoverRequestAcknowledge.read(Ap.Cur{rem, G.HandoverRequestAcknowledge.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverRequestAcknowledge.after(v, rem), rest})} : Ap.Rd(G.HandoverRequestAcknowledge())}
+
+law ngap.HandoverRequestAcknowledge.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.HandoverRequestAcknowledge()
+  for +c2: Ap.Cur
+  for +e: {G.HandoverRequestAcknowledge.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverRequestAcknowledge())}
+  {G.HandoverRequestAcknowledge.valid(v) == True{} : Bool}
+
+law ngap.HandoverRequestAcknowledge.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.HandoverRequestAcknowledge()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.HandoverRequestAcknowledge.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverRequestAcknowledge())}
+  {bits == G.HandoverRequestAcknowledge.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverRequestAcknowledge.after(v, rem) : Nat}
+
 law ngap.HandoverFailure.roundtrip:
   for +v: G.HandoverFailure()
   for +rem: Nat
@@ -5139,28 +5139,74 @@ law ngap.HandoverFailure.suffix:
   for +e: {G.HandoverFailure.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverFailure())}
   {bits == G.HandoverFailure.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverFailure.after(v, rem) : Nat}
 
-law ngap.HandoverCommand.roundtrip:
-  for +v: G.HandoverCommand()
+law ngap.QosFlowToBeForwardedItem.roundtrip:
+  for +v: G.QosFlowToBeForwardedItem
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.HandoverCommand.valid(v) == True{} : Bool}
-  {G.HandoverCommand.read(Ap.Cur{rem, G.HandoverCommand.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverCommand.after(v, rem), rest})} : Ap.Rd(G.HandoverCommand())}
+  for +ok: {G.QosFlowToBeForwardedItem.valid(v) == True{} : Bool}
+  {G.QosFlowToBeForwardedItem.read(Ap.Cur{rem, G.QosFlowToBeForwardedItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.QosFlowToBeForwardedItem.after(v, rem), rest})} : Ap.Rd(G.QosFlowToBeForwardedItem)}
 
-law ngap.HandoverCommand.decode_valid:
+law ngap.QosFlowToBeForwardedItem.decode_valid:
   for +c: Ap.Cur
-  for +v: G.HandoverCommand()
+  for +v: G.QosFlowToBeForwardedItem
   for +c2: Ap.Cur
-  for +e: {G.HandoverCommand.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverCommand())}
-  {G.HandoverCommand.valid(v) == True{} : Bool}
+  for +e: {G.QosFlowToBeForwardedItem.read(c) == Done{(v, c2)} : Ap.Rd(G.QosFlowToBeForwardedItem)}
+  {G.QosFlowToBeForwardedItem.valid(v) == True{} : Bool}
 
-law ngap.HandoverCommand.suffix:
+law ngap.QosFlowToBeForwardedItem.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.HandoverCommand()
+  for +v: G.QosFlowToBeForwardedItem
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.HandoverCommand.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverCommand())}
-  {bits == G.HandoverCommand.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverCommand.after(v, rem) : Nat}
+  for +e: {G.QosFlowToBeForwardedItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.QosFlowToBeForwardedItem)}
+  {bits == G.QosFlowToBeForwardedItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.QosFlowToBeForwardedItem.after(v, rem) : Nat}
+
+law ngap.QosFlowToBeForwardedList.roundtrip:
+  for +v: G.QosFlowToBeForwardedList()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.QosFlowToBeForwardedList.valid(v) == True{} : Bool}
+  {G.QosFlowToBeForwardedList.read(Ap.Cur{rem, G.QosFlowToBeForwardedList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.QosFlowToBeForwardedList.after(v, rem), rest})} : Ap.Rd(G.QosFlowToBeForwardedList())}
+
+law ngap.QosFlowToBeForwardedList.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.QosFlowToBeForwardedList()
+  for +c2: Ap.Cur
+  for +e: {G.QosFlowToBeForwardedList.read(c) == Done{(v, c2)} : Ap.Rd(G.QosFlowToBeForwardedList())}
+  {G.QosFlowToBeForwardedList.valid(v) == True{} : Bool}
+
+law ngap.QosFlowToBeForwardedList.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.QosFlowToBeForwardedList()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.QosFlowToBeForwardedList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.QosFlowToBeForwardedList())}
+  {bits == G.QosFlowToBeForwardedList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.QosFlowToBeForwardedList.after(v, rem) : Nat}
+
+law ngap.HandoverCommandTransfer.roundtrip:
+  for +v: G.HandoverCommandTransfer
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.HandoverCommandTransfer.valid(v) == True{} : Bool}
+  {G.HandoverCommandTransfer.read(Ap.Cur{rem, G.HandoverCommandTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverCommandTransfer.after(v, rem), rest})} : Ap.Rd(G.HandoverCommandTransfer)}
+
+law ngap.HandoverCommandTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.HandoverCommandTransfer
+  for +c2: Ap.Cur
+  for +e: {G.HandoverCommandTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverCommandTransfer)}
+  {G.HandoverCommandTransfer.valid(v) == True{} : Bool}
+
+law ngap.HandoverCommandTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.HandoverCommandTransfer
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.HandoverCommandTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverCommandTransfer)}
+  {bits == G.HandoverCommandTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverCommandTransfer.after(v, rem) : Nat}
 
 law ngap.PDUSessionResourceHandoverItem_handoverCommandTransfer.roundtrip:
   for +v: G.PDUSessionResourceHandoverItem_handoverCommandTransfer()
@@ -5231,74 +5277,28 @@ law ngap.PDUSessionResourceHandoverList.suffix:
   for +e: {G.PDUSessionResourceHandoverList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceHandoverList())}
   {bits == G.PDUSessionResourceHandoverList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceHandoverList.after(v, rem) : Nat}
 
-law ngap.QosFlowToBeForwardedItem.roundtrip:
-  for +v: G.QosFlowToBeForwardedItem
+law ngap.HandoverCommand.roundtrip:
+  for +v: G.HandoverCommand()
   for +rem: Nat
   for +rest: Ap.Bits()
-  for +ok: {G.QosFlowToBeForwardedItem.valid(v) == True{} : Bool}
-  {G.QosFlowToBeForwardedItem.read(Ap.Cur{rem, G.QosFlowToBeForwardedItem.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.QosFlowToBeForwardedItem.after(v, rem), rest})} : Ap.Rd(G.QosFlowToBeForwardedItem)}
+  for +ok: {G.HandoverCommand.valid(v) == True{} : Bool}
+  {G.HandoverCommand.read(Ap.Cur{rem, G.HandoverCommand.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverCommand.after(v, rem), rest})} : Ap.Rd(G.HandoverCommand())}
 
-law ngap.QosFlowToBeForwardedItem.decode_valid:
+law ngap.HandoverCommand.decode_valid:
   for +c: Ap.Cur
-  for +v: G.QosFlowToBeForwardedItem
+  for +v: G.HandoverCommand()
   for +c2: Ap.Cur
-  for +e: {G.QosFlowToBeForwardedItem.read(c) == Done{(v, c2)} : Ap.Rd(G.QosFlowToBeForwardedItem)}
-  {G.QosFlowToBeForwardedItem.valid(v) == True{} : Bool}
+  for +e: {G.HandoverCommand.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverCommand())}
+  {G.HandoverCommand.valid(v) == True{} : Bool}
 
-law ngap.QosFlowToBeForwardedItem.suffix:
+law ngap.HandoverCommand.suffix:
   for +rem: Nat
   for +bits: Ap.Bits()
-  for +v: G.QosFlowToBeForwardedItem
+  for +v: G.HandoverCommand()
   for +rem2: Nat
   for +bits2: Ap.Bits()
-  for +e: {G.QosFlowToBeForwardedItem.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.QosFlowToBeForwardedItem)}
-  {bits == G.QosFlowToBeForwardedItem.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.QosFlowToBeForwardedItem.after(v, rem) : Nat}
-
-law ngap.QosFlowToBeForwardedList.roundtrip:
-  for +v: G.QosFlowToBeForwardedList()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.QosFlowToBeForwardedList.valid(v) == True{} : Bool}
-  {G.QosFlowToBeForwardedList.read(Ap.Cur{rem, G.QosFlowToBeForwardedList.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.QosFlowToBeForwardedList.after(v, rem), rest})} : Ap.Rd(G.QosFlowToBeForwardedList())}
-
-law ngap.QosFlowToBeForwardedList.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.QosFlowToBeForwardedList()
-  for +c2: Ap.Cur
-  for +e: {G.QosFlowToBeForwardedList.read(c) == Done{(v, c2)} : Ap.Rd(G.QosFlowToBeForwardedList())}
-  {G.QosFlowToBeForwardedList.valid(v) == True{} : Bool}
-
-law ngap.QosFlowToBeForwardedList.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.QosFlowToBeForwardedList()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.QosFlowToBeForwardedList.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.QosFlowToBeForwardedList())}
-  {bits == G.QosFlowToBeForwardedList.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.QosFlowToBeForwardedList.after(v, rem) : Nat}
-
-law ngap.HandoverCommandTransfer.roundtrip:
-  for +v: G.HandoverCommandTransfer
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.HandoverCommandTransfer.valid(v) == True{} : Bool}
-  {G.HandoverCommandTransfer.read(Ap.Cur{rem, G.HandoverCommandTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.HandoverCommandTransfer.after(v, rem), rest})} : Ap.Rd(G.HandoverCommandTransfer)}
-
-law ngap.HandoverCommandTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.HandoverCommandTransfer
-  for +c2: Ap.Cur
-  for +e: {G.HandoverCommandTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.HandoverCommandTransfer)}
-  {G.HandoverCommandTransfer.valid(v) == True{} : Bool}
-
-law ngap.HandoverCommandTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.HandoverCommandTransfer
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.HandoverCommandTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverCommandTransfer)}
-  {bits == G.HandoverCommandTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverCommandTransfer.after(v, rem) : Nat}
+  for +e: {G.HandoverCommand.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverCommand())}
+  {bits == G.HandoverCommand.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverCommand.after(v, rem) : Nat}
 
 law ngap.HandoverPreparationFailure.roundtrip:
   for +v: G.HandoverPreparationFailure()
@@ -5391,29 +5391,6 @@ law ngap.HandoverCancelAcknowledge.suffix:
   for +bits2: Ap.Bits()
   for +e: {G.HandoverCancelAcknowledge.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.HandoverCancelAcknowledge())}
   {bits == G.HandoverCancelAcknowledge.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.HandoverCancelAcknowledge.after(v, rem) : Nat}
-
-law ngap.UplinkRANStatusTransfer.roundtrip:
-  for +v: G.UplinkRANStatusTransfer()
-  for +rem: Nat
-  for +rest: Ap.Bits()
-  for +ok: {G.UplinkRANStatusTransfer.valid(v) == True{} : Bool}
-  {G.UplinkRANStatusTransfer.read(Ap.Cur{rem, G.UplinkRANStatusTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UplinkRANStatusTransfer.after(v, rem), rest})} : Ap.Rd(G.UplinkRANStatusTransfer())}
-
-law ngap.UplinkRANStatusTransfer.decode_valid:
-  for +c: Ap.Cur
-  for +v: G.UplinkRANStatusTransfer()
-  for +c2: Ap.Cur
-  for +e: {G.UplinkRANStatusTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.UplinkRANStatusTransfer())}
-  {G.UplinkRANStatusTransfer.valid(v) == True{} : Bool}
-
-law ngap.UplinkRANStatusTransfer.suffix:
-  for +rem: Nat
-  for +bits: Ap.Bits()
-  for +v: G.UplinkRANStatusTransfer()
-  for +rem2: Nat
-  for +bits2: Ap.Bits()
-  for +e: {G.UplinkRANStatusTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UplinkRANStatusTransfer())}
-  {bits == G.UplinkRANStatusTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UplinkRANStatusTransfer.after(v, rem) : Nat}
 
 law ngap.COUNTValueForPDCP_SN12_pDCP_SN12.roundtrip:
   for +v: G.COUNTValueForPDCP_SN12_pDCP_SN12()
@@ -5805,6 +5782,29 @@ law ngap.RANStatusTransfer_TransparentContainer.suffix:
   for +bits2: Ap.Bits()
   for +e: {G.RANStatusTransfer_TransparentContainer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.RANStatusTransfer_TransparentContainer)}
   {bits == G.RANStatusTransfer_TransparentContainer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.RANStatusTransfer_TransparentContainer.after(v, rem) : Nat}
+
+law ngap.UplinkRANStatusTransfer.roundtrip:
+  for +v: G.UplinkRANStatusTransfer()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +ok: {G.UplinkRANStatusTransfer.valid(v) == True{} : Bool}
+  {G.UplinkRANStatusTransfer.read(Ap.Cur{rem, G.UplinkRANStatusTransfer.write(v, rem, rest)}) == Done{(v, Ap.Cur{G.UplinkRANStatusTransfer.after(v, rem), rest})} : Ap.Rd(G.UplinkRANStatusTransfer())}
+
+law ngap.UplinkRANStatusTransfer.decode_valid:
+  for +c: Ap.Cur
+  for +v: G.UplinkRANStatusTransfer()
+  for +c2: Ap.Cur
+  for +e: {G.UplinkRANStatusTransfer.read(c) == Done{(v, c2)} : Ap.Rd(G.UplinkRANStatusTransfer())}
+  {G.UplinkRANStatusTransfer.valid(v) == True{} : Bool}
+
+law ngap.UplinkRANStatusTransfer.suffix:
+  for +rem: Nat
+  for +bits: Ap.Bits()
+  for +v: G.UplinkRANStatusTransfer()
+  for +rem2: Nat
+  for +bits2: Ap.Bits()
+  for +e: {G.UplinkRANStatusTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.UplinkRANStatusTransfer())}
+  {bits == G.UplinkRANStatusTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.UplinkRANStatusTransfer.after(v, rem) : Nat}
 
 law ngap.DownlinkRANStatusTransfer.roundtrip:
   for +v: G.DownlinkRANStatusTransfer()
