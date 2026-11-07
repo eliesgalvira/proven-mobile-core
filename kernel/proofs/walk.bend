@@ -20,10 +20,10 @@ import ../smf/gsm.bend as Gsm
 # ------------------------------
 # A step ends in one of four ways: the state as it was, with actions that
 # name no UE context (an NGAP PDU or IE list that does not decode, an
-# incomplete Config); the same with the associations set up changed (NG
-# Setup); a procedure's outcome o rendered by N.Step.of (a routed NGAP
-# message, a PFCP message, a timer); or a new configuration or an association
-# going up or down. A property Q of steps holds after every step
+# incomplete Config, an association coming up); the same with the
+# associations set up changed (NG Setup); a procedure's outcome o rendered by
+# N.Step.of (a routed NGAP message, a PFCP message, a timer); or a new
+# configuration or an association going down. A property Q of steps holds after every step
 # when it holds after each of them, the outcomes known only by a property ok
 # that each of them has.
 
@@ -120,12 +120,12 @@ def Walk.pdu(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: 
     case Done{Fr.Pdu{kind, code, crit, value}}:
       Walk.ies(Q, ok, st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), keep, ready, out, routed)
 
-def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), up: @assoc:U32 -> Q(K.Kernel.assoc_up(st, assoc)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: Walk.Out(Q, ok, st), routed: @assoc:U32 -> @stream:U32 -> Walk.Routed(ok, st, assoc, stream, entropy), pfcp: @bytes:B.Bytes() -> ok(Gsm.Gsm.pfcp_data(st, bytes)), fired: @timer:U32 -> ok(K.Kernel.fired(st, timer))) -> Q(K.Kernel.step(st, ev, entropy)):
+def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: Walk.Out(Q, ok, st), routed: @assoc:U32 -> @stream:U32 -> Walk.Routed(ok, st, assoc, stream, entropy), pfcp: @bytes:B.Bytes() -> ok(Gsm.Gsm.pfcp_data(st, bytes)), fired: @timer:U32 -> ok(K.Kernel.fired(st, timer))) -> Q(K.Kernel.step(st, ev, entropy)):
   match ev:
     case F.Config{len, +tlvs}:
       config(tlvs)
     case F.NgapAssocUp{assoc}:
-      up(assoc)
+      keep([], k => {==})
     case F.NgapAssocDown{assoc}:
       down(assoc)
     case F.NgapData{+assoc, +stream, len, +bytes}:
@@ -136,8 +136,8 @@ def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.
       out(K.Kernel.fired(st, timer), fired(timer))
 
 # A property that holds after any outcome.
-def Walk.any(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), up: @assoc:U32 -> Q(K.Kernel.assoc_up(st, assoc)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: @o:N.GOut() -> Q(N.Step.of(st, o))) -> Q(K.Kernel.step(st, ev, entropy)):
-  Walk.step(Q, o => Unit, st, ev, entropy, keep, ready, config, up, down, o => u => out(o), a => s => kind => code => ies => Unit{}, bytes => Unit{}, timer => Unit{})
+def Walk.any(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: @o:N.GOut() -> Q(N.Step.of(st, o))) -> Q(K.Kernel.step(st, ev, entropy)):
+  Walk.step(Q, o => Unit, st, ev, entropy, keep, ready, config, down, o => u => out(o), a => s => kind => code => ies => Unit{}, bytes => Unit{}, timer => Unit{})
 
 # The N2 handover messages, walked
 # --------------------------------
@@ -206,8 +206,8 @@ def Walk.pending(+m: Maybe<&2, S.Ue>, +assoc: U32, +ue: S.Ue, +e: {Ho.Ho.pending
     case Some{+w}:
       Walk.aimed(w, assoc, ue, Ho.Ho.aimed(w, assoc), {==}, e)
 
-# A property of the context and session tables: Config, an association going
-# up and every step that keeps the state leave both tables as they were.
+# A property of the context and session tables: Config and every step that
+# keeps the state leave both tables as they were.
 
 def Walk.Tables(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, o: N.Step()) -> Data:
   {inv(S.State.ues(K.Kernel.state(o)), S.State.sessions(K.Kernel.state(o))) == True{} : Bool}
@@ -222,11 +222,6 @@ def Walk.config(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +complete: 
           e
 
 def Walk.assocs(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +as: Tb.Table(B.Bytes()), +acts: List<&2, N.Act>, +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}) -> Walk.Tables(inv, (S.State.with_assocs(st, as), acts)):
-  match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-      e
-
-def Walk.up(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +assoc: U32, +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}) -> Walk.Tables(inv, K.Kernel.assoc_up(st, assoc)):
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       e
