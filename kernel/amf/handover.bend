@@ -93,6 +93,28 @@ def Ho.leg_drop(+key: U32, p: S.Phase, cause: G.Cause) -> List<&2, N.Act>:
     case _:
       []
 
+# The UE a message names
+# ----------------------
+
+# The UE an AMF-UE-NGAP-ID names, if the association owns it under that RAN-UE-NGAP-ID.
+def Ho.by_owner(+st: S.State, +assoc: U32, +ran: B.Bytes(), +amf: B.Bytes()) -> Maybe<&2, N.Keyed()>:
+  N.Ue.keyed(N.Ngap.ue_key(amf), k => N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran))
+
+# The UE whose handover is pending to assoc, not its owner, with its SUPI verified.
+def Ho.aimed(+ue: S.Ue, +assoc: U32) -> Bool:
+  Bool.and(S.Maybe.same_u32(S.Phase.pending(S.Ue.phase(ue)), Some{assoc}), Bool.and(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc))))
+
+def Ho.pending(m: Maybe<&2, S.Ue>, +assoc: U32) -> Maybe<&2, S.Ue>:
+  match m:
+    case None{}:
+      None{}
+    case Some{+ue}:
+      N.Owner.check(ue, Ho.aimed(ue, assoc))
+
+# The UE an AMF-UE-NGAP-ID names, if its handover is pending to the association.
+def Ho.by_target(+st: S.State, +assoc: U32, +amf: B.Bytes()) -> Maybe<&2, N.Keyed()>:
+  N.Ue.keyed(N.Ngap.ue_key(amf), k => Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc))
+
 # Preparation
 # -----------
 
@@ -176,49 +198,15 @@ def Ho.target(+st: S.State, intra: Bool, m: Maybe<&2, B.Bytes()>) -> Maybe<&2, U
     case _ _:
       None{}
 
-def Ho.required_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, kind: G.HandoverType(), cause: G.Cause, id: G.TargetID, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), p: S.Phase) -> N.GOut():
+def Ho.required_phase(+st: S.State, +key: U32, +ue: S.Ue, kind: G.HandoverType(), cause: G.Cause, id: G.TargetID, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:
     case S.Registered{ctx, nh, released}:
       Ho.required_target(st, key, ue, ctx, nh, cause, items, container, Ho.target(st, Ho.intra_type(kind), Ho.node(id)))
     case _:
       Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()))
 
-def Ho.required_ue(+st: S.State, +assoc: U32, +key: U32, kind: G.HandoverType(), cause: G.Cause, id: G.TargetID, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+ue}:
-      Ho.required_phase(st, assoc, key, ue, kind, cause, id, items, container, S.Ue.phase(ue))
-
-def Ho.required_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), kind: G.HandoverType(), cause: G.Cause, id: G.TargetID, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+key}:
-      Ho.required_ue(st, assoc, key, kind, cause, id, items, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
-
-# Handover Required from the UE's owner.
-def Ho.required(+st: S.State, +assoc: U32, v: V.HandoverRequired.View) -> N.GOut():
-  match v:
-    case V.HandoverRequired.View{amf, ran, kind, cause, id, direct, items, container}:
-      Ho.required_key(st, assoc, ran, kind, cause, id, items, container, N.Ngap.ue_key(amf))
-
 # The target's answers
 # --------------------
-
-# The UE whose handover is pending to assoc, not its owner, with its SUPI verified.
-def Ho.aimed(+ue: S.Ue, +assoc: U32) -> Bool:
-  Bool.and(S.Maybe.same_u32(S.Phase.pending(S.Ue.phase(ue)), Some{assoc}), Bool.and(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc))))
-
-def Ho.pending(m: Maybe<&2, S.Ue>, +assoc: U32) -> Maybe<&2, S.Ue>:
-  match m:
-    case None{}:
-      None{}
-    case Some{+ue}:
-      N.Owner.check(ue, Ho.aimed(ue, assoc))
-
-def Ho.for_target(+st: S.State, +assoc: U32, +key: U32) -> Maybe<&2, S.Ue>:
-  Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc)
 
 # Handover Request Acknowledge: Handover Command to the source, under the completion guard.
 def Ho.ack_phase(+assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), admitted: G.PDUSessionResourceAdmittedList(), container: B.Bytes(), p: S.Phase) -> N.GOut():
@@ -229,25 +217,6 @@ def Ho.ack_phase(+assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
 
-def Ho.ack_ue(+assoc: U32, +stream: U32, +key: U32, +ran: B.Bytes(), admitted: G.PDUSessionResourceAdmittedList(), container: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+ue}:
-      Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, S.Ue.phase(ue))
-
-def Ho.ack_key(+st: S.State, +assoc: U32, +stream: U32, +ran: B.Bytes(), admitted: G.PDUSessionResourceAdmittedList(), container: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+key}:
-      Ho.ack_ue(assoc, stream, key, ran, admitted, container, Ho.for_target(st, assoc, key))
-
-def Ho.ack(+st: S.State, +assoc: U32, +stream: U32, v: V.HandoverRequestAcknowledge.View) -> N.GOut():
-  match v:
-    case V.HandoverRequestAcknowledge.View{amf, ran, admitted, failed, container, diag, npn}:
-      Ho.ack_key(st, assoc, stream, ran, admitted, container, N.Ngap.ue_key(amf))
-
 # Handover Failure: Handover Preparation Failure to the source with the
 # target's cause; the target holds nothing to release.
 def Ho.failure_phase(+assoc: U32, +key: U32, +ue: S.Ue, cause: G.Cause, p: S.Phase) -> N.GOut():
@@ -256,25 +225,6 @@ def Ho.failure_phase(+assoc: U32, +key: U32, +ue: S.Ue, cause: G.Cause, p: S.Pha
       (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [Ho.preparation_failure(key, ue, cause), N.TimerCancel{key}, N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}])
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
-
-def Ho.failure_ue(+assoc: U32, +key: U32, cause: G.Cause, m: Maybe<&2, S.Ue>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+ue}:
-      Ho.failure_phase(assoc, key, ue, cause, S.Ue.phase(ue))
-
-def Ho.failure_key(+st: S.State, +assoc: U32, cause: G.Cause, m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+key}:
-      Ho.failure_ue(assoc, key, cause, Ho.for_target(st, assoc, key))
-
-def Ho.failure(+st: S.State, +assoc: U32, v: V.HandoverFailure.View) -> N.GOut():
-  match v:
-    case V.HandoverFailure.View{amf, cause, diag}:
-      Ho.failure_key(st, assoc, cause, N.Ngap.ue_key(amf))
 
 # Handover Notify from the target, under the RAN-UE-NGAP-ID it acknowledged
 # with, still free on it: the UE moves to the target, each session the target
@@ -295,25 +245,6 @@ def Ho.notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Byt
     case _:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
 
-def Ho.notify_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+ue}:
-      Ho.notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue))
-
-def Ho.notify_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+key}:
-      Ho.notify_ue(st, assoc, key, ran, Ho.for_target(st, assoc, key))
-
-def Ho.notify(+st: S.State, +assoc: U32, v: V.HandoverNotify.View) -> N.GOut():
-  match v:
-    case V.HandoverNotify.View{amf, ran, uli}:
-      Ho.notify_key(st, assoc, ran, N.Ngap.ue_key(amf))
-
 # The source's messages
 # ---------------------
 
@@ -326,25 +257,6 @@ def Ho.cancel_phase(+key: U32, +ue: S.Ue, p: S.Phase) -> N.GOut():
     case _:
       (S.Keep{}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.cancel_ack(key, S.Ue.ran_id(ue))}, N.Note{F.Warn{}, "NGAP: Handover Cancel with no handover pending"}])
 
-def Ho.cancel_ue(+assoc: U32, +key: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+ue}:
-      Ho.cancel_phase(key, ue, S.Ue.phase(ue))
-
-def Ho.cancel_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+key}:
-      Ho.cancel_ue(assoc, key, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
-
-def Ho.cancel(+st: S.State, +assoc: U32, v: V.HandoverCancel.View) -> N.GOut():
-  match v:
-    case V.HandoverCancel.View{amf, ran, cause}:
-      Ho.cancel_key(st, assoc, ran, N.Ngap.ue_key(amf))
-
 # Uplink RAN Status Transfer: relayed to the ready target as Downlink RAN Status Transfer.
 def Ho.status_phase(+key: U32, container: G.RANStatusTransfer_TransparentContainer, p: S.Phase) -> N.GOut():
   match p:
@@ -352,25 +264,6 @@ def Ho.status_phase(+key: U32, container: G.RANStatusTransfer_TransparentContain
       (S.Keep{}, [N.UeSend{t, s, key, Ho.dl_status(key, r, container)}])
     case _:
       N.Out.warn("NGAP: Uplink RAN Status Transfer with no target ready")
-
-def Ho.status_ue(+assoc: U32, +key: U32, container: G.RANStatusTransfer_TransparentContainer, m: Maybe<&2, S.Ue>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{ue}:
-      Ho.status_phase(key, container, S.Ue.phase(ue))
-
-def Ho.status_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), container: G.RANStatusTransfer_TransparentContainer, m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{+key}:
-      Ho.status_ue(assoc, key, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
-
-def Ho.status(+st: S.State, +assoc: U32, v: V.UplinkRANStatusTransfer.View) -> N.GOut():
-  match v:
-    case V.UplinkRANStatusTransfer.View{amf, ran, container}:
-      Ho.status_key(st, assoc, ran, container, N.Ngap.ue_key(amf))
 
 # The guard
 # ---------
@@ -434,43 +327,43 @@ def Ho.required_of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.Ha
   match r:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_view(assoc))
-    case Done{v}:
-      Ho.required(st, assoc, v)
+    case Done{V.HandoverRequired.View{+amf, +ran, kind, cause, id, direct, items, container}}:
+      N.Ue.found(Ho.by_owner(st, assoc, ran, amf), (S.Keep{}, N.Ngap.unknown_ue(assoc)), +key => +ue => Ho.required_phase(st, key, ue, kind, cause, id, items, container, S.Ue.phase(ue)))
 
 def Ho.ack_of_view(+st: S.State, +assoc: U32, +stream: U32, r: Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>) -> N.GOut():
   match r:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_view(assoc))
-    case Done{v}:
-      Ho.ack(st, assoc, stream, v)
+    case Done{V.HandoverRequestAcknowledge.View{+amf, +ran, admitted, failed, container, diag, npn}}:
+      N.Ue.found(Ho.by_target(st, assoc, amf), (S.Keep{}, N.Ngap.unknown_ue(assoc)), +key => +ue => Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, S.Ue.phase(ue)))
 
 def Ho.failure_of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.HandoverFailure.View>) -> N.GOut():
   match r:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_view(assoc))
-    case Done{v}:
-      Ho.failure(st, assoc, v)
+    case Done{V.HandoverFailure.View{+amf, cause, diag}}:
+      N.Ue.found(Ho.by_target(st, assoc, amf), (S.Keep{}, N.Ngap.unknown_ue(assoc)), +key => +ue => Ho.failure_phase(assoc, key, ue, cause, S.Ue.phase(ue)))
 
 def Ho.notify_of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.HandoverNotify.View>) -> N.GOut():
   match r:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_view(assoc))
-    case Done{v}:
-      Ho.notify(st, assoc, v)
+    case Done{V.HandoverNotify.View{+amf, +ran, uli}}:
+      N.Ue.found(Ho.by_target(st, assoc, amf), (S.Keep{}, N.Ngap.unknown_ue(assoc)), +key => +ue => Ho.notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue)))
 
 def Ho.cancel_of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.HandoverCancel.View>) -> N.GOut():
   match r:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_view(assoc))
-    case Done{v}:
-      Ho.cancel(st, assoc, v)
+    case Done{V.HandoverCancel.View{+amf, +ran, cause}}:
+      N.Ue.found(Ho.by_owner(st, assoc, ran, amf), (S.Keep{}, N.Ngap.unknown_ue(assoc)), +key => +ue => Ho.cancel_phase(key, ue, S.Ue.phase(ue)))
 
 def Ho.status_of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>) -> N.GOut():
   match r:
     case Fail{e}:
       (S.Keep{}, N.Ngap.bad_view(assoc))
-    case Done{v}:
-      Ho.status(st, assoc, v)
+    case Done{V.UplinkRANStatusTransfer.View{+amf, +ran, container}}:
+      N.Ue.found(Ho.by_owner(st, assoc, ran, amf), (S.Keep{}, N.Ngap.unknown_ue(assoc)), +key => +ue => Ho.status_phase(key, container, S.Ue.phase(ue)))
 
 def Ho.r6(+st: S.State, +assoc: U32, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:

@@ -1746,175 +1746,16 @@ def W.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.E
 def W.ho_sp(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +o: N.GOut(), +eu: {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}, +es: {Tk.sp(k, u, o) == True{} : Bool}) -> Tk.Ok(k, u, ues, o):
   Tk.ok_sp(k, u, ues, o, eu, es)
 
-def W.ho_prepare(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cfg: S.Cfg, +cause: G.Cause, +container: B.Bytes(), +items: G.PDUSessionResourceSetupListHOReq(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.prepare(key, ue, ctx, nh, t, cfg, cause, container, items)):
-  match items:
-    case Nil{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case +i <> +more:
-      W.ho_sp(k, u, S.State.ues(st), Ho.Ho.prepare(key, ue, ctx, nh, t, cfg, cause, container, i <> more), eu, Tk.sp_rephase(k, u, key, S.Created{}, h1))
-
-def W.ho_required_cfg(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, S.Cfg>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_cfg(st, key, ue, ctx, nh, t, cause, items, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+cfg}:
-      W.ho_prepare(st, key, ue, ctx, nh, t, cfg, cause, container, Ho.Ho.setup_items(cfg, items, S.Sessions.of_ue(key, S.State.sessions(st))), k, u, eu, h1)
-
-def W.ho_required_other(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +same: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_other(st, key, ue, ctx, nh, t, cause, items, container, same)):
-  match same:
-    case True{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case False{}:
-      W.ho_required_cfg(st, key, ue, ctx, nh, t, cause, items, container, S.State.config(st), k, u, eu, h1)
-
-def W.ho_required_target(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_target(st, key, ue, ctx, nh, cause, items, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+t}:
-      W.ho_required_other(st, key, ue, ctx, nh, t, cause, items, container, U32.is_eq(t, S.Ue.assoc(ue)), k, u, eu, h1)
-
-def W.ho_required_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_phase(st, assoc, key, ue, kind, cause, id, items, container, p)):
-  match p:
-    case S.Registered{+ctx, +nh, released}:
-      W.ho_required_target(st, key, ue, ctx, nh, cause, items, container, Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)), k, u, eu, h1)
-    case S.Created{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Identifying{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Switching{guard, ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Handover{ctx, nh, source, leg}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
 def W.ho_h1(+k: U32, +key: U32, +ue: S.Ue, +u: S.Ue, pr: {U32.is_eq(k, key) == False{} : Bool} & {S.Ue.conflicts(ue, u) == False{} : Bool}) -> {U32.is_eq(k, key) == False{} : Bool}:
   match pr:
     case (+h1, h2):
       h1
 
 # The context the source owns is not u's.
+
+# The context the source owns is not u's.
 def W.ho_owned(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +ue: S.Ue, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> {U32.is_eq(k, key) == False{} : Bool}:
   W.ho_h1(k, key, ue, u, Own.apart(st, assoc, key, ran, ue, k, u, eun, eu, ea, eo))
-
-def W.ho_required_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_ue(st, assoc, key, kind, cause, id, items, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+ue}:
-      W.ho_required_phase(st, assoc, key, ue, kind, cause, id, items, container, S.Ue.phase(ue), k, u, eu, W.ho_owned(st, assoc, key, ran, ue, k, u, eu, eun, ea, eo))
-
-def W.ho_required_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_key(st, assoc, ran, kind, cause, id, items, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+key}:
-      W.ho_required_ue(st, assoc, key, ran, kind, cause, id, items, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran), k, u, eu, eun, ea, {==})
-
-def W.ho_required(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverRequired.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_of_view(st, assoc, r)):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{V.HandoverRequired.View{+amf, +ran, +kind, +cause, +id, direct, +items, +container}}:
-      W.ho_required_key(st, assoc, ran, kind, cause, id, items, container, N.Ngap.ue_key(amf), k, u, eu, eun, ea)
-
-def W.ho_cancel_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.cancel_phase(key, ue, p)):
-  match p:
-    case S.Handover{+ctx, +nh, source, +leg}:
-      W.ho_sp(k, u, S.State.ues(st), Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg}), eu, Tk.sp_rephase(k, u, key, S.Created{}, h1))
-    case S.Created{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Identifying{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Switching{guard, ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
-def W.ho_cancel_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.cancel_ue(assoc, key, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+ue}:
-      W.ho_cancel_phase(st, key, ue, S.Ue.phase(ue), k, u, eu, W.ho_owned(st, assoc, key, ran, ue, k, u, eu, eun, ea, eo))
-
-def W.ho_cancel_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.cancel_key(st, assoc, ran, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+key}:
-      W.ho_cancel_ue(st, assoc, key, ran, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran), k, u, eu, eun, ea, {==})
-
-def W.ho_cancel(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverCancel.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.cancel_of_view(st, assoc, r)):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{V.HandoverCancel.View{+amf, +ran, cause}}:
-      W.ho_cancel_key(st, assoc, ran, N.Ngap.ue_key(amf), k, u, eu, eun, ea)
-
-def W.ho_status_phase(+st: S.State, +key: U32, +container: G.RANStatusTransfer_TransparentContainer, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.status_phase(key, container, p)):
-  match p:
-    case S.Handover{ctx, nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Acked{t, r, s, ts}:
-          Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Created{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Identifying{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Switching{guard, ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
-def W.ho_status_ue(+st: S.State, +assoc: U32, +key: U32, +container: G.RANStatusTransfer_TransparentContainer, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.status_ue(assoc, key, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+ue}:
-      W.ho_status_phase(st, key, container, S.Ue.phase(ue), k, u, eu)
-
-def W.ho_status_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +container: G.RANStatusTransfer_TransparentContainer, +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.status_key(st, assoc, ran, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+key}:
-      W.ho_status_ue(st, assoc, key, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran), k, u, eu)
-
-def W.ho_status(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.status_of_view(st, assoc, r)):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{V.UplinkRANStatusTransfer.View{+amf, +ran, +container}}:
-      W.ho_status_key(st, assoc, ran, container, N.Ngap.ue_key(amf), k, u, eu)
-
-# The target's answers
-# --------------------
 
 # A context of a unique table, with its SUPI verified, rephased into a phase
 # with a security context still secures its SUPI.
@@ -1939,12 +1780,16 @@ def W.sec_row(+s: Maybe<&2, B.Digits()>, +key: U32, +w: S.Ue, +k0: U32, +x: S.Ue
       P.Bool.or_r(S.Ue.secures(x, s), S.Ues.secured(s, more), ih(eg))
 
 # A context under some key that secures s makes s secured.
+
+# A context under some key that secures s makes s secured.
 def W.sec_get(+s: Maybe<&2, B.Digits()>, +key: U32, +w: S.Ue, +x: Tb.Table(S.Ue), +eg: {Tb.Table.get(S.Ue, key, x) == Some{w} : Maybe<&2, S.Ue>}, +es: {S.Ue.secures(w, s) == True{} : Bool}) -> {S.Ues.secured(s, x) == True{} : Bool}:
   match x:
     case Nil{}:
       Empty.absurd({S.Ues.secured(s, []) == True{} : Bool}, P.Refute.none_some(S.Ue, w, eg))
     case (+k0, +v) <> +more:
       W.sec_row(s, key, w, k0, v, more, U32.is_eq(k0, key), {==}, eg, es, e => W.sec_get(s, key, w, more, e, es))
+
+# The row under k equals the context under key when k is key.
 
 # The row under k equals the context under key when k is key.
 def W.same_row(+ues: Tb.Table(S.Ue), +k: U32, +key: U32, +ue: S.Ue, +u: S.Ue, +ex: {U32.is_eq(k, key) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, ues) == Some{ue} : Maybe<&2, S.Ue>}, +eu: {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}) -> {ue == u : S.Ue}:
@@ -1961,192 +1806,50 @@ def W.ho_rephase_case(+ues: Tb.Table(S.Ue), +key: U32, +ue: S.Ue, +p: S.Phase, +
       Inr{W.sec_get(S.Ue.supi(u), key, S.Ue.with_phase(ue, p), S.Ues.rephase(key, p, ues), Rephase.self(key, p, ue, ues, eg), sec)}
 
 # The context a target's answer is for: under its key, with its SUPI verified.
-def W.aimed_supi(+ue: S.Ue, +assoc: U32, +e: {Ho.Ho.aimed(ue, assoc) == True{} : Bool}) -> {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}:
-  +rest = Bool.and(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc)))
-  P.Bool.and_true_l(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc)), P.Bool.and_true_r(S.Maybe.same_u32(S.Phase.pending(S.Ue.phase(ue)), Some{assoc}), rest, e))
 
 def W.ho_found(+ues: Tb.Table(S.Ue), +key: U32, +ue: S.Ue, +assoc: U32, pr: {Tb.Table.get(S.Ue, key, ues) == Some{ue} : Maybe<&2, S.Ue>} & {Ho.Ho.aimed(ue, assoc) == True{} : Bool}) -> {Tb.Table.get(S.Ue, key, ues) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}:
   match pr:
     case (+eg, +ea):
-      (eg, W.aimed_supi(ue, assoc, ea))
+      (eg, PW.Walk.aimed_supi(ue, assoc, ea))
 
 def W.ho_target_rephase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +acts: List<&2, N.Act>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}, +ec: {S.Phase.secured(p) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), (S.Rephase{key, p}, acts)):
   match pr:
     case (+eg, +ep):
       W.ho_rephase_case(S.State.ues(st), key, ue, p, k, u, eu, eg, ep, ec, U32.is_eq(k, key), {==})
 
-def W.ho_ack_phase(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, p)):
-  match p:
-    case S.Handover{+ctx, +nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          W.ho_target_rephase(st, key, ue, S.Handover{ctx, nh, S.Ue.assoc(ue), S.Acked{assoc, ran, stream, Sw.Sw.admitted(admitted)}}, [], k, u, eu, pr, {==})
-        case S.Acked{t, r, s, ts}:
-          Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Created{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Identifying{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Switching{guard, ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
+def W.ho_required(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverRequired.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_of_view(st, assoc, r)):
+  PW.Hw.required(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, r, Tk.kept_get(k, u, S.State.ues(st), eu), Tk.kept_get(k, u, S.State.ues(st), eu), amf => ran => key => ue => c => ek => eo => Tk.kept_get(k, u, S.State.ues(st), eu), amf => +ran => +key => +ue => ctx => nh => t => cfg => cause => container => i => more => ek => +eo => ne => W.ho_sp(k, u, S.State.ues(st), Ho.Ho.prepare(key, ue, ctx, nh, t, cfg, cause, container, i <> more), eu, Tk.sp_rephase(k, u, key, S.Created{}, W.ho_owned(st, assoc, key, ran, ue, k, u, eu, eun, ea, eo))))
 
-def W.ho_ack_ue(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +em: {Ho.Ho.for_target(st, assoc, key) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.ack_ue(assoc, stream, key, ran, admitted, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+ue}:
-      W.ho_ack_phase(st, assoc, stream, key, ue, ran, admitted, container, S.Ue.phase(ue), k, u, eu, W.ho_found(S.State.ues(st), key, ue, assoc, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, em)))
+def W.ho_cancel(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverCancel.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.cancel_of_view(st, assoc, r)):
+  PW.Hw.cancel(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, r, Tk.kept_get(k, u, S.State.ues(st), eu), Tk.kept_get(k, u, S.State.ues(st), eu), amf => ran => key => ue => ek => eo => en => Tk.kept_get(k, u, S.State.ues(st), eu), amf => +ran => +key => +ue => +ctx => +nh => +source => +leg => ek => +eo => eph => W.ho_sp(k, u, S.State.ues(st), Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg}), eu, Tk.sp_rephase(k, u, key, S.Created{}, W.ho_owned(st, assoc, key, ran, ue, k, u, eu, eun, ea, eo))))
 
-def W.ho_ack_key(+st: S.State, +assoc: U32, +stream: U32, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.ack_key(st, assoc, stream, ran, admitted, container, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+key}:
-      W.ho_ack_ue(st, assoc, stream, key, ran, admitted, container, Ho.Ho.for_target(st, assoc, key), k, u, eu, {==})
+def W.ho_status(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.status_of_view(st, assoc, r)):
+  PW.Hw.status(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, r, Tk.kept_get(k, u, S.State.ues(st), eu), Tk.kept_get(k, u, S.State.ues(st), eu), Tk.kept_get(k, u, S.State.ues(st), eu), amf => ran => container => key => ue => t => r2 => s => ek => eo => Tk.kept_get(k, u, S.State.ues(st), eu))
+
+# The target's answers
+# --------------------
 
 def W.ho_ack(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.ack_of_view(st, assoc, stream, r)):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{V.HandoverRequestAcknowledge.View{+amf, +ran, +admitted, failed, +container, diag, npn}}:
-      W.ho_ack_key(st, assoc, stream, ran, admitted, container, N.Ngap.ue_key(amf), k, u, eu)
-
-def W.ho_failure_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause: G.Cause, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.failure_phase(assoc, key, ue, cause, p)):
-  match p:
-    case S.Handover{+ctx, +nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          W.ho_target_rephase(st, key, ue, S.Registered{ctx, nh, None{}}, [], k, u, eu, pr, {==})
-        case S.Acked{t, r, s, ts}:
-          Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Created{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Identifying{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Switching{guard, ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
-def W.ho_failure_ue(+st: S.State, +assoc: U32, +key: U32, +cause: G.Cause, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +em: {Ho.Ho.for_target(st, assoc, key) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.failure_ue(assoc, key, cause, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+ue}:
-      W.ho_failure_phase(st, assoc, key, ue, cause, S.Ue.phase(ue), k, u, eu, W.ho_found(S.State.ues(st), key, ue, assoc, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, em)))
-
-def W.ho_failure_key(+st: S.State, +assoc: U32, +cause: G.Cause, +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.failure_key(st, assoc, cause, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+key}:
-      W.ho_failure_ue(st, assoc, key, cause, Ho.Ho.for_target(st, assoc, key), k, u, eu, {==})
+  PW.Hw.ack(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, r, Tk.kept_get(k, u, S.State.ues(st), eu), Tk.kept_get(k, u, S.State.ues(st), eu), amf => +ran => +admitted => container => +key => +ue => +ctx => +nh => source => t => ek => +ep => eph => W.ho_target_rephase(st, key, ue, S.Handover{ctx, nh, S.Ue.assoc(ue), S.Acked{assoc, ran, stream, Sw.Sw.admitted(admitted)}}, [], k, u, eu, W.ho_found(S.State.ues(st), key, ue, assoc, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, ep)), {==}))
 
 def W.ho_failure(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverFailure.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.failure_of_view(st, assoc, r)):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{V.HandoverFailure.View{+amf, +cause, diag}}:
-      W.ho_failure_key(st, assoc, cause, N.Ngap.ue_key(amf), k, u, eu)
+  PW.Hw.failure(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, r, Tk.kept_get(k, u, S.State.ues(st), eu), Tk.kept_get(k, u, S.State.ues(st), eu), amf => cause => +key => +ue => +ctx => +nh => source => t => ek => +ep => eph => W.ho_target_rephase(st, key, ue, S.Registered{ctx, nh, None{}}, [], k, u, eu, W.ho_found(S.State.ues(st), key, ue, assoc, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, ep)), {==}))
 
 # Handover Notify moves the context under its key, like Path Switch.
-def W.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +ok: Bool, +sp: B.Digits(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +esupi: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, ok)):
-  match ok:
-    case False{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case True{}:
-      +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      +p : S.Phase = S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}
-      +v = S.Ue.moved(ue, assoc, r, s, p)
-      +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
-      +b : N.GOut() = (S.Put{key, v}, [])
-      +ues = S.State.ues(st)
-      ha = Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(u)), ea)
-      es = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(a), ues), ues, W.ps_sessions_ues(ts, rows, S.State.pfcp_seq(st), ues))
-      h : Tk.Kept(k, u, Tk.ues(Tk.tx(b), Tk.ues(Tk.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, r, s, p, sp, ues, eu, eun, ha, eg, esupi, {==}, U32.is_eq(k, key), {==}))
-      Tk.ok_also(k, u, ues, N.Out.join(a, b), [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}], Tk.ok_join(k, u, ues, a, b, h))
-
-def W.ho_notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +p: S.Phase, +sp: B.Digits(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +esupi: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_phase(st, assoc, key, ue, ran, p)):
-  match p:
-    case S.Handover{+ctx, +nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Acked{t, +r, +s, +ts}:
-          W.ho_complete(st, assoc, key, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), S.Ues.ran_free(key, assoc, r, S.State.ues(st))), sp, k, u, eu, eun, ea, eg, esupi)
-    case S.Created{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Identifying{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Switching{guard, ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
-def W.ho_no_supi(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +es: {S.Ue.supi(ue) == None{} : Maybe<&2, B.Digits()>}, +k: U32, +u: S.Ue, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue))):
-  match pr:
-    case (eg, ep):
-      en : {Tb.Table.present(B.Digits(), None{}) == True{} : Bool} = (%es : {Tb.Table.present(B.Digits(), _) == True{} : Bool}; ep)
-      Empty.absurd(Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue))), P.Refute.bool(en))
-
-def W.ho_notify_found(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +sp: B.Digits(), +es: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue))):
-  match pr:
-    case (+eg, ep):
-      W.ho_notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue), sp, k, u, eu, eun, ea, eg, es)
-
-def W.ho_notify_supi(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +supi: Maybe<&2, B.Digits()>, +es: {S.Ue.supi(ue) == supi : Maybe<&2, B.Digits()>}, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Tb.Table.present(B.Digits(), S.Ue.supi(ue)) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue))):
-  match supi:
-    case None{}:
-      W.ho_no_supi(st, assoc, key, ue, ran, es, k, u, pr)
-    case Some{+sp}:
-      W.ho_notify_found(st, assoc, key, ue, ran, sp, es, k, u, eu, eun, ea, pr)
-
-def W.ho_notify_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +em: {Ho.Ho.for_target(st, assoc, key) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_ue(st, assoc, key, ran, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+ue}:
-      W.ho_notify_supi(st, assoc, key, ue, ran, S.Ue.supi(ue), {==}, k, u, eu, eun, ea, W.ho_found(S.State.ues(st), key, ue, assoc, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, em)))
-
-def W.ho_notify_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_key(st, assoc, ran, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+key}:
-      W.ho_notify_ue(st, assoc, key, ran, Ho.Ho.for_target(st, assoc, key), k, u, eu, eun, ea, {==})
+def W.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +sp: B.Digits(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +esupi: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{})):
+  +rows = S.Sessions.of_ue(key, S.State.sessions(st))
+  +p : S.Phase = S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}
+  +v = S.Ue.moved(ue, assoc, r, s, p)
+  +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
+  +b : N.GOut() = (S.Put{key, v}, [])
+  +ues = S.State.ues(st)
+  ha = Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(u)), ea)
+  es = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(a), ues), ues, W.ps_sessions_ues(ts, rows, S.State.pfcp_seq(st), ues))
+  h : Tk.Kept(k, u, Tk.ues(Tk.tx(b), Tk.ues(Tk.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, r, s, p, sp, ues, eu, eun, ha, eg, esupi, {==}, U32.is_eq(k, key), {==}))
+  Tk.ok_also(k, u, ues, N.Out.join(a, b), [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}], Tk.ok_join(k, u, ues, a, b, h))
 
 def W.ho_notify(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverNotify.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.notify_of_view(st, assoc, r)):
-  match r:
-    case Fail{e}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Done{V.HandoverNotify.View{+amf, +ran, uli}}:
-      W.ho_notify_key(st, assoc, ran, N.Ngap.ue_key(amf), k, u, eu, eun, ea)
+  PW.Hw.notify(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, r, Tk.kept_get(k, u, S.State.ues(st), eu), Tk.kept_get(k, u, S.State.ues(st), eu), amf => ran => +key => +ue => +ctx => +nh => source => t => +r2 => +s => +ts => +sp => ek => +ep => eph => +es => W.ho_complete(st, assoc, key, ue, ctx, nh, r2, s, ts, sp, k, u, eu, eun, ea, PW.Walk.first({Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, {Ho.Ho.aimed(ue, assoc) == True{} : Bool}, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, ep)), es))
 
 def W.ho_route(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.route(st, assoc, stream, kind, code, ies)):
   PW.Walk.ho(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, kind, code, ies, Tk.kept_get(k, u, S.State.ues(st), eu), +r => W.ho_required(st, assoc, r, k, u, eu, eun, ea), +r => W.ho_ack(st, assoc, stream, r, k, u, eu), +r => W.ho_failure(st, assoc, r, k, u, eu), +r => W.ho_notify(st, assoc, r, k, u, eu, eun, ea), +r => W.ho_cancel(st, assoc, r, k, u, eu, eun, ea), +r => W.ho_status(st, assoc, r, k, u, eu))

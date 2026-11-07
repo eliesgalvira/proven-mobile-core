@@ -2309,7 +2309,10 @@ def Lw.pair_get(+m: Maybe<&2, S.Ue>, +u: S.Ue, -Q: Type, pr: {m == Some{u} : May
 
 # A pending handover's phase, written over the context it belongs to, names
 # that context's owner as its source and another association as its target.
-def Lw.ho_homed(+st: S.State, +key: U32, +ue: S.Ue, +g: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.homed(st, S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, S.State.ues(st)) == True{} : Bool}:
+
+# A pending handover's phase, written over the context it belongs to, names
+# that context's owner as its source and another association as its target.
+def Lw.ho_homed(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.homed(st, S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, S.State.ues(st)) == True{} : Bool}:
   sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, key, S.State.ues(st)), Some{ue}, eg)
   %sg : {Bool.and(True{}, S.Ue.fits(S.Handover{ctx, nh, S.Ue.assoc(ue), leg}, _)) == True{} : Bool}
   er = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), S.Ue.assoc(ue)), True{}, P.U32.is_eq_refl(S.Ue.assoc(ue)))
@@ -2318,92 +2321,8 @@ def Lw.ho_homed(+st: S.State, +key: U32, +ue: S.Ue, +g: S.Guard, +ctx: Sec.Nas.C
   %sn : {Bool.and(True{}, Bool.not(_)) == True{} : Bool}
   {==}
 
-def Lw.ho_leafok(+st: S.State, +key: U32, +ue: S.Ue, +g: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +acts: List<&2, N.Act>, +ha: {Lv.acts(st, acts) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.ok(st, (S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts)) == True{} : Bool}:
-  P.Bool.and_intro(Lv.acts(st, acts), Lv.homed(st, S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, S.State.ues(st)), ha, Lw.ho_homed(st, key, ue, g, ctx, nh, leg, eg, ne))
-
-def Lw.ho_prepare(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cfg: S.Cfg, +cause: G.Cause, +container: B.Bytes(), +items: G.PDUSessionResourceSetupListHOReq(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(t, S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.ok(st, Ho.Ho.prepare(key, ue, ctx, nh, t, cfg, cause, container, items)) == True{} : Bool}:
-  match items:
-    case Nil{}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_PDU_session_ID())), Lw.ho_fail(st, key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_PDU_session_ID()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case +i <> +more:
-      +ek = Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
-      +next = S.Nh.next(nh)
-      +x : N.Act = N.UeSend{t, Ho.Ho.stream(), key, Ho.Ho.request(key, cfg, cause, N.Ue.caps(ue), next, i <> more, container)}
-      +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
-      +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Required; Handover Request sent to the target"}
-      Lw.ho_leafok(st, key, ue, S.Guard{0}, ctx, next, S.Asked{t}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], ek, {==})), eg, ne)
-
-def Lw.ho_required_cfg(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, S.Cfg>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(t, S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.ok(st, Ho.Ho.required_cfg(st, key, ue, ctx, nh, t, cause, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unspecified())), Lw.ho_fail(st, key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case Some{+cfg}:
-      Lw.ho_prepare(st, key, ue, ctx, nh, t, cfg, cause, container, Ho.Ho.setup_items(cfg, items, S.Sessions.of_ue(key, S.State.sessions(st))), eg, ne)
-
-def Lw.ho_required_other(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +same: Bool, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +es: {U32.is_eq(t, S.Ue.assoc(ue)) == same : Bool}) -> {Lv.ok(st, Ho.Ho.required_other(st, key, ue, ctx, nh, t, cause, items, container, same)) == True{} : Bool}:
-  match same:
-    case True{}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_targetID())), Lw.ho_fail(st, key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_targetID()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case False{}:
-      Lw.ho_required_cfg(st, key, ue, ctx, nh, t, cause, items, container, S.State.config(st), eg, es)
-
-def Lw.ho_required_target(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.ok(st, Ho.Ho.required_target(st, key, ue, ctx, nh, cause, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_targetID())), Lw.ho_fail(st, key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_targetID()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case Some{+t}:
-      Lw.ho_required_other(st, key, ue, ctx, nh, t, cause, items, container, U32.is_eq(t, S.Ue.assoc(ue)), eg, {==})
-
-def Lw.ho_required_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +p: S.Phase, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.ok(st, Ho.Ho.required_phase(st, assoc, key, ue, kind, cause, id, items, container, p)) == True{} : Bool}:
-  match p:
-    case S.Registered{+ctx, +nh, released}:
-      Lw.ho_required_target(st, key, ue, ctx, nh, cause, items, container, Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)), eg)
-    case S.Created{}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case S.Identifying{guard}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case S.Authenticating{guard, av, resynced, supi}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case S.Switching{guard, ctx, nh, released}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case S.Handover{ctx, nh, source, leg}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-    case S.Releasing{guard}:
-      Lv.ok_of(st, Ho.Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state())), Lw.ho_fail(st, key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))))
-
-def Lw.ho_required_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, S.Ue>, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> {Lv.ok(st, Ho.Ho.required_ue(st, assoc, key, kind, cause, id, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Lw.ho_required_phase(st, assoc, key, ue, kind, cause, id, items, container, S.Ue.phase(ue), Lw.pair_get(Tb.Table.get(S.Ue, key, S.State.ues(st)), ue, {U32.is_eq(S.Ue.assoc(ue), assoc) == True{} : Bool}, PT.Own.get(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran, ue, eo)))
-
-def Lw.ho_required_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.ok(st, Ho.Ho.required_key(st, assoc, ran, kind, cause, id, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Lw.ho_required_ue(st, assoc, key, ran, kind, cause, id, items, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran), {==})
-
-def Lw.ho_required(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverRequired.View>) -> {Lv.ok(st, Ho.Ho.required_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverRequired.View{+amf, +ran, +kind, +cause, +id, direct, +items, +container}}:
-      Lw.ho_required_key(st, assoc, ran, kind, cause, id, items, container, N.Ngap.ue_key(amf))
-
-def Lw.first_has(+ues: Tb.Table(S.Ue), +key: U32, +ue: S.Ue, -Q: Type, pr: {Tb.Table.get(S.Ue, key, ues) == Some{ue} : Maybe<&2, S.Ue>} & Q) -> {Tb.Table.has(S.Ue, key, ues) == True{} : Bool}:
-  match pr:
-    case (+eg, q):
-      Lv.get_has(ues, key, ue, eg)
-
-# The context a target's answer is for holds its key.
-def Lw.ho_target_has(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +e: {Ho.Ho.for_target(st, assoc, key) == Some{ue} : Maybe<&2, S.Ue>}) -> {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}:
-  Lw.first_has(S.State.ues(st), key, ue, {Ho.Ho.aimed(ue, assoc) == True{} : Bool}, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, e))
+def Lw.ho_leafok(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +acts: List<&2, N.Act>, +ha: {Lv.acts(st, acts) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.ok(st, (S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts)) == True{} : Bool}:
+  P.Bool.and_intro(Lv.acts(st, acts), Lv.homed(st, S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, S.State.ues(st)), ha, Lw.ho_homed(st, key, ue, ctx, nh, leg, eg, ne))
 
 # The target of a pending handover is not the context's owner.
 def Lw.ho_aimed_ne(+ue: S.Ue, +assoc: U32, +e: {Ho.Ho.aimed(ue, assoc) == True{} : Bool}) -> {U32.is_eq(assoc, S.Ue.assoc(ue)) == False{} : Bool}:
@@ -2411,266 +2330,79 @@ def Lw.ho_aimed_ne(+ue: S.Ue, +assoc: U32, +e: {Ho.Ho.aimed(ue, assoc) == True{}
   n = P.Bool.and_true_r(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc)), P.Bool.and_true_r(S.Maybe.same_u32(S.Phase.pending(S.Ue.phase(ue)), Some{assoc}), rest, e))
   Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(ue)), U32.is_eq(S.Ue.assoc(ue), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(ue)), Lw.not_true(U32.is_eq(S.Ue.assoc(ue), assoc), n))
 
-def Lw.ho_ack_phase(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +p: S.Phase, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(assoc, S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.ok(st, Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{+ctx, +nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          +ek = Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
-          +ts = Sw.Sw.admitted(admitted)
-          +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.command(key, S.Ue.ran_id(ue), ts, container)}
-          +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
-          +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Request Acknowledge; Handover Command sent to the source"}
-          Lw.ho_leafok(st, key, ue, S.Guard{0}, ctx, nh, S.Acked{assoc, ran, stream, ts}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], ek, {==})), eg, ne)
-        case S.Acked{t, r, s, ts}:
-          {==}
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
+# The context a message from its owner names holds its key.
+def Lw.owned_live(+st: S.State, +assoc: U32, +ran: B.Bytes(), +key: U32, +ue: S.Ue, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.live(st, key) == True{} : Bool}:
+  Lv.has_live(st, key, Lv.owned_has(st, assoc, key, ran, ue, eo))
 
-def Lw.ho_ack_found(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Ho.Ho.aimed(ue, assoc) == True{} : Bool}) -> {Lv.ok(st, Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, S.Ue.phase(ue))) == True{} : Bool}:
-  match pr:
-    case (+eg, +ea):
-      Lw.ho_ack_phase(st, assoc, stream, key, ue, ran, admitted, container, S.Ue.phase(ue), eg, Lw.ho_aimed_ne(ue, assoc, ea))
+# The context a target's answer is for holds its key, and is not the target's.
+def Lw.target_get(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}:
+  PW.Walk.first({Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, {Ho.Ho.aimed(ue, assoc) == True{} : Bool}, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, ep))
 
-def Lw.ho_ack_ue(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +m: Maybe<&2, S.Ue>, +em: {Ho.Ho.for_target(st, assoc, key) == m : Maybe<&2, S.Ue>}) -> {Lv.ok(st, Ho.Ho.ack_ue(assoc, stream, key, ran, admitted, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Lw.ho_ack_found(st, assoc, stream, key, ue, ran, admitted, container, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, em))
+def Lw.target_live(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.live(st, key) == True{} : Bool}:
+  Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, Lw.target_get(st, assoc, key, ue, ep)))
 
-def Lw.ho_ack_key(+st: S.State, +assoc: U32, +stream: U32, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.ok(st, Ho.Ho.ack_key(st, assoc, stream, ran, admitted, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Lw.ho_ack_ue(st, assoc, stream, key, ran, admitted, container, Ho.Ho.for_target(st, assoc, key), {==})
+def Lw.target_ne(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}) -> {U32.is_eq(assoc, S.Ue.assoc(ue)) == False{} : Bool}:
+  Lw.ho_aimed_ne(ue, assoc, PW.Walk.second({Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, {Ho.Ho.aimed(ue, assoc) == True{} : Bool}, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, ep)))
+
+def Lw.ho_prepare(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cfg: S.Cfg, +cause: G.Cause, +container: B.Bytes(), +i: G.PDUSessionResourceSetupItemHOReq, +more: G.PDUSessionResourceSetupListHOReq(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(t, S.Ue.assoc(ue)) == False{} : Bool}) -> {Lv.ok(st, Ho.Ho.prepare(key, ue, ctx, nh, t, cfg, cause, container, i <> more)) == True{} : Bool}:
+  +ek = Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
+  +next = S.Nh.next(nh)
+  +x : N.Act = N.UeSend{t, Ho.Ho.stream(), key, Ho.Ho.request(key, cfg, cause, N.Ue.caps(ue), next, i <> more, container)}
+  +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
+  +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Required; Handover Request sent to the target"}
+  Lw.ho_leafok(st, key, ue, ctx, next, S.Asked{t}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], ek, {==})), eg, ne)
+
+def Lw.ho_required(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverRequired.View>) -> {Lv.ok(st, Ho.Ho.required_of_view(st, assoc, r)) == True{} : Bool}:
+  PW.Hw.required(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +ran => +key => +ue => +c => ek => +eo => Lv.ok_of(st, Ho.Ho.fail(key, ue, c), Lw.ho_fail(st, key, ue, c, Lw.owned_live(st, assoc, ran, key, ue, eo))), amf => +ran => +key => +ue => +ctx => +nh => +t => +cfg => +cause => +container => +i => +more => ek => +eo => +ne => Lw.ho_prepare(st, key, ue, ctx, nh, t, cfg, cause, container, i, more, Lw.pair_get(Tb.Table.get(S.Ue, key, S.State.ues(st)), ue, {U32.is_eq(S.Ue.assoc(ue), assoc) == True{} : Bool}, PT.Own.get(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran, ue, eo)), ne))
+
+def Lw.ho_acked(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +t: U32, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.ok(st, Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, S.Handover{ctx, nh, source, S.Asked{t}})) == True{} : Bool}:
+  +ek = Lw.target_live(st, assoc, key, ue, ep)
+  +ts = Sw.Sw.admitted(admitted)
+  +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.command(key, S.Ue.ran_id(ue), ts, container)}
+  +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
+  +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Request Acknowledge; Handover Command sent to the source"}
+  Lw.ho_leafok(st, key, ue, ctx, nh, S.Acked{assoc, ran, stream, ts}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], ek, {==})), Lw.target_get(st, assoc, key, ue, ep), Lw.target_ne(st, assoc, key, ue, ep))
 
 def Lw.ho_ack(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>) -> {Lv.ok(st, Ho.Ho.ack_of_view(st, assoc, stream, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverRequestAcknowledge.View{+amf, +ran, +admitted, failed, +container, diag, npn}}:
-      Lw.ho_ack_key(st, assoc, stream, ran, admitted, container, N.Ngap.ue_key(amf))
+  PW.Hw.ack(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, stream, r, {==}, {==}, amf => +ran => +admitted => +container => +key => +ue => +ctx => +nh => +source => +t => ek => +ep => eph => Lw.ho_acked(st, assoc, stream, key, ue, ran, admitted, container, ctx, nh, source, t, ep))
 
-def Lw.ho_failure_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause: G.Cause, +p: S.Phase, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.failure_phase(assoc, key, ue, cause, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{+ctx, +nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          +x = Ho.Ho.preparation_failure(key, ue, cause)
-          +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}
-          Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, None{}}}, [x, N.TimerCancel{key}, n], Lv.cons(st, x, [N.TimerCancel{key}, n], ek, {==}), {==})
-        case S.Acked{t, r, s, ts}:
-          {==}
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Lw.ho_failure_ue(+st: S.State, +assoc: U32, +key: U32, +cause: G.Cause, +m: Maybe<&2, S.Ue>, +em: {Ho.Ho.for_target(st, assoc, key) == m : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Ho.Ho.failure_ue(assoc, key, cause, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Lw.ho_failure_phase(st, assoc, key, ue, cause, S.Ue.phase(ue), Lv.has_live(st, key, Lw.ho_target_has(st, assoc, key, ue, em)))
-
-def Lw.ho_failure_key(+st: S.State, +assoc: U32, +cause: G.Cause, +m: Maybe<&2, U32>) -> {Lv.okf(st, Ho.Ho.failure_key(st, assoc, cause, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Lw.ho_failure_ue(st, assoc, key, cause, Ho.Ho.for_target(st, assoc, key), {==})
+def Lw.ho_failed(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause: G.Cause, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +t: U32, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.failure_phase(assoc, key, ue, cause, S.Handover{ctx, nh, source, S.Asked{t}})) == True{} : Bool}:
+  +x = Ho.Ho.preparation_failure(key, ue, cause)
+  +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}
+  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, None{}}}, [x, N.TimerCancel{key}, n], Lv.cons(st, x, [N.TimerCancel{key}, n], ek, {==}), {==})
 
 def Lw.ho_failure(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverFailure.View>) -> {Lv.okf(st, Ho.Ho.failure_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverFailure.View{+amf, +cause, diag}}:
-      Lw.ho_failure_key(st, assoc, cause, N.Ngap.ue_key(amf))
+  PW.Hw.failure(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +cause => +key => +ue => +ctx => +nh => +source => +t => ek => +ep => eph => Lw.ho_failed(st, assoc, key, ue, cause, ctx, nh, source, t, Lw.target_live(st, assoc, key, ue, ep)))
 
-def Lw.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +ok: Bool, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, ok)) == True{} : Bool}:
-  match ok:
-    case False{}:
-      {==}
-    case True{}:
-      +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
-      +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
-      +b : N.GOut() = (S.Put{key, v}, [])
-      hb = Lv.leaf(st, S.Put{key, v}, [], {==}, P.Bool.and_intro(Lv.keyed(st, key), Bool.and(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v)), Lv.keyed_of(st, key, ek), P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v), Lv.g_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}), Lv.s_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))))
-      +x : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}
-      +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}
-      Lv.also(st, N.Out.join(a, b), [x, N.TimerCancel{key}, n], Lv.join(st, a, b, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st))), hb), Lv.cons(st, x, [N.TimerCancel{key}, n], ek, {==}))
-
-def Lw.ho_notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +p: S.Phase, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.notify_phase(st, assoc, key, ue, ran, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{+ctx, +nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          {==}
-        case S.Acked{t, +r, +s, +ts}:
-          Lw.ho_complete(st, assoc, key, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), S.Ues.ran_free(key, assoc, r, S.State.ues(st))), ek)
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Lw.ho_notify_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +em: {Ho.Ho.for_target(st, assoc, key) == m : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Ho.Ho.notify_ue(st, assoc, key, ran, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Lw.ho_notify_phase(st, assoc, key, ue, ran, S.Ue.phase(ue), Lv.has_live(st, key, Lw.ho_target_has(st, assoc, key, ue, em)))
-
-def Lw.ho_notify_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.okf(st, Ho.Ho.notify_key(st, assoc, ran, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Lw.ho_notify_ue(st, assoc, key, ran, Ho.Ho.for_target(st, assoc, key), {==})
+def Lw.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{})) == True{} : Bool}:
+  +rows = S.Sessions.of_ue(key, S.State.sessions(st))
+  +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
+  +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
+  +b : N.GOut() = (S.Put{key, v}, [])
+  hb = Lv.leaf(st, S.Put{key, v}, [], {==}, P.Bool.and_intro(Lv.keyed(st, key), Bool.and(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v)), Lv.keyed_of(st, key, ek), P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(v)), S.Ue.single(v), Lv.g_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}), Lv.s_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))))
+  +x : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}
+  +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}
+  Lv.also(st, N.Out.join(a, b), [x, N.TimerCancel{key}, n], Lv.join(st, a, b, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st))), hb), Lv.cons(st, x, [N.TimerCancel{key}, n], ek, {==}))
 
 def Lw.ho_notify(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverNotify.View>) -> {Lv.okf(st, Ho.Ho.notify_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverNotify.View{+amf, +ran, uli}}:
-      Lw.ho_notify_key(st, assoc, ran, N.Ngap.ue_key(amf))
+  PW.Hw.notify(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => ran => +key => +ue => +ctx => +nh => source => t => +r2 => +s => +ts => sp => ek => +ep => eph => es => Lw.ho_complete(st, assoc, key, ue, ctx, nh, r2, s, ts, Lw.target_live(st, assoc, key, ue, ep)))
 
 def Lw.ho_cancel_none(+st: S.State, +key: U32, +ue: S.Ue, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, (S.Keep{}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.cancel_ack(key, S.Ue.ran_id(ue))}, N.Note{F.Warn{}, "NGAP: Handover Cancel with no handover pending"}])) == True{} : Bool}:
   +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.cancel_ack(key, S.Ue.ran_id(ue))}
   +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Cancel with no handover pending"}
   Lv.leaf(st, S.Keep{}, [x, n], Lv.cons(st, x, [n], ek, {==}), {==})
 
-def Lw.ho_cancel_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.cancel_phase(key, ue, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{+ctx, +nh, source, +leg}:
-      +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.cancel_ack(key, S.Ue.ran_id(ue))}
-      +c = Ho.Ho.radio(G.CauseRadioNetwork.handover_cancelled())
-      +more : List<&2, N.Act> = [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}]
-      Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, x <> List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), Lv.cons(st, x, List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), ek, Lv.append(st, Ho.Ho.drop(key, leg, c), more, Lw.ho_drop(st, key, leg, c, ek), {==})), {==})
-    case S.Created{}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-    case S.Identifying{guard}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-    case S.Registered{ctx, nh, released}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-    case S.Switching{guard, ctx, nh, released}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-    case S.Releasing{guard}:
-      Lw.ho_cancel_none(st, key, ue, ek)
-
-def Lw.ho_cancel_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Ho.Ho.cancel_ue(assoc, key, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Lw.ho_cancel_phase(st, key, ue, S.Ue.phase(ue), Lv.has_live(st, key, Lv.owned_has(st, assoc, key, ran, ue, eo)))
-
-def Lw.ho_cancel_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.okf(st, Ho.Ho.cancel_key(st, assoc, ran, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Lw.ho_cancel_ue(st, assoc, key, ran, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran), {==})
+def Lw.ho_cancelled(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +leg: S.Leg, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg})) == True{} : Bool}:
+  +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.cancel_ack(key, S.Ue.ran_id(ue))}
+  +c = Ho.Ho.radio(G.CauseRadioNetwork.handover_cancelled())
+  +more : List<&2, N.Act> = [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}]
+  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, x <> List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), Lv.cons(st, x, List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), ek, Lv.append(st, Ho.Ho.drop(key, leg, c), more, Lw.ho_drop(st, key, leg, c, ek), {==})), {==})
 
 def Lw.ho_cancel(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverCancel.View>) -> {Lv.okf(st, Ho.Ho.cancel_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverCancel.View{+amf, +ran, cause}}:
-      Lw.ho_cancel_key(st, assoc, ran, N.Ngap.ue_key(amf))
-
-def Lw.ho_status_phase(+st: S.State, +key: U32, +container: G.RANStatusTransfer_TransparentContainer, +p: S.Phase, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.status_phase(key, container, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{ctx, nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          {==}
-        case S.Acked{+t, +r, +s, ts}:
-          Lv.leaf(st, S.Keep{}, [N.UeSend{t, s, key, Ho.Ho.dl_status(key, r, container)}], Lv.cons(st, N.UeSend{t, s, key, Ho.Ho.dl_status(key, r, container)}, [], ek, {==}), {==})
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Lw.ho_status_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +container: G.RANStatusTransfer_TransparentContainer, +m: Maybe<&2, S.Ue>, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Ho.Ho.status_ue(assoc, key, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Lw.ho_status_phase(st, key, container, S.Ue.phase(ue), Lv.has_live(st, key, Lv.owned_has(st, assoc, key, ran, ue, eo)))
-
-def Lw.ho_status_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +container: G.RANStatusTransfer_TransparentContainer, +m: Maybe<&2, U32>) -> {Lv.okf(st, Ho.Ho.status_key(st, assoc, ran, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Lw.ho_status_ue(st, assoc, key, ran, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran), {==})
+  PW.Hw.cancel(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +ran => +key => +ue => ek => +eo => en => Lw.ho_cancel_none(st, key, ue, Lw.owned_live(st, assoc, ran, key, ue, eo)), amf => +ran => +key => +ue => +ctx => +nh => +source => +leg => ek => +eo => eph => Lw.ho_cancelled(st, key, ue, ctx, nh, source, leg, Lw.owned_live(st, assoc, ran, key, ue, eo)))
 
 def Lw.ho_status(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>) -> {Lv.okf(st, Ho.Ho.status_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.UplinkRANStatusTransfer.View{+amf, +ran, +container}}:
-      Lw.ho_status_key(st, assoc, ran, container, N.Ngap.ue_key(amf))
-
+  PW.Hw.status(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, {==}, amf => +ran => +container => +key => +ue => +t => +r2 => +s => ek => +eo => Lv.leaf(st, S.Keep{}, [N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}], Lv.cons(st, N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}, [], Lw.owned_live(st, assoc, ran, key, ue, eo), {==}), {==}))
 
 # An association going down
 # -------------------------

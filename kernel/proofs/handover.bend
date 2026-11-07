@@ -169,255 +169,20 @@ def Hp.second(+x: Bool) -> {Bool.or(Bool.not(x), Bool.or(x, False{})) == True{} 
     case False{}:
       {==}
 
-def Hp.r_prepare(+k: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cfg: S.Cfg, +cause: G.Cause, +container: B.Bytes(), +items: G.PDUSessionResourceSetupListHOReq()) -> {Hp.fine(k, Ho.Ho.prepare(key, ue, ctx, nh, t, cfg, cause, container, items)) == True{} : Bool}:
-  match items:
-    case Nil{}:
-      {==}
-    case i <> more:
-      Hp.second(U32.is_eq(key, k))
-
-def Hp.r_cfg(+st: S.State, +k: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, S.Cfg>) -> {Hp.fine(k, Ho.Ho.required_cfg(st, key, ue, ctx, nh, t, cause, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+cfg}:
-      Hp.r_prepare(k, key, ue, ctx, nh, t, cfg, cause, container, Ho.Ho.setup_items(cfg, items, S.Sessions.of_ue(key, S.State.sessions(st))))
-
-def Hp.r_other(+st: S.State, +k: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +same: Bool) -> {Hp.fine(k, Ho.Ho.required_other(st, key, ue, ctx, nh, t, cause, items, container, same)) == True{} : Bool}:
-  match same:
-    case True{}:
-      {==}
-    case False{}:
-      Hp.r_cfg(st, k, key, ue, ctx, nh, t, cause, items, container, S.State.config(st))
-
-def Hp.r_target(+st: S.State, +k: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>) -> {Hp.fine(k, Ho.Ho.required_target(st, key, ue, ctx, nh, cause, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+t}:
-      Hp.r_other(st, k, key, ue, ctx, nh, t, cause, items, container, U32.is_eq(t, S.Ue.assoc(ue)))
-
-def Hp.r_phase(+st: S.State, +k: U32, +assoc: U32, +key: U32, +ue: S.Ue, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +p: S.Phase) -> {Hp.fine(k, Ho.Ho.required_phase(st, assoc, key, ue, kind, cause, id, items, container, p)) == True{} : Bool}:
-  match p:
-    case S.Registered{+ctx, +nh, released}:
-      Hp.r_target(st, k, key, ue, ctx, nh, cause, items, container, Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)))
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Handover{ctx, nh, source, leg}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Hp.r_ue(+st: S.State, +k: U32, +assoc: U32, +key: U32, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, S.Ue>) -> {Hp.fine(k, Ho.Ho.required_ue(st, assoc, key, kind, cause, id, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Hp.r_phase(st, k, assoc, key, ue, kind, cause, id, items, container, S.Ue.phase(ue))
-
-def Hp.r_key(+st: S.State, +k: U32, +assoc: U32, +ran: B.Bytes(), +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>) -> {Hp.fine(k, Ho.Ho.required_key(st, assoc, ran, kind, cause, id, items, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Hp.r_ue(st, k, assoc, key, kind, cause, id, items, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
-
 def Hp.required(+st: S.State, +k: U32, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverRequired.View>) -> {Hp.fine(k, Ho.Ho.required_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverRequired.View{+amf, +ran, +kind, +cause, +id, direct, +items, +container}}:
-      Hp.r_key(st, k, assoc, ran, kind, cause, id, items, container, N.Ngap.ue_key(amf))
-
-def Hp.a_phase(+k: U32, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +p: S.Phase) -> {Hp.fine(k, Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{ctx, nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          Hp.second(U32.is_eq(key, k))
-        case S.Acked{t, r, s, ts}:
-          {==}
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Hp.a_ue(+k: U32, +assoc: U32, +stream: U32, +key: U32, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +m: Maybe<&2, S.Ue>) -> {Hp.fine(k, Ho.Ho.ack_ue(assoc, stream, key, ran, admitted, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Hp.a_phase(k, assoc, stream, key, ue, ran, admitted, container, S.Ue.phase(ue))
-
-def Hp.a_key(+st: S.State, +k: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +m: Maybe<&2, U32>) -> {Hp.fine(k, Ho.Ho.ack_key(st, assoc, stream, ran, admitted, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Hp.a_ue(k, assoc, stream, key, ran, admitted, container, Ho.Ho.for_target(st, assoc, key))
+  PW.Hw.required(o => {Hp.fine(k, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => ran => key => ue => c => ek => eo => {==}, amf => ran => +key => ue => ctx => nh => t => cfg => cause => container => i => more => ek => eo => ne => Hp.second(U32.is_eq(key, k)))
 
 def Hp.ack(+st: S.State, +k: U32, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>) -> {Hp.fine(k, Ho.Ho.ack_of_view(st, assoc, stream, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverRequestAcknowledge.View{+amf, +ran, +admitted, failed, +container, diag, npn}}:
-      Hp.a_key(st, k, assoc, stream, ran, admitted, container, N.Ngap.ue_key(amf))
-
-def Hp.f_phase(+assoc: U32, +key: U32, +ue: S.Ue, +cause: G.Cause, +p: S.Phase) -> {Hp.calm(Ho.Ho.failure_phase(assoc, key, ue, cause, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{ctx, nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          {==}
-        case S.Acked{t, r, s, ts}:
-          {==}
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Hp.f_ue(+assoc: U32, +key: U32, +cause: G.Cause, +m: Maybe<&2, S.Ue>) -> {Hp.calm(Ho.Ho.failure_ue(assoc, key, cause, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Hp.f_phase(assoc, key, ue, cause, S.Ue.phase(ue))
-
-def Hp.f_key(+st: S.State, +assoc: U32, +cause: G.Cause, +m: Maybe<&2, U32>) -> {Hp.calm(Ho.Ho.failure_key(st, assoc, cause, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Hp.f_ue(assoc, key, cause, Ho.Ho.for_target(st, assoc, key))
+  PW.Hw.ack(o => {Hp.fine(k, o) == True{} : Bool}, st, assoc, stream, r, {==}, {==}, amf => ran => admitted => container => +key => ue => ctx => nh => source => t => ek => ep => eph => Hp.second(U32.is_eq(key, k)))
 
 def Hp.failure(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverFailure.View>) -> {Hp.calm(Ho.Ho.failure_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverFailure.View{+amf, +cause, diag}}:
-      Hp.f_key(st, assoc, cause, N.Ngap.ue_key(amf))
-
-def Hp.c_phase(+key: U32, +ue: S.Ue, +p: S.Phase) -> {Hp.calm(Ho.Ho.cancel_phase(key, ue, p)) == True{} : Bool}:
-  match p:
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Handover{ctx, nh, source, leg}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Hp.c_ue(+assoc: U32, +key: U32, +m: Maybe<&2, S.Ue>) -> {Hp.calm(Ho.Ho.cancel_ue(assoc, key, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Hp.c_phase(key, ue, S.Ue.phase(ue))
-
-def Hp.c_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>) -> {Hp.calm(Ho.Ho.cancel_key(st, assoc, ran, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Hp.c_ue(assoc, key, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+  PW.Hw.failure(o => {Hp.calm(o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => cause => key => ue => ctx => nh => source => t => ek => ep => eph => {==})
 
 def Hp.cancel(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverCancel.View>) -> {Hp.calm(Ho.Ho.cancel_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.HandoverCancel.View{+amf, +ran, cause}}:
-      Hp.c_key(st, assoc, ran, N.Ngap.ue_key(amf))
-
-def Hp.s_phase(+key: U32, +container: G.RANStatusTransfer_TransparentContainer, +p: S.Phase) -> {Hp.calm(Ho.Ho.status_phase(key, container, p)) == True{} : Bool}:
-  match p:
-    case S.Handover{ctx, nh, source, leg}:
-      match leg:
-        case S.Asked{t}:
-          {==}
-        case S.Acked{t, r, s, ts}:
-          {==}
-    case S.Created{}:
-      {==}
-    case S.Identifying{guard}:
-      {==}
-    case S.Authenticating{guard, av, resynced, supi}:
-      {==}
-    case S.SecurityMode{guard, ctx, k_amf}:
-      {==}
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      {==}
-    case S.Registered{ctx, nh, released}:
-      {==}
-    case S.Switching{guard, ctx, nh, released}:
-      {==}
-    case S.Releasing{guard}:
-      {==}
-
-def Hp.s_ue(+assoc: U32, +key: U32, +container: G.RANStatusTransfer_TransparentContainer, +m: Maybe<&2, S.Ue>) -> {Hp.calm(Ho.Ho.status_ue(assoc, key, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Hp.s_phase(key, container, S.Ue.phase(ue))
-
-def Hp.s_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +container: G.RANStatusTransfer_TransparentContainer, +m: Maybe<&2, U32>) -> {Hp.calm(Ho.Ho.status_key(st, assoc, ran, container, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Hp.s_ue(assoc, key, container, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+  PW.Hw.cancel(o => {Hp.calm(o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => ran => key => ue => ek => eo => en => {==}, amf => ran => key => ue => ctx => nh => source => leg => ek => eo => eph => {==})
 
 def Hp.status(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>) -> {Hp.calm(Ho.Ho.status_of_view(st, assoc, r)) == True{} : Bool}:
-  match r:
-    case Fail{e}:
-      {==}
-    case Done{V.UplinkRANStatusTransfer.View{+amf, +ran, +container}}:
-      Hp.s_key(st, assoc, ran, container, N.Ngap.ue_key(amf))
+  PW.Hw.status(o => {Hp.calm(o) == True{} : Bool}, st, assoc, r, {==}, {==}, {==}, amf => ran => container => key => ue => t => r2 => s => ek => eo => {==})
 
 # Small facts
 # -----------
@@ -454,74 +219,71 @@ def Hp.none_aimed(+m: Maybe<&2, S.Ue>, +assoc: U32, +e: {S.Ue.pending(m) == None
 # amf.handover.owner_only
 # -----------------------
 
+# The key a message names is k.
+def Hp.same_key(+amf: B.Bytes(), +k: U32, +key: U32, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}) -> {key == k : U32}:
+  P.Some.inj(U32, key, k, Equal.trans(Maybe<&2, U32>, Some{key}, N.Ngap.ue_key(amf), Some{k}, Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{key}, ek), eid))
+
+# The association does not own the context under k: no message of its finds it.
+def Hp.no_owner(+st: S.State, +assoc: U32, +ran: B.Bytes(), +amf: B.Bytes(), +k: U32, +key: U32, +ue: S.Ue, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran) == None{} : Maybe<&2, S.Ue>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo2: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> Empty:
+  kk = Hp.same_key(amf, k, key, eid, ek)
+  e2 : {N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>} = (%kk : {N.Owner.of(Tb.Table.get(S.Ue, _, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}; eo2)
+  P.Refute.none_some(S.Ue, ue, Equal.trans(Maybe<&2, S.Ue>, None{}, N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran), Some{ue}, Equal.sym(Maybe<&2, S.Ue>, N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran), None{}, eo), e2))
+
+# No handover is pending to the association for the context under k: no answer of its finds it.
+def Hp.no_target(+st: S.State, +assoc: U32, +amf: B.Bytes(), +k: U32, +key: U32, +ue: S.Ue, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +en: {Ho.Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc) == None{} : Maybe<&2, S.Ue>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}) -> Empty:
+  kk = Hp.same_key(amf, k, key, eid, ek)
+  e2 : {Ho.Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>} = (%kk : {Ho.Ho.pending(Tb.Table.get(S.Ue, _, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}; ep)
+  P.Refute.none_some(S.Ue, ue, Equal.trans(Maybe<&2, S.Ue>, None{}, Ho.Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc), Some{ue}, Equal.sym(Maybe<&2, S.Ue>, Ho.Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc), None{}, en), e2))
+
+def Hp.Kept(+st: S.State, +o: N.GOut()) -> Type:
+  {K.Kernel.state(N.Step.of(st, o)) == st : S.State}
+
 def Hp.oo_required(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +direct: Maybe<&2, G.DirectForwardingPathAvailability()>, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 12, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverRequired.view(ies) == Done{V.HandoverRequired.View{amf, ran, kind, cause, id, direct, items, container}} : Result<&2, &2, B.Err, V.HandoverRequired.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), R.Route.dispatch(st, assoc, stream, U32.to_nat(0), U32.to_nat(12), ies, entropy), Hp.dispatch(st, entropy, assoc, stream, len, bytes, 0, 12, crit, value, ies, c, ep, ei))
   %sr : {K.Kernel.state(_) == st : S.State}
   sv = Equal.sym(Result<&2, &2, B.Err, V.HandoverRequired.View>, V.HandoverRequired.view(ies), Done{V.HandoverRequired.View{amf, ran, kind, cause, id, direct, items, container}}, ev)
   %sv : {K.Kernel.state(N.Step.of(st, Ho.Ho.required_of_view(st, assoc, _))) == st : S.State}
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : {K.Kernel.state(N.Step.of(st, Ho.Ho.required_key(st, assoc, ran, kind, cause, id, items, container, _))) == st : S.State}
-  so = Equal.sym(Maybe<&2, S.Ue>, N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran), None{}, eo)
-  %so : {K.Kernel.state(N.Step.of(st, Ho.Ho.required_ue(st, assoc, k, kind, cause, id, items, container, _))) == st : S.State}
-  {==}
+  PW.Hw.required_found(o => Hp.Kept(st, o), st, assoc, amf, ran, kind, cause, id, items, container, {==}, key => ue => cx => ek => eo2 => {==}, +key => +ue => ctx => nh => t => cfg => cause2 => container2 => i => more => +ek => +eo2 => ne => Empty.absurd(Hp.Kept(st, Ho.Ho.prepare(key, ue, ctx, nh, t, cfg, cause2, container2, i <> more)), Hp.no_owner(st, assoc, ran, amf, k, key, ue, eid, eo, ek, eo2)))
 
 def Hp.oo_cancel(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +cause: G.Cause, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 10, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverCancel.view(ies) == Done{V.HandoverCancel.View{amf, ran, cause}} : Result<&2, &2, B.Err, V.HandoverCancel.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), R.Route.dispatch(st, assoc, stream, U32.to_nat(0), U32.to_nat(10), ies, entropy), Hp.dispatch(st, entropy, assoc, stream, len, bytes, 0, 10, crit, value, ies, c, ep, ei))
   %sr : {K.Kernel.state(_) == st : S.State}
   sv = Equal.sym(Result<&2, &2, B.Err, V.HandoverCancel.View>, V.HandoverCancel.view(ies), Done{V.HandoverCancel.View{amf, ran, cause}}, ev)
   %sv : {K.Kernel.state(N.Step.of(st, Ho.Ho.cancel_of_view(st, assoc, _))) == st : S.State}
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : {K.Kernel.state(N.Step.of(st, Ho.Ho.cancel_key(st, assoc, ran, _))) == st : S.State}
-  so = Equal.sym(Maybe<&2, S.Ue>, N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran), None{}, eo)
-  %so : {K.Kernel.state(N.Step.of(st, Ho.Ho.cancel_ue(assoc, k, _))) == st : S.State}
-  {==}
+  PW.Hw.cancel_found(o => Hp.Kept(st, o), st, assoc, amf, ran, {==}, key => ue => ek => eo2 => en => {==}, +key => +ue => +ctx => +nh => +source => +leg => +ek => +eo2 => eph => Empty.absurd(Hp.Kept(st, Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg})), Hp.no_owner(st, assoc, ran, amf, k, key, ue, eid, eo, ek, eo2)))
 
 def Hp.oo_status(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +status: G.RANStatusTransfer_TransparentContainer, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 49, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.UplinkRANStatusTransfer.view(ies) == Done{V.UplinkRANStatusTransfer.View{amf, ran, status}} : Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), R.Route.dispatch(st, assoc, stream, U32.to_nat(0), U32.to_nat(49), ies, entropy), Hp.dispatch(st, entropy, assoc, stream, len, bytes, 0, 49, crit, value, ies, c, ep, ei))
   %sr : {K.Kernel.state(_) == st : S.State}
   sv = Equal.sym(Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>, V.UplinkRANStatusTransfer.view(ies), Done{V.UplinkRANStatusTransfer.View{amf, ran, status}}, ev)
   %sv : {K.Kernel.state(N.Step.of(st, Ho.Ho.status_of_view(st, assoc, _))) == st : S.State}
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : {K.Kernel.state(N.Step.of(st, Ho.Ho.status_key(st, assoc, ran, status, _))) == st : S.State}
-  so = Equal.sym(Maybe<&2, S.Ue>, N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran), None{}, eo)
-  %so : {K.Kernel.state(N.Step.of(st, Ho.Ho.status_ue(assoc, k, status, _))) == st : S.State}
-  {==}
+  PW.Hw.status_found(o => Hp.Kept(st, o), st, assoc, amf, ran, status, {==}, {==}, key => ue => t => r => s => ek => eo2 => {==})
+
+def Hp.Unk(+st: S.State, +assoc: U32, +o: N.GOut()) -> Type:
+  {N.Step.of(st, o) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
 
 # The target's answers name a context; with no handover pending to the
 # association they come from, the context is not found.
-def Hp.oo_ack(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +admitted: G.PDUSessionResourceAdmittedList(), +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListHOAck()>, +back: B.Bytes(), +diag: Maybe<&2, G.CriticalityDiagnostics>, +npn: Maybe<&2, G.NPN_AccessInformation>, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {Ho.Ho.for_target(st, assoc, k) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverRequestAcknowledge.view(ies) == Done{V.HandoverRequestAcknowledge.View{amf, ran, admitted, failed, back, diag, npn}} : Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}:
+def Hp.oo_ack(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +admitted: G.PDUSessionResourceAdmittedList(), +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListHOAck()>, +back: B.Bytes(), +diag: Maybe<&2, G.CriticalityDiagnostics>, +npn: Maybe<&2, G.NPN_AccessInformation>, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {Ho.Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverRequestAcknowledge.view(ies) == Done{V.HandoverRequestAcknowledge.View{amf, ran, admitted, failed, back, diag, npn}} : Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}:
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), R.Route.dispatch(st, assoc, stream, U32.to_nat(1), U32.to_nat(13), ies, entropy), Hp.dispatch(st, entropy, assoc, stream, len, bytes, 1, 13, crit, value, ies, c, ep, ei))
   %sr : {_ == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
   sv = Equal.sym(Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>, V.HandoverRequestAcknowledge.view(ies), Done{V.HandoverRequestAcknowledge.View{amf, ran, admitted, failed, back, diag, npn}}, ev)
   %sv : {N.Step.of(st, Ho.Ho.ack_of_view(st, assoc, stream, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : {N.Step.of(st, Ho.Ho.ack_key(st, assoc, stream, ran, admitted, back, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  sn = Equal.sym(Maybe<&2, S.Ue>, Ho.Ho.for_target(st, assoc, k), None{}, en)
-  %sn : {N.Step.of(st, Ho.Ho.ack_ue(assoc, stream, k, ran, admitted, back, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  {==}
+  PW.Hw.ack_found(o => Hp.Unk(st, assoc, o), st, assoc, stream, amf, ran, admitted, back, {==}, +key => +ue => ctx => nh => source => t => +ek => +ep2 => eph => Empty.absurd(Hp.Unk(st, assoc, Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, back, S.Handover{ctx, nh, source, S.Asked{t}})), Hp.no_target(st, assoc, amf, k, key, ue, eid, en, ek, ep2)))
 
-def Hp.oo_failure(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +k: U32, +cause: G.Cause, +diag: Maybe<&2, G.CriticalityDiagnostics>, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {Ho.Ho.for_target(st, assoc, k) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{2, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverFailure.view(ies) == Done{V.HandoverFailure.View{amf, cause, diag}} : Result<&2, &2, B.Err, V.HandoverFailure.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}:
+def Hp.oo_failure(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +k: U32, +cause: G.Cause, +diag: Maybe<&2, G.CriticalityDiagnostics>, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {Ho.Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{2, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverFailure.view(ies) == Done{V.HandoverFailure.View{amf, cause, diag}} : Result<&2, &2, B.Err, V.HandoverFailure.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}:
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), R.Route.dispatch(st, assoc, stream, U32.to_nat(2), U32.to_nat(13), ies, entropy), Hp.dispatch(st, entropy, assoc, stream, len, bytes, 2, 13, crit, value, ies, c, ep, ei))
   %sr : {_ == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
   sv = Equal.sym(Result<&2, &2, B.Err, V.HandoverFailure.View>, V.HandoverFailure.view(ies), Done{V.HandoverFailure.View{amf, cause, diag}}, ev)
   %sv : {N.Step.of(st, Ho.Ho.failure_of_view(st, assoc, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : {N.Step.of(st, Ho.Ho.failure_key(st, assoc, cause, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  sn = Equal.sym(Maybe<&2, S.Ue>, Ho.Ho.for_target(st, assoc, k), None{}, en)
-  %sn : {N.Step.of(st, Ho.Ho.failure_ue(assoc, k, cause, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  {==}
+  PW.Hw.failure_found(o => Hp.Unk(st, assoc, o), st, assoc, amf, cause, {==}, +key => +ue => ctx => nh => source => t => +ek => +ep2 => eph => Empty.absurd(Hp.Unk(st, assoc, Ho.Ho.failure_phase(assoc, key, ue, cause, S.Handover{ctx, nh, source, S.Asked{t}})), Hp.no_target(st, assoc, amf, k, key, ue, eid, en, ek, ep2)))
 
-def Hp.oo_notify(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +uli: G.UserLocationInformation, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {Ho.Ho.for_target(st, assoc, k) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverNotify.view(ies) == Done{V.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, V.HandoverNotify.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}:
+def Hp.oo_notify(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +uli: G.UserLocationInformation, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {Ho.Ho.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc) == None{} : Maybe<&2, S.Ue>}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverNotify.view(ies) == Done{V.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, V.HandoverNotify.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}:
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), R.Route.dispatch(st, assoc, stream, U32.to_nat(0), U32.to_nat(11), ies, entropy), Hp.dispatch(st, entropy, assoc, stream, len, bytes, 0, 11, crit, value, ies, c, ep, ei))
   %sr : {_ == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
   sv = Equal.sym(Result<&2, &2, B.Err, V.HandoverNotify.View>, V.HandoverNotify.view(ies), Done{V.HandoverNotify.View{amf, ran, uli}}, ev)
   %sv : {N.Step.of(st, Ho.Ho.notify_of_view(st, assoc, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : {N.Step.of(st, Ho.Ho.notify_key(st, assoc, ran, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  sn = Equal.sym(Maybe<&2, S.Ue>, Ho.Ho.for_target(st, assoc, k), None{}, en)
-  %sn : {N.Step.of(st, Ho.Ho.notify_ue(st, assoc, k, ran, _)) == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}
-  {==}
-
+  PW.Hw.notify_found(o => Hp.Unk(st, assoc, o), st, assoc, amf, ran, {==}, +key => +ue => ctx => nh => source => t => r => s => ts => sp => +ek => +ep2 => eph => es => Empty.absurd(Hp.Unk(st, assoc, Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{})), Hp.no_target(st, assoc, amf, k, key, ue, eid, en, ek, ep2)))
 
 def Hp.oo_state(+st: S.State, +assoc: U32, +o: N.Step(), +e: {o == (st, N.Ngap.unknown_ue(assoc)) : N.Step()}) -> {K.Kernel.state(o) == st : S.State}:
   se = Equal.sym(N.Step(), o, (st, N.Ngap.unknown_ue(assoc)), e)
@@ -558,38 +320,27 @@ def Hp.rephased_none(+st: S.State, +k: U32, +u: S.Ue, +q: S.Phase, +acts: List<&
   %sp : {S.Phase.pending(_) == None{} : Maybe<&2, U32>}
   en
 
-def Hp.cancel_pending(+st: S.State, +k: U32, +u: S.Ue, +p: S.Phase, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +epu: {S.Ue.phase(u) == p : S.Phase}) -> {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.cancel_phase(k, u, p)))))) == None{} : Maybe<&2, U32>}:
-  match p:
-    case S.Handover{+ctx, +nh, source, +leg}:
-      +x : N.Act = N.UeSend{S.Ue.assoc(u), S.Ue.stream(u), k, Ho.Ho.cancel_ack(k, S.Ue.ran_id(u))}
-      Hp.rephased_none(st, k, u, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, x <> List.append(&2, N.Act, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.handover_cancelled())), [N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}]), eg, {==})
-    case S.Created{}:
-      Hp.kept_none(st, k, u, S.Created{}, eg, epu, {==})
-    case S.Identifying{guard}:
-      Hp.kept_none(st, k, u, S.Identifying{guard}, eg, epu, {==})
-    case S.Authenticating{guard, av, resynced, supi}:
-      Hp.kept_none(st, k, u, S.Authenticating{guard, av, resynced, supi}, eg, epu, {==})
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Hp.kept_none(st, k, u, S.SecurityMode{guard, ctx, k_amf}, eg, epu, {==})
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Hp.kept_none(st, k, u, S.ContextSetup{guard, ctx, nh, response, complete}, eg, epu, {==})
-    case S.Registered{ctx, nh, released}:
-      Hp.kept_none(st, k, u, S.Registered{ctx, nh, released}, eg, epu, {==})
-    case S.Switching{guard, ctx, nh, released}:
-      Hp.kept_none(st, k, u, S.Switching{guard, ctx, nh, released}, eg, epu, {==})
-    case S.Releasing{guard}:
-      Hp.kept_none(st, k, u, S.Releasing{guard}, eg, epu, {==})
+def Hp.Settled(+st: S.State, +k: U32, +o: N.GOut()) -> Type:
+  {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, o))))) == None{} : Maybe<&2, U32>}
+
+# The owner's context under k, found by the key it names.
+def Hp.owned_get(+st: S.State, +assoc: U32, +ran: B.Bytes(), +amf: B.Bytes(), +k: U32, +key: U32, +ue: S.Ue, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}:
+  kk = Hp.same_key(amf, k, key, eid, ek)
+  eg = Hp.pair_l(Tb.Table.get(S.Ue, key, S.State.ues(st)), ue, {U32.is_eq(S.Ue.assoc(ue), assoc) == True{} : Bool}, PT.Own.get(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran, ue, eo))
+  (%kk : {Tb.Table.get(S.Ue, _, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}; eg)
+
+def Hp.cancel_go(+st: S.State, +assoc: U32, +ran: B.Bytes(), +amf: B.Bytes(), +k: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +leg: S.Leg, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> Hp.Settled(st, k, Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg})):
+  kk = Equal.sym(U32, key, k, Hp.same_key(amf, k, key, eid, ek))
+  +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), k, Ho.Ho.cancel_ack(k, S.Ue.ran_id(ue))}
+  (%kk : Hp.Settled(st, k, Ho.Ho.cancel_phase(_, ue, S.Handover{ctx, nh, source, leg})); Hp.rephased_none(st, k, ue, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, x <> List.append(&2, N.Act, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.handover_cancelled())), [N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}]), Hp.owned_get(st, assoc, ran, amf, k, key, ue, eid, ek, eo), {==}))
 
 def Hp.rc_cancel(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +k: U32, +u: S.Ue, +cause: G.Cause, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 10, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ev: {V.HandoverCancel.view(ies) == Done{V.HandoverCancel.View{amf, ran, cause}} : Result<&2, &2, B.Err, V.HandoverCancel.View>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran) == Some{u} : Maybe<&2, S.Ue>}) -> {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == None{} : Maybe<&2, U32>}:
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), R.Route.dispatch(st, assoc, stream, U32.to_nat(0), U32.to_nat(10), ies, entropy), Hp.dispatch(st, entropy, assoc, stream, len, bytes, 0, 10, crit, value, ies, c, ep, ei))
   %sr : {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(_)))) == None{} : Maybe<&2, U32>}
   sv = Equal.sym(Result<&2, &2, B.Err, V.HandoverCancel.View>, V.HandoverCancel.view(ies), Done{V.HandoverCancel.View{amf, ran, cause}}, ev)
-  %sv : {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.cancel_of_view(st, assoc, _)))))) == None{} : Maybe<&2, U32>}
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.cancel_key(st, assoc, ran, _)))))) == None{} : Maybe<&2, U32>}
-  so = Equal.sym(Maybe<&2, S.Ue>, N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran), Some{u}, eo)
-  %so : {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.cancel_ue(assoc, k, _)))))) == None{} : Maybe<&2, U32>}
-  Hp.cancel_pending(st, k, u, S.Ue.phase(u), Hp.pair_l(Tb.Table.get(S.Ue, k, S.State.ues(st)), u, {U32.is_eq(S.Ue.assoc(u), assoc) == True{} : Bool}, PT.Own.get(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran, u, eo)), {==})
+  %sv : Hp.Settled(st, k, Ho.Ho.cancel_of_view(st, assoc, _))
+  sf = Equal.sym(N.GOut(), N.Ue.found(N.Ue.keyed(N.Ngap.ue_key(amf), (k2 => N.Owner.of(Tb.Table.get(S.Ue, k2, S.State.ues(st)), assoc, ran))), (S.Keep{}, N.Ngap.unknown_ue(assoc)), (+key => +ue => Ho.Ho.cancel_phase(key, ue, S.Ue.phase(ue)))), Ho.Ho.cancel_phase(k, u, S.Ue.phase(u)), PW.Walk.keyed_eq(N.Ngap.ue_key(amf), (k2 => N.Owner.of(Tb.Table.get(S.Ue, k2, S.State.ues(st)), assoc, ran)), k, u, (S.Keep{}, N.Ngap.unknown_ue(assoc)), (+key => +ue => Ho.Ho.cancel_phase(key, ue, S.Ue.phase(ue))), eid, eo))
+  (%sf : Hp.Settled(st, k, _); PW.Hw.cancel_phase(o => Hp.Settled(st, k, o), st, assoc, amf, ran, k, u, S.Ue.phase(u), eid, eo, {==}, +key => +ue => +ek => +eo2 => +en => Hp.kept_none(st, k, ue, S.Ue.phase(ue), Hp.owned_get(st, assoc, ran, amf, k, key, ue, eid, ek, eo2), {==}, en), +key => +ue => +ctx => +nh => +source => +leg => +ek => +eo2 => eph => Hp.cancel_go(st, assoc, ran, amf, k, key, ue, ctx, nh, source, leg, eid, ek, eo2)))
 
 def L.amf.handover.responses_correlated(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, k, u, cause, admitted, failed, back, diag, npn, uli, eid, ei):
   +m = Tb.Table.get(S.Ue, k, S.State.ues(st))
@@ -761,69 +512,41 @@ def Hp.moved_keep(+st: S.State, +k: U32, +t: U32, +acts: List<&2, N.Act>) -> Hp.
   +g = Tb.Table.get(S.Ue, k, S.State.ues(st))
   P.Bool.or_l(S.Ue.same_owner(g, g), S.Ue.on(g, t), Hp.same_refl(g))
 
-def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +ok: Bool, +eat: {U32.is_eq(assoc, t) == True{} : Bool}) -> Hp.Moved(st, k, t, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, r, s, ts, ok)):
-  match ok:
-    case False{}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case True{}:
-      +ues = S.State.ues(st)
-      +g = Tb.Table.get(S.Ue, k, ues)
-      +rows = S.Sessions.of_ue(k, S.State.sessions(st))
-      +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
-      +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
-      +b : N.GOut() = (S.Put{k, v}, [])
-      +more : List<&2, N.Act> = [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
-      +o = N.Out.also(N.Out.join(a, b), more)
-      e12 = Equal.trans(S.Tx, PT.Tk.tx(o), PT.Tk.tx(N.Out.join(a, b)), S.Both{PT.Tk.tx(a), S.Put{k, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PT.Tk.tx_join(a, b))
-      sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(PT.Tk.tx(o), ues), PT.Tk.render(st, o))
-      %sr : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, _)), S.Ue.on(Tb.Table.get(S.Ue, k, _), t)) == True{} : Bool}
-      se = Equal.sym(S.Tx, PT.Tk.tx(o), S.Both{PT.Tk.tx(a), S.Put{k, v}}, e12)
-      %se : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues))), S.Ue.on(Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues)), t)) == True{} : Bool}
-      sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues))), Some{v}, PPs.Mv.get_put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues)))
-      %sg : {Bool.or(S.Ue.same_owner(g, _), S.Ue.on(_, t)) == True{} : Bool}
-      sa = Equal.sym(U32, S.Ue.assoc(v), assoc, Hp.assoc_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))
-      %sa : {Bool.or(S.Ue.same_owner(g, Some{v}), U32.is_eq(_, t)) == True{} : Bool}
-      P.Bool.or_r(S.Ue.same_owner(g, Some{v}), U32.is_eq(assoc, t), eat)
+def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +eat: {U32.is_eq(assoc, t) == True{} : Bool}) -> Hp.Moved(st, k, t, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, r, s, ts, True{})):
+  +ues = S.State.ues(st)
+  +g = Tb.Table.get(S.Ue, k, ues)
+  +rows = S.Sessions.of_ue(k, S.State.sessions(st))
+  +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
+  +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
+  +b : N.GOut() = (S.Put{k, v}, [])
+  +more : List<&2, N.Act> = [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
+  +o = N.Out.also(N.Out.join(a, b), more)
+  e12 = Equal.trans(S.Tx, PT.Tk.tx(o), PT.Tk.tx(N.Out.join(a, b)), S.Both{PT.Tk.tx(a), S.Put{k, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PT.Tk.tx_join(a, b))
+  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(PT.Tk.tx(o), ues), PT.Tk.render(st, o))
+  %sr : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, _)), S.Ue.on(Tb.Table.get(S.Ue, k, _), t)) == True{} : Bool}
+  se = Equal.sym(S.Tx, PT.Tk.tx(o), S.Both{PT.Tk.tx(a), S.Put{k, v}}, e12)
+  %se : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues))), S.Ue.on(Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues)), t)) == True{} : Bool}
+  sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues))), Some{v}, PPs.Mv.get_put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues)))
+  %sg : {Bool.or(S.Ue.same_owner(g, _), S.Ue.on(_, t)) == True{} : Bool}
+  sa = Equal.sym(U32, S.Ue.assoc(v), assoc, Hp.assoc_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))
+  %sa : {Bool.or(S.Ue.same_owner(g, Some{v}), U32.is_eq(_, t)) == True{} : Bool}
+  P.Bool.or_r(S.Ue.same_owner(g, Some{v}), U32.is_eq(assoc, t), eat)
 
-def Hp.notify_moved_phase(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +ran: B.Bytes(), +p: S.Phase, +eat: {U32.is_eq(assoc, t) == True{} : Bool}) -> Hp.Moved(st, k, t, Ho.Ho.notify_phase(st, assoc, k, ue, ran, p)):
-  match p:
-    case S.Handover{+ctx, +nh, source, leg}:
-      match leg:
-        case S.Asked{t2}:
-          Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-        case S.Acked{t2, +r, +s, +ts}:
-          Hp.complete_moved(st, assoc, k, t, ue, ctx, nh, r, s, ts, Bool.and(B.bytes_eq(r, ran), S.Ues.ran_free(k, assoc, r, S.State.ues(st))), eat)
-    case S.Created{}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.Identifying{guard}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.Authenticating{guard, av, resynced, supi}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.Registered{ctx, nh, released}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.Switching{guard, ctx, nh, released}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.Releasing{guard}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
+# The target of the handover pending for the context under k is the
+# association its answer comes from.
+def Hp.eat(+st: S.State, +assoc: U32, +amf: B.Bytes(), +k: U32, +t: U32, +key: U32, +ue: S.Ue, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +epend: {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(st))) == Some{t} : Maybe<&2, U32>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}) -> {U32.is_eq(assoc, t) == True{} : Bool}:
+  kk = Hp.same_key(amf, k, key, eid, ek)
+  eg = PW.Walk.first({Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, {Ho.Ho.aimed(ue, assoc) == True{} : Bool}, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, ep))
+  ea = PW.Walk.second({Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, {Ho.Ho.aimed(ue, assoc) == True{} : Bool}, PW.Walk.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ue, ep))
+  egk : {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} = (%kk : {Tb.Table.get(S.Ue, _, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}; eg)
+  ep2 : {S.Ue.pending(Some{ue}) == Some{t} : Maybe<&2, U32>} = (%egk : {S.Ue.pending(_) == Some{t} : Maybe<&2, U32>}; epend)
+  h1 = P.Bool.and_true_l(S.Maybe.same_u32(S.Phase.pending(S.Ue.phase(ue)), Some{assoc}), Bool.and(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc))), ea)
+  eta : {U32.is_eq(t, assoc) == True{} : Bool} = (%ep2 : {S.Maybe.same_u32(_, Some{assoc}) == True{} : Bool}; h1)
+  Equal.trans(Bool, U32.is_eq(assoc, t), U32.is_eq(t, assoc), True{}, P.U32.sym(assoc, t), eta)
 
-def Hp.notify_found(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +ran: B.Bytes(), +ep: {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(st))) == Some{t} : Maybe<&2, U32>}, pr: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {Ho.Ho.aimed(ue, assoc) == True{} : Bool}) -> Hp.Moved(st, k, t, Ho.Ho.notify_phase(st, assoc, k, ue, ran, S.Ue.phase(ue))):
-  match pr:
-    case (+eg, +ea):
-      ep2 : {S.Ue.pending(Some{ue}) == Some{t} : Maybe<&2, U32>} = (%eg : {S.Ue.pending(_) == Some{t} : Maybe<&2, U32>}; ep)
-      h1 = P.Bool.and_true_l(S.Maybe.same_u32(S.Phase.pending(S.Ue.phase(ue)), Some{assoc}), Bool.and(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc))), ea)
-      eta : {U32.is_eq(t, assoc) == True{} : Bool} = (%ep2 : {S.Maybe.same_u32(_, Some{assoc}) == True{} : Bool}; h1)
-      Hp.notify_moved_phase(st, assoc, k, t, ue, ran, S.Ue.phase(ue), Equal.trans(Bool, U32.is_eq(assoc, t), U32.is_eq(t, assoc), True{}, P.U32.sym(assoc, t), eta))
-
-def Hp.notify_moved_ue(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +em: {Ho.Ho.for_target(st, assoc, k) == m : Maybe<&2, S.Ue>}, +ep: {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(st))) == Some{t} : Maybe<&2, U32>}) -> Hp.Moved(st, k, t, Ho.Ho.notify_ue(st, assoc, k, ran, m)):
-  match m:
-    case None{}:
-      Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case Some{+ue}:
-      Hp.notify_found(st, assoc, k, t, ue, ran, ep, PW.Walk.pending(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ue, em))
+def Hp.notify_go(+st: S.State, +assoc: U32, +amf: B.Bytes(), +k: U32, +t: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +epend: {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(st))) == Some{t} : Maybe<&2, U32>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}) -> Hp.Moved(st, k, t, Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{})):
+  kk = Equal.sym(U32, key, k, Hp.same_key(amf, k, key, eid, ek))
+  (%kk : Hp.Moved(st, k, t, Ho.Ho.complete(st, assoc, _, ue, ctx, nh, r, s, ts, True{})); Hp.complete_moved(st, assoc, k, t, ue, ctx, nh, r, s, ts, Hp.eat(st, assoc, amf, k, t, key, ue, eid, epend, ek, ep)))
 
 def Hp.so_notify(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +amf: B.Bytes(), +ran: B.Bytes(), +uli: G.UserLocationInformation, +k: U32, +t: U32, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev: {V.HandoverNotify.view(ies) == Done{V.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, V.HandoverNotify.View>}, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +epend: {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(st))) == Some{t} : Maybe<&2, U32>}) -> {Bool.or(S.Ue.same_owner(Tb.Table.get(S.Ue, k, S.State.ues(st)), Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))), S.Ue.on(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))), t)) == True{} : Bool}:
   +g = Tb.Table.get(S.Ue, k, S.State.ues(st))
@@ -831,9 +554,7 @@ def Hp.so_notify(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +
   %sr : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(_)))), S.Ue.on(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(_))), t)) == True{} : Bool}
   sv = Equal.sym(Result<&2, &2, B.Err, V.HandoverNotify.View>, V.HandoverNotify.view(ies), Done{V.HandoverNotify.View{amf, ran, uli}}, ev)
   %sv : Hp.Moved(st, k, t, Ho.Ho.notify_of_view(st, assoc, _))
-  sid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
-  %sid : Hp.Moved(st, k, t, Ho.Ho.notify_key(st, assoc, ran, _))
-  Hp.notify_moved_ue(st, assoc, k, t, ran, Ho.Ho.for_target(st, assoc, k), {==}, epend)
+  PW.Hw.notify_found(o => Hp.Moved(st, k, t, o), st, assoc, amf, ran, Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc)), +key => +ue => +ctx => +nh => source => t2 => +r => +s => +ts => sp => +ek => +ep2 => eph => es => Hp.notify_go(st, assoc, amf, k, t, key, ue, ctx, nh, r, s, ts, eid, epend, ek, ep2))
 
 def L.amf.handover.single_owner(st, ev, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, j, k, t):
   ({==}, (e0 => So.step(st, ev, entropy, e0), (ep => Hp.so_required(st, entropy, assoc, stream, len, bytes, crit, value, j, ep), (ep => Hp.so_ack(st, entropy, assoc, stream, len, bytes, crit, value, j, ep), (ep => Hp.so_failure(st, entropy, assoc, stream, len, bytes, crit, value, j, ep), (ep => Hp.so_cancel(st, entropy, assoc, stream, len, bytes, crit, value, j, ep), (ep => Hp.so_status(st, entropy, assoc, stream, len, bytes, crit, value, j, ep), (e => Hp.so_timer(st, entropy, k, t, j, e), ep => ei => ev => eid => epend => Hp.so_notify(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, k, t, ep, ei, ev, eid, epend)))))))))
