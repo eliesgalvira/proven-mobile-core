@@ -287,13 +287,14 @@ def Milenage.low6_len(b: A.Aes.Block) -> {List.length(&2, U32, Mil.Milenage.low6
       {==}
 
 def L.milenage.lengths(key, opc, rand, sqn, amf):
-  (Milenage.low8_len(Mil.Milenage.out1(key, opc, rand, sqn, amf)),
-   (Milenage.high8_len(Mil.Milenage.out1(key, opc, rand, sqn, amf)),
-   (Milenage.high8_len(Mil.Milenage.out(key, opc, rand, b => b, 1)),
-   (Aes.to_bytes_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot4(b), 2)),
-   (Aes.to_bytes_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot8(b), 4)),
-   (Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => b, 1)),
-   Milenage.low6_len(Mil.Milenage.out(key, opc, rand, b => Mil.Milenage.rot12(b), 8))))))))
+  +r = Mil.milenage.run(key, opc, rand)
+  (Milenage.low8_len(Mil.Milenage.out1(r, sqn, amf)),
+   (Milenage.high8_len(Mil.Milenage.out1(r, sqn, amf)),
+   (Milenage.high8_len(Mil.Milenage.out(r, b => b, 1)),
+   (Aes.to_bytes_len(Mil.Milenage.out(r, b => Mil.Milenage.rot4(b), 2)),
+   (Aes.to_bytes_len(Mil.Milenage.out(r, b => Mil.Milenage.rot8(b), 4)),
+   (Milenage.low6_len(Mil.Milenage.out(r, b => b, 1)),
+   Milenage.low6_len(Mil.Milenage.out(r, b => Mil.Milenage.rot12(b), 8))))))))
 
 # KDF
 # ---

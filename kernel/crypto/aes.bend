@@ -41,8 +41,39 @@ def Aes.sbox() -> List<&2, U32>:
    225, 248, 152, 17, 105, 217, 142, 148, 155, 30, 135, 233, 206, 85, 40, 223,
    140, 161, 137, 13, 191, 230, 66, 104, 65, 153, 45, 15, 176, 84, 187, 22]
 
-def Aes.sub(b: U32) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, Aes.sbox(), U32.to_nat(b)), 0)
+# The S-box as a tree a byte indexes by its bits, high bit first; one is
+# built per key schedule and per block.
+type Aes.Sbox is Data:
+  SLeaf{v: U32}
+  SNode{lo: Aes.Sbox, hi: Aes.Sbox}
+
+def Aes.Sbox.of(n: Nat, +xs: List<&2, U32>) -> Aes.Sbox:
+  match n:
+    case 0n:
+      SLeaf{Maybe.default(&2, U32, List.get(&2, U32, xs, 0n), 0)}
+    case 1n+(+p):
+      +half = U32.to_nat(U32.shln(1, p))
+      SNode{Aes.Sbox.of(p, List.take(&2, U32, xs, half)), Aes.Sbox.of(p, List.drop(&2, U32, xs, half))}
+
+def Aes.Sbox.high(+b: U32, +bit: U32) -> Bool:
+  Bool.not(U32.is_eq(U32.and(b, bit), 0))
+
+def Aes.Sbox.at(t: Aes.Sbox, +b: U32, +bit: U32, high: Bool) -> U32:
+  match t:
+    case SLeaf{v}:
+      v
+    case SNode{lo, hi}:
+      match high:
+        case True{}:
+          Aes.Sbox.at(hi, b, U32.shrn(bit, 1n), Aes.Sbox.high(b, U32.shrn(bit, 1n)))
+        case False{}:
+          Aes.Sbox.at(lo, b, U32.shrn(bit, 1n), Aes.Sbox.high(b, U32.shrn(bit, 1n)))
+
+def Aes.table() -> Aes.Sbox:
+  Aes.Sbox.of(8n, Aes.sbox())
+
+def Aes.sub(+t: Aes.Sbox, +b: U32) -> U32:
+  Aes.Sbox.at(t, b, 128, Aes.Sbox.high(b, 128))
 
 # Multiplication by x in GF(2^8).
 def Aes.xtime(+a: U32) -> U32:
@@ -53,10 +84,10 @@ def Aes.xor(x: Aes.Block, y: Aes.Block) -> Aes.Block:
     case Blk{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15} Blk{k0, k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15}:
       Blk{U32.xor(s0, k0), U32.xor(s1, k1), U32.xor(s2, k2), U32.xor(s3, k3), U32.xor(s4, k4), U32.xor(s5, k5), U32.xor(s6, k6), U32.xor(s7, k7), U32.xor(s8, k8), U32.xor(s9, k9), U32.xor(s10, k10), U32.xor(s11, k11), U32.xor(s12, k12), U32.xor(s13, k13), U32.xor(s14, k14), U32.xor(s15, k15)}
 
-def Aes.sub_bytes(b: Aes.Block) -> Aes.Block:
+def Aes.sub_bytes(+t: Aes.Sbox, b: Aes.Block) -> Aes.Block:
   match b:
     case Blk{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15}:
-      Blk{Aes.sub(s0), Aes.sub(s1), Aes.sub(s2), Aes.sub(s3), Aes.sub(s4), Aes.sub(s5), Aes.sub(s6), Aes.sub(s7), Aes.sub(s8), Aes.sub(s9), Aes.sub(s10), Aes.sub(s11), Aes.sub(s12), Aes.sub(s13), Aes.sub(s14), Aes.sub(s15)}
+      Blk{Aes.sub(t, s0), Aes.sub(t, s1), Aes.sub(t, s2), Aes.sub(t, s3), Aes.sub(t, s4), Aes.sub(t, s5), Aes.sub(t, s6), Aes.sub(t, s7), Aes.sub(t, s8), Aes.sub(t, s9), Aes.sub(t, s10), Aes.sub(t, s11), Aes.sub(t, s12), Aes.sub(t, s13), Aes.sub(t, s14), Aes.sub(t, s15)}
 
 def Aes.shift_rows(b: Aes.Block) -> Aes.Block:
   match b:
@@ -70,13 +101,13 @@ def Aes.mix_columns(b: Aes.Block) -> Aes.Block:
 
 # The next round key (FIPS 197 §5.2): column 0 takes the substituted, rotated
 # last column and the round constant; each later column takes the one before.
-def Aes.next_key(k: Aes.Block, rcon: U32) -> Aes.Block:
+def Aes.next_key(+t: Aes.Sbox, k: Aes.Block, rcon: U32) -> Aes.Block:
   match k:
     case Blk{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, +s12, +s13, +s14, +s15}:
-      +t0 = U32.xor(U32.xor(s0, Aes.sub(s13)), rcon)
-      +t1 = U32.xor(s1, Aes.sub(s14))
-      +t2 = U32.xor(s2, Aes.sub(s15))
-      +t3 = U32.xor(s3, Aes.sub(s12))
+      +t0 = U32.xor(U32.xor(s0, Aes.sub(t, s13)), rcon)
+      +t1 = U32.xor(s1, Aes.sub(t, s14))
+      +t2 = U32.xor(s2, Aes.sub(t, s15))
+      +t3 = U32.xor(s3, Aes.sub(t, s12))
       +t4 = U32.xor(s4, t0)
       +t5 = U32.xor(s5, t1)
       +t6 = U32.xor(s6, t2)
@@ -87,32 +118,32 @@ def Aes.next_key(k: Aes.Block, rcon: U32) -> Aes.Block:
       +t11 = U32.xor(s11, t7)
       Blk{t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, U32.xor(s12, t8), U32.xor(s13, t9), U32.xor(s14, t10), U32.xor(s15, t11)}
 
-def Aes.expand(n: Nat, +k: Aes.Block, +rcon: U32) -> List<&2, Aes.Block>:
+def Aes.expand(+t: Aes.Sbox, n: Nat, +k: Aes.Block, +rcon: U32) -> List<&2, Aes.Block>:
   match n:
     case 0n:
       [k]
     case 1n+p:
-      k <> Aes.expand(p, Aes.next_key(k, rcon), Aes.xtime(rcon))
+      k <> Aes.expand(t, p, Aes.next_key(t, k, rcon), Aes.xtime(rcon))
 
 # The eleven round keys of AES-128.
 def Aes.round_keys(key: List<&2, U32>) -> List<&2, Aes.Block>:
-  Aes.expand(10n, Aes.block_of(key), 1)
+  Aes.expand(Aes.table(), 10n, Aes.block_of(key), 1)
 
-def Aes.rounds(rks: List<&2, Aes.Block>, st: Aes.Block) -> Aes.Block:
+def Aes.rounds(+t: Aes.Sbox, rks: List<&2, Aes.Block>, st: Aes.Block) -> Aes.Block:
   match rks:
     case Nil{}:
       st
     case k <> Nil{}:
-      Aes.xor(Aes.shift_rows(Aes.sub_bytes(st)), k)
+      Aes.xor(Aes.shift_rows(Aes.sub_bytes(t, st)), k)
     case k <> more:
-      Aes.rounds(more, Aes.xor(Aes.mix_columns(Aes.shift_rows(Aes.sub_bytes(st))), k))
+      Aes.rounds(t, more, Aes.xor(Aes.mix_columns(Aes.shift_rows(Aes.sub_bytes(t, st))), k))
 
 def Aes.encrypt(rks: List<&2, Aes.Block>, blk: Aes.Block) -> Aes.Block:
   match rks:
     case Nil{}:
       blk
     case k0 <> rest:
-      Aes.rounds(rest, Aes.xor(blk, k0))
+      Aes.rounds(Aes.table(), rest, Aes.xor(blk, k0))
 
 def aes128(key: List<&2, U32>, block: List<&2, U32>) -> List<&2, U32>:
   Aes.to_bytes(Aes.encrypt(Aes.round_keys(key), Aes.block_of(block)))
