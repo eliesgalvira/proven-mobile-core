@@ -27,7 +27,7 @@
         };
 
         # PacketRusher v2.0.0 runs the two gNBs and the UE of the handover capture.
-        packetrusher = pkgs.callPackage ./packetrusher/package.nix { };
+        packetrusher = pkgs.callPackage ../../../nix/packetrusher.nix { };
 
         packetrusher-image = pkgs.dockerTools.buildLayeredImage {
           name = "speck5g-packetrusher";

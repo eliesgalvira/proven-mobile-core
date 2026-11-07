@@ -16,7 +16,7 @@ Citation format: `file:N` is a line in the source of the section's simulator at 
 ## Short answer
 
 - **UERANSIM 3.3.0 implements no handover**, neither Xn nor N2. It cannot be the simulator.
-- **PacketRusher v2.0.0 implements both**: Xn handover (Path Switch) and N2 handover (Handover Required) between gNBs it simulates in one process, triggered from a control socket. It has **no Handover Cancel**. A patch of 63 added lines adds one (`test-vectors/capture/setup/packetrusher/handover-cancel.patch`).
+- **PacketRusher v2.0.0 implements both**: Xn handover (Path Switch) and N2 handover (Handover Required) between gNBs it simulates in one process, triggered from a control socket. It has **no Handover Cancel**. A patch of 63 added lines adds one (`nix/packetrusher-handover-cancel.patch`).
 - PacketRusher with the patch is the chosen simulator. The capture in `test-vectors/capture/handover.json` holds one Xn handover, one N2 handover cancelled after the Handover Command, and one N2 handover, all accepted by Open5GS 2.8.0, with the user plane working through eUPF after each.
 - The messages no simulator produced against Open5GS need hand-built vectors from TS 38.413 (see the last section).
 

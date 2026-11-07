@@ -31,8 +31,10 @@ in
         "${edge}/bin/edge --config ${(pkgs.formats.toml { }).generate "edge.toml" config}";
     };
 
-    upf = {
+    upf = { pkgs, ... }: {
       imports = [ (lan [ ip.upf ]) ];
+      # The handover cases read the session's forwarding rules from eUPF's REST API.
+      environment.systemPackages = [ pkgs.curl ];
       # eUPF's XDP program hands a G-PDU to the kernel when the gNB's MAC is not yet
       # in the neighbour table, already encapsulated from eUPF's own address; without
       # accept_local the kernel drops it as a martian instead of resolving the gNB.
@@ -73,7 +75,7 @@ in
   };
 
   testScript = ''
-    import json, re
+    import json
 
     def step(name, run, *args, **kwargs):
         try:
@@ -107,18 +109,26 @@ in
     step("stop UERANSIM", ran.succeed, "systemctl stop ue gnb")
     step("start PacketRusher", ran.wait_until_succeeds, "systemctl start rusher && test -S ${rusherSocket}", timeout=30)
     step("PacketRusher register and establish", control, "wait")
-    ue = step("PacketRusher UE address", lambda: re.findall(r"PDU session 1 address: (\S+)", ran.succeed("journalctl -u rusher -o cat"))[-1])
+    ue = step("PacketRusher UE address", ran.wait_until_succeeds, "journalctl -u rusher -o cat | grep -oP 'PDU session 1 address: \\K\\S+' | tail -n 1 | grep .", timeout=30).strip()
 
-    def handover(name, action, target):
+    # The remote addresses of the downlink FARs eUPF holds for the UE's session.
+    def downlink():
+        sessions = json.loads(upf.succeed(f"curl -sf 'http://127.0.0.1:8080/api/v1/pfcp_sessions?ip={ue}'"))
+        return {far["FarInfo"]["remote_ip"] for s in sessions for far in s["FARs"].values() if far["FarInfo"]["outer_header_creation"]}
+
+    def handover(name, action, target, address):
         ping = f"ping -c 4 -i 0.5 -W 2 -I {ue} ${ip.dn}"
         print(step(f"{name}: ping before", ran.wait_until_succeeds, ping, timeout=30))
         status = step(f"{name}: handover", control, action, "--target", target)
         if status["gnb"] != target:
             raise Exception(f"E2E FAIL: {name}: UE on gNB {status['gnb']}")
         print(step(f"{name}: ping after", ran.wait_until_succeeds, ping, timeout=30))
+        rules = step(f"{name}: downlink FAR", downlink)
+        if rules != {address}:
+            raise Exception(f"E2E FAIL: {name}: downlink FAR to {sorted(rules)}, not {address}")
         print(f"E2E PASS: {name}")
 
-    handover("xn-handover", "xn-handover", "00000002")
-    handover("n2-handover", "ng-handover", "00000001")
+    handover("xn-handover", "xn-handover", "00000002", "${ip.gnb2}")
+    handover("n2-handover", "ng-handover", "00000001", "${ip.ran}")
   '';
 }

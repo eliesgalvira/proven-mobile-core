@@ -85,7 +85,7 @@
         '';
       });
 
-      packetrusher = pkgs.callPackage ./test-vectors/capture/setup/packetrusher/package.nix { };
+      packetrusher = pkgs.callPackage ./nix/packetrusher.nix { };
 
       eupf = pkgs.buildGoModule (finalAttrs: {
         pname = "eupf";

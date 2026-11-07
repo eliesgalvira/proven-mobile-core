@@ -186,6 +186,7 @@ mod tests {
         match available() {
             Ok(()) => {}
             Err(e) if e.raw_os_error() == Some(libc::EPROTONOSUPPORT) || e.raw_os_error() == Some(libc::ESOCKTNOSUPPORT) => {
+                assert!(std::env::var("REQUIRE_SCTP").as_deref() != Ok("1"), "no SCTP, and REQUIRE_SCTP=1");
                 println!("SKIP: no SCTP");
                 return;
             }
