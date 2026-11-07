@@ -1040,20 +1040,26 @@ def Sessions.revar(+key: U32, +v: SVar, sessions: Tb.Table(Session)) -> Tb.Table
     case (+k, s) <> more:
       (k, Session.revar_if(s, v, U32.is_eq(k, key))) <> Sessions.revar(key, v, more)
 
-# The session with a given UE IPv4 address or uplink TEID, pending PFCP sequence number, or UE and PDU session identity.
-def Sessions.has_ip(+ip: U32, sessions: Tb.Table(Session)) -> Bool:
-  match sessions:
-    case Nil{}:
-      False{}
-    case (k, s) <> more:
-      Bool.or(U32.is_eq(Session.ip(s), ip), Sessions.has_ip(ip, more))
+# A session's UE IPv4 address or uplink TEID.
+type Field is Data:
+  Ip{}
+  Teid{}
 
-def Sessions.has_teid(+teid: U32, sessions: Tb.Table(Session)) -> Bool:
+def Field.of(f: Field, s: Session) -> U32:
+  match f:
+    case Ip{}:
+      Session.ip(s)
+    case Teid{}:
+      Session.teid(s)
+
+# Some session holds v in the field; the session with a pending PFCP
+# sequence number, or with a UE and PDU session identity.
+def Sessions.holds(+f: Field, +v: U32, sessions: Tb.Table(Session)) -> Bool:
   match sessions:
     case Nil{}:
       False{}
     case (k, s) <> more:
-      Bool.or(U32.is_eq(Session.teid(s), teid), Sessions.has_teid(teid, more))
+      Bool.or(U32.is_eq(Field.of(f, s), v), Sessions.holds(f, v, more))
 
 def Sessions.pick(key: U32, s: Session, later: Maybe<&2, Sigma<&2, &2, U32, _ => Session>>, hit: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
   match hit:

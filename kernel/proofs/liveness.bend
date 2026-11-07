@@ -913,11 +913,11 @@ def Ck.hit(+k: U32, +ss: Tb.Table(S.Session), +later: Maybe<&2, U32>, +ok: Bool,
     case False{}:
       hl
 
-def Ck.seid_from(+ss: Tb.Table(S.Session), +words: B.Bytes()) -> {Ck.seid_ok(Gsm.Ip.seid_from(ss, words)) == True{} : Bool}:
+def Ck.draw(+ss: Tb.Table(S.Session), +words: B.Bytes()) -> {Ck.seid_ok(Gsm.Ip.draw(Gsm.Seid{}, ss, words)) == True{} : Bool}:
   match words:
     case a <> b <> c <> d <> more:
       +k = U32.and(2147483646, N.Ngap.of_big([a, b, c, d]))
-      Ck.hit(k, ss, Gsm.Ip.seid_from(ss, more), Bool.not(Bool.or(U32.is_eq(k, 0), Tb.Table.has(S.Session, k, ss))), {==}, Ck.even(N.Ngap.of_big([a, b, c, d])), Ck.low(N.Ngap.of_big([a, b, c, d])), Ck.seid_from(ss, more))
+      Ck.hit(k, ss, Gsm.Ip.draw(Gsm.Seid{}, ss, more), Bool.not(Bool.or(U32.is_eq(k, 0), Tb.Table.has(S.Session, k, ss))), {==}, Ck.even(N.Ngap.of_big([a, b, c, d])), Ck.low(N.Ngap.of_big([a, b, c, d])), Ck.draw(ss, more))
     case a <> b <> c <> Nil{}:
       {==}
     case a <> b <> Nil{}:
@@ -932,7 +932,7 @@ def Ck.allocate(+r: Maybe<&2, U32>, +v4v6: Bool, +dns: Bool, +cfg: S.Cfg, +ss: T
     case Some{cause}:
       {==}
     case None{}:
-      Ck.grant(v4v6, dns, Gsm.Ip.alloc(cfg, ss), Gsm.Ip.teid_from(ss, Gsm.Ip.around(entropy, 20n)), Gsm.Ip.seid_from(ss, Gsm.Ip.around(entropy, 24n)), Ck.seid_from(ss, Gsm.Ip.around(entropy, 24n)))
+      Ck.grant(v4v6, dns, Gsm.Ip.alloc(cfg, ss), Gsm.Ip.draw(Gsm.Teid{}, ss, Gsm.Ip.around(entropy, 20n)), Gsm.Ip.draw(Gsm.Seid{}, ss, Gsm.Ip.around(entropy, 24n)), Ck.draw(ss, Gsm.Ip.around(entropy, 24n)))
 
 def Ck.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +up: Bool, +ss: Tb.Table(S.Session), +entropy: B.Bytes()) -> {Ck.ok(Gsm.Gsm.validate(cfg, psi, mm_opts, sm_opts, up, ss, entropy)) == True{} : Bool}:
   +t = I.Opts.t1(I.Iei.pdu_session_type(), sm_opts)
