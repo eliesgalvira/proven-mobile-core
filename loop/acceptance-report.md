@@ -4,9 +4,9 @@ Audited at commit 657e746 on `loop/m1`, 2026-11-02, re-audited by the owner on 2
 
 | Check | Result |
 |---|---|
-| `scripts/test-kernel.sh --strict` | every `kernel/tests/*.bend` passes, 694 checks, nothing skipped |
-| `python3 -I scripts/acceptance.py --strict` | 26 laws required (the 23 in-scope advisories), 0 failures |
-| `bend kernel/PROOF.bend` and `--verdict` | ALL PROOFS CHECK; 133 laws in `kernel/LAWS.bend` plus 471 generated NGAP laws in `kernel/ngap/gen/laws.bend` |
+| `scripts/test-kernel.sh --strict` | every `kernel/tests/*.bend` passes, 703 checks, nothing skipped (ticket 34) |
+| `python3 -I scripts/acceptance.py --strict` | 29 laws required (the 23 in-scope advisories), 0 failures (ticket 34) |
+| `bend kernel/PROOF.bend` and `--verdict` | ALL PROOFS CHECK; 138 laws in `kernel/LAWS.bend` (ticket 34) plus 471 generated NGAP laws in `kernel/ngap/gen/laws.bend` |
 | `scripts/check.sh` | passes (see `loop/progress.md`) |
 | `nix build .#checks.x86_64-linux.e2e` | `E2E PASS` on 2026-11-02 (ticket 22): registration, PDU session and 4/4 pings through eUPF |
 
