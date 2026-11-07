@@ -19,6 +19,9 @@ What the 2026-11-07 merge review left after the pre-merge fixes:
 6. **Edge test:** the kernel-exit closure is built once.
 7. **Script names:** `scripts/check.sh` and `scripts/test-kernel.sh` are nushell; rename them to `.nu` and update every citation.
 
+8. **NG Setup before UE messages:** InitialUEMessage and every other UE-associated NGAP message is refused from an association that hasn't completed NG Setup. Today only Path Switch checks this. State it as a law.
+9. **Sessions dropped in a Path Switch:** tell the UE with a PDU Session Release Command (TS 23.502 §4.9.1.2.2). Today only the target gNB is told.
+
 ## Verify
 
 `scripts/check.sh` (or its new name) and `nix build .#checks.x86_64-linux.e2e`.
