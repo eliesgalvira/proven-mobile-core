@@ -60,7 +60,13 @@ in
         mode = "0644";
         text = "255\tlocal\n254\tmain\n253\tdefault\n0\tunspec\n";
       };
-      systemd.services.gnb.serviceConfig.ExecStart = "${pkgs.ueransim}/bin/nr-gnb -c ${setup}/ueransim/gnb.yaml";
+      # PacketRusher sends and reads every NGAP message on stream 0, so only
+      # UERANSIM can check the core's stream ids (docs/spec/tickets/31-edge-sctp-coverage.md).
+      systemd.services.gnb.serviceConfig.ExecStart =
+        let
+          gnb = pkgs.runCommand "gnb.yaml" { } "${pkgs.yq-go}/bin/yq '.ignoreStreamIds = false' ${setup}/ueransim/gnb.yaml > $out";
+        in
+        "${pkgs.ueransim}/bin/nr-gnb -c ${gnb}";
       systemd.services.ue.serviceConfig.ExecStart = "${pkgs.ueransim}/bin/nr-ue -c ${setup}/ueransim/ue.yaml";
       systemd.services.rusher.serviceConfig.ExecStart = "${packetrusher}/bin/packetrusher --config ${setup}/packetrusher/config.yml --tunnel-backend userspace multi-ue -n 1 --dedicatedGnb --number-of-gnbs 2 --tunnel --tunnel-vrf=false --control-socket ${rusherSocket}";
     };

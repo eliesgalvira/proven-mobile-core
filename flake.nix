@@ -71,6 +71,20 @@
         cargoLock.lockFile = ./edge/Cargo.lock;
       };
 
+      # The edge's test binaries, which the edge-sctp check runs where SCTP is loaded.
+      edgeTests = edge.overrideAttrs (old: {
+        pname = "speck5g-edge-tests";
+        nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.jq ];
+        buildPhase = ''
+          cd edge
+          cargo test --offline --no-run --message-format=json | jq -r 'select(.profile.test) | .executable' > $NIX_BUILD_TOP/test-binaries
+        '';
+        doCheck = false;
+        installPhase = ''
+          install -Dt $out/bin $(cat $NIX_BUILD_TOP/test-binaries)
+        '';
+      });
+
       packetrusher = pkgs.callPackage ./test-vectors/capture/setup/packetrusher/package.nix { };
 
       eupf = pkgs.buildGoModule (finalAttrs: {
@@ -110,6 +124,9 @@
         packages = [ bend pkgs.clang lean pkgs.cargo pkgs.rustc pkgs.nushell (pkgs.python3.withPackages (p: [ (p.pycrate.overridePythonAttrs (o: { dependencies = [ p.lxml ]; })) ])) ];
         BEND_NO_TELEMETRY = "1";
       };
-      checks.${system}.e2e = pkgs.testers.runNixOSTest (import ./e2e/test.nix { inherit kernel edge eupf packetrusher; });
+      checks.${system} = {
+        e2e = pkgs.testers.runNixOSTest (import ./e2e/test.nix { inherit kernel edge eupf packetrusher; });
+        edge-sctp = pkgs.testers.runNixOSTest (import ./e2e/edge-sctp.nix { inherit edgeTests; });
+      };
     };
 }

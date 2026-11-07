@@ -200,7 +200,7 @@ mod tests {
     use super::*;
 
     fn example() -> Config {
-        Config::load(Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/config.example.toml"))).unwrap()
+        toml::from_str(include_str!("../config.example.toml")).unwrap()
     }
 
     #[test]
