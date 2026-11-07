@@ -1,12 +1,12 @@
 //! The loop: one event at a time to the kernel, its actions applied to the
 //! sockets and the timers. Socket threads feed the loop through a channel;
-//! timers are the channel's receive timeout.
+//! every timer due fires after each message and when the receive times out.
 
 use std::collections::HashMap;
 use std::fmt;
 use std::net::{SocketAddr, SocketAddrV4, UdpSocket};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::thread;
 use std::time::Instant;
 
@@ -65,6 +65,12 @@ impl Edge {
     }
 
     pub fn step(&mut self, event: &Event) -> Result<(), Error> {
+        self.step_to(event, SocketAddr::V4(self.upf))
+    }
+
+    /// Steps the kernel and sends its PFCP to `n4`: the UPF's N4 port, or the
+    /// source of the UPF datagram being answered (TS 29.244 §7.2).
+    fn step_to(&mut self, event: &Event, n4: SocketAddr) -> Result<(), Error> {
         let actions = self.link.step(&entropy()?, event).map_err(Error::Kernel)?;
         let now = Instant::now();
         for action in actions {
@@ -83,7 +89,7 @@ impl Edge {
                     }
                 }
                 Action::PfcpSend(bytes) => {
-                    if let Err(e) = self.udp.send_to(&bytes, self.upf) {
+                    if let Err(e) = self.udp.send_to(&bytes, n4) {
                         eprintln!("edge: N4 send: {e}");
                     }
                 }
@@ -110,11 +116,19 @@ impl Edge {
     }
 
     fn turn(&mut self, rx: &Receiver<Msg>) -> Result<(), Error> {
-        let now = Instant::now();
         let msg = match self.timers.deadline() {
-            Some(at) => rx.recv_timeout(at.saturating_duration_since(now)),
+            Some(at) => rx.recv_timeout(at.saturating_duration_since(Instant::now())),
             None => rx.recv().map_err(|_| RecvTimeoutError::Disconnected),
         };
+        self.receive(msg)?;
+        let now = Instant::now();
+        while let Some(id) = self.timers.pop_due(now) {
+            self.step(&Event::TimerFired(id))?;
+        }
+        Ok(())
+    }
+
+    fn receive(&mut self, msg: Result<Msg, RecvTimeoutError>) -> Result<(), Error> {
         match msg {
             Ok(Msg::Up(id, assoc)) => {
                 self.assocs.insert(id, assoc);
@@ -123,41 +137,55 @@ impl Edge {
             Ok(Msg::Data(id, stream, bytes)) if self.assocs.contains_key(&id) => self.step(&Event::NgapData { assoc: id, stream, bytes }),
             Ok(Msg::Down(id)) if self.assocs.remove(&id).is_some() => self.step(&Event::NgapAssocDown(id)),
             Ok(Msg::Data(..)) | Ok(Msg::Down(_)) => Ok(()),
-            Ok(Msg::Pfcp(bytes, from)) if from.ip() == *self.upf.ip() => self.step(&Event::PfcpData(bytes)),
+            Ok(Msg::Pfcp(bytes, from)) if from.ip() == *self.upf.ip() => self.step_to(&Event::PfcpData(bytes), from),
             Ok(Msg::Pfcp(_, from)) => {
                 eprintln!("edge: N4 datagram from {from} dropped: not the UPF");
                 Ok(())
             }
             Ok(Msg::Fatal(why)) => Err(Error::Fatal(why)),
-            Err(RecvTimeoutError::Timeout) => match self.timers.pop_due(Instant::now()) {
-                Some(id) => self.step(&Event::TimerFired(id)),
-                None => Ok(()),
-            },
+            Err(RecvTimeoutError::Timeout) => Ok(()),
             Err(RecvTimeoutError::Disconnected) => Err(Error::Fatal("every socket thread has stopped".to_string())),
         }
     }
 }
 
+/// The first id after `last`, wrapping from u32::MAX to 1, that `live` does
+/// not hold; of `live.len() + 1` candidates one is free.
+fn draw<T>(last: u32, live: &HashMap<u32, T>) -> Option<u32> {
+    std::iter::successors(Some(last), |id| Some(id.checked_add(1).unwrap_or(1)))
+        .skip(1)
+        .take(live.len() + 1)
+        .find(|id| !live.contains_key(id))
+}
+
+/// Accepts gNB associations. An id stays taken while anything holds its
+/// association: the Up message, the loop's map or the reader, which sends its
+/// last message before letting go. So no message of an old association can
+/// follow the Up of a new one with the same id.
 pub fn spawn_n2(listener: sctp::Listener, tx: Sender<Msg>) {
     thread::spawn(move || {
-        let mut next = 1u32;
+        let mut last = 0;
+        let mut live: HashMap<u32, Weak<sctp::Assoc>> = HashMap::new();
         loop {
-            match listener.accept() {
-                Ok(assoc) => {
-                    let id = next;
-                    next += 1;
-                    let assoc = Arc::new(assoc);
-                    if tx.send(Msg::Up(id, assoc.clone())).is_err() {
-                        return;
-                    }
-                    let tx = tx.clone();
-                    thread::spawn(move || read_assoc(id, assoc, tx));
-                }
+            let assoc = match listener.accept() {
+                Ok(assoc) => Arc::new(assoc),
                 Err(e) => {
                     let _ = tx.send(Msg::Fatal(format!("N2 accept: {e}")));
                     return;
                 }
+            };
+            live.retain(|_, a| a.strong_count() > 0);
+            let Some(id) = draw(last, &live) else {
+                eprintln!("edge: N2 association refused: every id is taken");
+                continue;
+            };
+            last = id;
+            live.insert(id, Arc::downgrade(&assoc));
+            if tx.send(Msg::Up(id, assoc.clone())).is_err() {
+                return;
             }
+            let tx = tx.clone();
+            thread::spawn(move || read_assoc(id, assoc, tx));
         }
     });
 }
@@ -202,15 +230,33 @@ pub fn spawn_n4(udp: UdpSocket, tx: Sender<Msg>) {
 /// The whole edge for one configuration: kernel, Config, N2, N4, then the loop.
 pub fn run(config: &Config) -> Result<(), Error> {
     let tlvs = config.tlvs().map_err(|e| Error::Fatal(e.to_string()))?;
-    let (_process, link) = kernel::Process::spawn(&config.kernel.path, config.kernel.port).map_err(Error::Socket)?;
+    let (tx, rx) = std::sync::mpsc::channel();
+    let exited = tx.clone();
+    let (_process, link) = kernel::Process::spawn(&config.kernel.path, config.kernel.port, move || {
+        let _ = exited.send(Msg::Fatal("the kernel exited".to_string()));
+    })
+    .map_err(Error::Socket)?;
     let upf = SocketAddrV4::new(config.n4.upf, N4_PORT);
     let udp = UdpSocket::bind(SocketAddrV4::new(config.n4.smf, N4_PORT)).map_err(Error::Socket)?;
     let listener = sctp::Listener::bind(config.n2.address, N2_PORT).map_err(Error::Socket)?;
     let mut edge = Edge::new(link, udp.try_clone().map_err(Error::Socket)?, upf);
     edge.step(&Event::Config(tlvs))?;
-    let (tx, rx) = std::sync::mpsc::channel();
     spawn_n2(listener, tx.clone());
     spawn_n4(udp, tx);
     eprintln!("edge: N2 on {}:{N2_PORT}, N4 on {}:{N4_PORT} to {upf}", config.n2.address, config.n4.smf);
     Err(edge.serve(&rx))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn association_ids_skip_live_ones_and_wrap_past_the_top() {
+        let live = |ids: &[u32]| ids.iter().map(|&id| (id, ())).collect::<HashMap<_, _>>();
+        assert_eq!(draw(0, &live(&[])), Some(1));
+        assert_eq!(draw(1, &live(&[2, 3])), Some(4));
+        assert_eq!(draw(u32::MAX, &live(&[])), Some(1));
+        assert_eq!(draw(u32::MAX - 1, &live(&[u32::MAX, 1])), Some(2));
+    }
 }
