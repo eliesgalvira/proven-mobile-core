@@ -440,13 +440,16 @@ def Session.phase(s: Session) -> SPhase:
 def Session.known(s: Session) -> Bool:
   Nat.is_eq(List.length(&2, U32, Session.up_seid(s)), 8n)
 
-# The PFCP association with eUPF, which the SMF starts: being asked for (T1
-# running, so many tries), paused after too many tries, or up (heartbeats).
+# The PFCP association with eUPF, which the SMF starts: asked for (the
+# Association Setup Request's sequence number and how often it was sent
+# again), paused after too many tries, up, or up with a Heartbeat Request
+# unanswered (likewise).
 type Link is Data:
   Idle{}
-  Asking{tries: U32}
+  Asking{seq: U32, resent: U32}
   Paused{}
   Up{}
+  Beating{seq: U32, resent: U32}
 
 # N4: the PFCP recovery stamp chosen at Config, and the association.
 type N4 is Data:

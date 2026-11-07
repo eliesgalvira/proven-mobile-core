@@ -446,17 +446,17 @@ def Gsm.pfcp_k4(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
     case False{}:
       Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, 51))
 
-def Gsm.pfcp_k3(st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
+def Gsm.pfcp_k3(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      Up.N4.assoc_response(msg)
+      Up.N4.assoc_response(st, msg)
     case False{}:
       Gsm.pfcp_k4(st, msg, kind, U32.is_eq(kind, 55))
 
-def Gsm.pfcp_k2(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
+def Gsm.pfcp_k2(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      (S.Keep{}, [])
+      Up.N4.alive(st, msg)
     case False{}:
       Gsm.pfcp_k3(st, msg, kind, U32.is_eq(kind, 6))
 

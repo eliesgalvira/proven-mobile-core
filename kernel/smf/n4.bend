@@ -9,8 +9,8 @@ import ../amf/ngap.bend as N
 
 # N4: the SMF's PFCP messages to eUPF (TS 29.244, the subset of
 # docs/research/eupf-pfcp.md) and the association with it, which the SMF
-# starts: T1 = 3 s, three tries, a 10 s pause, then again; heartbeats every
-# 30 s once up, on timer 0 (S.N4.timer).
+# starts: T1 = 3 s, N1 = 3, a 10 s pause, then again; heartbeats every 30 s
+# once up, on timer 0 (S.N4.timer).
 
 def N4.t1_ms() -> U32:
   3000
@@ -156,45 +156,55 @@ def N4.accepted(c: Maybe<&2, U32>) -> Bool:
 
 # The association
 # ---------------
+# A request goes again with its own sequence number, T1 apart, up to N1 times
+# (TS 29.244 §6.4). Without an answer to the Association Setup Request the SMF
+# pauses; without one to a Heartbeat Request the association is lost, and
+# asked for again.
 
-def N4.ask(cfg: S.Cfg, n4: S.N4, tries: U32, seq: U32) -> N.GOut():
-  (S.Both{S.SetLink{S.Asking{tries}}, S.BumpSeq{1}}, [N.Pfcp{None{}, N4.assoc_setup(cfg, S.N4.recovery(n4), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
-
-def N4.pause() -> N.GOut():
-  (S.SetLink{S.Paused{}}, [N.TimerStart{None{}, S.N4.timer(), N4.pause_ms()}, N.Note{F.Warn{}, "PFCP: no association with eUPF; trying again later"}])
-
-def N4.start_with_tries(+st: S.State, cfg: Maybe<&2, S.Cfg>, tries: U32) -> N.GOut():
+def N4.asked(+st: S.State, cfg: Maybe<&2, S.Cfg>, +seq: U32, resent: U32, tx: S.Tx) -> N.GOut():
   match cfg:
     case None{}:
       (S.Keep{}, [])
     case Some{c}:
-      N4.ask(c, S.State.n4(st), tries, S.State.pfcp_seq(st))
+      (S.Both{tx, S.SetLink{S.Asking{seq, resent}}}, [N.Pfcp{None{}, N4.assoc_setup(c, S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
 
-# Config, or the pause over: ask for the association.
+def N4.pause() -> N.GOut():
+  (S.SetLink{S.Paused{}}, [N.TimerStart{None{}, S.N4.timer(), N4.pause_ms()}, N.Note{F.Warn{}, "PFCP: no association with eUPF; trying again later"}])
+
+# Config, the pause over or the association lost: a new Association Setup Request.
 def N4.start(+st: S.State) -> N.GOut():
-  N4.start_with_tries(st, S.State.config(st), 1)
+  N4.asked(st, S.State.config(st), S.State.pfcp_seq(st), 0, S.BumpSeq{1})
 
-def N4.retry(st: S.State, cfg: Maybe<&2, S.Cfg>, tries: U32, again: Bool) -> N.GOut():
-  match again:
+def N4.ask_again(+st: S.State, +seq: U32, +resent: U32, more: Bool) -> N.GOut():
+  match more:
     case True{}:
-      N4.start_with_tries(st, cfg, tries)
+      N4.asked(st, S.State.config(st), seq, U32.add(resent, 1), S.Keep{})
     case False{}:
       N4.pause()
 
-def N4.heartbeat_out(+st: S.State) -> N.GOut():
-  (S.BumpSeq{1}, [N.Pfcp{None{}, N4.heartbeat(1, S.N4.recovery(S.State.n4(st)), S.State.pfcp_seq(st))}, N.TimerStart{None{}, S.N4.timer(), N4.heartbeat_ms()}])
+def N4.beat(+st: S.State, +seq: U32, resent: U32) -> N.GOut():
+  (S.SetLink{S.Beating{seq, resent}}, [N.Pfcp{None{}, N4.heartbeat(1, S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
+
+def N4.beat_again(+st: S.State, +seq: U32, +resent: U32, more: Bool) -> N.GOut():
+  match more:
+    case True{}:
+      N4.beat(st, seq, U32.add(resent, 1))
+    case False{}:
+      N.Out.also(N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with eUPF lost"}])
 
 # Timer 0 fired.
 def N4.expired(+st: S.State, link: S.Link) -> N.GOut():
   match link:
     case S.Idle{}:
       (S.Keep{}, [])
-    case S.Asking{+tries}:
-      N4.retry(st, S.State.config(st), U32.add(tries, 1), U32.is_lt(tries, N4.n1()))
+    case S.Asking{seq, +resent}:
+      N4.ask_again(st, seq, resent, U32.is_lt(resent, N4.n1()))
     case S.Paused{}:
       N4.start(st)
     case S.Up{}:
-      N4.heartbeat_out(st)
+      N.Out.join((S.BumpSeq{1}, []), N4.beat(st, S.State.pfcp_seq(st), 0))
+    case S.Beating{seq, +resent}:
+      N4.beat_again(st, seq, resent, U32.is_lt(resent, N4.n1()))
 
 def N4.fired(+st: S.State) -> N.GOut():
   N4.expired(st, S.N4.link(S.State.n4(st)))
@@ -206,8 +216,41 @@ def N4.assoc_answer(ok: Bool) -> N.GOut():
     case False{}:
       N4.pause()
 
-def N4.assoc_response(msg: Pf.Msg) -> N.GOut():
-  N4.assoc_answer(N4.accepted(N4.cause(msg)))
+def N4.assoc_seq(msg: Pf.Msg, ok: Bool) -> N.GOut():
+  match ok:
+    case True{}:
+      N4.assoc_answer(N4.accepted(N4.cause(msg)))
+    case False{}:
+      N.Out.warn("PFCP: Association Setup Response for no pending request")
+
+# An Association Setup Response answers the request outstanding, by its sequence number.
+def N4.assoc_for(link: S.Link, +msg: Pf.Msg) -> N.GOut():
+  match link:
+    case S.Asking{seq, resent}:
+      N4.assoc_seq(msg, U32.is_eq(seq, Pf.Msg.seq(msg)))
+    case _:
+      N.Out.warn("PFCP: Association Setup Response for no pending request")
+
+def N4.assoc_response(+st: S.State, msg: Pf.Msg) -> N.GOut():
+  N4.assoc_for(S.N4.link(S.State.n4(st)), msg)
+
+def N4.alive_seq(ok: Bool) -> N.GOut():
+  match ok:
+    case True{}:
+      (S.SetLink{S.Up{}}, [N.TimerStart{None{}, S.N4.timer(), N4.heartbeat_ms()}])
+    case False{}:
+      (S.Keep{}, [])
+
+# A Heartbeat Response answers the Heartbeat Request outstanding, by its sequence number.
+def N4.alive_for(link: S.Link, +seq: U32) -> N.GOut():
+  match link:
+    case S.Beating{s, resent}:
+      N4.alive_seq(U32.is_eq(s, seq))
+    case _:
+      (S.Keep{}, [])
+
+def N4.alive(+st: S.State, msg: Pf.Msg) -> N.GOut():
+  N4.alive_for(S.N4.link(S.State.n4(st)), Pf.Msg.seq(msg))
 
 def N4.heartbeat_answer(+st: S.State, msg: Pf.Msg) -> N.GOut():
   (S.Keep{}, [N.Pfcp{None{}, N4.heartbeat(2, S.N4.recovery(S.State.n4(st)), Pf.Msg.seq(msg))}])
@@ -215,6 +258,8 @@ def N4.heartbeat_answer(+st: S.State, msg: Pf.Msg) -> N.GOut():
 def Link.up(l: S.Link) -> Bool:
   match l:
     case S.Up{}:
+      True{}
+    case S.Beating{seq, resent}:
       True{}
     case _:
       False{}

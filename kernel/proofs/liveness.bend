@@ -1522,6 +1522,46 @@ def Lw.assoc_answer(+st: S.State, +ok: Bool) -> {Lv.okf(st, Up.N4.assoc_answer(o
     case False{}:
       {==}
 
+def Lw.assoc_seq(+st: S.State, +msg: Pf.Msg, +ok: Bool) -> {Lv.okf(st, Up.N4.assoc_seq(msg, ok)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      Lw.assoc_answer(st, Up.N4.accepted(Up.N4.cause(msg)))
+    case False{}:
+      {==}
+
+def Lw.assoc_for(+st: S.State, +link: S.Link, +msg: Pf.Msg) -> {Lv.okf(st, Up.N4.assoc_for(link, msg)) == True{} : Bool}:
+  match link:
+    case S.Idle{}:
+      {==}
+    case S.Asking{+seq, resent}:
+      Lw.assoc_seq(st, msg, U32.is_eq(seq, Pf.Msg.seq(msg)))
+    case S.Paused{}:
+      {==}
+    case S.Up{}:
+      {==}
+    case S.Beating{seq, resent}:
+      {==}
+
+def Lw.alive_seq(+st: S.State, +ok: Bool) -> {Lv.okf(st, Up.N4.alive_seq(ok)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def Lw.alive_for(+st: S.State, +link: S.Link, +seq: U32) -> {Lv.okf(st, Up.N4.alive_for(link, seq)) == True{} : Bool}:
+  match link:
+    case S.Idle{}:
+      {==}
+    case S.Asking{s, resent}:
+      {==}
+    case S.Paused{}:
+      {==}
+    case S.Up{}:
+      {==}
+    case S.Beating{+s, resent}:
+      Lw.alive_seq(st, U32.is_eq(s, seq))
+
 def Lw.pfcp_k6(+st: S.State, +msg: Pf.Msg, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k6(st, msg, ok)) == True{} : Bool}:
   match ok:
     case True{}:
@@ -1546,14 +1586,14 @@ def Lw.pfcp_k4(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st,
 def Lw.pfcp_k3(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k3(st, msg, kind, ok)) == True{} : Bool}:
   match ok:
     case True{}:
-      Lw.assoc_answer(st, Up.N4.accepted(Up.N4.cause(msg)))
+      Lw.assoc_for(st, S.N4.link(S.State.n4(st)), msg)
     case False{}:
       Lw.pfcp_k4(st, msg, kind, U32.is_eq(kind, 55))
 
 def Lw.pfcp_k2(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k2(st, msg, kind, ok)) == True{} : Bool}:
   match ok:
     case True{}:
-      {==}
+      Lw.alive_for(st, S.N4.link(S.State.n4(st)), Pf.Msg.seq(msg))
     case False{}:
       Lw.pfcp_k3(st, msg, kind, U32.is_eq(kind, 6))
 
@@ -1689,30 +1729,42 @@ def Lw.gsm_expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase, +es: {
 # Timers
 # ------
 
-def Lw.start_with_tries(+st: S.State, +cfg: Maybe<&2, S.Cfg>, +tries: U32) -> {Lv.okf(st, Up.N4.start_with_tries(st, cfg, tries)) == True{} : Bool}:
+def Lw.asked(+st: S.State, +cfg: Maybe<&2, S.Cfg>, +seq: U32, +resent: U32, +tx: S.Tx, +ht: {Lv.free(st, tx) == True{} : Bool}) -> {Lv.okf(st, Up.N4.asked(st, cfg, seq, resent, tx)) == True{} : Bool}:
   match cfg:
     case None{}:
       {==}
     case Some{c}:
-      {==}
+      P.Bool.and_intro(Lv.free(st, tx), True{}, ht, {==})
 
-def Lw.retry(+st: S.State, +cfg: Maybe<&2, S.Cfg>, +tries: U32, +again: Bool) -> {Lv.okf(st, Up.N4.retry(st, cfg, tries, again)) == True{} : Bool}:
-  match again:
+def Lw.n4_start(+st: S.State) -> {Lv.okf(st, Up.N4.start(st)) == True{} : Bool}:
+  Lw.asked(st, S.State.config(st), S.State.pfcp_seq(st), 0, S.BumpSeq{1}, {==})
+
+def Lw.ask_again(+st: S.State, +seq: U32, +resent: U32, +more: Bool) -> {Lv.okf(st, Up.N4.ask_again(st, seq, resent, more)) == True{} : Bool}:
+  match more:
     case True{}:
-      Lw.start_with_tries(st, cfg, tries)
+      Lw.asked(st, S.State.config(st), seq, U32.add(resent, 1), S.Keep{}, {==})
     case False{}:
       {==}
+
+def Lw.beat_again(+st: S.State, +seq: U32, +resent: U32, +more: Bool) -> {Lv.okf(st, Up.N4.beat_again(st, seq, resent, more)) == True{} : Bool}:
+  match more:
+    case True{}:
+      {==}
+    case False{}:
+      Lv.also(st, Up.N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with eUPF lost"}], Lw.n4_start(st), {==})
 
 def Lw.n4_expired(+st: S.State, +link: S.Link) -> {Lv.okf(st, Up.N4.expired(st, link)) == True{} : Bool}:
   match link:
     case S.Idle{}:
       {==}
-    case S.Asking{+tries}:
-      Lw.retry(st, S.State.config(st), U32.add(tries, 1), U32.is_lt(tries, Up.N4.n1()))
+    case S.Asking{+seq, +resent}:
+      Lw.ask_again(st, seq, resent, U32.is_lt(resent, Up.N4.n1()))
     case S.Paused{}:
-      Lw.start_with_tries(st, S.State.config(st), 1)
+      Lw.n4_start(st)
     case S.Up{}:
       {==}
+    case S.Beating{+seq, +resent}:
+      Lw.beat_again(st, seq, resent, U32.is_lt(resent, Up.N4.n1()))
 
 def Lw.node_timer(+st: S.State, +ok: Bool) -> {Lv.okf(st, K.Kernel.node_timer(st, ok)) == True{} : Bool}:
   match ok:
