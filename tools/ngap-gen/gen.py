@@ -150,6 +150,8 @@ class Gen:
                     t.prim, t.args = "XBits", (lb,)
                 elif lb == ub:
                     t.prim, t.args = ("Bits" if lb <= 16 else "ABits"), (lb,)
+                elif ub >= 65536 and not ext:
+                    t.prim, t.args = "WBitStr", (lb, ub - lb)
                 else:
                     t.prim, t.args = ("XBitStr" if ext else "BitStr"), size_params(lb, ub)
         elif kind == "OCTET STRING":
@@ -325,6 +327,10 @@ class Gen:
                     "Ap.XBitStr.after(v, rem)", f"Ap.XBitStr.valid({lo}n, {diff}n, v)")
         if p == "UBitStr":
             return ("Ap.UBitStr.read(c)", "Ap.UBitStr.write(v, rem, rest)", "Ap.UBitStr.after(v, rem)", "Ap.UBitStr.valid(v)")
+        if p == "WBitStr":
+            lo, diff = a
+            return (f"Ap.WBitStr.read({lo}n, {diff}n, c)", "Ap.UBitStr.write(v, rem, rest)", "Ap.UBitStr.after(v, rem)",
+                    f"Ap.WBitStr.valid({lo}n, {diff}n, v)")
         if p in ("Octets", "AOctets"):
             (n,) = a
             return (f"Ap.{p}.read({n}n, c)", f"Ap.{p}.write(v, rem, rest)",

@@ -466,6 +466,30 @@ def UBitStr.sx.len(+rem: Nat, +bits: Ap.Bits(), rl: Ap.Rd(Nat), +erl: {Ap.Len.re
 def UBitStr.sx(+rem: Nat, +bits: Ap.Bits(), +bs: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), e: {Ap.UBitStr.read(Ap.Cur{rem, bits}) == Done{(bs, Ap.Cur{rem2, bits2})} : Ap.Rd(Ap.Bits())}) -> Canon(bits, Ap.UBitStr.write(bs, rem, bits2), rem2, Ap.UBitStr.after(bs, rem)):
   UBitStr.sx.len(rem, bits, Ap.Len.read(Ap.Cur{rem, bits}), {==}, bs, rem2, bits2, e)
 
+def WBitStr.sx.ok(+rem: Nat, +bits: Ap.Bits(), +bs0: Ap.Bits(), +r3: Nat, +b3: Ap.Bits(), ok: Bool, +bs: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), +e: {Ap.XBits.of(bs0, Ap.Cur{r3, b3}, ok) == Done{(bs, Ap.Cur{rem2, bits2})} : Ap.Rd(Ap.Bits())}, su: Canon(bits, Ap.UBitStr.write(bs0, rem, b3), r3, Ap.UBitStr.after(bs0, rem))) -> Canon(bits, Ap.UBitStr.write(bs, rem, bits2), rem2, Ap.UBitStr.after(bs, rem)):
+  match ok:
+    case False{}:
+      PA.Rd.absurd(Ap.Bits(), Canon(bits, Ap.UBitStr.write(bs, rem, bits2), rem2, Ap.UBitStr.after(bs, rem)), B.Invalid{2}, bs, Ap.Cur{rem2, bits2}, e)
+    case True{}:
+      (u1, u2) = su
+      +ev = Equal.cong(Ap.Rd(Ap.Bits()), Ap.Bits(), x => PA.Rd.value(Ap.Bits(), x, bs), Done{(bs0, Ap.Cur{r3, b3})}, Done{(bs, Ap.Cur{rem2, bits2})}, e)
+      +ec = Equal.cong(Ap.Rd(Ap.Bits()), Ap.Cur, x => PA.Rd.cur(Ap.Bits(), x, Ap.Cur{rem2, bits2}), Done{(bs0, Ap.Cur{r3, b3})}, Done{(bs, Ap.Cur{rem2, bits2})}, e)
+      eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+      er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+      ((%ev : {bits == Ap.UBitStr.write(_, rem, bits2) : Ap.Bits()}; (%eb : {bits == Ap.UBitStr.write(bs0, rem, _) : Ap.Bits()}; u1)), (%ev : {rem2 == Ap.UBitStr.after(_, rem) : Nat}; (%er : {_ == Ap.UBitStr.after(bs0, rem) : Nat}; u2)))
+
+def WBitStr.sx.inside(+lo: Nat, +diff: Nat, +rem: Nat, +bits: Ap.Bits(), ru: Ap.Rd(Ap.Bits()), +eru: {Ap.UBitStr.read(Ap.Cur{rem, bits}) == ru : Ap.Rd(Ap.Bits())}, +bs: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), +e: {Ap.WBitStr.inside(lo, diff, ru) == Done{(bs, Ap.Cur{rem2, bits2})} : Ap.Rd(Ap.Bits())}) -> Canon(bits, Ap.UBitStr.write(bs, rem, bits2), rem2, Ap.UBitStr.after(bs, rem)):
+  match ru:
+    case Fail{err}:
+      PA.Rd.absurd(Ap.Bits(), Canon(bits, Ap.UBitStr.write(bs, rem, bits2), rem2, Ap.UBitStr.after(bs, rem)), err, bs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+bs0, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          WBitStr.sx.ok(rem, bits, bs0, r3, b3, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs0)), bs, rem2, bits2, e, UBitStr.sx(rem, bits, bs0, r3, b3, eru))
+
+def WBitStr.sx(+lo: Nat, +diff: Nat, +rem: Nat, +bits: Ap.Bits(), +bs: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), e: {Ap.WBitStr.read(lo, diff, Ap.Cur{rem, bits}) == Done{(bs, Ap.Cur{rem2, bits2})} : Ap.Rd(Ap.Bits())}) -> Canon(bits, Ap.UBitStr.write(bs, rem, bits2), rem2, Ap.UBitStr.after(bs, rem)):
+  WBitStr.sx.inside(lo, diff, rem, bits, Ap.UBitStr.read(Ap.Cur{rem, bits}), {==}, bs, rem2, bits2, e)
+
 # Constrained strings
 # -------------------
 

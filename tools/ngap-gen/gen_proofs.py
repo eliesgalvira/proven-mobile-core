@@ -24,7 +24,7 @@ import ../../proofs/ngap_frame.bend as PF
 
 PRIM_LAWS = {
     "Int": "int", "AInt": "aint", "Big": "big", "XInt": "xint", "XBig": "xbig", "Enum": "enum",
-    "XBits": "xbits", "BitStr": "bitstr", "XBitStr": "xbitstr", "UBitStr": "ubitstr",
+    "XBits": "xbits", "BitStr": "bitstr", "XBitStr": "xbitstr", "UBitStr": "ubitstr", "WBitStr": "wbitstr",
     "OctStr": "octstr", "Open": "open", "Str": "str", "XStr": "xstr", "UStr": "ustr",
 }
 NEEDS_WIDTH = {"Big", "XBig", "BitStr", "XBitStr", "OctStr", "Str", "XStr"}
@@ -45,6 +45,8 @@ def prim_prefix(t):
         return f"{a[0]}n, {a[1]}, {a[2]}"
     if p in ("XBits", "Bits", "ABits", "Octets", "AOctets"):
         return f"{a[0]}n"
+    if p == "WBitStr":
+        return f"{a[0]}n, {a[1]}n"
     if p in ("BitStr", "XBitStr", "OctStr", "Str", "XStr"):
         return f"{a[0]}, {a[1]}n, {a[2]}n, {a[3]}n"
     return ""

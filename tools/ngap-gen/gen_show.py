@@ -91,7 +91,7 @@ def Exts.show(ies: List<&2, Fr.Ie>) -> String:
   "[" ++ Ies.show(ies) ++ "]"
 """
 
-BITS = {"Bits", "ABits", "XBits", "BitStr", "XBitStr", "UBitStr"}
+BITS = {"Bits", "ABits", "XBits", "BitStr", "XBitStr", "UBitStr", "WBitStr"}
 BYTES = {"Big", "Octets", "AOctets", "OctStr", "Open", "Str", "XStr", "UStr"}
 
 

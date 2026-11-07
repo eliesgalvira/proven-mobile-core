@@ -658,6 +658,24 @@ law aper.ubitstr.decode_valid:
   for +e: {Ap.UBitStr.read(c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}
   {Ap.UBitStr.valid(bs) == True{} : Bool}
 
+law aper.wbitstr.roundtrip:
+  for +lo: Nat
+  for +diff: Nat
+  for +bs: Ap.Bits()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}
+  {Ap.WBitStr.read(lo, diff, Ap.Cur{rem, Ap.UBitStr.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+
+law aper.wbitstr.decode_valid:
+  for +lo: Nat
+  for +diff: Nat
+  for +c: Ap.Cur
+  for +bs: Ap.Bits()
+  for +c2: Ap.Cur
+  for +e: {Ap.WBitStr.read(lo, diff, c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}
+  {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}
+
 law aper.open.roundtrip:
   for +bs: B.Bytes()
   for +rem: Nat
@@ -855,7 +873,7 @@ law aper.pack.padding_zero:
 
 # ngap framing (ticket 13)
 # ------------------------
-# The roundtrip and decode_valid laws of the 140 generated types are stated
+# The roundtrip, decode_valid and suffix laws of every generated type are stated
 # with the code they are about, in kernel/ngap/gen/laws.bend, and proven in
 # kernel/ngap/gen/proofs.bend; PROOF.bend imports them.
 
