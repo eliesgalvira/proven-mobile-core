@@ -42,7 +42,7 @@ def nh_ncc(n: S.Nh) -> U32:
 
 def nh_phase(p: S.Phase) -> U32:
   match p:
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       nh_ncc(nh)
     case S.Handover{g, ctx, nh, source, leg}:
       nh_ncc(nh)
@@ -65,6 +65,10 @@ def pfcps(o: N.Step()) -> Nat:
 # Nothing changed, and the target is told it named an unknown UE.
 def ignored(+st: S.State, +assoc: U32, +o: N.Step()) -> Bool:
   Bool.and(H.unchanged(st, o), Bool.and(Nat.is_eq(sends(o), 1n), H.is_pdu(H.sent_on(assoc, K.Kernel.frames(o)), 0, 9)))
+
+# Nothing changed and nothing sent: no Error Indication.
+def accepted(+st: S.State, +o: N.Step()) -> Bool:
+  Bool.and(H.unchanged(st, o), Nat.is_eq(sends(o), 0n))
 
 # The RAN-UE-NGAP-ID a Handover Request Acknowledge gives.
 def ack_ran(r: Result<&2, &2, B.Err, W.HandoverRequestAcknowledge.View>) -> B.Bytes():
@@ -109,7 +113,9 @@ def main() -> IO(Unit):
     +rel : B.Bytes() = H.sent_on(1, K.Kernel.frames(o3))
     C.Check.report("Handover Cancel from gNB 2: the captured Handover Cancel Acknowledge byte for byte, gNB 1 told to release the UE, the UE registered on gNB 2 keeping NCC 3", Bool.and(B.bytes_eq(H.sent_on(2, K.Kernel.frames(o3)), H.hex(msgs, 66n)), Bool.and(H.is_pdu(rel, 0, 41), Bool.and(A.phase_is(st3, "registered"), Bool.and(U32.is_eq(H.ue_on(st3), 2), U32.is_eq(nh_of(A.ue1(st3)), 3))))))
     C.Check.report("Handover Cancel: the guard stopped, no PFCP message", Bool.and(Nat.is_eq(A.timer_cancels(K.Kernel.frames(o3)), 1n), Nat.is_eq(pfcps(o3), 0n)))
-    C.Check.report("gNB 1's UE Context Release Complete afterwards changes nothing", H.unchanged(st3, H.step(st3, H.on(1, ours(H.hex(msgs, 65n))))))
+    C.Check.report("gNB 1's UE Context Release Complete after the cancel: accepted, nothing sent, nothing changed", accepted(st3, H.step(st3, H.on(1, ours(H.hex(msgs, 65n))))))
+    C.Check.report("a UE Context Release Complete from gNB 1 under another RAN-UE-NGAP-ID after the cancel: Error Indication, nothing changed", ignored(st3, 1, H.step(st3, H.on(1, H.with_ie(85, G.RAN_UE_NGAP_ID.write([9], 0n, []), ours(H.hex(msgs, 65n)))))))
+    C.Check.report("a UE Context Release Complete from a third gNB after the cancel: Error Indication, nothing changed", ignored(st3, 3, H.step(st3, H.on(3, ours(H.hex(msgs, 65n))))))
     C.Check.report("an acknowledgement after the cancel: ignored, no PFCP message", ignored(st3, 1, H.step(st3, H.on(1, ours(H.hex(msgs, 61n))))))
     C.Check.report("a Handover Notify after the cancel: ignored", ignored(st3, 1, H.step(st3, H.on(1, ours(H.hex(msgs, 77n))))))
     +o4 : N.Step() = H.step(st3, H.on(2, H.hex(msgs, 73n)))
@@ -127,7 +133,7 @@ def main() -> IO(Unit):
     C.Check.report("Handover Notify: the captured UE Context Release Command to gNB 2 byte for byte, the guard stopped", Bool.and(B.bytes_eq(H.sent_on(2, K.Kernel.frames(o6)), H.hex(msgs, 80n)), Bool.and(Nat.is_eq(sends(o6), 1n), Pc.cancels(K.Kernel.frames(o6), 1))))
     +st7 : S.State = H.after(st6, Pc.pfcp_event(Pc.with_seq(H.hex(msgs, 79n), Pc.pfcp_seq(mod))))
     C.Check.report("Session Modification Response: the session active, nothing sent", Bool.and(Pc.sphase_is(st7, "active"), A.phase_is(st7, "registered")))
-    C.Check.report("gNB 2's UE Context Release Complete afterwards changes nothing", H.unchanged(st7, H.step(st7, H.on(2, H.hex(msgs, 81n)))))
+    C.Check.report("gNB 2's UE Context Release Complete after Handover Notify: accepted, nothing sent, nothing changed", accepted(st7, H.step(st7, H.on(2, H.hex(msgs, 81n)))))
     C.Check.report("an acknowledgement from a third gNB: ignored", ignored(st1, 3, H.step(st1, H.on(3, ours(H.hex(msgs, 61n))))))
     C.Check.report("an acknowledgement when the target already acknowledged: ignored", ignored(st2, 1, H.step(st2, H.on(1, ours(H.hex(msgs, 61n))))))
     C.Check.report("Handover Notify before the acknowledgement: ignored", ignored(st1, 1, H.step(st1, H.on(1, ours(H.hex(msgs, 77n))))))
@@ -139,8 +145,10 @@ def main() -> IO(Unit):
     +o_prep : N.Step() = H.step(st1, F.TimerFired{1})
     C.Check.report("the preparation guard fires: Handover Preparation Failure to gNB 2, gNB 1 told to release, the UE registered on gNB 2", Bool.and(H.is_pdu(H.sent_on(2, K.Kernel.frames(o_prep)), 2, 12), Bool.and(H.is_pdu(H.sent_on(1, K.Kernel.frames(o_prep)), 0, 41), Bool.and(A.phase_is(K.Kernel.state(o_prep), "registered"), U32.is_eq(H.ue_on(K.Kernel.state(o_prep)), 2)))))
     C.Check.report("an acknowledgement after the preparation guard fired: ignored", ignored(K.Kernel.state(o_prep), 1, H.step(K.Kernel.state(o_prep), H.on(1, ours(H.hex(msgs, 61n))))))
+    C.Check.report("gNB 1's UE Context Release Complete after the preparation guard fired, under the RAN-UE-NGAP-ID it never gave: accepted, nothing sent", accepted(K.Kernel.state(o_prep), H.step(K.Kernel.state(o_prep), H.on(1, ours(H.hex(msgs, 65n))))))
     +o_done : N.Step() = H.step(st2, F.TimerFired{1})
     C.Check.report("the completion guard fires: gNB 1 told to release, the UE registered on gNB 2", Bool.and(H.is_pdu(H.sent_on(1, K.Kernel.frames(o_done)), 0, 41), Bool.and(Nat.is_eq(sends(o_done), 1n), Bool.and(A.phase_is(K.Kernel.state(o_done), "registered"), U32.is_eq(H.ue_on(K.Kernel.state(o_done)), 2)))))
+    C.Check.report("gNB 1's UE Context Release Complete after the completion guard fired: accepted, nothing sent", accepted(K.Kernel.state(o_done), H.step(K.Kernel.state(o_done), H.on(1, ours(H.hex(msgs, 65n))))))
     +o_early : N.Step() = H.step(st1, H.on(2, H.hex(msgs, 63n)))
     C.Check.report("Handover Cancel before the Handover Command: acknowledged, gNB 1 told to release by AMF-UE-NGAP-ID, the UE registered", Bool.and(B.bytes_eq(H.sent_on(2, K.Kernel.frames(o_early)), H.hex(msgs, 66n)), Bool.and(H.is_pdu(H.sent_on(1, K.Kernel.frames(o_early)), 0, 41), A.phase_is(K.Kernel.state(o_early), "registered"))))
     +o_fail : N.Step() = H.step(st1, H.on(1, H.hand("HandoverFailure", hands)))

@@ -234,7 +234,7 @@ def phase_of(p: S.Phase) -> String:
       "security_mode"
     case S.ContextSetup{g, ctx, nh, response, complete}:
       "context_setup"
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       "registered"
     case S.Switching{g, ctx, nh, released}:
       "switching"

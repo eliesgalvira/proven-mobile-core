@@ -495,7 +495,7 @@ def Gsm.switch_failed(+key: U32, +ue: S.Ue, psis: List<&2, U32>) -> N.GOut():
 def Gsm.switch_end(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match switched cfg:
     case (p <> more) Some{c}:
-      (S.Rephase{key, S.Registered{ctx, nh}}, [N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}])
+      (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}])
     case _ _:
       Gsm.switch_failed(key, ue, List.append(&2, U32, released, switched))
 

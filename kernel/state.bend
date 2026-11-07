@@ -190,24 +190,48 @@ def Leg.target(l: Leg) -> U32:
     case Acked{target, ran, stream, tunnels}:
       target
 
+# The side an N2 handover released, the source after Handover Notify or the
+# target after a cancel or the guard firing, kept so that its UE Context
+# Release Complete is taken as the answer it is: its association and the
+# RAN-UE-NGAP-ID it gave, if it gave one.
+type Side is Data:
+  Side{assoc: U32, ran: Maybe<&2, B.Bytes()>}
+
+def Leg.side(l: Leg) -> Side:
+  match l:
+    case Asked{target}:
+      Side{target, None{}}
+    case Acked{target, ran, stream, tunnels}:
+      Side{target, Some{ran}}
+
+def Side.is(m: Maybe<&2, Side>, +a: U32, +r: B.Bytes()) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{Side{assoc, None{}}}:
+      U32.is_eq(assoc, a)
+    case Some{Side{assoc, Some{ran}}}:
+      Bool.and(U32.is_eq(assoc, a), B.bytes_eq(ran, r))
+
 # Where a UE is in registration. Every phase but Registered carries the guard
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
 # security mode, T3550 setting up the context, the Path Switch waiting on the
 # UPF, the N2 handover's preparation then completion, and the wait for the
 # gNB's UE Context Release Complete), so no context waits forever. A UE in N2
 # handover stays with its owner, the source, until the target's Handover
-# Notify; it holds the {NH, NCC} sent to the target. Created is a context
-# the InitialUEMessage has just made, before its first procedure places it;
-# no stored context is in it (amf.contexts.guarded). The SUPI a SUCI
-# de-conceals to stays in Authenticating, out of the SUPI index, until 5G-AKA
-# verifies it.
+# Notify; it holds the {NH, NCC} sent to the target. A registered UE keeps
+# the side its last N2 handover released until it leaves Registered. Created
+# is a context the InitialUEMessage has just made, before its first procedure
+# places it; no stored context is in it (amf.contexts.guarded). The SUPI a
+# SUCI de-conceals to stays in Authenticating, out of the SUPI index, until
+# 5G-AKA verifies it.
 type Phase is Data:
   Created{}
   Identifying{guard: Guard}
   Authenticating{guard: Guard, av: Au.Av, resynced: Bool, supi: B.Digits()}
   SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
   ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
-  Registered{ctx: N.Nas.Ctx, nh: Nh}
+  Registered{ctx: N.Nas.Ctx, nh: Nh, left: Maybe<&2, Side>}
   Switching{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, released: List<&2, U32>}
   Handover{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, source: U32, leg: Leg}
   Releasing{guard: Guard}
@@ -224,7 +248,7 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       Some{guard}
     case ContextSetup{guard, ctx, nh, response, complete}:
       Some{guard}
-    case Registered{ctx, nh}:
+    case Registered{ctx, nh, left}:
       None{}
     case Switching{guard, ctx, nh, released}:
       Some{guard}
@@ -238,7 +262,7 @@ def Phase.guarded(p: Phase) -> Bool:
   match p:
     case Created{}:
       False{}
-    case Registered{ctx, nh}:
+    case Registered{ctx, nh, left}:
       True{}
     case other:
       Tb.Table.present(Guard, Phase.guard(other))
@@ -255,8 +279,8 @@ def Phase.with_guard(p: Phase, g: Guard) -> Phase:
       SecurityMode{g, ctx, k_amf}
     case ContextSetup{guard, ctx, nh, response, complete}:
       ContextSetup{g, ctx, nh, response, complete}
-    case Registered{ctx, nh}:
-      Registered{ctx, nh}
+    case Registered{ctx, nh, left}:
+      Registered{ctx, nh, left}
     case Switching{guard, ctx, nh, released}:
       Switching{g, ctx, nh, released}
     case Handover{guard, ctx, nh, source, leg}:
@@ -271,7 +295,7 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
       Some{ctx}
     case ContextSetup{guard, ctx, nh, response, complete}:
       Some{ctx}
-    case Registered{ctx, nh}:
+    case Registered{ctx, nh, left}:
       Some{ctx}
     case Switching{guard, ctx, nh, released}:
       Some{ctx}
@@ -284,8 +308,8 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
       SecurityMode{guard, c, k_amf}
     case ContextSetup{guard, ctx, nh, response, complete}:
       ContextSetup{guard, c, nh, response, complete}
-    case Registered{ctx, nh}:
-      Registered{c, nh}
+    case Registered{ctx, nh, left}:
+      Registered{c, nh, left}
     case Switching{guard, ctx, nh, released}:
       Switching{guard, c, nh, released}
     case other:
@@ -298,6 +322,14 @@ def Phase.pending(p: Phase) -> Maybe<&2, U32>:
       Some{Leg.target(leg)}
     case _:
       None{}
+
+# Association a, under RAN-UE-NGAP-ID r, is the side a handover released.
+def Phase.released(p: Phase, +a: U32, +r: B.Bytes()) -> Bool:
+  match p:
+    case Registered{ctx, nh, left}:
+      Side.is(left, a, r)
+    case _:
+      False{}
 
 def Phase.idle(p: Phase) -> Bool:
   Bool.not(Tb.Table.present(U32, Phase.pending(p)))
@@ -425,6 +457,13 @@ def Ue.pending(m: Maybe<&2, Ue>) -> Maybe<&2, U32>:
       None{}
     case Some{u}:
       Phase.pending(Ue.phase(u))
+
+def Ue.released(m: Maybe<&2, Ue>, +a: U32, +r: B.Bytes()) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{u}:
+      Phase.released(Ue.phase(u), a, r)
 
 # Both absent, or both owned by the same association under the same RAN-UE-NGAP-ID.
 def Ue.same_owner(a: Maybe<&2, Ue>, b: Maybe<&2, Ue>) -> Bool:

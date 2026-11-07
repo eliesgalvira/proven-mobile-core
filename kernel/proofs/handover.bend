@@ -199,7 +199,7 @@ def Hp.r_target(+st: S.State, +k: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, 
 
 def Hp.r_phase(+st: S.State, +k: U32, +assoc: U32, +key: U32, +ue: S.Ue, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +p: S.Phase) -> {Hp.fine(k, Ho.Ho.required_phase(st, assoc, key, ue, kind, cause, id, items, container, p)) == True{} : Bool}:
   match p:
-    case S.Registered{+ctx, +nh}:
+    case S.Registered{+ctx, +nh, left}:
       Hp.r_target(st, k, key, ue, ctx, nh, cause, items, container, Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)))
     case S.Created{}:
       {==}
@@ -257,7 +257,7 @@ def Hp.a_phase(+k: U32, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B
       {==}
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       {==}
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       {==}
     case S.Switching{guard, ctx, nh, released}:
       {==}
@@ -303,7 +303,7 @@ def Hp.f_phase(+assoc: U32, +key: U32, +ue: S.Ue, +cause: G.Cause, +p: S.Phase) 
       {==}
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       {==}
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       {==}
     case S.Switching{guard, ctx, nh, released}:
       {==}
@@ -343,7 +343,7 @@ def Hp.c_phase(+key: U32, +ue: S.Ue, +p: S.Phase) -> {Hp.calm(Ho.Ho.cancel_phase
       {==}
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       {==}
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       {==}
     case S.Switching{guard, ctx, nh, released}:
       {==}
@@ -391,7 +391,7 @@ def Hp.s_phase(+key: U32, +container: G.RANStatusTransfer_TransparentContainer, 
       {==}
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       {==}
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       {==}
     case S.Switching{guard, ctx, nh, released}:
       {==}
@@ -562,7 +562,7 @@ def Hp.cancel_pending(+st: S.State, +k: U32, +u: S.Ue, +p: S.Phase, +eg: {Tb.Tab
   match p:
     case S.Handover{guard, +ctx, +nh, source, +leg}:
       +x : N.Act = N.UeSend{S.Ue.assoc(u), S.Ue.stream(u), k, Ho.Ho.cancel_ack(k, S.Ue.ran_id(u))}
-      Hp.rephased_none(st, k, u, S.Registered{ctx, nh}, x <> List.append(&2, N.Act, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.handover_cancelled())), [N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}]), eg, {==})
+      Hp.rephased_none(st, k, u, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, x <> List.append(&2, N.Act, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.handover_cancelled())), [N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}]), eg, {==})
     case S.Created{}:
       Hp.kept_none(st, k, u, S.Created{}, eg, epu, {==})
     case S.Identifying{guard}:
@@ -573,8 +573,8 @@ def Hp.cancel_pending(+st: S.State, +k: U32, +u: S.Ue, +p: S.Phase, +eg: {Tb.Tab
       Hp.kept_none(st, k, u, S.SecurityMode{guard, ctx, k_amf}, eg, epu, {==})
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Hp.kept_none(st, k, u, S.ContextSetup{guard, ctx, nh, response, complete}, eg, epu, {==})
-    case S.Registered{ctx, nh}:
-      Hp.kept_none(st, k, u, S.Registered{ctx, nh}, eg, epu, {==})
+    case S.Registered{ctx, nh, left}:
+      Hp.kept_none(st, k, u, S.Registered{ctx, nh, left}, eg, epu, {==})
     case S.Switching{guard, ctx, nh, released}:
       Hp.kept_none(st, k, u, S.Switching{guard, ctx, nh, released}, eg, epu, {==})
     case S.Releasing{guard}:
@@ -742,8 +742,8 @@ def Hp.expired_calm(+st: S.State, +k: U32, +u: S.Ue, +t: U32, +p: S.Phase, +e: {
       Empty.absurd({Hp.calm(Gmm.Gmm.expired(st, k, u, S.SecurityMode{guard, ctx, k_amf})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Empty.absurd({Hp.calm(Gmm.Gmm.expired(st, k, u, S.ContextSetup{guard, ctx, nh, response, complete})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
-    case S.Registered{ctx, nh}:
-      Empty.absurd({Hp.calm(Gmm.Gmm.expired(st, k, u, S.Registered{ctx, nh})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
+    case S.Registered{ctx, nh, left}:
+      Empty.absurd({Hp.calm(Gmm.Gmm.expired(st, k, u, S.Registered{ctx, nh, left})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
     case S.Switching{guard, ctx, nh, released}:
       Empty.absurd({Hp.calm(Gmm.Gmm.expired(st, k, u, S.Switching{guard, ctx, nh, released})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
     case S.Releasing{guard}:
@@ -776,7 +776,7 @@ def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +c
       +ues = S.State.ues(st)
       +g = Tb.Table.get(S.Ue, k, ues)
       +rows = S.Sessions.of_ue(k, S.State.sessions(st))
-      +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh})
+      +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
       +a = Ps.Ps.sessions(ts, rows, S.State.pfcp_seq(st))
       +b : N.GOut() = (S.Put{k, v}, [])
       +more : List<&2, N.Act> = [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
@@ -788,7 +788,7 @@ def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +c
       %se : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues))), S.Ue.on(Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues)), t)) == True{} : Bool}
       sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues))), Some{v}, PPs.Mv.get_put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues)))
       %sg : {Bool.or(S.Ue.same_owner(g, _), S.Ue.on(_, t)) == True{} : Bool}
-      sa = Equal.sym(U32, S.Ue.assoc(v), assoc, Hp.assoc_moved(ue, assoc, r, s, S.Registered{ctx, nh}))
+      sa = Equal.sym(U32, S.Ue.assoc(v), assoc, Hp.assoc_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))
       %sa : {Bool.or(S.Ue.same_owner(g, Some{v}), U32.is_eq(_, t)) == True{} : Bool}
       P.Bool.or_r(S.Ue.same_owner(g, Some{v}), U32.is_eq(assoc, t), eat)
 
@@ -810,7 +810,7 @@ def Hp.notify_moved_phase(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue
       Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
     case S.Switching{guard, ctx, nh, released}:
       Hp.moved_keep(st, k, t, N.Ngap.unknown_ue(assoc))
@@ -861,7 +861,7 @@ def Hp.timed_p(+p: S.Phase) -> {Bool.or(S.Phase.idle(p), Tb.Table.present(S.Guar
       {==}
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       {==}
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       {==}
     case S.Switching{guard, ctx, nh, released}:
       {==}
@@ -895,8 +895,8 @@ def Hp.g_guard(+p: S.Phase, +t: U32, +e: {S.Phase.pending(p) == Some{t} : Maybe<
       Empty.absurd({Tb.Table.present(S.Guard, S.Phase.guard(S.SecurityMode{guard, ctx, k_amf})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Empty.absurd({Tb.Table.present(S.Guard, S.Phase.guard(S.ContextSetup{guard, ctx, nh, response, complete})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
-    case S.Registered{ctx, nh}:
-      Empty.absurd({Tb.Table.present(S.Guard, S.Phase.guard(S.Registered{ctx, nh})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
+    case S.Registered{ctx, nh, left}:
+      Empty.absurd({Tb.Table.present(S.Guard, S.Phase.guard(S.Registered{ctx, nh, left})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
     case S.Switching{guard, ctx, nh, released}:
       Empty.absurd({Tb.Table.present(S.Guard, S.Phase.guard(S.Switching{guard, ctx, nh, released})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
     case S.Releasing{guard}:
@@ -992,7 +992,7 @@ def Hp.g_ack(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len:
 def Hp.ho_expired_ends(+st: S.State, +k: U32, +u: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +b: Bool, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}) -> {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.expired(k, u, ctx, nh, leg, b)))))) == None{} : Maybe<&2, U32>}:
   match b:
     case True{}:
-      Hp.rephased_none(st, k, u, S.Registered{ctx, nh}, List.append(&2, N.Act, Ho.Ho.expiry(k, u, leg), [N.Note{F.Warn{}, "NGAP: N2 handover guard expired; the UE stays with its owner"}]), eg, {==})
+      Hp.rephased_none(st, k, u, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, List.append(&2, N.Act, Ho.Ho.expiry(k, u, leg), [N.Note{F.Warn{}, "NGAP: N2 handover guard expired; the UE stays with its owner"}]), eg, {==})
     case False{}:
       Hp.rephased_none(st, k, u, S.Releasing{S.Guard{0}}, N.Release{S.Ue.assoc(u), S.Ue.stream(u), k, S.Ue.ran_id(u), Ho.Ho.radio(G.CauseRadioNetwork.unspecified())} <> N.TimerStart{Some{k}, k, N.Ue.guard_ms()} <> Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified())), eg, {==})
 
@@ -1010,8 +1010,8 @@ def Hp.expired_ends(+st: S.State, +k: U32, +u: S.Ue, +t: U32, +p: S.Phase, +eg: 
       Empty.absurd({S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, u, S.SecurityMode{guard, ctx, k_amf})))))) == None{} : Maybe<&2, U32>}, P.Refute.none_some(U32, t, e))
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Empty.absurd({S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, u, S.ContextSetup{guard, ctx, nh, response, complete})))))) == None{} : Maybe<&2, U32>}, P.Refute.none_some(U32, t, e))
-    case S.Registered{ctx, nh}:
-      Empty.absurd({S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, u, S.Registered{ctx, nh})))))) == None{} : Maybe<&2, U32>}, P.Refute.none_some(U32, t, e))
+    case S.Registered{ctx, nh, left}:
+      Empty.absurd({S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, u, S.Registered{ctx, nh, left})))))) == None{} : Maybe<&2, U32>}, P.Refute.none_some(U32, t, e))
     case S.Switching{guard, ctx, nh, released}:
       Empty.absurd({S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, u, S.Switching{guard, ctx, nh, released})))))) == None{} : Maybe<&2, U32>}, P.Refute.none_some(U32, t, e))
     case S.Releasing{guard}:
@@ -1026,3 +1026,24 @@ def Hp.fired_ends(+st: S.State, +k: U32, +t: U32, +m: Maybe<&2, S.Ue>, +em: {Tb.
 
 def L.amf.handover.guarded(st, ev, entropy, assoc, stream, len, bytes, crit, value, k, t, p):
   (Hp.timed(S.State.ues(S.State.initial())), (e0 => Hp.timed_step(st, ev, entropy, e0), (e => Hp.g_guard(p, t, e), (ep => Hp.g_required(st, entropy, assoc, stream, len, bytes, crit, value, k, ep), (ep => Hp.g_ack(st, entropy, assoc, stream, len, bytes, crit, value, k, ep), e => Hp.fired_ends(st, k, t, Tb.Table.get(S.Ue, k, S.State.ues(st)), {==}, e))))))
+
+# amf.handover.released_side_completes
+# ------------------------------------
+
+def L.amf.handover.released_side_completes(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, k, ran, uli, rel, diag, ue, ep, ei, ev, eid, eu, ea, er):
+  +done : N.Step() = (st, [N.Note{F.Info{}, "NGAP: UE Context Release Complete from the side a handover released"}])
+  sep = Equal.sym(Result<&2, &2, B.Err, Fr.Pdu>, Fr.Pdu.read(bytes), Done{Fr.Pdu{1, 41, crit, value}}, ep)
+  %sep : {R.Route.of_pdu(st, assoc, stream, entropy, _) == done : N.Step()}
+  sei = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), Done{(ies, c)}, ei)
+  %sei : {R.Route.of_ies(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), entropy, _) == done : N.Step()}
+  sev = Equal.sym(Result<&2, &2, B.Err, V.UEContextReleaseComplete.View>, V.UEContextReleaseComplete.view(ies), Done{V.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}}, ev)
+  %sev : {N.Step.of(st, Gmm.Gmm.release_complete_of_view(st, assoc, _)) == done : N.Step()}
+  sek = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
+  %sek : {N.Step.of(st, Gmm.Gmm.release_complete_key(st, assoc, ran, _)) == done : N.Step()}
+  seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{ue}, eu)
+  %seu : {N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.of(_, assoc, ran), S.Ue.released(_, assoc, ran))) == done : N.Step()}
+  sea = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), assoc), False{}, ea)
+  %sea : {N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.check(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran))), S.Phase.released(S.Ue.phase(ue), assoc, ran))) == done : N.Step()}
+  ser = Equal.sym(Bool, S.Phase.released(S.Ue.phase(ue), assoc, ran), True{}, er)
+  %ser : {N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, None{}, _)) == done : N.Step()}
+  {==}

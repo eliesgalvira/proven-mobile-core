@@ -1502,6 +1502,7 @@ law smf.establish.reject_leaves_state:
   for +ctx2: N.Nas.Ctx
   for +old: N.Nas.Ctx
   for +nh: St.Nh
+  for +left: Maybe<&2, St.Side>
   for +fields: List<&2, I.Field>
   for +opts: List<&2, I.Ie>
   for +psi: U32
@@ -1518,7 +1519,7 @@ law smf.establish.reject_leaves_state:
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
-  for +er: {St.Ue.phase(ue) == St.Registered{old, nh} : St.Phase}
+  for +er: {St.Ue.phase(ue) == St.Registered{old, nh, left} : St.Phase}
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.EstablishmentRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   for +ef: {St.State.config(st) == Some{cfg} : Maybe<&2, St.Cfg>}
@@ -1637,6 +1638,7 @@ law smf.modification.rejected:
   for +ctx2: N.Nas.Ctx
   for +old: N.Nas.Ctx
   for +nh: St.Nh
+  for +left: Maybe<&2, St.Side>
   for +fields: List<&2, I.Field>
   for +opts: List<&2, I.Ie>
   for +psi: U32
@@ -1651,7 +1653,7 @@ law smf.modification.rejected:
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +eu: {N.Nas.unprotect(ctx, nas) == Done{N.Unprotected{prot, plain, count, ctx2}} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   for +em: {Mm.Mm.read(plain) == Done{Mm.Mm{Mm.UlNasTransport{}, fields, opts}} : Result<&2, &2, B.Err, Mm.Mm>}
-  for +er: {St.Ue.phase(ue) == St.Registered{old, nh} : St.Phase}
+  for +er: {St.Ue.phase(ue) == St.Registered{old, nh, left} : St.Phase}
   for +en: {U32.is_eq(I.Fields.byte1(fields), 1) == True{} : Bool}
   for +es: {Sm.Sm.read(I.Fields.lve2(fields)) == Done{Sm.Sm{psi, pti, Sm.ModificationRequest{}, sfields, sopts}} : Result<&2, &2, B.Err, Sm.Sm>}
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
@@ -1812,7 +1814,7 @@ law amf.path_switch.stored_capabilities:
   for +ei2: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value2), 1n)}) == Done{(ies2, c2)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev2: {GV.PathSwitchRequest.view(ies2) == Done{GV.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
   {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : St.State}
-  & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{ctx, nh}}, [Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)}, Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}]) : Ng.GOut()}
+  & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{ctx, nh, None{}}}, [Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)}, Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}]) : Ng.GOut()}
 
 # amf (ticket 28)
 # ---------------
@@ -1963,3 +1965,36 @@ law amf.handover.guarded:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 12, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
   & ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{t} : Maybe<&2, U32>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) == None{} : Maybe<&2, U32>})
+
+# TS 38.413 §8.3.3: the side an N2 handover released, the source after
+# Handover Notify or the target after a cancel or the guard firing, answers
+# its UE Context Release Command with UE Context Release Complete. That
+# Complete, from an association that no longer owns the UE, changes no state,
+# so no UE changes owner, and its only action is a log line: no Error
+# Indication.
+law amf.handover.released_side_completes:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +k: U32
+  for +ran: B.Bytes()
+  for +uli: Maybe<&2, G.UserLocationInformation>
+  for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
+  for +diag: Maybe<&2, G.CriticalityDiagnostics>
+  for +ue: St.Ue
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eu: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
+  for +ea: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
+  for +er: {St.Phase.released(St.Ue.phase(ue), assoc, ran) == True{} : Bool}
+  {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, [Ng.Note{F.Info{}, "NGAP: UE Context Release Complete from the side a handover released"}]) : Ng.Step()}

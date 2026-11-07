@@ -420,7 +420,7 @@ def Gmm.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), ctx: 
 def Gmm.setup_done(st: S.State, +key: U32, +ue: S.Ue, guard: S.Guard, ctx: Sec.Nas.Ctx, nh: S.Nh, response: Bool, complete: Bool, both: Bool) -> N.GOut():
   match both:
     case True{}:
-      (S.Rephase{key, S.Registered{ctx, nh}}, [N.TimerCancel{key}, N.Note{F.Info{}, "5GMM: UE registered"}])
+      (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [N.TimerCancel{key}, N.Note{F.Info{}, "5GMM: UE registered"}])
     case False{}:
       (S.Rephase{key, S.ContextSetup{guard, ctx, nh, response, complete}}, [])
 
@@ -449,9 +449,9 @@ def Gmm.sphase(+st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), count: Sec.
       Gmm.setup_step(st, key, ue, guard, ctx, nh, response, True{})
     case Mm.DeregistrationRequestUe{} S.ContextSetup{guard, old, nh, response, complete}:
       Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields))
-    case Mm.DeregistrationRequestUe{} S.Registered{old, nh}:
+    case Mm.DeregistrationRequestUe{} S.Registered{old, nh, left}:
       Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields))
-    case Mm.UlNasTransport{} S.Registered{old, nh}:
+    case Mm.UlNasTransport{} S.Registered{old, nh, left}:
       Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy)
     case _ _:
       N.Out.verified(key, ue, ctx, "5GMM: message not expected in this phase")
@@ -573,20 +573,29 @@ def Gmm.release_request_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err
     case Done{v}:
       Gmm.release_request(st, assoc, v)
 
+# UE Context Release Complete from another association: the answer of the
+# side a handover released, or an unknown UE.
+def Gmm.unowned(assoc: U32, released: Bool) -> List<&2, N.Act>:
+  match released:
+    case True{}:
+      [N.Note{F.Info{}, "NGAP: UE Context Release Complete from the side a handover released"}]
+    case False{}:
+      N.Ngap.unknown_ue(assoc)
+
 # UE Context Release Complete from the owner: the context is forgotten, its guard stopped.
-def Gmm.release_complete_ue(+st: S.State, assoc: U32, +key: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
+def Gmm.release_complete_ue(+st: S.State, assoc: U32, +key: U32, m: Maybe<&2, S.Ue>, released: Bool) -> N.GOut():
   match m:
     case None{}:
-      (S.Keep{}, N.Ngap.unknown_ue(assoc))
+      (S.Keep{}, Gmm.unowned(assoc, released))
     case Some{+ue}:
       N.Out.also(Gmm.forget(st, key), List.append(&2, N.Act, N.Guard.cancel(key, S.Ue.guard(ue)), List.append(&2, N.Act, Ho.Ho.leg_drop(key, S.Ue.phase(ue), N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified())), [N.Note{F.Info{}, "NGAP: UE context released"}])))
 
-def Gmm.release_complete_key(+st: S.State, +assoc: U32, ran: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
+def Gmm.release_complete_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
   match m:
     case None{}:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
     case Some{+key}:
-      Gmm.release_complete_ue(st, assoc, key, Gmm.owner(st, assoc, key, ran))
+      Gmm.release_complete_ue(st, assoc, key, Gmm.owner(st, assoc, key, ran), S.Ue.released(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
 
 def Gmm.release_complete(+st: S.State, +assoc: U32, v: V.UEContextReleaseComplete.View) -> N.GOut():
   match v:
@@ -626,7 +635,7 @@ def Gmm.expired(st: S.State, key: U32, ue: S.Ue, +p: S.Phase) -> N.GOut():
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
     case S.ContextSetup{+guard, ctx, nh, response, complete}:
       Gmm.retry_if(st, key, ue, guard, p, U32.is_lt(S.Guard.retries(guard), Gmm.max_retries()))
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       (S.Keep{}, [])
     case S.Switching{guard, ctx, nh, released}:
       Gmm.release(st, key, ue, N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))

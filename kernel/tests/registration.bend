@@ -58,7 +58,7 @@ def nh_first(p: S.Phase, +k_amf: B.Bytes(), +k_gnb: B.Bytes()) -> Bool:
   match p:
     case S.ContextSetup{g, ctx, nh, response, complete}:
       nh_is_first(nh, k_amf, k_gnb)
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       nh_is_first(nh, k_amf, k_gnb)
     case _:
       False{}

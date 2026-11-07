@@ -1190,7 +1190,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.ContextSetup{guard, old, nh, response, complete}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Switching{guard, old, nh, released}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1212,7 +1212,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.ContextSetup{guard, old, nh, response, complete}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Switching{guard, old, nh, released}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1234,7 +1234,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.ContextSetup{guard, old, nh, response, complete}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Switching{guard, old, nh, released}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1286,7 +1286,7 @@ def W.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: S
 def W.setup_done(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +both: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.setup_done(st, key, ue, guard, ctx, nh, response, complete, both)):
   match both:
     case True{}:
-      Tk.ok_sp(k, u, S.State.ues(st), (S.Rephase{key, S.Registered{ctx, nh}}, [N.TimerCancel{key}, N.Note{F.Info{}, "5GMM: UE registered"}]), eu, Tk.sp_rephase(k, u, key, S.Registered{ctx, nh}, h1))
+      Tk.ok_sp(k, u, S.State.ues(st), (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [N.TimerCancel{key}, N.Note{F.Info{}, "5GMM: UE registered"}]), eu, Tk.sp_rephase(k, u, key, S.Registered{ctx, nh, None{}}, h1))
     case False{}:
       Tk.ok_sp(k, u, S.State.ues(st), (S.Rephase{key, S.ContextSetup{guard, ctx, nh, response, complete}}, []), eu, Tk.sp_rephase(k, u, key, S.ContextSetup{guard, ctx, nh, response, complete}, h1))
 
@@ -1321,7 +1321,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.ContextSetup{+guard, old, nh, +response, complete}:
           W.setup_step(st, key, ue, guard, ctx, nh, response, True{}, k, u, eu, h1)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1343,7 +1343,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.ContextSetup{guard, old, nh, response, complete}:
           W.deregister(st, key, ue, ctx, I.Fields.byte1(fields), k, u, eu, h2)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           W.deregister(st, key, ue, ctx, I.Fields.byte1(fields), k, u, eu, h2)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1381,7 +1381,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n)), k, u, eu, h2, Tmsi.free(S.State.ues(st), List.drop(&2, U32, entropy, 16n)))
         case S.ContextSetup{guard, old, nh, response, complete}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1401,7 +1401,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), k, u, eu, h2)
         case S.ContextSetup{guard, old, nh, response, complete}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1423,7 +1423,7 @@ def W.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Se
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
         case S.ContextSetup{guard, old, nh, response, complete}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
-        case S.Registered{old, nh}:
+        case S.Registered{old, nh, left}:
           Tk.ok_sp(k, u, S.State.ues(st), Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy), eu, Ws.ul_transport(st, key, ue, ctx, fields, opts, entropy, k, u, h1))
         case S.Switching{guard, old, nh, released}:
           W.verified(st, key, ue, ctx, "5GMM: message not expected in this phase", k, u, eu, h1)
@@ -1503,7 +1503,7 @@ def W.setup_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: 
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.ContextSetup{+guard, +ctx, nh, response, +complete}:
       W.setup_step(st, key, ue, guard, ctx, nh, True{}, complete, k, u, eu, h1)
-    case S.Registered{old, nh}:
+    case S.Registered{old, nh, left}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, old, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1581,7 +1581,7 @@ def W.forget(+st: S.State, +key: U32, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue
     case (+h1, h2):
       Tk.ok_also(k, u, S.State.ues(st), Gmm.Gmm.forget(st, key), [N.Note{F.Info{}, "NGAP: UE context released"}], Tk.ok_sp(k, u, S.State.ues(st), Gmm.Gmm.forget(st, key), eu, P.Bool.and_intro(Tk.spares(k, u, S.Del{key}), True{}, Tk.sp_del(k, u, key, h1), {==})))
 
-def W.release_complete_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.release_complete_ue(st, assoc, key, m)):
+def W.release_complete_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.release_complete_ue(st, assoc, key, m, S.Ue.released(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))):
   match m:
     case None{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1755,7 +1755,7 @@ def W.ps_phase(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{+ctx, +nh}:
+    case S.Registered{+ctx, +nh, left}:
       W.ps_identified(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ue.supi(ue), k, u, eu, eun, ea, em, {==})
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1831,7 +1831,7 @@ def W.ho_required_target(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, 
 
 def W.ho_required_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ho.Ho.required_phase(st, assoc, key, ue, kind, cause, id, items, container, p)):
   match p:
-    case S.Registered{+ctx, +nh}:
+    case S.Registered{+ctx, +nh, left}:
       W.ho_required_target(st, key, ue, ctx, nh, cause, items, container, Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)), k, u, eu, h1)
     case S.Created{}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1894,7 +1894,7 @@ def W.ho_cancel_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, 
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -1940,7 +1940,7 @@ def W.ho_status_phase(+st: S.State, +key: U32, +container: G.RANStatusTransfer_T
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -2048,7 +2048,7 @@ def W.ho_ack_phase(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -2081,7 +2081,7 @@ def W.ho_failure_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause: 
     case S.Handover{guard, +ctx, +nh, source, leg}:
       match leg:
         case S.Asked{t}:
-          W.ho_target_rephase(st, key, ue, S.Registered{ctx, nh}, [], k, u, eu, pr, {==})
+          W.ho_target_rephase(st, key, ue, S.Registered{ctx, nh, None{}}, [], k, u, eu, pr, {==})
         case S.Acked{t, r, s, ts}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Created{}:
@@ -2094,7 +2094,7 @@ def W.ho_failure_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause: 
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
@@ -2129,7 +2129,7 @@ def W.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case True{}:
       +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      +p : S.Phase = S.Registered{ctx, nh}
+      +p : S.Phase = S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}
       +v = S.Ue.moved(ue, assoc, r, s, p)
       +a = Ps.Ps.sessions(ts, rows, S.State.pfcp_seq(st))
       +b : N.GOut() = (S.Put{key, v}, [])
@@ -2157,7 +2157,7 @@ def W.ho_notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.B
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.ContextSetup{guard, ctx, nh, response, complete}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{ctx, nh}:
+    case S.Registered{ctx, nh, left}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case S.Switching{guard, ctx, nh, released}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
