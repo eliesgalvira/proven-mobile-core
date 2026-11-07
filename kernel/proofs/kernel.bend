@@ -386,58 +386,9 @@ def Unique.rephase(+key: U32, +p: S.Phase, ues: Tb.Table(S.Ue)) -> {S.Ues.unique
 
 # Indexes stay unique
 # -------------------
-# Every state change of a UE procedure is a transaction, and each transaction
-# keeps the table unique: a Put is a clear row in front of a sifting, a
-# Rephase changes no identity, a Del a sifting, the rest leave the table alone.
-
-def Tx.unique(tx: S.Tx, +st: S.State, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(S.Tx.apply(tx, st))) == True{} : Bool}:
-  match tx:
-    case S.Keep{}:
-      e
-    case S.Put{+key, +ue}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          P.Bool.and_intro(S.Ues.clear(key, ue, S.Ues.sift(S.Clear{key, ue}, ues)), S.Ues.unique(S.Ues.sift(S.Clear{key, ue}, ues)), Clear.own(key, ue, ues), Unique.sift(S.Clear{key, ue}, ues, e))
-    case S.Rephase{+key, +phase}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          er = Equal.sym(Bool, S.Ues.unique(S.Ues.rephase(key, phase, ues)), S.Ues.unique(ues), Unique.rephase(key, phase, ues))
-          %er : {_ == True{} : Bool}
-          e
-    case S.Del{+key}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          Unique.sift(S.Except{key}, ues, e)
-    case S.PutSession{key, s}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Revar{key, v}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.DelSession{key}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Subs{new}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.SetLink{link}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpUe{bk}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpSeq{n}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Both{+first, second}:
-      Tx.unique(second, S.Tx.apply(first, st), Tx.unique(first, st, e))
+# A Put is a clear row in front of a sifting, a Rephase changes no identity,
+# a Del and an association going down are siftings (amf.indexes.unique, in
+# liveness.bend).
 
 def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:

@@ -2051,59 +2051,36 @@ def Lv.owned_revar(+ss: Tb.Table(S.Session), +key: U32, +v: S.SVar, +ues: Tb.Tab
       %er : {Bool.and(Tb.Table.has(S.Ue, _, ues), S.Sessions.owned(S.Sessions.revar(key, v, more), ues)) == True{} : Bool}
       P.Bool.and_intro(Tb.Table.has(S.Ue, S.Session.ue(t), ues), S.Sessions.owned(S.Sessions.revar(key, v, more), ues), P.Bool.and_true_l(Tb.Table.has(S.Ue, S.Session.ue(t), ues), S.Sessions.owned(more, ues), e), Lv.owned_revar(more, key, v, ues, P.Bool.and_true_r(Tb.Table.has(S.Ue, S.Session.ue(t), ues), S.Sessions.owned(more, ues), e)))
 
-def Lv.owned_tx(+st0: S.State, +tx: S.Tx, +st: S.State, +e: {S.Sessions.owned(S.State.sessions(st), S.State.ues(st)) == True{} : Bool}, +h: {Lv.homed(st0, tx, S.State.ues(st)) == True{} : Bool}) -> {S.Sessions.owned(S.State.sessions(S.Tx.apply(tx, st)), S.State.ues(S.Tx.apply(tx, st))) == True{} : Bool}:
-  match tx:
-    case S.Keep{}:
-      e
-    case S.Put{+key, +ue}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          Lv.owned_owned(S.Ues.put(key, ue, ues), sessions)
-    case S.Rephase{+key, +phase}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          Lv.owned_rephase(sessions, key, phase, ues, e)
-    case S.Del{+key}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          Lv.owned_del(sessions, key, ues, e)
-    case S.PutSession{+key, +s}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          +hs = P.Bool.and_true_r(S.Ids.seid(key), Bool.and(Tb.Table.has(S.Ue, S.Session.ue(s), ues), Bool.and(Gsm.Gsm.phase_bounded(S.Session.phase(s)), S.SPhase.knows(S.Session.phase(s), S.Session.known(s)))), h)
-          P.Bool.and_intro(Tb.Table.has(S.Ue, S.Session.ue(s), ues), S.Sessions.owned(S.Sessions.sift(S.SClear{key, s}, sessions), ues), P.Bool.and_true_l(Tb.Table.has(S.Ue, S.Session.ue(s), ues), Bool.and(Gsm.Gsm.phase_bounded(S.Session.phase(s)), S.SPhase.knows(S.Session.phase(s), S.Session.known(s))), hs), Lv.owned_sift(S.SClear{key, s}, sessions, ues, e))
-    case S.Revar{+key, +v}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          Lv.owned_revar(sessions, key, v, ues, e)
-    case S.DelSession{+key}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          Lv.owned_sift(S.SExcept{key}, sessions, ues, e)
-    case S.Subs{new}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.SetLink{link}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpUe{bk}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpSeq{n}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Both{+a, +b}:
-      +ha = P.Bool.and_true_l(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      +hb = P.Bool.and_true_r(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      eu = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(a, st)), PT.Tk.ues(a, S.State.ues(st)), PT.Tk.ues_apply(a, st))
-      Lv.owned_tx(st0, b, S.Tx.apply(a, st), Lv.owned_tx(st0, a, st, e, ha), (%eu : {Lv.homed(st0, b, _) == True{} : Bool}; hb))
-
 # A gone UE is not live
 # ---------------------
+
+def Inv.none(+st0: S.State) -> Bool:
+  True{}
+
+def Inv.owned(+st0: S.State) -> Bool:
+  S.Sessions.owned(S.State.sessions(st0), S.State.ues(st0))
+
+def Ow.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Bool:
+  S.Sessions.owned(ss, ues)
+
+def Ow.tx_put(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Ow.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {Ow.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
+  Lv.owned_owned(S.Ues.put(key, ue, ues), ss)
+
+def Ow.tx_rephase(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Ow.inv(st0, ues, ss) == True{} : Bool}, +h: {S.Phase.guarded(p) == True{} : Bool}) -> {Ow.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
+  Lv.owned_rephase(ss, key, p, ues, e)
+
+def Ow.tx_del(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Ow.inv(st0, ues, ss) == True{} : Bool}) -> {Ow.inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}:
+  Lv.owned_del(ss, key, ues, e)
+
+def Ow.tx_put_session(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Ow.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {Ow.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
+  +hs = P.Bool.and_true_r(S.Ids.seid(key), Bool.and(Tb.Table.has(S.Ue, S.Session.ue(s), ues), Bool.and(Gsm.Gsm.phase_bounded(S.Session.phase(s)), S.SPhase.knows(S.Session.phase(s), S.Session.known(s)))), h)
+  P.Bool.and_intro(Tb.Table.has(S.Ue, S.Session.ue(s), ues), S.Sessions.owned(S.Sessions.sift(S.SClear{key, s}, ss), ues), P.Bool.and_true_l(Tb.Table.has(S.Ue, S.Session.ue(s), ues), Bool.and(Gsm.Gsm.phase_bounded(S.Session.phase(s)), S.SPhase.knows(S.Session.phase(s), S.Session.known(s))), hs), Lv.owned_sift(S.SClear{key, s}, ss, ues, e))
+
+def Ow.tx_revar(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Ow.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.revar_ok(st0, v) == True{} : Bool}) -> {Ow.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
+  Lv.owned_revar(ss, key, v, ues, e)
+
+def Ow.tx_del_session(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Ow.inv(st0, ues, ss) == True{} : Bool}) -> {Ow.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
+  Lv.owned_sift(S.SExcept{key}, ss, ues, e)
 
 def Lv.dead3(+h: Bool, +n: Bool, +o: Bool, +eh: {h == False{} : Bool}, +en: {n == False{} : Bool}, eo: {o == True{} : Bool} -> {h == True{} : Bool}) -> {Bool.or(Bool.or(h, n), o) == False{} : Bool}:
   match h:
@@ -2221,11 +2198,85 @@ def Lv.down_owned(+st: S.State, +assoc: U32) -> {S.Sessions.owned(S.State.sessio
 # Invariants of every step
 # ------------------------
 # A property of the context and session tables that every transaction a UE
-# procedure may run keeps, and that an association going down keeps, holds
-# after every step (PW.Walk).
+# procedure may run keeps (Inv.tx), and that an association going down keeps,
+# holds after every step (PW.Walk).
 
 def Inv.Tx(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st0: S.State) -> Type:
   @tx:S.Tx -> @st:S.State -> {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool} -> {Lv.homed(st0, tx, S.State.ues(st)) == True{} : Bool} -> {inv(S.State.ues(S.Tx.apply(tx, st)), S.State.sessions(S.Tx.apply(tx, st))) == True{} : Bool}
+
+# Each kind of transaction keeps inv, a property of the tables under a
+# premise pre on the state before the step: a walk over the transaction
+# holds it through every one.
+
+def Inv.Put(-inv: @+st0:S.State -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> Bool, -pre: @+st0:S.State -> Bool) -> Type:
+  @+st0:S.State -> @+ep:{pre(st0) == True{} : Bool} -> @+key:U32 -> @+ue:S.Ue -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> @+e:{inv(st0, ues, ss) == True{} : Bool} -> @+h:{Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool} -> {inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}
+
+def Inv.Rephase(-inv: @+st0:S.State -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> Bool, -pre: @+st0:S.State -> Bool) -> Type:
+  @+st0:S.State -> @+ep:{pre(st0) == True{} : Bool} -> @+key:U32 -> @+p:S.Phase -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> @+e:{inv(st0, ues, ss) == True{} : Bool} -> @+h:{S.Phase.guarded(p) == True{} : Bool} -> {inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}
+
+def Inv.Del(-inv: @+st0:S.State -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> Bool, -pre: @+st0:S.State -> Bool) -> Type:
+  @+st0:S.State -> @+ep:{pre(st0) == True{} : Bool} -> @+key:U32 -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> @+e:{inv(st0, ues, ss) == True{} : Bool} -> {inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}
+
+def Inv.PutSession(-inv: @+st0:S.State -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> Bool, -pre: @+st0:S.State -> Bool) -> Type:
+  @+st0:S.State -> @+ep:{pre(st0) == True{} : Bool} -> @+key:U32 -> @+s:S.Session -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> @+e:{inv(st0, ues, ss) == True{} : Bool} -> @+h:{Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool} -> {inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}
+
+def Inv.Revar(-inv: @+st0:S.State -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> Bool, -pre: @+st0:S.State -> Bool) -> Type:
+  @+st0:S.State -> @+ep:{pre(st0) == True{} : Bool} -> @+key:U32 -> @+v:S.SVar -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> @+e:{inv(st0, ues, ss) == True{} : Bool} -> @+h:{Lv.revar_ok(st0, v) == True{} : Bool} -> {inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}
+
+def Inv.DelSession(-inv: @+st0:S.State -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> Bool, -pre: @+st0:S.State -> Bool) -> Type:
+  @+st0:S.State -> @+ep:{pre(st0) == True{} : Bool} -> @+key:U32 -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> @+e:{inv(st0, ues, ss) == True{} : Bool} -> {inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}
+
+# The second of two transactions is homed in the tables the first leaves.
+def Inv.second(+st0: S.State, +a: S.Tx, +b: S.Tx, +st: S.State, +h: {Lv.homed(st0, S.Both{a, b}, S.State.ues(st)) == True{} : Bool}) -> {Lv.homed(st0, b, S.State.ues(S.Tx.apply(a, st))) == True{} : Bool}:
+  eu = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(a, st)), PT.Tk.ues(a, S.State.ues(st)), PT.Tk.ues_apply(a, st))
+  (%eu : {Lv.homed(st0, b, _) == True{} : Bool}; P.Bool.and_true_r(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h))
+
+def Inv.tx(~inv: @+st0:S.State -> @+ues:Tb.Table(S.Ue) -> @+ss:Tb.Table(S.Session) -> Bool, ~pre: @+st0:S.State -> Bool, ~put: Inv.Put(inv, pre), ~rephase: Inv.Rephase(inv, pre), ~del: Inv.Del(inv, pre), ~put_session: Inv.PutSession(inv, pre), ~revar: Inv.Revar(inv, pre), ~del_session: Inv.DelSession(inv, pre), +st0: S.State, +ep: {pre(st0) == True{} : Bool}, +tx: S.Tx, +st: S.State, +e: {inv(st0, S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, +h: {Lv.homed(st0, tx, S.State.ues(st)) == True{} : Bool}) -> {inv(st0, S.State.ues(S.Tx.apply(tx, st)), S.State.sessions(S.Tx.apply(tx, st))) == True{} : Bool}:
+  match tx:
+    case S.Put{+key, +ue}:
+      match st:
+        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
+          put(st0, ep, key, ue, ues, sessions, e, h)
+    case S.Rephase{+key, +phase}:
+      match st:
+        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
+          rephase(st0, ep, key, phase, ues, sessions, e, h)
+    case S.Del{+key}:
+      match st:
+        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
+          del(st0, ep, key, ues, sessions, e)
+    case S.PutSession{+key, +s}:
+      match st:
+        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
+          put_session(st0, ep, key, s, ues, sessions, e, h)
+    case S.Revar{+key, +v}:
+      match st:
+        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
+          revar(st0, ep, key, v, ues, sessions, e, h)
+    case S.DelSession{+key}:
+      match st:
+        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
+          del_session(st0, ep, key, ues, sessions, e)
+    case S.Both{+a, +b}:
+      Inv.tx(~inv, ~pre, ~put, ~rephase, ~del, ~put_session, ~revar, ~del_session, st0, ep, b, S.Tx.apply(a, st), Inv.tx(~inv, ~pre, ~put, ~rephase, ~del, ~put_session, ~revar, ~del_session, st0, ep, a, st, e, P.Bool.and_true_l(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)), Inv.second(st0, a, b, st, h))
+    case S.Keep{}:
+      e
+    case S.Subs{new}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.SetLink{link}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.BumpUe{bk}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.BumpSeq{n}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
 
 def Inv.out(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +o: N.GOut(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st), +h: {Lv.ok(st, o) == True{} : Bool}) -> PW.Walk.Tables(inv, N.Step.of(st, o)):
   match o:
@@ -2235,11 +2286,34 @@ def Inv.out(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +
 def Inv.step(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st), down: @a:U32 -> PW.Walk.Tables(inv, K.Kernel.assoc_down(st, a))) -> {inv(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))) == True{} : Bool}:
   Lv.walk(o => PW.Walk.Tables(inv, o), st, ev, entropy, acts => h => e, +tlvs => PW.Walk.config(inv, S.Cfg.complete(tlvs), st, tlvs, entropy, e), a => PW.Walk.up(inv, st, a, e), down, +o => h => Inv.out(inv, st, o, e, t, h))
 
+def Un.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Bool:
+  S.Ues.unique(ues)
+
+def Un.tx_put(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Un.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {Un.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
+  P.Bool.and_intro(S.Ues.clear(key, ue, S.Ues.sift(S.Clear{key, ue}, ues)), S.Ues.unique(S.Ues.sift(S.Clear{key, ue}, ues)), PK.Clear.own(key, ue, ues), PK.Unique.sift(S.Clear{key, ue}, ues, e))
+
+def Un.tx_rephase(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Un.inv(st0, ues, ss) == True{} : Bool}, +h: {S.Phase.guarded(p) == True{} : Bool}) -> {Un.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
+  er = Equal.sym(Bool, S.Ues.unique(S.Ues.rephase(key, p, ues)), S.Ues.unique(ues), PK.Unique.rephase(key, p, ues))
+  %er : {_ == True{} : Bool}
+  e
+
+def Un.tx_del(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Un.inv(st0, ues, ss) == True{} : Bool}) -> {Un.inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}:
+  PK.Unique.sift(S.Except{key}, ues, e)
+
+def Un.tx_put_session(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Un.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {Un.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
+  e
+
+def Un.tx_revar(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Un.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.revar_ok(st0, v) == True{} : Bool}) -> {Un.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
+  e
+
+def Un.tx_del_session(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Un.inv(st0, ues, ss) == True{} : Bool}) -> {Un.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
+  e
+
 def L.amf.indexes.unique(st, ev, entropy, e):
-  ({==}, Inv.step(ues => ss => S.Ues.unique(ues), st, ev, entropy, e, tx => st2 => e2 => h => PK.Tx.unique(tx, st2, e2), a => PK.Down.unique(st, a, e)))
+  ({==}, Inv.step(ues => ss => S.Ues.unique(ues), st, ev, entropy, e, tx => st2 => e2 => h => Inv.tx(~Un.inv, ~Inv.none, ~Un.tx_put, ~Un.tx_rephase, ~Un.tx_del, ~Un.tx_put_session, ~Un.tx_revar, ~Un.tx_del_session, st, {==}, tx, st2, e2, h), a => PK.Down.unique(st, a, e)))
 
 def L.amf.sessions.owned(st, ev, entropy, e):
-  ({==}, Inv.step(ues => ss => S.Sessions.owned(ss, ues), st, ev, entropy, e, tx => st2 => e2 => h => Lv.owned_tx(st, tx, st2, e2, h), a => Lv.down_owned(st, a)))
+  ({==}, Inv.step(ues => ss => S.Sessions.owned(ss, ues), st, ev, entropy, e, tx => st2 => e2 => h => Inv.tx(~Ow.inv, ~Inv.none, ~Ow.tx_put, ~Ow.tx_rephase, ~Ow.tx_del, ~Ow.tx_put_session, ~Ow.tx_revar, ~Ow.tx_del_session, st, {==}, tx, st2, e2, h), a => Lv.down_owned(st, a)))
 
 # Contexts stay guarded
 # ---------------------
@@ -2272,55 +2346,26 @@ def Gd.rephase(+key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +e: {S.Ues.guarded(
     case (+k, +u) <> +more:
       P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(S.Ue.rephase_if(u, p, U32.is_eq(k, key)))), S.Ues.guarded(S.Ues.rephase(key, p, more)), Gd.rephase_if(U32.is_eq(k, key), u, p, P.Bool.and_true_l(S.Phase.guarded(S.Ue.phase(u)), S.Ues.guarded(more), e), hp), Gd.rephase(key, p, more, P.Bool.and_true_r(S.Phase.guarded(S.Ue.phase(u)), S.Ues.guarded(more), e), hp))
 
-def Gd.tx(+st0: S.State, +tx: S.Tx, +st: S.State, +e: {S.Ues.guarded(S.State.ues(st)) == True{} : Bool}, +h: {Lv.homed(st0, tx, S.State.ues(st)) == True{} : Bool}) -> {S.Ues.guarded(S.State.ues(S.Tx.apply(tx, st))) == True{} : Bool}:
-  match tx:
-    case S.Keep{}:
-      e
-    case S.Put{+key, +ue}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(ue)), S.Ues.guarded(S.Ues.sift(S.Clear{key, ue}, ues)), P.Bool.and_true_r(Lv.keyed(st0, key), S.Phase.guarded(S.Ue.phase(ue)), h), Gd.sift(S.Clear{key, ue}, ues, e))
-    case S.Rephase{+key, +phase}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          Gd.rephase(key, phase, ues, e, h)
-    case S.Del{+key}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          Gd.sift(S.Except{key}, ues, e)
-    case S.PutSession{key, s}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Revar{key, v}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.DelSession{key}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Subs{new}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.SetLink{link}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpUe{bk}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpSeq{n}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Both{+a, +b}:
-      +ha = P.Bool.and_true_l(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      +hb = P.Bool.and_true_r(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      eu = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(a, st)), PT.Tk.ues(a, S.State.ues(st)), PT.Tk.ues_apply(a, st))
-      Gd.tx(st0, b, S.Tx.apply(a, st), Gd.tx(st0, a, st, e, ha), (%eu : {Lv.homed(st0, b, _) == True{} : Bool}; hb))
+def Gd.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Bool:
+  S.Ues.guarded(ues)
+
+def Gd.tx_put(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Gd.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {Gd.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
+  P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(ue)), S.Ues.guarded(S.Ues.sift(S.Clear{key, ue}, ues)), P.Bool.and_true_r(Lv.keyed(st0, key), S.Phase.guarded(S.Ue.phase(ue)), h), Gd.sift(S.Clear{key, ue}, ues, e))
+
+def Gd.tx_rephase(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Gd.inv(st0, ues, ss) == True{} : Bool}, +h: {S.Phase.guarded(p) == True{} : Bool}) -> {Gd.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
+  Gd.rephase(key, p, ues, e, h)
+
+def Gd.tx_del(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Gd.inv(st0, ues, ss) == True{} : Bool}) -> {Gd.inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}:
+  Gd.sift(S.Except{key}, ues, e)
+
+def Gd.tx_put_session(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Gd.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {Gd.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
+  e
+
+def Gd.tx_revar(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Gd.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.revar_ok(st0, v) == True{} : Bool}) -> {Gd.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
+  e
+
+def Gd.tx_del_session(+st0: S.State, +ep: {Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Gd.inv(st0, ues, ss) == True{} : Bool}) -> {Gd.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
+  e
 
 def Gd.down(+st: S.State, +assoc: U32, +e: {S.Ues.guarded(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.guarded(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:
@@ -2328,7 +2373,7 @@ def Gd.down(+st: S.State, +assoc: U32, +e: {S.Ues.guarded(S.State.ues(st)) == Tr
       Gd.sift(S.Others{assoc}, ues, e)
 
 def L.amf.contexts.guarded(st, ev, entropy, e):
-  ({==}, Inv.step(ues => ss => S.Ues.guarded(ues), st, ev, entropy, e, tx => st2 => e2 => h => Gd.tx(st, tx, st2, e2, h), a => Gd.down(st, a, e)))
+  ({==}, Inv.step(ues => ss => S.Ues.guarded(ues), st, ev, entropy, e, tx => st2 => e2 => h => Inv.tx(~Gd.inv, ~Inv.none, ~Gd.tx_put, ~Gd.tx_rephase, ~Gd.tx_del, ~Gd.tx_put_session, ~Gd.tx_revar, ~Gd.tx_del_session, st, {==}, tx, st2, e2, h), a => Gd.down(st, a, e)))
 
 # Keys
 # ----
@@ -2420,59 +2465,33 @@ def Id.keyed_held(+st0: S.State, +key: U32, +eo: {S.Sessions.owned(S.State.sessi
 def Id.put_odd(+st0: S.State, +e0: {S.Ids.free(S.State.ues(st0), S.State.sessions(st0)) == True{} : Bool}, +eo: {S.Sessions.owned(S.State.sessions(st0), S.State.ues(st0)) == True{} : Bool}, +key: U32, +hk: {Lv.keyed(st0, key) == True{} : Bool}) -> {S.Ids.odd(key) == True{} : Bool}:
   Id.held_go(st0, key, Tb.Table.has(S.Ue, key, S.State.ues(st0)), {==}, P.Bool.and_true_l(S.Ues.keyed(S.State.ues(st0)), S.Sessions.keyed(S.State.sessions(st0)), e0), Id.keyed_held(st0, key, eo, hk))
 
-def Id.tx(+st0: S.State, +e0: {S.Ids.free(S.State.ues(st0), S.State.sessions(st0)) == True{} : Bool}, +eo: {S.Sessions.owned(S.State.sessions(st0), S.State.ues(st0)) == True{} : Bool}, +tx: S.Tx, +st: S.State, +e: {S.Ids.free(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, +h: {Lv.homed(st0, tx, S.State.ues(st)) == True{} : Bool}) -> {S.Ids.free(S.State.ues(S.Tx.apply(tx, st)), S.State.sessions(S.Tx.apply(tx, st))) == True{} : Bool}:
-  match tx:
-    case S.Keep{}:
-      e
-    case S.Put{+key, +ue}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          +eu = P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e)
-          +es = P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e)
-          +ho = Id.put_odd(st0, e0, eo, key, P.Bool.and_true_l(Lv.keyed(st0, key), S.Phase.guarded(S.Ue.phase(ue)), h))
-          P.Bool.and_intro(S.Ues.keyed(S.Ues.put(key, ue, ues)), S.Sessions.keyed(S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, sessions)), P.Bool.and_intro(S.Ids.odd(key), S.Ues.keyed(S.Ues.sift(S.Clear{key, ue}, ues)), ho, Id.sift(S.Clear{key, ue}, ues, eu)), Id.ssift(S.SOwned{S.Ues.put(key, ue, ues)}, sessions, es))
-    case S.Rephase{+key, +phase}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          P.Bool.and_intro(S.Ues.keyed(S.Ues.rephase(key, phase, ues)), S.Sessions.keyed(sessions), Id.rephase(key, phase, ues, P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e)), P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e))
-    case S.Del{+key}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          P.Bool.and_intro(S.Ues.keyed(S.Ues.del(key, ues)), S.Sessions.keyed(S.Sessions.drop_ue(key, sessions)), Id.sift(S.Except{key}, ues, P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e)), Id.ssift(S.SOthers{key}, sessions, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e)))
-    case S.PutSession{+key, +s}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          +old = Bool.and(Tb.Table.has(S.Ue, S.Session.ue(s), ues), Bool.and(Gsm.Gsm.phase_bounded(S.Session.phase(s)), S.SPhase.knows(S.Session.phase(s), S.Session.known(s))))
-          P.Bool.and_intro(S.Ues.keyed(ues), S.Sessions.keyed(S.Sessions.put(key, s, sessions)), P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e), P.Bool.and_intro(S.Ids.seid(key), S.Sessions.keyed(S.Sessions.sift(S.SClear{key, s}, sessions)), P.Bool.and_true_l(S.Ids.seid(key), old, h), Id.ssift(S.SClear{key, s}, sessions, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e))))
-    case S.Revar{+key, +v}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          P.Bool.and_intro(S.Ues.keyed(ues), S.Sessions.keyed(S.Sessions.revar(key, v, sessions)), P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e), Id.srevar(key, v, sessions, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e)))
-    case S.DelSession{+key}:
-      match st:
-        case S.State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, n4}:
-          P.Bool.and_intro(S.Ues.keyed(ues), S.Sessions.keyed(S.Sessions.del(key, sessions)), P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e), Id.ssift(S.SExcept{key}, sessions, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(sessions), e)))
-    case S.Subs{new}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.SetLink{link}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpUe{bk}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpSeq{n}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Both{+a, +b}:
-      +ha = P.Bool.and_true_l(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      +hb = P.Bool.and_true_r(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      eu = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(a, st)), PT.Tk.ues(a, S.State.ues(st)), PT.Tk.ues_apply(a, st))
-      Id.tx(st0, e0, eo, b, S.Tx.apply(a, st), Id.tx(st0, e0, eo, a, st, e, ha), (%eu : {Lv.homed(st0, b, _) == True{} : Bool}; hb))
+def Id.pre(+st0: S.State) -> Bool:
+  Bool.and(S.Ids.free(S.State.ues(st0), S.State.sessions(st0)), S.Sessions.owned(S.State.sessions(st0), S.State.ues(st0)))
+
+def Id.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Bool:
+  S.Ids.free(ues, ss)
+
+def Id.tx_put(+st0: S.State, +ep: {Id.pre(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Id.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {Id.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
+  +e0 = P.Bool.and_true_l(S.Ids.free(S.State.ues(st0), S.State.sessions(st0)), S.Sessions.owned(S.State.sessions(st0), S.State.ues(st0)), ep)
+  +eo = P.Bool.and_true_r(S.Ids.free(S.State.ues(st0), S.State.sessions(st0)), S.Sessions.owned(S.State.sessions(st0), S.State.ues(st0)), ep)
+  +ho = Id.put_odd(st0, e0, eo, key, P.Bool.and_true_l(Lv.keyed(st0, key), S.Phase.guarded(S.Ue.phase(ue)), h))
+  P.Bool.and_intro(S.Ues.keyed(S.Ues.put(key, ue, ues)), S.Sessions.keyed(S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)), P.Bool.and_intro(S.Ids.odd(key), S.Ues.keyed(S.Ues.sift(S.Clear{key, ue}, ues)), ho, Id.sift(S.Clear{key, ue}, ues, P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(ss), e))), Id.ssift(S.SOwned{S.Ues.put(key, ue, ues)}, ss, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(ss), e)))
+
+def Id.tx_rephase(+st0: S.State, +ep: {Id.pre(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Id.inv(st0, ues, ss) == True{} : Bool}, +h: {S.Phase.guarded(p) == True{} : Bool}) -> {Id.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
+  P.Bool.and_intro(S.Ues.keyed(S.Ues.rephase(key, p, ues)), S.Sessions.keyed(ss), Id.rephase(key, p, ues, P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(ss), e)), P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(ss), e))
+
+def Id.tx_del(+st0: S.State, +ep: {Id.pre(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Id.inv(st0, ues, ss) == True{} : Bool}) -> {Id.inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}:
+  P.Bool.and_intro(S.Ues.keyed(S.Ues.del(key, ues)), S.Sessions.keyed(S.Sessions.drop_ue(key, ss)), Id.sift(S.Except{key}, ues, P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(ss), e)), Id.ssift(S.SOthers{key}, ss, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(ss), e)))
+
+def Id.tx_put_session(+st0: S.State, +ep: {Id.pre(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Id.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {Id.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
+  +old = Bool.and(Tb.Table.has(S.Ue, S.Session.ue(s), ues), Bool.and(Gsm.Gsm.phase_bounded(S.Session.phase(s)), S.SPhase.knows(S.Session.phase(s), S.Session.known(s))))
+  P.Bool.and_intro(S.Ues.keyed(ues), S.Sessions.keyed(S.Sessions.put(key, s, ss)), P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(ss), e), P.Bool.and_intro(S.Ids.seid(key), S.Sessions.keyed(S.Sessions.sift(S.SClear{key, s}, ss)), P.Bool.and_true_l(S.Ids.seid(key), old, h), Id.ssift(S.SClear{key, s}, ss, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(ss), e))))
+
+def Id.tx_revar(+st0: S.State, +ep: {Id.pre(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Id.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.revar_ok(st0, v) == True{} : Bool}) -> {Id.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
+  P.Bool.and_intro(S.Ues.keyed(ues), S.Sessions.keyed(S.Sessions.revar(key, v, ss)), P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(ss), e), Id.srevar(key, v, ss, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(ss), e)))
+
+def Id.tx_del_session(+st0: S.State, +ep: {Id.pre(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Id.inv(st0, ues, ss) == True{} : Bool}) -> {Id.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
+  P.Bool.and_intro(S.Ues.keyed(ues), S.Sessions.keyed(S.Sessions.del(key, ss)), P.Bool.and_true_l(S.Ues.keyed(ues), S.Sessions.keyed(ss), e), Id.ssift(S.SExcept{key}, ss, P.Bool.and_true_r(S.Ues.keyed(ues), S.Sessions.keyed(ss), e)))
 
 def Id.down(+st: S.State, +assoc: U32, +e: {S.Ids.free(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}) -> {S.Ids.free(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc))), S.State.sessions(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:
@@ -2560,55 +2579,26 @@ def Pv.rephase(+st0: S.State, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +e: 
     case (+k, +u) <> +more:
       P.Bool.and_intro(Lv.held(st0, k), Pv.all(st0, S.Ues.rephase(key, p, more)), P.Bool.and_true_l(Lv.held(st0, k), Pv.all(st0, more), e), Pv.rephase(st0, key, p, more, P.Bool.and_true_r(Lv.held(st0, k), Pv.all(st0, more), e)))
 
-def Pv.tx(+st0: S.State, +eo: {S.Sessions.owned(S.State.sessions(st0), S.State.ues(st0)) == True{} : Bool}, +tx: S.Tx, +st: S.State, +e: {Pv.all(st0, S.State.ues(st)) == True{} : Bool}, +h: {Lv.homed(st0, tx, S.State.ues(st)) == True{} : Bool}) -> {Pv.all(st0, S.State.ues(S.Tx.apply(tx, st))) == True{} : Bool}:
-  match tx:
-    case S.Keep{}:
-      e
-    case S.Put{+key, +ue}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          P.Bool.and_intro(Lv.held(st0, key), Pv.all(st0, S.Ues.sift(S.Clear{key, ue}, ues)), Id.keyed_held(st0, key, eo, P.Bool.and_true_l(Lv.keyed(st0, key), S.Phase.guarded(S.Ue.phase(ue)), h)), Pv.sift(st0, S.Clear{key, ue}, ues, e))
-    case S.Rephase{+key, +phase}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          Pv.rephase(st0, key, phase, ues, e)
-    case S.Del{+key}:
-      match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-          Pv.sift(st0, S.Except{key}, ues, e)
-    case S.PutSession{key, s}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Revar{key, v}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.DelSession{key}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Subs{new}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.SetLink{link}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpUe{bk}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.BumpSeq{n}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          e
-    case S.Both{+a, +b}:
-      +ha = P.Bool.and_true_l(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      +hb = P.Bool.and_true_r(Lv.homed(st0, a, S.State.ues(st)), Lv.homed(st0, b, PT.Tk.ues(a, S.State.ues(st))), h)
-      eu = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(a, st)), PT.Tk.ues(a, S.State.ues(st)), PT.Tk.ues_apply(a, st))
-      Pv.tx(st0, eo, b, S.Tx.apply(a, st), Pv.tx(st0, eo, a, st, e, ha), (%eu : {Lv.homed(st0, b, _) == True{} : Bool}; hb))
+def Pv.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Bool:
+  Pv.all(st0, ues)
+
+def Pv.tx_put(+st0: S.State, +ep: {Inv.owned(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Pv.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {Pv.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
+  P.Bool.and_intro(Lv.held(st0, key), Pv.all(st0, S.Ues.sift(S.Clear{key, ue}, ues)), Id.keyed_held(st0, key, ep, P.Bool.and_true_l(Lv.keyed(st0, key), S.Phase.guarded(S.Ue.phase(ue)), h)), Pv.sift(st0, S.Clear{key, ue}, ues, e))
+
+def Pv.tx_rephase(+st0: S.State, +ep: {Inv.owned(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Pv.inv(st0, ues, ss) == True{} : Bool}, +h: {S.Phase.guarded(p) == True{} : Bool}) -> {Pv.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
+  Pv.rephase(st0, key, p, ues, e)
+
+def Pv.tx_del(+st0: S.State, +ep: {Inv.owned(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Pv.inv(st0, ues, ss) == True{} : Bool}) -> {Pv.inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}:
+  Pv.sift(st0, S.Except{key}, ues, e)
+
+def Pv.tx_put_session(+st0: S.State, +ep: {Inv.owned(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Pv.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {Pv.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
+  e
+
+def Pv.tx_revar(+st0: S.State, +ep: {Inv.owned(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Pv.inv(st0, ues, ss) == True{} : Bool}, +h: {Lv.revar_ok(st0, v) == True{} : Bool}) -> {Pv.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
+  e
+
+def Pv.tx_del_session(+st0: S.State, +ep: {Inv.owned(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Pv.inv(st0, ues, ss) == True{} : Bool}) -> {Pv.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
+  e
 
 def Pv.down(+st0: S.State, +st: S.State, +assoc: U32, +e: {Pv.all(st0, S.State.ues(st)) == True{} : Bool}) -> {Pv.all(st0, S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:
@@ -2644,8 +2634,8 @@ def Pv.fresh(+st: S.State, +k: U32, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st))
 def L.state.ids.free(st, ev, entropy, k, e, eo):
   +eu = P.Bool.and_true_l(S.Ues.keyed(S.State.ues(st)), S.Sessions.keyed(S.State.sessions(st)), e)
   +es = P.Bool.and_true_r(S.Ues.keyed(S.State.ues(st)), S.Sessions.keyed(S.State.sessions(st)), e)
-  +pv = Inv.step(ues => ss => Pv.all(st, ues), st, ev, entropy, Pv.of_keys(st, S.State.ues(st), Pv.refl(S.State.ues(st))), tx => st2 => e2 => h => Pv.tx(st, eo, tx, st2, e2, h), a => Pv.down(st, st, a, Pv.of_keys(st, S.State.ues(st), Pv.refl(S.State.ues(st)))))
-  +iv = Inv.step(ues => ss => S.Ids.free(ues, ss), st, ev, entropy, e, tx => st2 => e2 => h => Id.tx(st, e, eo, tx, st2, e2, h), a => Id.down(st, a, e))
+  +pv = Inv.step(ues => ss => Pv.all(st, ues), st, ev, entropy, Pv.of_keys(st, S.State.ues(st), Pv.refl(S.State.ues(st))), tx => st2 => e2 => h => Inv.tx(~Pv.inv, ~Inv.owned, ~Pv.tx_put, ~Pv.tx_rephase, ~Pv.tx_del, ~Pv.tx_put_session, ~Pv.tx_revar, ~Pv.tx_del_session, st, eo, tx, st2, e2, h), a => Pv.down(st, st, a, Pv.of_keys(st, S.State.ues(st), Pv.refl(S.State.ues(st)))))
+  +iv = Inv.step(ues => ss => S.Ids.free(ues, ss), st, ev, entropy, e, tx => st2 => e2 => h => Inv.tx(~Id.inv, ~Id.pre, ~Id.tx_put, ~Id.tx_rephase, ~Id.tx_del, ~Id.tx_put_session, ~Id.tx_revar, ~Id.tx_del_session, st, P.Bool.and_intro(S.Ids.free(S.State.ues(st), S.State.sessions(st)), S.Sessions.owned(S.State.sessions(st), S.State.ues(st)), e, eo), tx, st2, e2, h), a => Id.down(st, a, e))
   (em => PT.Fresh.none(st, k, em), (eg => eh => Pv.fresh(st, k, eg, Pv.held_of(st, S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), k, pv, eh)), ({==}, (iv, (eh => Id.miss_s(S.State.sessions(st), k, es, Id.odd_seid(k, Id.has_odd(S.State.ues(st), k, eu, eh))), (Id.miss_u(S.State.ues(st), S.N4.timer(), eu, {==}), Id.miss_s(S.State.sessions(st), S.N4.timer(), es, {==})))))))
 
 # Guards stopped
