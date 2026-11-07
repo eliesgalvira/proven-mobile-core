@@ -53,7 +53,7 @@ def Lv.release_get(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause) -> {Tb.T
   +ur = S.Ue.with_phase(ue, S.Releasing{S.Guard{0}})
   +p = Gmm.Gmm.place(st, key, ur)
   +ts : List<&2, N.Act> = N.TimerStart{Some{key}, key, N.Ue.guard_ms()} <> Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause)
-  +gone = S.Sessions.sift(S.SOrphan{S.Ues.put(key, ur, S.State.ues(st))}, S.State.sessions(st))
+  +gone = Gmm.Gmm.sessions(S.Ues.evicted(key, ur, S.State.ues(st)), S.State.sessions(st))
   +e = Up.N4.deletions(gone, S.State.pfcp_seq(st))
   er = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release(st, key, ue, cause)))), PT.Tk.ues(N.Out.tx(Gmm.Gmm.release(st, key, ue, cause)), S.State.ues(st)), PT.Tk.render(st, Gmm.Gmm.release(st, key, ue, cause)))
   %er : {Tb.Table.get(S.Ue, key, _) == Some{ur} : Maybe<&2, S.Ue>}
@@ -574,6 +574,21 @@ def Lv.srows_sift(+s: S.SSieve, +ss: Tb.Table(S.Session)) -> {Lv.srows(S.Session
     case (+k, +t) <> +more:
       Lv.srows_keep(k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), (k, t) <> more, Lv.owner_head(k, t, more), Lv.srows_cons(S.Sessions.sift(s, more), k, t, more, Lv.srows_sift(s, more)))
 
+def Lv.srows_app(+xs: Tb.Table(S.Session), +ys: Tb.Table(S.Session), +ss: Tb.Table(S.Session), +hx: {Lv.srows(xs, ss) == True{} : Bool}, +hy: {Lv.srows(ys, ss) == True{} : Bool}) -> {Lv.srows(List.append(&2, Sigma<&2, &2, U32, _ => S.Session>, xs, ys), ss) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      hy
+    case (+k, +t) <> +more:
+      P.Bool.and_intro(Lv.owner(S.Session.ue(t), ss), Lv.srows(List.append(&2, Sigma<&2, &2, U32, _ => S.Session>, more, ys), ss), P.Bool.and_true_l(Lv.owner(S.Session.ue(t), ss), Lv.srows(more, ss), hx), Lv.srows_app(more, ys, ss, P.Bool.and_true_r(Lv.owner(S.Session.ue(t), ss), Lv.srows(more, ss), hx), hy))
+
+# The sessions of contexts are sessions of the table.
+def Lv.srows_held(+ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> {Lv.srows(Gmm.Gmm.sessions(ues, ss), ss) == True{} : Bool}:
+  match ues:
+    case Nil{}:
+      {==}
+    case (+k, +u) <> +more:
+      Lv.srows_app(S.Sessions.of_ue(k, ss), Gmm.Gmm.sessions(more, ss), ss, Lv.srows_sift(S.SOf{k}, ss), Lv.srows_held(more, ss))
+
 def Lv.del_if(+st: S.State, +key: U32, +t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +b: Bool, +ht: {Lv.owner(S.Session.ue(t), S.State.sessions(st)) == True{} : Bool}, later: @q:U32 -> {Lv.okf(st, Up.N4.deletions(more, q)) == True{} : Bool}) -> {Lv.okf(st, Up.N4.delete_if(key, t, seq, q => Up.N4.deletions(more, q), b)) == True{} : Bool}:
   match b:
     case True{}:
@@ -855,8 +870,8 @@ def Lv.put_ok(+st: S.State, +key: U32, +ue: S.Ue, +ek: {Lv.live(st, key) == True
 
 def Lw.place(+st: S.State, +key: U32, +ue: S.Ue, +eg: {S.Phase.guarded(S.Ue.phase(ue)) == True{} : Bool}, +es: {S.Ue.single(ue) == True{} : Bool}, +ek: {Lv.live(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.place(st, key, ue)) == True{} : Bool}:
   +vs = S.Ues.evicted(key, ue, S.State.ues(st))
-  +gone = S.Sessions.sift(S.SOrphan{S.Ues.put(key, ue, S.State.ues(st))}, S.State.sessions(st))
-  Lv.join(st, (S.Put{key, ue}, Gmm.Gmm.evict(vs)), Up.N4.deletions(gone, S.State.pfcp_seq(st)), Lv.leaf(st, S.Put{key, ue}, Gmm.Gmm.evict(vs), Lw.evict(st, vs, Lv.keys_sift(S.Victims{key, ue}, S.State.ues(st))), Lv.put_ok(st, key, ue, ek, eg, es, ehome)), Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_sift(S.SOrphan{S.Ues.put(key, ue, S.State.ues(st))}, S.State.sessions(st))))
+  +gone = Gmm.Gmm.sessions(S.Ues.evicted(key, ue, S.State.ues(st)), S.State.sessions(st))
+  Lv.join(st, (S.Put{key, ue}, Gmm.Gmm.evict(vs)), Up.N4.deletions(gone, S.State.pfcp_seq(st)), Lv.leaf(st, S.Put{key, ue}, Gmm.Gmm.evict(vs), Lw.evict(st, vs, Lv.keys_sift(S.Victims{key, ue}, S.State.ues(st))), Lv.put_ok(st, key, ue, ek, eg, es, ehome)), Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_held(vs, S.State.sessions(st))))
 
 def Lw.forget(+st: S.State, +key: U32) -> {Lv.okf(st, Gmm.Gmm.forget(st, key)) == True{} : Bool}:
   +gone = S.Sessions.of_ue(key, S.State.sessions(st))

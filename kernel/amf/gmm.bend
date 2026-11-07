@@ -91,6 +91,14 @@ def Gmm.evict(victims: Tb.Table(S.Ue)) -> List<&2, N.Act>:
       +cause = N.Ngap.nas_cause(G.CauseNas.deregister())
       N.Release{S.Ue.assoc(v), S.Ue.stream(v), key, S.Ue.ran_id(v), cause} <> List.append(&2, N.Act, Ho.Ho.leg_drop(key, S.Ue.phase(v), cause), Gmm.evict(more))
 
+# The sessions of the contexts given.
+def Gmm.sessions(ues: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session)) -> Tb.Table(S.Session):
+  match ues:
+    case Nil{}:
+      []
+    case (key, u) <> more:
+      List.append(&2, Sigma<&2, &2, U32, _ => S.Session>, S.Sessions.of_ue(key, sessions), Gmm.sessions(more, sessions))
+
 # The one write of a context's identity: it takes its place, and every live
 # context it conflicts with (the same SUPI, 5G-TMSI or RAN id on the
 # association) goes with its sessions, which are deleted at the UPF, and with
@@ -98,7 +106,8 @@ def Gmm.evict(victims: Tb.Table(S.Ue)) -> List<&2, N.Act>:
 # only once 5G-AKA has verified it (Gmm.secure) and a 5G-TMSI is drawn free
 # (Gmm.tmsi), so another gNB's UE is taken over only after authentication.
 def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
-  N.Out.join((S.Put{key, ue}, Gmm.evict(S.Ues.evicted(key, ue, S.State.ues(st)))), Up.N4.deletions(S.Sessions.sift(S.SOrphan{S.Ues.put(key, ue, S.State.ues(st))}, S.State.sessions(st)), S.State.pfcp_seq(st)))
+  +victims = S.Ues.evicted(key, ue, S.State.ues(st))
+  N.Out.join((S.Put{key, ue}, Gmm.evict(victims)), Up.N4.deletions(Gmm.sessions(victims, S.State.sessions(st)), S.State.pfcp_seq(st)))
 
 # UE Context Release Command; the context waits, releasing, for the gNB, and
 # its guard, started again, bounds the wait; the target of its pending

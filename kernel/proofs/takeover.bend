@@ -477,8 +477,8 @@ def Tk.put(+k: U32, +u: S.Ue, +key: U32, +v: S.Ue, +ues: Tb.Table(S.Ue), +eu: {T
   Tk.put_case(k, u, key, v, ues, eu, h1, h, S.Ue.secures(v, S.Ue.supi(u)), {==})
 
 def Tk.place(+k: U32, +u: S.Ue, +st: S.State, +key: U32, +v: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h1: {U32.is_eq(k, key) == False{} : Bool}, +h: {Bool.or(Bool.not(S.Ue.conflicts(v, u)), S.Ue.secures(v, S.Ue.supi(u))) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.place(st, key, v)):
-  +b = Up.N4.deletions(S.Sessions.sift(S.SOrphan{S.Ues.put(key, v, S.State.ues(st))}, S.State.sessions(st)), S.State.pfcp_seq(st))
-  ee = Equal.sym(Tb.Table(S.Ue), Tk.ues(N.Out.tx(b), S.Ues.put(key, v, S.State.ues(st))), S.Ues.put(key, v, S.State.ues(st)), Tk.ues_n4(N.Out.tx(b), S.Ues.put(key, v, S.State.ues(st)), PW.N4s.deletions(S.Sessions.sift(S.SOrphan{S.Ues.put(key, v, S.State.ues(st))}, S.State.sessions(st)), S.State.pfcp_seq(st))))
+  +b = Up.N4.deletions(Gmm.Gmm.sessions(S.Ues.evicted(key, v, S.State.ues(st)), S.State.sessions(st)), S.State.pfcp_seq(st))
+  ee = Equal.sym(Tb.Table(S.Ue), Tk.ues(N.Out.tx(b), S.Ues.put(key, v, S.State.ues(st))), S.Ues.put(key, v, S.State.ues(st)), Tk.ues_n4(N.Out.tx(b), S.Ues.put(key, v, S.State.ues(st)), PW.N4s.deletions(Gmm.Gmm.sessions(S.Ues.evicted(key, v, S.State.ues(st)), S.State.sessions(st)), S.State.pfcp_seq(st))))
   Tk.ok_join(k, u, S.State.ues(st), (S.Put{key, v}, Gmm.Gmm.evict(S.Ues.evicted(key, v, S.State.ues(st)))), b, (%ee : Tk.Kept(k, u, _); Tk.put(k, u, key, v, S.State.ues(st), eu, h1, h)))
 
 # The context a step acts for, keyed key, conflicts with u's row neither by
