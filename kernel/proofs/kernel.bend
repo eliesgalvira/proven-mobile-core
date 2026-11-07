@@ -14,6 +14,7 @@ import ../step.bend as K
 import ../amf/ngap.bend as N
 import ../amf/gmm.bend as Gmm
 import ../amf/route.bend as R
+import ../amf/handover.bend as Ho
 import ../smf/n4.bend as Up
 import ../smf/gsm.bend as Gsm
 import ../LAWS.bend as L
@@ -190,10 +191,15 @@ def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.o
 # An association going down
 # -------------------------
 
-def L.amf.assoc_down.releases_all(st, entropy, assoc):
+def Down.none(+st: S.State, +assoc: U32) -> {S.Ues.none_assoc(assoc, S.State.ues(K.Kernel.state(K.Kernel.drop(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
       Ues.drop_none(assoc, ues)
+
+# The handovers the association takes part in end first (Ho.Ho.down); then
+# its contexts go.
+def L.amf.assoc_down.releases_all(st, entropy, assoc):
+  Down.none(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc))), assoc)
 
 # Registration, part 1 (ticket 17)
 # --------------------------------
@@ -321,9 +327,9 @@ def Owner.complete(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32,
   sek = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
   %sek : {K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_key(st, assoc, ran, _))) == st : S.State}
   seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{ue}, eu)
-  %seu : {K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.of(_, assoc, ran)))) == st : S.State}
+  %seu : {K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.of(_, assoc, ran), S.Ue.released(_, assoc, ran)))) == st : S.State}
   sea = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), assoc), False{}, ea)
-  %sea : {K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.check(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran)))))) == st : S.State}
+  %sea : {K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.check(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran))), S.Ue.released(Some{ue}, assoc, ran)))) == st : S.State}
   {==}
 
 def Owner.ics(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, len: U32, +bytes: B.Bytes(), crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, c: Ap.Cur, +amf: B.Bytes(), +k: U32, +ran: B.Bytes(), diag: Maybe<&2, G.CriticalityDiagnostics>, +ue: S.Ue, eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, ea: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}, ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 14, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, ev: {V.InitialContextSetupResponse.view(ies) == Done{V.InitialContextSetupResponse.View{amf, ran, diag}} : Result<&2, &2, B.Err, V.InitialContextSetupResponse.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
@@ -397,7 +403,7 @@ def L.amf.release.complete_forgets(st, entropy, assoc, stream, len, bytes, crit,
   sek = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
   %sek : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_key(st, assoc, ran, _))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(k, S.State.sessions(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_key(st, assoc, ran, _))))) == [] : Tb.Table(S.Session)}
   seo = Equal.sym(Maybe<&2, S.Ue>, Gmm.Gmm.owner(st, assoc, k, ran), Some{ue}, eo)
-  %seo : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(k, S.State.sessions(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _))))) == [] : Tb.Table(S.Session)}
+  %seo : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _, S.Ue.released(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran)))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(k, S.State.sessions(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _, S.Ue.released(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran)))))) == [] : Tb.Table(S.Session)}
   (Tx.forget_ue(k, Up.N4.deletion_count(S.Sessions.of_ue(k, S.State.sessions(st))), st), Tx.forget_sessions(k, Up.N4.deletion_count(S.Sessions.of_ue(k, S.State.sessions(st))), st))
 
 # A phase change in place leaves every conflict as it was.
@@ -470,7 +476,7 @@ def Unique.rephase(+key: U32, +p: S.Phase, ues: Tb.Table(S.Ue)) -> {S.Ues.unique
 # a Del and an association going down are siftings (amf.indexes.unique, in
 # liveness.bend).
 
-def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
+def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.drop(st, assoc)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Unique.sift(S.Others{assoc}, ues, e)
@@ -554,12 +560,12 @@ def Cfgv.render(+st: S.State, o: N.GOut()) -> {S.State.config(K.Kernel.state(N.S
     case (tx, acts):
       Cfgv.tx(tx, st)
 
-def Cfgv.up(st: S.State, assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.assoc_up(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+def Cfgv.assocs(st: S.State, as: Tb.Table(B.Bytes())) -> {S.State.config(S.State.with_assocs(st, as)) == S.State.config(st) : Maybe<&2, S.Cfg>}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
 
-def Cfgv.down(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.assoc_down(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+def Cfgv.down(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.drop(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
@@ -600,7 +606,7 @@ def Cfgv.config(complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: 
 
 def L.kernel.config.valid(st, ev, entropy, cfg, e, ec):
   +h = Cfgv.of(S.State.config(st), e)
-  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => h, +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(K.Kernel.assoc_up(st, a)), Cfgv.up(st, a), h), +a => Cfgv.kept(st, K.Kernel.state(K.Kernel.assoc_down(st, a)), Cfgv.down(st, a), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
+  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => h, +as => acts => x => Cfgv.kept(st, S.State.with_assocs(st, as), Cfgv.assocs(st, as), h), +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(K.Kernel.assoc_down(st, a)), Equal.trans(Maybe<&2, S.Cfg>, S.State.config(K.Kernel.state(K.Kernel.assoc_down(st, a))), S.State.config(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a)))), S.State.config(st), Cfgv.down(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), a), Cfgv.render(st, Ho.Ho.down(st, a))), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
   ({==}, (%ec : {Cfgv.held(_) == True{} : Bool}; held))
 
 # GHSA-f9c2-535p-3mwc: a PLMN that decodes names a serving network.

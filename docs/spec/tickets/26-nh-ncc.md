@@ -6,7 +6,7 @@ Depends on: 07, 24. Estimate: 1–2 h.
 
 `kernel/crypto/kdf.bend` gains the NH derivation of TS 33.501 Annex A.10, with FC 0x6F, KAMF and SYNC-input. The UE's security context in `kernel/state.bend` gains NH and NCC, per TS 33.501 §6.9.2.1:
 
-- **Initial values:** after Initial Context Setup, KgNB is stored as the initial NH and NCC starts at 0. The first derived NH uses that KgNB as its SYNC-input.
+- **Initial values:** KgNB counts as a virtual NH with NCC 0. At Initial Context Setup the AMF derives the first NH from it, with NCC 1, and stores it without sending it (TS 33.501 §6.9.2.1.1, NOTE 3). A handover then raises NCC first, so the first pair a target gNB receives has NCC 2.
 - **Each new pair** {NH, NCC} chains NH from the previous NH and increments NCC modulo 8.
 
 ## Laws

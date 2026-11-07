@@ -16,7 +16,7 @@ Citation format: `file:N` is a line in the source of the section's simulator at 
 ## Short answer
 
 - **UERANSIM 3.3.0 implements no handover**, neither Xn nor N2. It cannot be the simulator.
-- **PacketRusher v2.0.0 implements both**: Xn handover (Path Switch) and N2 handover (Handover Required) between gNBs it simulates in one process, triggered from a control socket. It has **no Handover Cancel**. A patch of 63 added lines adds one (`test-vectors/capture/setup/packetrusher/handover-cancel.patch`).
+- **PacketRusher v2.0.0 implements both**: Xn handover (Path Switch) and N2 handover (Handover Required) between gNBs it simulates in one process, triggered from a control socket. It has **no Handover Cancel**. A patch of 63 added lines adds one (`nix/packetrusher-handover-cancel.patch`).
 - PacketRusher with the patch is the chosen simulator. The capture in `test-vectors/capture/handover.json` holds one Xn handover, one N2 handover cancelled after the Handover Command, and one N2 handover, all accepted by Open5GS 2.8.0, with the user plane working through eUPF after each.
 - The messages no simulator produced against Open5GS need hand-built vectors from TS 38.413 (see the last section).
 
@@ -55,7 +55,7 @@ Cancelling after the Handover Command is the case TS 38.413 §8.4.6 describes fo
 - It accepts all three procedures: Path Switch (`src/amf/ngap-handler.c:2872`), Handover Required (`:3327`), Handover Cancel (`:4122`), Handover Notify (`:4423`).
 - On Handover Cancel it asks the SMF to cancel, sends UE Context Release Command to the target, and answers the source with Handover Cancel Acknowledge after the target's release complete (`src/amf/nsmf-handler.c:761-773`). No PFCP message is sent for the cancel.
 - NH and NCC: after registration the AMF holds NH_1 with NCC 1 (`src/amf/gmm-handler.c:295-296`). Path Switch and Handover Required each increment NCC and chain a new NH before sending it (`ngap-handler.c:3323-3324`, `:3740-3741`). The cancelled handover does not roll back: in the capture the Path Switch carries NCC 2 (NH_2), the cancelled Handover Request NCC 3 (NH_3), and the completed Handover Request NCC 4 (NH_4). `setup/extract.py` recomputes each NH from K_AMF and K_gNB.
-- eUPF's XDP path sends downlink G-PDUs only to a gNB address already in its ARP table. Without the ARP warm-up in `test-vectors/capture/setup/capture.py`, the downlink to the second gNB was silently dropped after the Xn handover although the FAR was updated correctly. This is a bench artefact, not something the kernel's SMF can fix.
+- When eUPF's XDP program finds no neighbour entry for a gNB, it hands the G-PDU to the Linux kernel already encapsulated, with eUPF's own address as its source. Without `accept_local` on the UPF's interface the kernel drops that packet as a martian instead of resolving the gNB, so the downlink to the second gNB was silently dropped after the Xn handover although the FAR was updated correctly. The bench sets `accept_local` on eUPF (`docker-compose.yml`, and `e2e/test.nix` for the end-to-end test). This is a bench artefact, not something the kernel's SMF can fix.
 
 ## What needs hand-built vectors from TS 38.413
 

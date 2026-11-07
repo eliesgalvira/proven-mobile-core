@@ -232,10 +232,14 @@ def phase_of(p: S.Phase) -> String:
       "authenticating"
     case S.SecurityMode{g, ctx, kamf}:
       "security_mode"
-    case S.ContextSetup{g, ctx, response, complete}:
+    case S.ContextSetup{g, ctx, nh, response, complete}:
       "context_setup"
-    case S.Registered{ctx}:
+    case S.Registered{ctx, nh, released}:
       "registered"
+    case S.Switching{g, ctx, nh, released}:
+      "switching"
+    case S.Handover{ctx, nh, source, leg}:
+      "handover"
     case S.Created{}:
       "created"
     case S.Releasing{g}:

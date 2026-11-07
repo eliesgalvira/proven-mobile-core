@@ -1,9 +1,11 @@
 # Loop progress
 
-## Summary (2026-11-03)
+## Summary (2026-11-07)
 
-- **Milestone 1: tickets 01–23 done**, with the end-to-end test passing (`nix build .#checks.x86_64-linux.e2e`). The owner's review on 2026-11-03 (`loop/decisions.md` § Owner review) found laws that don't yet rule out four in-scope advisories, so `loop/m1` reaches `main` only after tickets 32–34.
-- **Next, in order:** hardening tickets 32–37, then milestone 2, handover (`docs/spec/milestone-2.md`, tickets 24–31). Neither has started. Deliberately out of scope: 4G, voice, roaming, policy and billing, and the handover cases excluded in `docs/spec/milestone-2.md`.
+- **Milestone 1: tickets 01–23 done**, and the hardening tickets 32–38 the owner's review of 2026-11-03 asked for.
+- **Milestone 2, handover within one AMF and one UPF: tickets 24–31 done.** 25 of the 42 advisories are in scope, each ruled out by its laws (`loop/acceptance-report.md`); the flake checks `e2e` (registration, Xn and N2 handover) and `edge-sctp` pass.
+- **Milestone 2 review fixes (2026-11-07):** one Path Switch walk (`Pw`) and one N2 handover walk (`Hw`) in `kernel/proofs/walk.bend` serve every proof; each handover message finds its UE through one lookup (`Ho.by_owner`, `Ho.by_target`, `N.Ue.keyed`); both handovers repoint sessions through `kernel/smf/switch.bend`; a Handover Required to a target released before it answered is refused (`amf.handover.responses_correlated`); the e2e checks eUPF's downlink FAR after each handover. Not done, still open: `amf.ncc.step` (every step stores an unchanged, next or initial {NH, NCC}) and the `amf.handover.guarded` clause that no step stops a pending handover's guard. Each is a property of every procedure's outcome, so it needs evidence at every leaf of the liveness walk, or a kernel where `N.Step.of` derives UE guard stops as it derives session ones (`N.Gone.cancels`).
+- **Next:** ticket 39 (second simplify), then the two laws above. Deliberately out of scope: 4G, voice, roaming, policy and billing, and the handover cases excluded in `docs/spec/milestone-2.md`.
 
 Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets are in `docs/spec/tickets/`.
 
@@ -42,9 +44,9 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 39 | second-simplify | todo | 35–38 | |
 | 24 | handover-capture | done | — | bc4134f: PacketRusher v2.0.0 with a Handover Cancel patch (UERANSIM has no handover); 86-message capture of Xn and N2 handover (one cancelled) with NH/NCC recomputed; uncaptured failure messages are hand-built in test-vectors/hand/ |
 | 25 | ngap-handover | done | 13, 24 | 232ba2b: 14 messages and 8 transfers (140→253 types, 15→30 views), a generated mandatory law per view, the three ticket laws; pycrate agrees on 46 NGAP messages |
-| 26 | nh-ncc | todo | 07, 24 | |
-| 27 | path-switch | todo | 19, 25, 26 | |
-| 28 | n2-handover | todo | 19, 25, 26 | |
-| 29 | handover-acceptance | todo | 27, 28 | |
-| 30 | e2e-handover | todo | 24, 27, 28 | |
-| 31 | edge-sctp-coverage | todo | 21, 30 | |
+| 26 | nh-ncc | done | 07, 24 | 0a629ba: NH derivation (TS 33.501 A.10) and S.Nh{k_amf, nh, ncc} in the security context, stored as {A.10(KAMF, KgNB), NCC 1} at Initial Context Setup; the three captured pairs (NCC 2, 3, 4) recomputed; laws kdf.nh.length and amf.ncc.chain |
+| 27 | path-switch | done | 19, 25, 26 | 7edfd61, 556e636: Path Switch Request moves a registered UE to an NG-set-up target in a guarded Switching phase with the next {NH, NCC}; one PFCP Session Modification per active named session (Repointing, ticket 35 retransmission), the rest released; Acknowledge with the stored UE security capabilities (captured NH/NCC 2 reproduced) or Failure and release; NG Setup now sets associations up; laws failure_leaves_state, moves_owner, stored_capabilities; CHECK OK, E2E PASS |
+| 28 | n2-handover | done | 19, 25, 26 | e016efd: N2 handover with cancel in `kernel/amf/handover.bend`: Handover Required from the owner to an NG-set-up target by Global RAN Node ID, Handover Request with the next {NH, NCC} under the preparation guard, Command on the target's acknowledgement under the completion guard, Failure and guard expiry, cancel, RAN status relay, Notify moving the UE and repointing its sessions with Path Switch's PFCP machinery; the cancelled and completed captured handovers replayed (NCC 3, 4; Command, Cancel Acknowledge, Release Command byte for byte), hand-built vectors byte for byte; laws owner_only, responses_correlated, single_owner and guarded, the last two also over every event through the shared invariant walk (8e234cb: a pending handover's owner is its recorded source; target, source or UE gone ends or releases it; NAS not read during it); 34f07a4: the side a handover released, kept in `Registered` until the UE leaves it, has its UE Context Release Complete logged with no Error Indication, law `amf.handover.released_side_completes` |
+| 29 | handover-acceptance | done | 27, 28 | ba08175: GHSA-wpwr-xj64-h6cp (`amf.handover.owner_only`, `single_owner`) and GHSA-v6fv-hmw8-6ffv (`responses_correlated`, `guarded`) in scope, 25 of 42 advisories; `loop/acceptance-report.md` has both rows and refreshed figures and lines; AGENTS.md item done earlier |
+| 30 | e2e-handover | done | 24, 27, 28 | a95476a: PacketRusher runs both gNBs (10.33.0.30, 10.33.0.31) and the UE after UERANSIM's registration case: Xn and N2 handover, each with a ping before and after; eUPF needs `accept_local` (`loop/decisions.md`, ticket 24); a6c4e17: a UERANSIM UE that selects no cell in 30 s is restarted once |
+| 31 | edge-sctp-coverage | done | 21, 30 | 5fe53bb: flake check `edge-sctp` runs the edge's cargo tests in a NixOS VM with `sctp` loaded, where a skip fails; the e2e's UERANSIM gNB runs with `ignoreStreamIds: false` |

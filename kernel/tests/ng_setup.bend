@@ -7,6 +7,7 @@ import ../ngap/frame.bend as Fr
 import ../ngap/gen/types.bend as G
 import ../ngap/gen/views.bend as W
 import ../frame.bend as F
+import ../table.bend as Tb
 import ../state.bend as S
 import ../step.bend as K
 import ../amf/ngap.bend as N
@@ -14,6 +15,7 @@ import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
 import ./lib/amf.bend as A
+import ./lib/pfcp.bend as P
 
 # Drives step with Config, NgapAssocUp and the captured NG Setup Request: the
 # answer is the captured NG Setup Response, byte for byte. Then the failure
@@ -69,20 +71,6 @@ def sends(actions: List<&2, F.Action>) -> List<&2, F.Action>:
       []
     case a <> more:
       sends_keep(a, sends(more))
-
-def pfcp_keep(a: F.Action, more: List<&2, B.Bytes()>) -> List<&2, B.Bytes()>:
-  match a:
-    case F.PfcpSend{len, bytes}:
-      bytes <> more
-    case _:
-      more
-
-def pfcp_sends(actions: List<&2, F.Action>) -> List<&2, B.Bytes()>:
-  match actions:
-    case Nil{}:
-      []
-    case a <> more:
-      pfcp_keep(a, pfcp_sends(more))
 
 def count_logs(actions: List<&2, F.Action>) -> Nat:
   match actions:
@@ -142,36 +130,15 @@ def guami_ok(r: Result<&2, &2, B.Err, W.NGSetupResponse.View>) -> Bool:
     case _:
       False{}
 
-def Tb_present(m: Maybe<&2, B.Bytes()>) -> Bool:
-  match m:
-    case None{}:
-      False{}
-    case Some{v}:
-      True{}
-
 def pfcp_type(r: B.Read(Pf.Msg), +kind: U32, with_seid: Bool) -> Bool:
   match r:
     case Fail{e}:
       False{}
     case Done{(+m, rest)}:
-      Bool.and(U32.is_eq(Pf.Msg.kind(m), kind), Bool.and(bool_eq(Tb_present(Pf.Msg.seid(m)), with_seid), B.bytes_eq(rest, [])))
-
-def first_pfcp(bs: List<&2, B.Bytes()>) -> B.Bytes():
-  match bs:
-    case Nil{}:
-      []
-    case b <> more:
-      b
-
-def Tb_present_cfg(m: Maybe<&2, S.Cfg>) -> Bool:
-  match m:
-    case None{}:
-      False{}
-    case Some{c}:
-      True{}
+      Bool.and(U32.is_eq(Pf.Msg.kind(m), kind), Bool.and(bool_eq(Tb.Table.present(B.Bytes(), Pf.Msg.seid(m)), with_seid), B.bytes_eq(rest, [])))
 
 def configured(st: S.State) -> Bool:
-  Tb_present_cfg(S.State.config(st))
+  Tb.Table.present(S.Cfg, S.State.config(st))
 
 def Tb_keys(t: List<&2, Sigma<&2, &2, U32, _ => S.Ue>>) -> List<&2, U32>:
   match t:
@@ -204,22 +171,23 @@ def main() -> IO(Unit):
     +a3 : List<&2, F.Action> = K.Kernel.frames(o3)
     +reply : B.Bytes() = send_bytes(one_send(a3))
     C.Check.report("Config: the configuration is kept", configured(st1))
-    C.Check.report("Config: a PFCP Association Setup Request goes to the UPF", pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(a1))), 5, False{}))
-    C.Check.report("NgapAssocUp: the association is known", S.Assocs.has(1, S.State.assocs(st2)))
+    C.Check.report("Config: a PFCP Association Setup Request goes to the UPF", pfcp_type(Pf.Msg.read(P.first_pfcp(a1)), 5, False{}))
+    C.Check.report("NgapAssocUp: the association is not set up yet", Bool.not(S.Assocs.has(1, S.State.assocs(st2))))
     C.Check.report("NG Setup Request: exactly one NGAP message answers, on stream 0", send_on(one_send(a3), 1, 0))
     C.Check.report("NG Setup Request: the answer is an NG Setup Response", A.pdu_is(Fr.Pdu.read(reply), Fr.Pdu.successful(), 21))
     C.Check.report("NG Setup Request: the response carries the configured GUAMI and AMF name", guami_ok(W.NGSetupResponse.view(A.ies_of(Fr.Pdu.read(reply)))))
     C.Check.report("NG Setup Request: the response is the captured one, byte for byte", B.bytes_eq(reply, response))
-    C.Check.report("NG Setup Request: no state changes", Nat.is_eq(List.length(&2, U32, ue_keys(K.Kernel.state(o3))), 0n))
+    C.Check.report("NG Setup Response: the association is set up, no UE context", Bool.and(S.Assocs.has(1, S.State.assocs(K.Kernel.state(o3))), Nat.is_eq(List.length(&2, U32, ue_keys(K.Kernel.state(o3))), 0n)))
     +st_tac : S.State = K.Kernel.state(K.Kernel.step(K.Kernel.state(K.Kernel.step(S.State.initial(), config_event([0, 0, 2]), A.entropy())), F.NgapAssocUp{1}, A.entropy()))
-    +reply_tac : B.Bytes() = send_bytes(one_send(K.Kernel.frames(K.Kernel.step(st_tac, data_event(1, request), A.entropy()))))
-    C.Check.report("NG Setup Request for another TAC: NG Setup Failure", A.pdu_is(Fr.Pdu.read(reply_tac), Fr.Pdu.unsuccessful(), 21))
+    +o_tac : N.Step() = K.Kernel.step(st_tac, data_event(1, request), A.entropy())
+    +reply_tac : B.Bytes() = send_bytes(one_send(K.Kernel.frames(o_tac)))
+    C.Check.report("NG Setup Request for another TAC: NG Setup Failure, the association not set up", Bool.and(A.pdu_is(Fr.Pdu.read(reply_tac), Fr.Pdu.unsuccessful(), 21), Bool.not(S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_tac))))))
     +reply_none : B.Bytes() = send_bytes(one_send(K.Kernel.frames(K.Kernel.step(S.State.initial(), data_event(1, request), A.entropy()))))
     C.Check.report("NG Setup Request before Config: NG Setup Failure", A.pdu_is(Fr.Pdu.read(reply_none), Fr.Pdu.unsuccessful(), 21))
-    +o_bad : N.Step() = K.Kernel.step(st2, data_event(1, [1, 2, 3]), A.entropy())
+    +o_bad : N.Step() = K.Kernel.step(K.Kernel.state(o3), data_event(1, [1, 2, 3]), A.entropy())
     +a_bad : List<&2, F.Action> = K.Kernel.frames(o_bad)
     C.Check.report("an undecodable PDU: Error Indication on stream 0 and one log line", Bool.and(A.pdu_is(Fr.Pdu.read(send_bytes(one_send(a_bad))), Fr.Pdu.initiating(), 9), Bool.and(send_on(one_send(a_bad), 1, 0), Bool.and(Nat.is_eq(count_logs(a_bad), 1n), Nat.is_eq(List.length(&2, F.Action, a_bad), 2n)))))
-    C.Check.report("an undecodable PDU: the association stays known", S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_bad))))
+    C.Check.report("an undecodable PDU: the association stays set up", S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_bad))))
     +o_inc : N.Step() = K.Kernel.step(S.State.initial(), F.Evt.config_make([T.Tlv.make(1, [0, 241, 16])]), A.entropy())
     C.Check.report("an incomplete Config: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_inc))), Nat.is_eq(count_logs(K.Kernel.frames(o_inc)), 1n)))
     +o_plmn : N.Step() = K.Kernel.step(S.State.initial(), F.Evt.config_make(List.append(&2, T.Tlv, config([0, 0, 1]), [T.Tlv.make(1, [170, 241, 16])])), A.entropy())
@@ -232,8 +200,8 @@ def main() -> IO(Unit):
     C.Check.report("a Config whose AMF Pointer needs more than 6 bits: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_ptr))), Nat.is_eq(count_logs(K.Kernel.frames(o_ptr)), 1n)))
     +o_max : N.Step() = K.Kernel.step(S.State.initial(), F.Evt.config_make(List.append(&2, T.Tlv, config([0, 0, 1]), [T.Tlv.make(3, [3, 255]), T.Tlv.make(4, [63])])), A.entropy())
     C.Check.report("a Config with the largest AMF Set ID and Pointer: kept", configured(K.Kernel.state(o_max)))
-    +st_ues : S.State = with_ues(st2, [(7, ue_of(1, [1])), (8, ue_of(2, [1])), (9, ue_of(1, [2]))], [(1, S.Session{S.SId{7, 1, 1, 1}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 1], 0, S.Active{}}}), (2, S.Session{S.SId{8, 1, 2, 2}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 2], 0, S.Active{}}})])
+    +st_ues : S.State = with_ues(K.Kernel.state(o3), [(7, ue_of(1, [1])), (8, ue_of(2, [1])), (9, ue_of(1, [2]))], [(1, S.Session{S.SId{7, 1, 1, 1}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 1], 0, S.Active{}}}), (2, S.Session{S.SId{8, 1, 2, 2}, S.SVar{[0, 0, 0, 0, 0, 0, 0, 2], 0, S.Active{}}})])
     +o_down : N.Step() = K.Kernel.step(st_ues, F.NgapAssocDown{1}, A.entropy())
     C.Check.report("NgapAssocDown: only the other association's UE remains", B.bytes_eq(ue_keys(K.Kernel.state(o_down)), [8]))
-    C.Check.report("NgapAssocDown: the released UE's session is deleted at the UPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), pfcp_sends(K.Kernel.frames(o_down))), 1n), pfcp_type(Pf.Msg.read(first_pfcp(pfcp_sends(K.Kernel.frames(o_down)))), 54, True{})))
+    C.Check.report("NgapAssocDown: the released UE's session is deleted at the UPF", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), P.pfcp_sends(K.Kernel.frames(o_down))), 1n), pfcp_type(Pf.Msg.read(P.first_pfcp(K.Kernel.frames(o_down))), 54, True{})))
     C.Check.report("NgapAssocDown: the association is forgotten", Bool.not(S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_down)))))

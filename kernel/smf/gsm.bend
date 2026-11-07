@@ -138,14 +138,17 @@ def Gsm.dl_transport(psi: U32, +sm: B.Bytes()) -> B.Bytes():
 def Gsm.dl(key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, psi: U32, sm: B.Bytes()) -> N.GOut():
   N.Out.dl(key, ue, ctx, Gsm.dl_transport(psi, sm))
 
-# The N2 transfer: the session's AMBR, the N3 tunnel, IPv4, QoS flow 1 (5QI 9,
-# ARP priority 8: a constrained INTEGER is held as its offset from the lower
-# bound, 1 here, so 7).
+# The N2 transfer: the session's AMBR, the N3 tunnel, the IEs given, IPv4,
+# QoS flow 1 (5QI 9, ARP priority 8: a constrained INTEGER is held as its
+# offset from the lower bound, 1 here, so 7).
 def Gsm.flow() -> G.QosFlowSetupRequestItem:
   G.QosFlowSetupRequestItem{Ap.IRoot{1}, G.QosFlowLevelQosParameters{G.QosCharacteristics_nonDynamic5QI{G.NonDynamic5QIDescriptor{Ap.IRoot{9}, None{}, None{}, None{}, None{}}}, G.AllocationAndRetentionPriority{7, Ap.Root{0}, Ap.Root{0}, None{}}, None{}, None{}, None{}, None{}}, None{}, None{}}
 
+def Gsm.transfer_with(cfg: S.Cfg, teid: U32, more: List<&2, Fr.Ie>) -> B.Bytes():
+  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write(N.Ngap.ie(G.Id.PDUSessionAggregateMaximumBitRate(), Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])) <> N.Ngap.ie(G.Id.UL_NGU_UP_TNLInformation(), Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])) <> List.append(&2, Fr.Ie, more, [N.Ngap.ie(G.Id.PDUSessionType(), Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(G.Id.QosFlowSetupRequestList(), Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))]), 0n, []))
+
 def Gsm.transfer(cfg: S.Cfg, teid: U32) -> B.Bytes():
-  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write([N.Ngap.ie(G.Id.PDUSessionAggregateMaximumBitRate(), Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])), N.Ngap.ie(G.Id.UL_NGU_UP_TNLInformation(), Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])), N.Ngap.ie(G.Id.PDUSessionType(), Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(G.Id.QosFlowSetupRequestList(), Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))], 0n, []))
+  Gsm.transfer_with(cfg, teid, [])
 
 # Allocation
 # ----------
@@ -431,6 +434,98 @@ def Gsm.established(st: S.State, msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ 
     case Some{(skey, +s)}:
       Gsm.established_phase(st, skey, s, msg, S.Session.phase(s))
 
+# Path Switch (TS 23.502 §4.9.1.2.2)
+# -----------------------------------
+# A session repointed to the target gNB is switched once the UPF accepts it,
+# and released otherwise: deleted at the UPF and named to the target as
+# released, with no PDU Session Release Command to the UE. Once no session of
+# the UE waits, the AMF answers the target: Path Switch Request Acknowledge
+# with the next {NH, NCC} when some session was switched, Path Switch Request
+# Failure and the UE's release otherwise (TS 38.413 §8.4.4.2).
+
+def Gsm.repoint_done(+st: S.State, +skey: U32, +s: S.Session, ok: Bool) -> N.GOut():
+  match ok:
+    case True{}:
+      (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), S.Active{}}}, [N.TimerCancel{skey}])
+    case False{}:
+      Gsm.forget([(skey, s)], S.State.pfcp_seq(st))
+
+def Gsm.repointing(p: S.SPhase) -> Bool:
+  match p:
+    case S.Repointing{guard, request}:
+      True{}
+    case _:
+      False{}
+
+def Gsm.active(p: S.SPhase) -> Bool:
+  match p:
+    case S.Active{}:
+      True{}
+    case _:
+      False{}
+
+# Another session of the UE still waits for the UPF.
+def Gsm.waits(+key: U32, +skey: U32, ss: Tb.Table(S.Session)) -> Bool:
+  match ss:
+    case Nil{}:
+      False{}
+    case (+k, +t) <> more:
+      Bool.or(Bool.and(Bool.and(U32.is_eq(S.Session.ue(t), key), Bool.not(U32.is_eq(k, skey))), Gsm.repointing(S.Session.phase(t))), Gsm.waits(key, skey, more))
+
+def Gsm.psi_if(psi: U32, more: List<&2, U32>, hit: Bool) -> List<&2, U32>:
+  match hit:
+    case True{}:
+      psi <> more
+    case False{}:
+      more
+
+# The PDU session identities of the UE's active sessions.
+def Gsm.active_psis(+key: U32, ss: Tb.Table(S.Session)) -> List<&2, U32>:
+  match ss:
+    case Nil{}:
+      []
+    case (k, +t) <> more:
+      Gsm.psi_if(S.Session.psi(t), Gsm.active_psis(key, more), Bool.and(U32.is_eq(S.Session.ue(t), key), Gsm.active(S.Session.phase(t))))
+
+# No session switched: Failure naming every session released, then the UE released.
+def Gsm.switch_failed(+key: U32, +ue: S.Ue, psis: List<&2, U32>) -> N.GOut():
+  +cause = N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified())
+  (S.Rephase{key, S.Releasing{S.Guard{0}}}, [N.SwitchFail{S.Ue.assoc(ue), S.Ue.stream(ue), Some{key}, N.Ngap.big(key), S.Ue.ran_id(ue), psis, cause}, N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}, N.Note{F.Warn{}, "NGAP: Path Switch failed, no PDU session switched; UE released"}])
+
+def Gsm.switch_end(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
+  match switched cfg:
+    case (p <> more) Some{c}:
+      (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}])
+    case _ _:
+      Gsm.switch_failed(key, ue, List.append(&2, U32, released, switched))
+
+def Gsm.switch_next(+st: S.State, +key: U32, +ue: S.Ue, guard: S.Guard, ctx: Sec.Nas.Ctx, nh: S.Nh, released: List<&2, U32>, switched: List<&2, U32>, waits: Bool) -> N.GOut():
+  match waits:
+    case True{}:
+      (S.Rephase{key, S.Switching{guard, ctx, nh, released}}, [])
+    case False{}:
+      Gsm.switch_end(key, ue, ctx, nh, released, switched, S.State.config(st))
+
+def Gsm.switch_ue(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool, +ue: S.Ue, p: S.Phase) -> N.GOut():
+  match p:
+    case S.Switching{guard, ctx, nh, released}:
+      +key = S.Session.ue(s)
+      +psi = S.Session.psi(s)
+      Gsm.switch_next(st, key, ue, guard, ctx, nh, Gsm.psi_if(psi, released, Bool.not(ok)), Gsm.psi_if(psi, Gsm.active_psis(key, S.State.sessions(st)), ok), Gsm.waits(key, skey, S.State.sessions(st)))
+    case _:
+      (S.Keep{}, [])
+
+def Gsm.switch_of(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool, m: Maybe<&2, S.Ue>) -> N.GOut():
+  match m:
+    case None{}:
+      (S.Keep{}, [])
+    case Some{+ue}:
+      Gsm.switch_ue(st, skey, s, ok, ue, S.Ue.phase(ue))
+
+# The UPF answered a repointed session, or its last retransmission went unanswered.
+def Gsm.repointed(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool) -> N.GOut():
+  N.Out.join(Gsm.repoint_done(st, skey, s, ok), Gsm.switch_of(st, skey, s, ok, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st))))
+
 # Session Modification accepted: active; refused: the session is released.
 def Gsm.modified_as(+st: S.State, +skey: U32, +s: S.Session, ok: Bool) -> N.GOut():
   match ok:
@@ -443,6 +538,8 @@ def Gsm.modified_phase(st: S.State, skey: U32, s: S.Session, msg: Pf.Msg, p: S.S
   match p:
     case S.Modifying{guard, request}:
       Gsm.modified_as(st, skey, s, Up.N4.accepted(Up.N4.cause(msg)))
+    case S.Repointing{guard, request}:
+      Gsm.repointed(st, skey, s, Up.N4.accepted(Up.N4.cause(msg)))
     case _:
       N.Out.warn("PFCP: Session Modification Response for a session not being modified")
 
@@ -656,5 +753,7 @@ def Gsm.expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase) -> N.GOut
       Gsm.drop(st, skey, s, S.State.pfcp_seq(st))
     case S.Modifying{+guard, +request}:
       Gsm.resend_if(skey, s, S.Modifying{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, Gsm.drop(st, skey, s, S.State.pfcp_seq(st)), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
+    case S.Repointing{+guard, +request}:
+      Gsm.resend_if(skey, s, S.Repointing{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, Gsm.repointed(st, skey, s, False{}), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
     case S.Active{}:
       (S.Keep{}, [])

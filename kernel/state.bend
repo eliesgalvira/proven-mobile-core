@@ -7,6 +7,7 @@ import ./plmn.bend as P
 import ./ausf.bend as Au
 import ./nas/security.bend as N
 import ./nas/sm.bend as Sm
+import ./crypto/kdf.bend as Kd
 
 # The kernel state (docs/spec/milestone-1.md § The step function): one record.
 # Each UE context is owned by one row keyed by AMF-UE-NGAP-ID; everything else
@@ -155,21 +156,94 @@ def Guard.retries(g: Guard) -> U32:
     case Guard{retries}:
       retries
 
+# The AMF's NH chain (TS 33.501 §6.9.2.1.1): the KAMF it hangs from and the
+# latest {NH, NCC} pair, the only one kept.
+type Nh is Data:
+  Nh{k_amf: B.Bytes(), nh: B.Bytes(), ncc: U32}
+
+def Nh.next(c: Nh) -> Nh:
+  match c:
+    case Nh{+k_amf, nh, ncc}:
+      Nh{k_amf, Kd.kdf.nh(k_amf, nh), U32.mod(U32.add(ncc, 1), 8)}
+
+# At initial setup KgNB is a virtual NH with NCC 0, and the AMF keeps the
+# first NH, NCC 1, unsent: the first pair a target gNB gets has NCC 2.
+def Nh.initial(k_amf: B.Bytes(), k_gnb: B.Bytes()) -> Nh:
+  Nh.next(Nh{k_amf, k_gnb, 0})
+
+# A target gNB's downlink NG-U tunnel for a PDU session: the session's
+# identity, the TEID and the IPv4 address.
+type Tunnel is Data:
+  Tunnel{psi: U32, teid: U32, addr: B.Bytes()}
+
+# The target of an N2 handover (TS 23.502 §4.9.1.3), which knows the UE by
+# its AMF-UE-NGAP-ID too: asked with Handover Request, or acknowledged, having
+# acknowledged with its RAN-UE-NGAP-ID, on a stream, with its tunnels.
+type Leg is Data:
+  Asked{target: U32}
+  Acked{target: U32, ran: B.Bytes(), stream: U32, tunnels: List<&2, Tunnel>}
+
+def Leg.target(l: Leg) -> U32:
+  match l:
+    case Asked{target}:
+      target
+    case Acked{target, ran, stream, tunnels}:
+      target
+
+# The side an N2 handover released, the source after Handover Notify or the
+# target after a cancel or the guard firing, kept so that its UE Context
+# Release Complete is taken as the answer it is: its association and the
+# RAN-UE-NGAP-ID it gave, if it gave one.
+type Side is Data:
+  Side{assoc: U32, ran: Maybe<&2, B.Bytes()>}
+
+def Leg.side(l: Leg) -> Side:
+  match l:
+    case Asked{target}:
+      Side{target, None{}}
+    case Acked{target, ran, stream, tunnels}:
+      Side{target, Some{ran}}
+
+def Side.is(m: Maybe<&2, Side>, +a: U32, +r: B.Bytes()) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{Side{assoc, None{}}}:
+      U32.is_eq(assoc, a)
+    case Some{Side{assoc, Some{ran}}}:
+      Bool.and(U32.is_eq(assoc, a), B.bytes_eq(ran, r))
+
+# Association a is a side released before it answered: an answer it sent may
+# still be on its way.
+def Side.unanswered(m: Maybe<&2, Side>, +a: U32) -> Bool:
+  match m:
+    case Some{Side{assoc, None{}}}:
+      U32.is_eq(assoc, a)
+    case _:
+      False{}
+
 # Where a UE is in registration. Every phase but Registered carries the guard
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
-# security mode, T3550 setting up the context, and the wait for the gNB's UE
-# Context Release Complete), so no context waits forever. Created is a context
-# the InitialUEMessage has just made, before its first procedure places it;
-# no stored context is in it (amf.contexts.guarded). The SUPI a SUCI
-# de-conceals to stays in Authenticating, out of the SUPI index, until 5G-AKA
-# verifies it.
+# security mode, T3550 setting up the context, the Path Switch waiting on the
+# UPF, the N2 handover's preparation then completion, and the wait for the
+# gNB's UE Context Release Complete), so no context waits forever. The N2
+# handover's guard is never retried, so its phase holds no retry count. A UE
+# in N2 handover stays with its owner, the source, until the target's
+# Handover Notify; it holds the {NH, NCC} sent to the target. A registered UE keeps
+# the side its last N2 handover released until it leaves Registered. Created
+# is a context the InitialUEMessage has just made, before its first procedure
+# places it; no stored context is in it (amf.contexts.guarded). The SUPI a
+# SUCI de-conceals to stays in Authenticating, out of the SUPI index, until
+# 5G-AKA verifies it.
 type Phase is Data:
   Created{}
   Identifying{guard: Guard}
   Authenticating{guard: Guard, av: Au.Av, resynced: Bool, supi: B.Digits()}
   SecurityMode{guard: Guard, ctx: N.Nas.Ctx, k_amf: B.Bytes()}
-  ContextSetup{guard: Guard, ctx: N.Nas.Ctx, response: Bool, complete: Bool}
-  Registered{ctx: N.Nas.Ctx}
+  ContextSetup{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, response: Bool, complete: Bool}
+  Registered{ctx: N.Nas.Ctx, nh: Nh, released: Maybe<&2, Side>}
+  Switching{guard: Guard, ctx: N.Nas.Ctx, nh: Nh, released: List<&2, U32>}
+  Handover{ctx: N.Nas.Ctx, nh: Nh, source: U32, leg: Leg}
   Releasing{guard: Guard}
 
 def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
@@ -182,10 +256,14 @@ def Phase.guard(p: Phase) -> Maybe<&2, Guard>:
       Some{guard}
     case SecurityMode{guard, ctx, k_amf}:
       Some{guard}
-    case ContextSetup{guard, ctx, response, complete}:
+    case ContextSetup{guard, ctx, nh, response, complete}:
       Some{guard}
-    case Registered{ctx}:
+    case Registered{ctx, nh, released}:
       None{}
+    case Switching{guard, ctx, nh, released}:
+      Some{guard}
+    case Handover{ctx, nh, source, leg}:
+      Some{Guard{0}}
     case Releasing{guard}:
       Some{guard}
 
@@ -194,36 +272,38 @@ def Phase.guarded(p: Phase) -> Bool:
   match p:
     case Created{}:
       False{}
-    case Registered{ctx}:
+    case Registered{ctx, nh, released}:
       True{}
     case other:
       Tb.Table.present(Guard, Phase.guard(other))
 
 def Phase.with_guard(p: Phase, g: Guard) -> Phase:
   match p:
-    case Created{}:
-      Created{}
     case Identifying{guard}:
       Identifying{g}
     case Authenticating{guard, av, resynced, supi}:
       Authenticating{g, av, resynced, supi}
     case SecurityMode{guard, ctx, k_amf}:
       SecurityMode{g, ctx, k_amf}
-    case ContextSetup{guard, ctx, response, complete}:
-      ContextSetup{g, ctx, response, complete}
-    case Registered{ctx}:
-      Registered{ctx}
+    case ContextSetup{guard, ctx, nh, response, complete}:
+      ContextSetup{g, ctx, nh, response, complete}
+    case Switching{guard, ctx, nh, released}:
+      Switching{g, ctx, nh, released}
     case Releasing{guard}:
       Releasing{g}
+    case other:
+      other
 
 # The NAS security context in force, once there is one.
 def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
   match p:
     case SecurityMode{guard, ctx, k_amf}:
       Some{ctx}
-    case ContextSetup{guard, ctx, response, complete}:
+    case ContextSetup{guard, ctx, nh, response, complete}:
       Some{ctx}
-    case Registered{ctx}:
+    case Registered{ctx, nh, released}:
+      Some{ctx}
+    case Switching{guard, ctx, nh, released}:
       Some{ctx}
     case _:
       None{}
@@ -232,12 +312,51 @@ def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
   match p:
     case SecurityMode{guard, ctx, k_amf}:
       SecurityMode{guard, c, k_amf}
-    case ContextSetup{guard, ctx, response, complete}:
-      ContextSetup{guard, c, response, complete}
-    case Registered{ctx}:
-      Registered{c}
+    case ContextSetup{guard, ctx, nh, response, complete}:
+      ContextSetup{guard, c, nh, response, complete}
+    case Registered{ctx, nh, released}:
+      Registered{c, nh, released}
+    case Switching{guard, ctx, nh, released}:
+      Switching{guard, c, nh, released}
     case other:
       other
+
+# The target of the N2 handover pending, if any.
+def Phase.pending(p: Phase) -> Maybe<&2, U32>:
+  match p:
+    case Handover{ctx, nh, source, leg}:
+      Some{Leg.target(leg)}
+    case _:
+      None{}
+
+# Association a, under RAN-UE-NGAP-ID r, is the side a handover released.
+def Phase.released(p: Phase, +a: U32, +r: B.Bytes()) -> Bool:
+  match p:
+    case Registered{ctx, nh, released}:
+      Side.is(released, a, r)
+    case _:
+      False{}
+
+def Phase.idle(p: Phase) -> Bool:
+  Bool.not(Tb.Table.present(U32, Phase.pending(p)))
+
+# A UE in N2 handover keeps its NAS security context, but no NAS message is
+# read while the target takes it over.
+def Phase.secured(p: Phase) -> Bool:
+  match p:
+    case Handover{ctx, nh, source, leg}:
+      True{}
+    case other:
+      Tb.Table.present(N.Nas.Ctx, Phase.ctx(other))
+
+# A pending handover belongs to association a when a is the source it started
+# from and not its target.
+def Phase.owned_by(p: Phase, +a: U32) -> Bool:
+  match p:
+    case Handover{ctx, nh, +source, leg}:
+      Bool.and(U32.is_eq(a, source), Bool.not(U32.is_eq(Leg.target(leg), source)))
+    case _:
+      True{}
 
 # A UE context: the NGAP association that owns it, its RAN-UE-NGAP-ID there,
 # the stream its InitialUEMessage arrived on, its SUPI once authenticated and
@@ -320,6 +439,56 @@ def Ue.with_reg(u: Ue, r: B.Bytes()) -> Ue:
     case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
       Ue{assoc, ran_id, stream, supi, tmsi, r, ngksi, phase, last_dl}
 
+# The context owned by another association, under its RAN-UE-NGAP-ID and stream there.
+def Ue.moved(u: Ue, a: U32, r: B.Bytes(), s: U32, p: Phase) -> Ue:
+  match u:
+    case Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      Ue{a, r, s, supi, tmsi, reg, ngksi, p, last_dl}
+
+# The context is owned by the source of its pending handover, if any.
+def Ue.single(+u: Ue) -> Bool:
+  Phase.owned_by(Ue.phase(u), Ue.assoc(u))
+
+# The phase p belongs to the context m, if any.
+def Ue.fits(p: Phase, m: Maybe<&2, Ue>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{w}:
+      Phase.owned_by(p, Ue.assoc(w))
+
+def Ue.pending(m: Maybe<&2, Ue>) -> Maybe<&2, U32>:
+  match m:
+    case None{}:
+      None{}
+    case Some{u}:
+      Phase.pending(Ue.phase(u))
+
+def Ue.released(m: Maybe<&2, Ue>, +a: U32, +r: B.Bytes()) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{u}:
+      Phase.released(Ue.phase(u), a, r)
+
+# Both absent, or both owned by the same association under the same RAN-UE-NGAP-ID.
+def Ue.same_owner(a: Maybe<&2, Ue>, b: Maybe<&2, Ue>) -> Bool:
+  match a b:
+    case None{} None{}:
+      True{}
+    case Some{+u} Some{+v}:
+      Bool.and(U32.is_eq(Ue.assoc(u), Ue.assoc(v)), B.bytes_eq(Ue.ran_id(u), Ue.ran_id(v)))
+    case _ _:
+      False{}
+
+# Present, and owned by association a.
+def Ue.on(m: Maybe<&2, Ue>, +a: U32) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{u}:
+      U32.is_eq(Ue.assoc(u), a)
+
 # A PDU session, keyed by its local SEID. Its identity (the UE, the PDU
 # session identity, the UE IPv4 address, the N3 uplink TEID) never changes;
 # the rest does as the procedure advances.
@@ -329,12 +498,14 @@ type SId is Data:
 # Where a session is: PFCP Session Establishment pending (the PTI, the Accept
 # to send on success and the request, kept to send again), the gNB's resource
 # setup pending, the PFCP Session Modification with the gNB's tunnel pending
-# (the request kept the same way), or active. A guard counts its PFCP
+# (the request kept the same way), the one repointing the downlink to a Path
+# Switch's target pending (likewise), or active. A guard counts its PFCP
 # request's retransmissions.
 type SPhase is Data:
   Creating{guard: Guard, pti: U32, accept: Sm.Sm, request: B.Bytes()}
   Setting{guard: Guard, pti: U32}
   Modifying{guard: Guard, request: B.Bytes()}
+  Repointing{guard: Guard, request: B.Bytes()}
   Active{}
 
 def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
@@ -344,6 +515,8 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
     case Setting{guard, pti}:
       Some{guard}
     case Modifying{guard, request}:
+      Some{guard}
+    case Repointing{guard, request}:
       Some{guard}
     case Active{}:
       None{}
@@ -473,7 +646,7 @@ def N4.with_link(n: N4, l: Link) -> N4:
       N4{recovery, l}
 
 type State is Data:
-  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, n4: N4}
+  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: Tb.Table(B.Bytes()), ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, n4: N4}
 
 def State.initial() -> State:
   State{None{}, [], [], [], [], 1, 1, N4{[], Idle{}}}
@@ -488,7 +661,7 @@ def State.subs(st: State) -> List<&2, Au.Subscriber>:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       subs
 
-def State.assocs(st: State) -> List<&2, U32>:
+def State.assocs(st: State) -> Tb.Table(B.Bytes()):
   match st:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       assocs
@@ -520,37 +693,43 @@ def State.n4(st: State) -> N4:
 
 # Associations
 # ------------
+# The NGAP associations whose gNB has completed NG Setup (TS 38.413 §8.7.1),
+# each with its Global RAN Node ID as NGAP encodes it.
 
-def Assocs.has(+a: U32, as: List<&2, U32>) -> Bool:
-  match as:
-    case Nil{}:
-      False{}
-    case b <> more:
-      Bool.or(U32.is_eq(b, a), Assocs.has(a, more))
+def Assocs.has(+a: U32, as: Tb.Table(B.Bytes())) -> Bool:
+  Tb.Table.has(B.Bytes(), a, as)
 
-def Assocs.add_if(a: U32, as: List<&2, U32>, known: Bool) -> List<&2, U32>:
-  match known:
-    case True{}:
-      as
-    case False{}:
-      a <> as
-
-def Assocs.add(+a: U32, +as: List<&2, U32>) -> List<&2, U32>:
-  Assocs.add_if(a, as, Assocs.has(a, as))
-
-def Assocs.drop_if(b: U32, rest: List<&2, U32>, hit: Bool) -> List<&2, U32>:
-  match hit:
-    case True{}:
-      rest
-    case False{}:
-      b <> rest
-
-def Assocs.drop(+a: U32, as: List<&2, U32>) -> List<&2, U32>:
+def Assocs.drop(+a: U32, as: Tb.Table(B.Bytes())) -> Tb.Table(B.Bytes()):
   match as:
     case Nil{}:
       []
-    case +b <> more:
-      Assocs.drop_if(b, Assocs.drop(a, more), U32.is_eq(b, a))
+    case (+b, id) <> more:
+      Tb.Table.keep(B.Bytes(), b, id, Assocs.drop(a, more), Bool.not(U32.is_eq(b, a)))
+
+def Assocs.set(+a: U32, id: B.Bytes(), +as: Tb.Table(B.Bytes()), ok: Bool) -> Tb.Table(B.Bytes()):
+  match ok:
+    case True{}:
+      (a, id) <> Assocs.drop(a, as)
+    case False{}:
+      Assocs.drop(a, as)
+
+# The association of the gNB with a Global RAN Node ID, the latest set up.
+def Assocs.of(+id: B.Bytes(), as: Tb.Table(B.Bytes())) -> Maybe<&2, U32>:
+  match as:
+    case Nil{}:
+      None{}
+    case (a, gid) <> more:
+      Tb.Table.hit(U32, a, Assocs.of(id, more), B.bytes_eq(gid, id))
+
+def State.with_assocs(st: State, as: Tb.Table(B.Bytes())) -> State:
+  match st:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      State{config, subs, as, ues, sessions, pfcp_seq, next_ue, n4}
+
+# NG Setup answered: the association is set up when it succeeded, and not
+# otherwise, since a new NG Setup replaces what the last one set up.
+def State.ready(+st: State, +a: U32, id: B.Bytes(), ok: Bool) -> State:
+  State.with_assocs(st, Assocs.set(a, id, State.assocs(st), ok))
 
 # UE contexts of an association
 # -----------------------------
@@ -607,7 +786,7 @@ def Ues.has_tmsi(+t: U32, ues: Tb.Table(Ue)) -> Bool:
 # Some context with this SUPI holds a NAS security context, which exists only
 # once 5G-AKA has verified the SUPI.
 def Ue.secures(+u: Ue, s: Maybe<&2, B.Digits()>) -> Bool:
-  Bool.and(Maybe.same_bytes(Ue.supi(u), s), Tb.Table.present(N.Nas.Ctx, Phase.ctx(Ue.phase(u))))
+  Bool.and(Maybe.same_bytes(Ue.supi(u), s), Phase.secured(Ue.phase(u)))
 
 def Ues.secured(+s: Maybe<&2, B.Digits()>, ues: Tb.Table(Ue)) -> Bool:
   match ues:
@@ -623,6 +802,22 @@ def Ues.unique(ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (+key, +u) <> +more:
       Bool.and(Ues.clear(key, u, more), Ues.unique(more))
+
+# Every context with a pending handover is owned by its source.
+def Ues.single(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, +u) <> more:
+      Bool.and(Ue.single(u), Ues.single(more))
+
+# Every context with a pending handover waits under its guard.
+def Ues.timed(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (key, +u) <> more:
+      Bool.and(Bool.or(Phase.idle(Ue.phase(u)), Tb.Table.present(Guard, Ue.guard(u))), Ues.timed(more))
 
 # Every context is registered or waits under its guard.
 def Ues.guarded(ues: Tb.Table(Ue)) -> Bool:
@@ -659,6 +854,14 @@ def Ues.sift(+s: Sieve, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
 # The contexts not owned by association a.
 def Ues.drop_assoc(a: U32, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
   Ues.sift(Others{a}, ues)
+
+# RAN-UE-NGAP-ID ran names no context on association assoc but the one keyed key.
+def Ues.ran_free(+key: U32, +assoc: U32, +ran: B.Bytes(), ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (+k, +v) <> more:
+      Bool.and(Bool.not(Bool.and(Bool.not(U32.is_eq(k, key)), Bool.and(U32.is_eq(Ue.assoc(v), assoc), B.bytes_eq(Ue.ran_id(v), ran)))), Ues.ran_free(key, assoc, ran, more))
 
 # The context takes the place of its key and of every context it conflicts with.
 def Ues.put(+key: U32, +u: Ue, ues: Tb.Table(Ue)) -> Tb.Table(Ue):

@@ -16,7 +16,7 @@ This file covers how the captures were made and what went wrong along the way.
 | `eupf-probes.pcapng`, `eupf-probes.json` | The eUPF probes from `INVENTORY.md`, run after the main capture: PFCP, GTP-U, and the N6 ICMP that shows decapsulation. |
 | `logs/` | eUPF log (debug, shows eBPF map writes), the eUPF session list after the probes, AMF/gNB/UE logs, ping results, and the subscriber record after authentication (SQN 64 → 96). |
 | `handover.pcapng`, `handover.json`, `logs/handover/` | The handover capture, in the same format as `vectors.json`, and its AMF, eUPF, PacketRusher and ping logs. See § Handover capture. |
-| `setup/` | Everything needed to rerun the captures: `flake.nix`/`flake.lock` (images and host tools), `docker-compose.yml`, configs, `subscriber.js`, the home-network key, `capture.py`, `pfcp_probe.py`, `extract.py`, and for the handover capture `packetrusher/`. |
+| `setup/` | Everything needed to rerun the captures: `flake.nix`/`flake.lock` (images and host tools), `docker-compose.yml`, configs, `subscriber.js`, the home-network key, `capture.py`, `pfcp_probe.py`, `extract.py`, and for the handover capture `packetrusher/config.yml`; PacketRusher's package and patch are in `nix/`. |
 
 ## Reproduce
 
@@ -35,7 +35,7 @@ You need Nix with flakes, Docker with Compose v2, a user in the `docker` group, 
 | nixpkgs | `d357a2b54f0b6dc4aeb4e993190a52cf151b6f24` (lib 26.11.20261101.d357a2b, narHash `sha256-Thn0OE71NF80ZfOMGCgJvKtbCcnnz0fToT/qsvb/Gtc=`) | `setup/flake.lock` |
 | Open5GS | 2.8.0 (nixpkgs `open5gs`, from upstream tag `v2.8.0`) | image `speck5g-open5gs:2.8.0`, `dockerTools.buildLayeredImage`, id `sha256:3ebc95c7…15ece53` |
 | UERANSIM | 3.3.0 (nixpkgs `ueransim`, from upstream tag `v3.3.0`) | image `speck5g-ueransim:3.3.0`, id `sha256:3e8132e8…c3d39ce` |
-| PacketRusher (handover capture) | v2.0.0 + `setup/packetrusher/handover-cancel.patch`, Go 1.26.10 | `buildGoModule` from `HewlettPackard/PacketRusher` at `6fef144`, image `speck5g-packetrusher:2.0.0`, id `sha256:6af3b6d…97e6938` |
+| PacketRusher (handover capture) | v2.0.0 + `nix/packetrusher-handover-cancel.patch` (`nix/packetrusher.nix`), Go 1.26.10 | `buildGoModule` from `HewlettPackard/PacketRusher` at `6fef144`, image `speck5g-packetrusher:2.0.0`, id `sha256:6af3b6d…97e6938` |
 | eUPF | v0.7.2 | `ghcr.io/edgecomllc/eupf:0.7.2@sha256:01ad44889ce546ae0720cdc9e648889e9a653d40a20a1867d6751ae6cbb6cb08` |
 | MongoDB | 6.0 | `mongo:6.0@sha256:8b6d8f5bbedb25cb73517b65cf99f13aeb75ad5b157a56c479287a840bbad3ac` |
 | netshoot (capture, data network, probe helper) | v0.14 | `nicolaka/netshoot:v0.14@sha256:7f08c4aff13ff61a35d30e30c5c1ea8396eac6ab4ce19fd02d5a4b3b5d0d09a2` |
@@ -89,6 +89,6 @@ Same requirements and the same bring-up as milestone 1. `capture.py handover` bu
 
 What failed or needed fixing:
 
-- After the Xn handover the downlink was silently dropped, although eUPF's FAR pointed at gNB 2 with the right TEID. eUPF's XDP path forwards only to a gNB address its ARP table holds, and nothing had made it resolve 10.33.0.31. `capture.py` now pings eUPF from both gNB addresses before the capture.
+- After the Xn handover the downlink was silently dropped, although eUPF's FAR pointed at gNB 2 with the right TEID. eUPF's XDP program hands a G-PDU for a gNB not yet in its neighbour table to the Linux kernel already encapsulated from eUPF's own address, and the kernel drops it as a martian. The handover vectors were captured with a workaround: `capture.py` pinged eUPF from both gNB addresses first, so both were resolved. The bench now sets `accept_local` on eUPF's interface (`setup/docker-compose.yml`) instead, as the e2e test does, and `capture.py` no longer pings; the capture was not re-run since, so the vectors still come from the warm-up run.
 - The first ping after an N2 handover could leave before the Handover Notify, since PacketRusher's control socket reports the UE on the target as soon as it moves. `capture.py` waits a second before each ping.
 - PacketRusher's tests are not run in the Nix build (`doCheck = false`): they open SCTP sockets and tunnels.

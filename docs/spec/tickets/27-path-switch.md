@@ -10,7 +10,7 @@ The AMF handles PathSwitchRequest from a target gNB (TS 23.502 §4.9.1.2.2, TS 3
 2. Compare the UE security capabilities in the request with the stored ones (TS 33.501 §6.7.3.1). If they differ, use the stored ones in the acknowledgement, and log it.
 3. The SMF repoints each listed PDU session's downlink FAR to the target's DL NG-U tunnel with one PFCP Session Modification. Sessions that fail are released, and listed in the acknowledgement as failed.
 4. Move the UE to the target association with its new RAN-UE-NGAP-ID. Derive the next {NH, NCC}. Reply PathSwitchRequestAcknowledge with the security context and the switched sessions.
-5. If no PDU session could be switched, reply PathSwitchRequestFailure (TS 38.413 §8.4.4.2) and release the UE.
+5. If no PDU session can be switched, reply PathSwitchRequestFailure (TS 38.413 §8.4.4.2) and change nothing; the UE is not released. Path Switch has no owner check, so releasing here would let any gNB with NG Setup log off any registered UE with a request naming no session it can switch. The UE is released only when the UPF has refused every session repointed.
 6. The source gNB's later UEContextReleaseRequest for this UE is answered by its owner check, since the source is no longer the owner. The source's resources are freed when its association reports them, as in milestone 1.
 
 ## Laws
