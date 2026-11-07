@@ -517,6 +517,16 @@ def Out.join(a: GOut(), b: GOut()) -> GOut():
     case (ta, aa):
       Out.join_go(ta, aa, b)
 
+def Out.tx(o: GOut()) -> S.Tx:
+  match o:
+    case (tx, acts):
+      tx
+
+def Out.acts(o: GOut()) -> List<&2, Act>:
+  match o:
+    case (tx, acts):
+      acts
+
 def Out.warn(why: String) -> GOut():
   (S.Keep{}, [Note{F.Warn{}, why}])
 

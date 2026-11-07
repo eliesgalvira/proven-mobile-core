@@ -171,7 +171,7 @@ def Ip.teid_from(+sessions: Tb.Table(S.Session), words: B.Bytes()) -> Maybe<&2, 
 def Ip.seid_from(+sessions: Tb.Table(S.Session), words: B.Bytes()) -> Maybe<&2, U32>:
   match words:
     case a <> b <> c <> d <> more:
-      +k = U32.and(4294967294, N.Ngap.of_big([a, b, c, d]))
+      +k = U32.and(2147483646, N.Ngap.of_big([a, b, c, d]))
       Tb.Table.hit(U32, k, Ip.seid_from(sessions, more), Bool.not(Bool.or(U32.is_eq(k, 0), Tb.Table.has(S.Session, k, sessions))))
     case _:
       None{}
@@ -214,7 +214,7 @@ def Gsm.dels(victims: Tb.Table(S.Session)) -> S.Tx:
 
 # Sessions forgotten, those the UPF knows deleted there, from sequence number seq.
 def Gsm.forget(+victims: Tb.Table(S.Session), seq: U32) -> N.GOut():
-  (S.Both{Gsm.dels(victims), S.BumpSeq{Up.N4.deletion_count(victims)}}, Up.N4.deletions(victims, seq))
+  N.Out.join((Gsm.dels(victims), []), Up.N4.deletions(victims, seq))
 
 # The one write of a session: it takes its place, and a live session it
 # conflicts with goes. The address, TEID and SEID are drawn free, so that is
@@ -567,7 +567,7 @@ def Gsm.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
 def Gsm.pfcp_k4(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      (S.Keep{}, [])
+      Up.N4.deletion_response(st, msg)
     case False{}:
       Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 

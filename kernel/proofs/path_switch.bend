@@ -8,6 +8,7 @@ import ../step.bend as K
 import ../amf/ngap.bend as N
 import ../smf/n4.bend as Up
 import ../smf/switch.bend as Sw
+import ../smf/gsm.bend as Gsm
 import ../nas/security.bend as Sec
 import ../aper.bend as Ap
 import ../ngap/frame.bend as Fr
@@ -37,13 +38,8 @@ def Psw.route_view(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32,
 # An outcome keeps the state, or none of its actions is a Path Switch Request
 # Failure; nor is any guard stopped or Session Deletion that N.Step.of adds.
 
-def Fl.as(o: N.GOut()) -> List<&2, N.Act>:
-  match o:
-    case (tx, acts):
-      acts
-
 def Fl.Cls(+o: N.GOut()) -> Data:
-  Either<&2, &2, {PT.Tk.tx(o) == S.Keep{} : S.Tx}, {N.Ngap.any_switch_failure(Fl.as(o)) == False{} : Bool}>
+  Either<&2, &2, {N.Out.tx(o) == S.Keep{} : S.Tx}, {N.Ngap.any_switch_failure(N.Out.acts(o)) == False{} : Bool}>
 
 def Fl.app(+xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +hx: {N.Ngap.any_switch_failure(xs) == False{} : Bool}, +hy: {N.Ngap.any_switch_failure(ys) == False{} : Bool}) -> {N.Ngap.any_switch_failure(List.append(&2, N.Act, xs, ys)) == False{} : Bool}:
   match xs:
@@ -54,31 +50,32 @@ def Fl.app(+xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +hx: {N.Ngap.any_switch_f
       %ea : {Bool.or(_, N.Ngap.any_switch_failure(List.append(&2, N.Act, more, ys))) == False{} : Bool}
       Fl.app(more, ys, P.Bool.or_false_r(N.Ngap.is_switch_failure(a), N.Ngap.any_switch_failure(more), hx), hy)
 
-def Fl.join(+a: N.GOut(), +b: N.GOut(), +ha: {N.Ngap.any_switch_failure(Fl.as(a)) == False{} : Bool}, +hb: {N.Ngap.any_switch_failure(Fl.as(b)) == False{} : Bool}) -> {N.Ngap.any_switch_failure(Fl.as(N.Out.join(a, b))) == False{} : Bool}:
+def Fl.join(+a: N.GOut(), +b: N.GOut(), +ha: {N.Ngap.any_switch_failure(N.Out.acts(a)) == False{} : Bool}, +hb: {N.Ngap.any_switch_failure(N.Out.acts(b)) == False{} : Bool}) -> {N.Ngap.any_switch_failure(N.Out.acts(N.Out.join(a, b))) == False{} : Bool}:
   match a:
     case (+ta, +aa):
       match b:
         case (+tb, +ab):
           Fl.app(aa, ab, ha, hb)
 
-def Fl.also(+o: N.GOut(), +more: List<&2, N.Act>, +h: {N.Ngap.any_switch_failure(Fl.as(o)) == False{} : Bool}, +hm: {N.Ngap.any_switch_failure(more) == False{} : Bool}) -> {N.Ngap.any_switch_failure(Fl.as(N.Out.also(o, more))) == False{} : Bool}:
+def Fl.also(+o: N.GOut(), +more: List<&2, N.Act>, +h: {N.Ngap.any_switch_failure(N.Out.acts(o)) == False{} : Bool}, +hm: {N.Ngap.any_switch_failure(more) == False{} : Bool}) -> {N.Ngap.any_switch_failure(N.Out.acts(N.Out.also(o, more))) == False{} : Bool}:
   match o:
     case (+tx, +acts):
       Fl.app(acts, more, h, hm)
 
-def Fl.del_if(+t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +b: Bool, later: @q:U32 -> {N.Ngap.any_switch_failure(Up.N4.deletions(more, q)) == False{} : Bool}) -> {N.Ngap.any_switch_failure(Up.N4.delete_if(t, seq, q => Up.N4.deletions(more, q), b)) == False{} : Bool}:
+def Fl.del_if(+key: U32, +t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +b: Bool, later: @q:U32 -> {N.Ngap.any_switch_failure(N.Out.acts(Up.N4.deletions(more, q))) == False{} : Bool}) -> {N.Ngap.any_switch_failure(N.Out.acts(Up.N4.delete_if(key, t, seq, q => Up.N4.deletions(more, q), b))) == False{} : Bool}:
   match b:
     case True{}:
-      later(U32.add(seq, 1))
+      +request = Up.N4.delete(S.Session.up_seid(t), seq)
+      Fl.join((S.Both{S.Pend{key, Some{S.Deletion{request, seq, S.Guard{0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(t)}, request}, N.TimerStart{None{}, S.Ids.deletion(key), Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
     case False{}:
       later(seq)
 
-def Fl.dels(+rows: Tb.Table(S.Session), +seq: U32) -> {N.Ngap.any_switch_failure(Up.N4.deletions(rows, seq)) == False{} : Bool}:
+def Fl.dels(+rows: Tb.Table(S.Session), +seq: U32) -> {N.Ngap.any_switch_failure(N.Out.acts(Up.N4.deletions(rows, seq))) == False{} : Bool}:
   match rows:
     case Nil{}:
       {==}
     case (+key, +t) <> +more:
-      Fl.del_if(t, seq, more, S.Session.known(t), +q => Fl.dels(more, q))
+      Fl.del_if(key, t, seq, more, S.Session.known(t), +q => Fl.dels(more, q))
 
 def Fl.cancel(+key: U32, +m: Maybe<&2, S.Guard>) -> {N.Ngap.any_switch_failure(N.Guard.cancel(key, m)) == False{} : Bool}:
   match m:
@@ -108,14 +105,14 @@ def Fl.gone(+keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Table(S.Sessi
     case False{}:
       Fl.cancels(before, after)
 
-def Fl.session(+skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> {N.Ngap.any_switch_failure(Fl.as(Sw.Sw.session(skey, s, seq, t))) == False{} : Bool}:
+def Fl.session(+skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> {N.Ngap.any_switch_failure(N.Out.acts(Sw.Sw.session(skey, s, seq, t))) == False{} : Bool}:
   match t:
     case None{}:
-      Fl.dels([(skey, s)], seq)
+      Fl.join((Gsm.Gsm.dels([(skey, s)]), []), Up.N4.deletions([(skey, s)], seq), {==}, Fl.dels([(skey, s)], seq))
     case Some{(teid, addr)}:
       {==}
 
-def Fl.sessions(+ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq: U32) -> {N.Ngap.any_switch_failure(Fl.as(Sw.Sw.sessions(ts, rows, seq))) == False{} : Bool}:
+def Fl.sessions(+ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq: U32) -> {N.Ngap.any_switch_failure(N.Out.acts(Sw.Sw.sessions(ts, rows, seq))) == False{} : Bool}:
   match rows:
     case Nil{}:
       {==}
@@ -217,19 +214,19 @@ def Mv.put(+key: U32, +ue: S.Ue, +a: U32, +r: B.Bytes(), +s: U32, +p: S.Phase, +
   %seg : {Tb.Table.present(S.Ue, _) == True{} : Bool} & {N.Owner.of(_, a, r) == _ : Maybe<&2, S.Ue>}
   ({==}, Mv.owner(ue, a, r, s, p))
 
-def Mv.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +k: U32, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}) -> Mv.Qt(st, k, assoc, ran, PT.Tk.tx(Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), True{}))):
+def Mv.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +k: U32, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}) -> Mv.Qt(st, k, assoc, ran, N.Out.tx(Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), True{}))):
   +rows = S.Sessions.of_ue(key, S.State.sessions(st))
   +p : S.Phase = S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Sw.Sw.released(ts, rows)}
   +v = S.Ue.moved(ue, assoc, ran, stream, p)
   +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
   +b : N.GOut() = (S.Put{key, v}, [])
   +more : List<&2, N.Act> = [N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}]
-  e12 = Equal.trans(S.Tx, PT.Tk.tx(N.Out.also(N.Out.join(a, b), more)), PT.Tk.tx(N.Out.join(a, b)), S.Both{PT.Tk.tx(a), S.Put{key, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PT.Tk.tx_join(a, b))
-  se = Equal.sym(S.Tx, PT.Tk.tx(N.Out.also(N.Out.join(a, b), more)), S.Both{PT.Tk.tx(a), S.Put{key, v}}, e12)
+  e12 = Equal.trans(S.Tx, N.Out.tx(N.Out.also(N.Out.join(a, b), more)), N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), S.Put{key, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PW.Out.tx_join(a, b))
+  se = Equal.sym(S.Tx, N.Out.tx(N.Out.also(N.Out.join(a, b), more)), S.Both{N.Out.tx(a), S.Put{key, v}}, e12)
   %se : Mv.Qt(st, k, assoc, ran, _)
   ekk = P.Some.inj(U32, key, k, Equal.trans(Maybe<&2, U32>, Some{key}, N.Ngap.ue_key(amf), Some{k}, Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{key}, ek), eid))
-  %ekk : Mv.Qt(st, _, assoc, ran, S.Both{PT.Tk.tx(a), S.Put{key, v}})
-  Inr{Mv.put(key, ue, assoc, ran, stream, p, PT.Tk.ues(PT.Tk.tx(a), S.State.ues(st)))}
+  %ekk : Mv.Qt(st, _, assoc, ran, S.Both{N.Out.tx(a), S.Put{key, v}})
+  Inr{Mv.put(key, ue, assoc, ran, stream, p, PT.Tk.ues(N.Out.tx(a), S.State.ues(st)))}
 
 def Mv.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ran: B.Bytes(), +amf: B.Bytes(), +uli: G.UserLocationInformation, +caps: G.UESecurityCapabilities, +items: G.PDUSessionResourceToBeSwitchedDLList(), +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListPSReq()>, +rrc: Maybe<&2, G.RRCEstablishmentCause()>, +k: U32, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev: {V.PathSwitchRequest.view(ies) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> Mv.Qu(st, k, assoc, ran, S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))):
   +v : V.PathSwitchRequest.View = V.PathSwitchRequest.View{ran, amf, uli, caps, items, failed, rrc}
@@ -239,12 +236,12 @@ def Mv.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len
   +n = Ps.Ps.caps_note(caps, Ps.Ps.named(st, amf))
   +step = K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)
   sr = Equal.sym(N.Step(), step, N.Step.of(st, o), Psw.route_view(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, v, ep, ei, ev, eup))
-  eu : {S.State.ues(K.Kernel.state(step)) == PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)} = (%sr : {S.State.ues(K.Kernel.state(_)) == PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}; PT.Tk.render(st, o))
-  seu = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(step)), PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)), eu)
+  eu : {S.State.ues(K.Kernel.state(step)) == PT.Tk.ues(N.Out.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)} = (%sr : {S.State.ues(K.Kernel.state(_)) == PT.Tk.ues(N.Out.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}; PT.Tk.render(st, o))
+  seu = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(step)), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), eu)
   %seu : Mv.Qu(st, k, assoc, ran, _)
-  sa = Equal.sym(S.Tx, PT.Tk.tx(N.Out.also(rr, n)), PT.Tk.tx(rr), PL.Lv.tx_also(rr, n))
+  sa = Equal.sym(S.Tx, N.Out.tx(N.Out.also(rr, n)), N.Out.tx(rr), PL.Lv.tx_also(rr, n))
   %sa : Mv.Qt(st, k, assoc, ran, _)
-  PW.Pw.claim(x => Mv.Qt(st, k, assoc, ran, PT.Tk.tx(x)), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Mv.go(st, assoc, stream, amf, ran, items, ts, k, eid, key, ue, ctx, nh, ek))
+  PW.Pw.claim(x => Mv.Qt(st, k, assoc, ran, N.Out.tx(x)), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Mv.go(st, assoc, stream, amf, ran, items, ts, k, eid, key, ue, ctx, nh, ek))
 
 def L.amf.path_switch.moves_owner(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ran, amf, uli, caps, items, failed, rrc, k, ep, ei, ev, eid):
   PW.Rt.cases(x => Mv.Qu(st, k, assoc, ran, S.State.ues(K.Kernel.state(x))), st, entropy, assoc, stream, len, bytes, 0, 25, crit, value, ies, c, ep, ei, {==}, Inl{{==}}, +eup => Mv.routed(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ran, amf, uli, caps, items, failed, rrc, k, ep, ei, ev, eid, eup))

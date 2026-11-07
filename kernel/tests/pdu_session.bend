@@ -109,6 +109,24 @@ def stale_guards(+msgs: List<&2, V.Vec>) -> IO(Unit):
     C.Check.report("the association down while a session is being set up: its guard is stopped", Pc.cancels(K.Kernel.frames(step(st2, F.NgapAssocDown{1})), 466))
     C.Check.report("The UPF refuses the Session Establishment: the session's guard is stopped once", Nat.is_eq(Pc.cancel_count(K.Kernel.frames(refused), 466), 1n))
 
+# TS 29.244 §6.4: the Session Deletion Request the association going down
+# sends is retransmitted unchanged until answered, up to N1 times.
+def deletion_retransmitted(+st4: S.State) -> IO(Unit):
+  do IO<Unit>:
+    +o_down : N.Step() = step(st4, F.NgapAssocDown{1})
+    +deletion : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o_down))
+    +dkey : U32 = U32.or(2147483648, Pc.session_timer(st4))
+    +o_d1 : N.Step() = step(K.Kernel.state(o_down), F.TimerFired{dkey})
+    +o_d2 : N.Step() = step(K.Kernel.state(o_d1), F.TimerFired{dkey})
+    +o_d3 : N.Step() = step(K.Kernel.state(o_d2), F.TimerFired{dkey})
+    +o_d4 : N.Step() = step(K.Kernel.state(o_d3), F.TimerFired{dkey})
+    C.Check.report("the Session Deletion Request's guard is the session's SEID with the top bit set, T1", Bool.and(U32.is_eq(A.first_timer(K.Kernel.frames(o_down)), dkey), U32.is_eq(Pc.first_ms(K.Kernel.frames(o_down)), 3000)))
+    C.Check.report("no Session Deletion Response: three retransmissions, each the request unchanged", Bool.and(B.bytes_eq(Pc.first_pfcp(K.Kernel.frames(o_d1)), deletion), Bool.and(B.bytes_eq(Pc.first_pfcp(K.Kernel.frames(o_d2)), deletion), Bool.and(B.bytes_eq(Pc.first_pfcp(K.Kernel.frames(o_d3)), deletion), Nat.is_eq(A.timer_starts(K.Kernel.frames(o_d3)), 1n)))))
+    C.Check.report("no Session Deletion Response after the third retransmission: given up, nothing sent", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_d4))), 0n), Bool.and(Nat.is_eq(A.timer_starts(K.Kernel.frames(o_d4)), 0n), Nat.is_eq(List.length(&2, F.Action, K.Kernel.frames(step(K.Kernel.state(o_d4), F.TimerFired{dkey}))), 0n))))
+    +answer : B.Bytes() = Up.N4.msg(Pf.Type.session_deletion_response(), Some{[0, 0, 0, 0, 0, 0, 0, 0]}, Pc.pfcp_seq(deletion), [Up.N4.byte(Pf.Ie.cause(), 1)])
+    +o_dok : N.Step() = step(K.Kernel.state(o_d1), Pc.pfcp_event(answer))
+    C.Check.report("a Session Deletion Response to the retransmission: its guard stopped, nothing sent again", Bool.and(Pc.cancels(K.Kernel.frames(o_dok), dkey), Nat.is_eq(List.length(&2, F.Action, K.Kernel.frames(step(K.Kernel.state(o_dok), F.TimerFired{dkey}))), 0n)))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
@@ -174,6 +192,7 @@ def main() -> IO(Unit):
     C.Check.report("the pool exhausted: Establishment Reject #26, no session", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_pool)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_pool))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1])))
     +o_down : N.Step() = step(st4, F.NgapAssocDown{1})
     C.Check.report("the association down: the active session is deleted at the UPF", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_down)), 0n), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_down))), 54)))
+    deletion_retransmitted(st4)
     +o_rel : N.Step() = step(K.Kernel.state(step(st4, A.data(1, A.release_request(ran)))), A.data(1, N.Ngap.pdu(Fr.Pdu.successful(), 41, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, []))])))
     C.Check.report("the UE released: its session is deleted at the UPF with it", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_rel)), 0n), Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_rel)), 0n), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_rel))), 54))))
     +st_releasing : S.State = K.Kernel.state(step(st4, A.data(1, A.release_request(ran))))

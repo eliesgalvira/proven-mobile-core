@@ -71,6 +71,10 @@ def Tx.kept(+tx: S.Tx, +st: S.State, +e: {S.Tx.keeps_sessions(tx) == True{} : Bo
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           eh
+    case S.Pend{pk, pd}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          eh
     case S.BumpUe{bk}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
@@ -364,15 +368,29 @@ def L.amf.ue_context_release.owner_only(st, entropy, assoc, stream, len, bytes, 
 # Release forgets
 # ---------------
 
-def Tx.forget_ue(+key: U32, n: U32, st: S.State) -> {Tb.Table.get(S.Ue, key, S.State.ues(S.Tx.apply(S.Both{S.Del{key}, S.BumpSeq{n}}, st))) == None{} : Maybe<&2, S.Ue>}:
+def Tx.forget_ue(+key: U32, +st: S.State) -> {Tb.Table.get(S.Ue, key, S.State.ues(S.Tx.apply(S.Del{key}, st))) == None{} : Maybe<&2, S.Ue>}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Del.get(key, ues)
 
-def Tx.forget_sessions(+key: U32, n: U32, st: S.State) -> {S.Sessions.of_ue(key, S.State.sessions(S.Tx.apply(S.Both{S.Del{key}, S.BumpSeq{n}}, st))) == [] : Tb.Table(S.Session)}:
+def Tx.forget_sessions(+key: U32, +st: S.State) -> {S.Sessions.of_ue(key, S.State.sessions(S.Tx.apply(S.Del{key}, st))) == [] : Tb.Table(S.Session)}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Sessions.drop_none(key, sessions)
+
+def Tx.forget_go(+key: U32, +tx: S.Tx, +st: S.State, h: PW.N4s.Same(S.Tx.apply(tx, S.Tx.apply(S.Del{key}, st)), S.Tx.apply(S.Del{key}, st))) -> {Tb.Table.get(S.Ue, key, S.State.ues(S.Tx.apply(tx, S.Tx.apply(S.Del{key}, st)))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(key, S.State.sessions(S.Tx.apply(tx, S.Tx.apply(S.Del{key}, st)))) == [] : Tb.Table(S.Session)}:
+  match h:
+    case (eu, es):
+      +s1 = S.Tx.apply(S.Del{key}, st)
+      seu = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(tx, s1)), S.State.ues(s1), eu)
+      ses = Equal.sym(Tb.Table(S.Session), S.State.sessions(S.Tx.apply(tx, s1)), S.State.sessions(s1), es)
+      ((%seu : {Tb.Table.get(S.Ue, key, _) == None{} : Maybe<&2, S.Ue>}; Tx.forget_ue(key, st)), (%ses : {S.Sessions.of_ue(key, _) == [] : Tb.Table(S.Session)}; Tx.forget_sessions(key, st)))
+
+# A context forgotten, the N4 side moved after: no context and no session under its key.
+def Tx.forget(+key: U32, +o: N.GOut(), +more: List<&2, N.Act>, +st: S.State, +en: {PW.N4s.only(N.Out.tx(o)) == True{} : Bool}) -> {Tb.Table.get(S.Ue, key, S.State.ues(K.Kernel.state(N.Step.of(st, N.Out.also(N.Out.join((S.Del{key}, []), o), more))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(key, S.State.sessions(K.Kernel.state(N.Step.of(st, N.Out.also(N.Out.join((S.Del{key}, []), o), more))))) == [] : Tb.Table(S.Session)}:
+  match o:
+    case (+tx, acts):
+      Tx.forget_go(key, tx, st, PW.N4s.keeps(tx, S.Tx.apply(S.Del{key}, st), en))
 
 def L.amf.release.complete_forgets(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, k, ran, uli, rel, diag, ue, ep, ei, ev, eid, eo, eup):
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), N.Step.of(st, R.Route.d2(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(1), U32.to_nat(41)))), PW.Rt.routed(st, entropy, assoc, stream, len, bytes, 1, 41, crit, value, ies, c, ep, ei, {==}, eup))
@@ -383,7 +401,8 @@ def L.amf.release.complete_forgets(st, entropy, assoc, stream, len, bytes, crit,
   %sek : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_key(st, assoc, ran, _))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(k, S.State.sessions(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_key(st, assoc, ran, _))))) == [] : Tb.Table(S.Session)}
   seo = Equal.sym(Maybe<&2, S.Ue>, Gmm.Gmm.owner(st, assoc, k, ran), Some{ue}, eo)
   %seo : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _, S.Ue.released(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran)))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(k, S.State.sessions(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _, S.Ue.released(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran)))))) == [] : Tb.Table(S.Session)}
-  (Tx.forget_ue(k, Up.N4.deletion_count(S.Sessions.of_ue(k, S.State.sessions(st))), st), Tx.forget_sessions(k, Up.N4.deletion_count(S.Sessions.of_ue(k, S.State.sessions(st))), st))
+  +gone = S.Sessions.of_ue(k, S.State.sessions(st))
+  Tx.forget(k, Up.N4.deletions(gone, S.State.pfcp_seq(st)), List.append(&2, N.Act, N.Guard.cancel(k, S.Ue.guard(ue)), List.append(&2, N.Act, Ho.Ho.leg_drop(k, S.Ue.phase(ue), N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified())), [N.Note{F.Info{}, "NGAP: UE context released"}])), st, PW.N4s.deletions(gone, S.State.pfcp_seq(st)))
 
 # A phase change in place leaves every conflict as it was.
 def Ue.conflicts_rephase(hit: Bool, u: S.Ue, v: S.Ue, p: S.Phase) -> {S.Ue.conflicts(u, S.Ue.rephase_if(v, p, hit)) == S.Ue.conflicts(u, v) : Bool}:
@@ -521,6 +540,10 @@ def Cfgv.tx(tx: S.Tx, +st: S.State) -> {S.State.config(S.Tx.apply(tx, st)) == S.
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
+    case S.Pend{pk, pd}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          {==}
     case S.BumpUe{bk}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
@@ -577,7 +600,7 @@ def Cfgv.config(complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: 
     case True{}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          +st2 : S.State = S.State{Some{S.Cfg.of(tlvs)}, Au.Subscribers.of(S.Cfg.subscribers(S.Cfg.of(tlvs))), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
+          +st2 : S.State = S.State{Some{S.Cfg.of(tlvs)}, Au.Subscribers.of(S.Cfg.subscribers(S.Cfg.of(tlvs))), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}, []}}
           +o : N.GOut() = N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}])
           Cfgv.kept(st2, K.Kernel.state(N.Step.of(st2, o)), Cfgv.render(st2, o), P.Bool.and_true_r(S.Cfg.given_all(tlvs), S.Cfg.valid(S.Cfg.of(tlvs)), ek))
 

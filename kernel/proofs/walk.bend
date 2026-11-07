@@ -16,6 +16,7 @@ import ../amf/path_switch.bend as Ps
 import ../amf/handover.bend as Ho
 import ./lib.bend as P
 import ../smf/gsm.bend as Gsm
+import ../smf/n4.bend as Up
 import ../smf/switch.bend as Sw
 import ../nas/security.bend as Sec
 
@@ -288,6 +289,105 @@ def Rt.cases(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U3
 
 def Rt.keeps(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, routed: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool} -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   Rt.cases(x => {K.Kernel.state(x) == st : S.State}, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, {==}, routed)
+
+# The N4 side
+# -----------
+# A transaction that moves only the N4 side (the link, the pending Session
+# Deletion Requests) and the sequence numbers keeps every context and session;
+# Up.N4.deletions gives one.
+
+def N4s.only(tx: S.Tx) -> Bool:
+  match tx:
+    case S.Keep{}:
+      True{}
+    case S.SetLink{link}:
+      True{}
+    case S.Pend{key, d}:
+      True{}
+    case S.BumpSeq{n}:
+      True{}
+    case S.Both{first, second}:
+      Bool.and(N4s.only(first), N4s.only(second))
+    case _:
+      False{}
+
+def N4s.Same(+a: S.State, +b: S.State) -> Type:
+  {S.State.ues(a) == S.State.ues(b) : Tb.Table(S.Ue)} & {S.State.sessions(a) == S.State.sessions(b) : Tb.Table(S.Session)}
+
+def N4s.trans(+a: S.State, +b: S.State, +c: S.State, ab: N4s.Same(a, b), bc: N4s.Same(b, c)) -> N4s.Same(a, c):
+  match ab:
+    case (u1, s1):
+      match bc:
+        case (u2, s2):
+          (Equal.trans(Tb.Table(S.Ue), S.State.ues(a), S.State.ues(b), S.State.ues(c), u1, u2), Equal.trans(Tb.Table(S.Session), S.State.sessions(a), S.State.sessions(b), S.State.sessions(c), s1, s2))
+
+def N4s.keeps(+tx: S.Tx, +st: S.State, +e: {N4s.only(tx) == True{} : Bool}) -> N4s.Same(S.Tx.apply(tx, st), st):
+  match tx:
+    case S.Keep{}:
+      ({==}, {==})
+    case S.SetLink{link}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          ({==}, {==})
+    case S.Pend{key, d}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          ({==}, {==})
+    case S.BumpSeq{n}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          ({==}, {==})
+    case S.Both{+first, +second}:
+      +s1 = S.Tx.apply(first, st)
+      N4s.trans(S.Tx.apply(second, s1), s1, st, N4s.keeps(second, s1, P.Bool.and_true_r(N4s.only(first), N4s.only(second), e)), N4s.keeps(first, st, P.Bool.and_true_l(N4s.only(first), N4s.only(second), e)))
+    case S.Put{key, ue}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Put{key, ue}, st), st), P.Refute.bool(e))
+    case S.Rephase{key, phase}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Rephase{key, phase}, st), st), P.Refute.bool(e))
+    case S.Del{key}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Del{key}, st), st), P.Refute.bool(e))
+    case S.PutSession{key, s}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.PutSession{key, s}, st), st), P.Refute.bool(e))
+    case S.Revar{key, v}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Revar{key, v}, st), st), P.Refute.bool(e))
+    case S.DelSession{key}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.DelSession{key}, st), st), P.Refute.bool(e))
+    case S.Subs{new}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.Subs{new}, st), st), P.Refute.bool(e))
+    case S.BumpUe{key}:
+      Empty.absurd(N4s.Same(S.Tx.apply(S.BumpUe{key}, st), st), P.Refute.bool(e))
+
+def Out.tx_join(+a: N.GOut(), +b: N.GOut()) -> {N.Out.tx(N.Out.join(a, b)) == S.Both{N.Out.tx(a), N.Out.tx(b)} : S.Tx}:
+  match a:
+    case (ta, aa):
+      match b:
+        case (tb, ab):
+          {==}
+
+def N4s.join(+a: N.GOut(), +b: N.GOut(), +ea: {N4s.only(N.Out.tx(a)) == True{} : Bool}, +eb: {N4s.only(N.Out.tx(b)) == True{} : Bool}) -> {N4s.only(N.Out.tx(N.Out.join(a, b))) == True{} : Bool}:
+  e = Equal.sym(S.Tx, N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), N.Out.tx(b)}, Out.tx_join(a, b))
+  (%e : {N4s.only(_) == True{} : Bool}; P.Bool.and_intro(N4s.only(N.Out.tx(a)), N4s.only(N.Out.tx(b)), ea, eb))
+
+def N4s.delete_if(+key: U32, +s: S.Session, +seq: U32, +more: Tb.Table(S.Session), +known: Bool, h0: {N4s.only(N.Out.tx(Up.N4.deletions(more, seq))) == True{} : Bool}, h1: {N4s.only(N.Out.tx(Up.N4.deletions(more, U32.add(seq, 1)))) == True{} : Bool}) -> {N4s.only(N.Out.tx(Up.N4.delete_if(key, s, seq, q => Up.N4.deletions(more, q), known))) == True{} : Bool}:
+  match known:
+    case True{}:
+      +request = Up.N4.delete(S.Session.up_seid(s), seq)
+      N4s.join((S.Both{S.Pend{key, Some{S.Deletion{request, seq, S.Guard{0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{None{}, S.Ids.deletion(key), Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, h1)
+    case False{}:
+      h0
+
+def N4s.deletions(+rows: Tb.Table(S.Session), +seq: U32) -> {N4s.only(N.Out.tx(Up.N4.deletions(rows, seq))) == True{} : Bool}:
+  match rows:
+    case Nil{}:
+      {==}
+    case (+key, +s) <> +more:
+      N4s.delete_if(key, s, seq, more, S.Session.known(s), N4s.deletions(more, seq), N4s.deletions(more, U32.add(seq, 1)))
+
+# The state a procedure's outcome leaves is its transaction applied.
+def N4s.render(+st: S.State, +o: N.GOut()) -> {K.Kernel.state(N.Step.of(st, o)) == S.Tx.apply(N.Out.tx(o), st) : S.State}:
+  match o:
+    case (tx, acts):
+      {==}
 
 # A context looked up by key
 # --------------------------

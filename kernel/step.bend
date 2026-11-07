@@ -38,18 +38,20 @@ def Kernel.config(complete: Bool, st: S.State, +tlvs: List<&2, T.Tlv>, +entropy:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           +cfg = S.Cfg.of(tlvs)
-          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
+          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}, []}}
           N.Step.of(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]))
 
 # An association going down releases every UE it owned, their sessions at the
-# UPF included, and stops the guards of the sessions gone.
+# UPF included, and stops the guards of the sessions gone. The deletions
+# change only the N4 side and the sequence numbers.
 def Kernel.drop(st: S.State, +assoc: U32) -> N.Step():
   match st:
-    case S.State{config, subs, assocs, ues, +sessions, +pfcp_seq, next_ue, n4}:
+    case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
       +left = S.Ues.drop_assoc(assoc, ues)
       +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
-      +kept = S.Sessions.sift(S.SOwned{left}, sessions)
-      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, kept, U32.add(pfcp_seq, Up.N4.deletion_count(gone)), next_ue, n4}, List.append(&2, N.Act, List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}]), N.Gone.cancels(gone, [])))
+      +o = Up.N4.deletions(gone, pfcp_seq)
+      +st1 = S.Tx.apply(N.Out.tx(o), S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4})
+      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, S.Sessions.sift(S.SOwned{left}, sessions), S.State.pfcp_seq(st1), next_ue, S.State.n4(st1)}, List.append(&2, N.Act, N.Out.acts(o), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Gone.cancels(gone, [])))
 
 # First the N2 handovers it takes part in end (Ho.Ho.down), then its UEs go.
 def Kernel.assoc_down(+st: S.State, +assoc: U32) -> N.Step():
@@ -57,7 +59,8 @@ def Kernel.assoc_down(+st: S.State, +assoc: U32) -> N.Step():
   +s2 = Kernel.drop(Kernel.state(s1), assoc)
   (Kernel.state(s2), List.append(&2, N.Act, Kernel.actions(s1), Kernel.actions(s2)))
 
-# A guard timer fired: a UE's, a session's, or the N4 association's (timer 0).
+# A guard timer fired: a UE's, a session's, a pending deletion's, or the N4
+# association's (timer 0).
 def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
@@ -65,10 +68,17 @@ def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
     case False{}:
       (S.Keep{}, [])
 
-def Kernel.fired_session(+st: S.State, +timer: U32, m: Maybe<&2, S.Session>) -> N.GOut():
+def Kernel.fired_deletion(+st: S.State, +timer: U32, m: Maybe<&2, S.Deletion>) -> N.GOut():
   match m:
     case None{}:
       Kernel.node_timer(st, U32.is_eq(timer, S.N4.timer()))
+    case Some{d}:
+      Up.N4.deletion_expired(timer, d)
+
+def Kernel.fired_session(+st: S.State, +timer: U32, m: Maybe<&2, S.Session>) -> N.GOut():
+  match m:
+    case None{}:
+      Kernel.fired_deletion(st, timer, Tb.Table.get(S.Deletion, timer, S.State.deletions(st)))
     case Some{+s}:
       Gsm.Gsm.expired(st, timer, s, S.Session.phase(s))
 

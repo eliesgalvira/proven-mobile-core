@@ -21,6 +21,8 @@ import ../amf/gmm.bend as Gmm
 import ../amf/route.bend as R
 import ../smf/n4.bend as Up
 import ../smf/gsm.bend as Gsm
+import ../ausf.bend as Au
+import ../amf/handover.bend as Ho
 import ../LAWS.bend as L
 import ./lib.bend as P
 import ./walk.bend as PW
@@ -428,7 +430,7 @@ def L.smf.sessions.known(st, ev, entropy, e):
 # session with steps that put no session.
 
 def Rel.Spec(+o: N.GOut(), +skey: U32, +s: S.Session) -> Type:
-  (@st2: S.State -> {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(PT.Tk.tx(o), st2))) == None{} : Maybe<&2, S.Session>}) & ({S.Session.known(s) == True{} : Bool} -> Up.N4.deleted(s, PL.Lv.as(o)))
+  (@st2: S.State -> {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(N.Out.tx(o), st2))) == None{} : Maybe<&2, S.Session>}) & ({S.Session.known(s) == True{} : Bool} -> Up.N4.deleted(s, N.Out.acts(o)))
 
 def Rel.Law(+r: N.Step(), +skey: U32, +s: S.Session) -> Type:
   {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(r))) == None{} : Maybe<&2, S.Session>} & ({S.Session.known(s) == True{} : Bool} -> Up.N4.deleted(s, K.Kernel.actions(r)))
@@ -474,10 +476,21 @@ def Rel.by(+r: N.Step(), +st: S.State, +o: N.GOut(), +skey: U32, +s: S.Session, 
 
 
 # The Session Deletion of a session the UPF knows.
-def Del.one(+skey: U32, +s: S.Session, +seq: U32, k: {S.Session.known(s) == True{} : Bool}) -> Up.N4.deleted(s, Up.N4.deletions([(skey, s)], seq)):
+def Del.one(+skey: U32, +s: S.Session, +seq: U32, k: {S.Session.known(s) == True{} : Bool}) -> Up.N4.deleted(s, N.Out.acts(Up.N4.deletions([(skey, s)], seq))):
   sk = Equal.sym(Bool, S.Session.known(s), True{}, k)
-  %sk : Up.N4.deleted(s, Up.N4.delete_if(s, seq, q => Up.N4.deletions([], q), _))
-  (seq, ([], ([], {==})))
+  %sk : Up.N4.deleted(s, N.Out.acts(Up.N4.delete_if(skey, s, seq, q => Up.N4.deletions([], q), _)))
+  (seq, ([], ([N.TimerStart{None{}, S.Ids.deletion(skey), Up.N4.t1_ms()}], {==})))
+
+def Del.joined(+tx: S.Tx, +d: N.GOut()) -> {N.Out.acts(N.Out.join((tx, []), d)) == List.append(&2, N.Act, [], N.Out.acts(d)) : List<&2, N.Act>}:
+  match d:
+    case (t, acts):
+      {==}
+
+# The Session Deletion of a forgotten session the UPF knows.
+def Del.forget(+skey: U32, +s: S.Session, +seq: U32, k: {S.Session.known(s) == True{} : Bool}) -> Up.N4.deleted(s, N.Out.acts(Gsm.Gsm.forget([(skey, s)], seq))):
+  +d = Up.N4.deletions([(skey, s)], seq)
+  e = Equal.sym(List<&2, N.Act>, N.Out.acts(N.Out.join((Gsm.Gsm.dels([(skey, s)]), []), d)), List.append(&2, N.Act, [], N.Out.acts(d)), Del.joined(Gsm.Gsm.dels([(skey, s)]), d))
+  (%e : Up.N4.deleted(s, _); Del.app_r(s, [], N.Out.acts(d), Del.one(skey, s, seq, k)))
 
 # No session put
 # --------------
@@ -552,6 +565,10 @@ def None.free(+st0: S.State, tx: S.Tx, +st2: S.State, +k: U32, +h: {Tb.Table.get
       match st2:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           h
+    case S.Pend{pk, pd}:
+      match st2:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          h
     case S.BumpUe{bk}:
       match st2:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
@@ -566,10 +583,24 @@ def None.free(+st0: S.State, tx: S.Tx, +st2: S.State, +k: U32, +h: {Tb.Table.get
 # Releases
 # --------
 
-def Rel.forget_gone(+skey: U32, +s: S.Session, +seq: U32, +more: List<&2, N.Act>, st2: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(PT.Tk.tx(N.Out.also(Gsm.Gsm.forget([(skey, s)], seq), more)), st2))) == None{} : Maybe<&2, S.Session>}:
+def Rel.dels_gone(+skey: U32, +s: S.Session, st2: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(Gsm.Gsm.dels([(skey, s)]), st2))) == None{} : Maybe<&2, S.Session>}:
   match st2:
     case S.State{config, subs, assocs, ues, +sessions, pfcp_seq, next_ue, n4}:
       SDel.get(skey, sessions)
+
+def Rel.gone_go(+skey: U32, +s: S.Session, +tx: S.Tx, +st2: S.State, h: PW.N4s.Same(S.Tx.apply(tx, S.Tx.apply(Gsm.Gsm.dels([(skey, s)]), st2)), S.Tx.apply(Gsm.Gsm.dels([(skey, s)]), st2))) -> {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(tx, S.Tx.apply(Gsm.Gsm.dels([(skey, s)]), st2)))) == None{} : Maybe<&2, S.Session>}:
+  match h:
+    case (eu, es):
+      +s1 = S.Tx.apply(Gsm.Gsm.dels([(skey, s)]), st2)
+      ses = Equal.sym(Tb.Table(S.Session), S.State.sessions(S.Tx.apply(tx, s1)), S.State.sessions(s1), es)
+      (%ses : {Tb.Table.get(S.Session, skey, _) == None{} : Maybe<&2, S.Session>}; Rel.dels_gone(skey, s, st2))
+
+def Rel.forget_gone(+skey: U32, +s: S.Session, +seq: U32, +st2: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(N.Out.tx(Gsm.Gsm.forget([(skey, s)], seq)), st2))) == None{} : Maybe<&2, S.Session>}:
+  +d = Up.N4.deletions([(skey, s)], seq)
+  +a : N.GOut() = (Gsm.Gsm.dels([(skey, s)]), [])
+  e2 = Equal.sym(S.Tx, N.Out.tx(N.Out.join(a, d)), S.Both{Gsm.Gsm.dels([(skey, s)]), N.Out.tx(d)}, PW.Out.tx_join(a, d))
+  %e2 : {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(_, st2))) == None{} : Maybe<&2, S.Session>}
+  Rel.gone_go(skey, s, N.Out.tx(d), st2, PW.N4s.keeps(N.Out.tx(d), S.Tx.apply(Gsm.Gsm.dels([(skey, s)]), st2), PW.N4s.deletions([(skey, s)], seq)))
 
 def Rel.join_r(+a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Session, h: Rel.Spec(b, skey, s)) -> Rel.Spec(N.Out.join(a, b), skey, s):
   match a:
@@ -580,7 +611,7 @@ def Rel.join_r(+a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Session, h: Rel.Spe
           (st2 => g(S.Tx.apply(ta, st2)), k => Del.app_r(s, aa, ab, d(k)))
 
 # Nor does what comes after it, when that puts no session.
-def Rel.join_l(+st0: S.State, +a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Session, h: Rel.Spec(a, skey, s), +f: {PL.Lv.free(st0, PT.Tk.tx(b)) == True{} : Bool}) -> Rel.Spec(N.Out.join(a, b), skey, s):
+def Rel.join_l(+st0: S.State, +a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Session, h: Rel.Spec(a, skey, s), +f: {PL.Lv.free(st0, N.Out.tx(b)) == True{} : Bool}) -> Rel.Spec(N.Out.join(a, b), skey, s):
   match a:
     case (+ta, +aa):
       match b:
@@ -589,7 +620,7 @@ def Rel.join_l(+st0: S.State, +a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Sess
           (+st2 => None.free(st0, tb, S.Tx.apply(ta, st2), skey, g(st2), f), k => Del.app_l(s, aa, ab, d(k)))
 
 def Rel.give_up(+st: S.State, +skey: U32, +s: S.Session, +sm: B.Bytes(), +seq: U32) -> Rel.Spec(Gsm.Gsm.give_up(st, skey, s, sm, seq), skey, s):
-  Rel.join_r(Gsm.Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st))), Gsm.Gsm.forget([(skey, s)], seq), skey, s, (+st2 => Rel.forget_gone(skey, s, seq, [], st2), k => Del.one(skey, s, seq, k)))
+  Rel.join_r(Gsm.Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st))), Gsm.Gsm.forget([(skey, s)], seq), skey, s, (+st2 => Rel.forget_gone(skey, s, seq, st2), k => Del.forget(skey, s, seq, k)))
 
 def Rel.abort(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +cause: U32, +seq: U32) -> Rel.Spec(Gsm.Gsm.abort(st, skey, s, pti, cause, seq), skey, s):
   Rel.give_up(st, skey, s, Gsm.Gsm.reject(S.Session.psi(s), pti, cause), seq)
@@ -611,7 +642,7 @@ def Rel.faileds(+st: S.State, +key: U32, pre: G.PDUSessionResourceFailedToSetupL
     case Nil{}:
       +a = Gsm.Gsm.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)))
       +b = Gsm.Gsm.faileds(st, key, post, U32.add(seq, 1))
-      Rel.join_r((S.BumpSeq{1}, []), N.Out.join(a, b), skey, s, Rel.join_l(st, a, b, skey, s, Rel.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), skey, s, guard, pti, es, eh), P.Bool.and_true_r(PL.Lv.acts(st, PL.Lv.as(b)), PL.Lv.free(st, PT.Tk.tx(b)), PL.Lw.faileds(st, key, post, U32.add(seq, 1)))))
+      Rel.join_r((S.BumpSeq{1}, []), N.Out.join(a, b), skey, s, Rel.join_l(st, a, b, skey, s, Rel.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), skey, s, guard, pti, es, eh), P.Bool.and_true_r(PL.Lv.acts(st, N.Out.acts(b)), PL.Lv.free(st, N.Out.tx(b)), PL.Lw.faileds(st, key, post, U32.add(seq, 1)))))
     case G.PDUSessionResourceFailedToSetupItemSURes{+p2, t2, x2} <> +pre2:
       +a = Gsm.Gsm.failed(st, seq, S.Sessions.by_psi(key, p2, S.State.sessions(st)))
       +b = Gsm.Gsm.faileds(st, key, List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre2, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post), U32.add(seq, 1))
@@ -755,6 +786,210 @@ def Re.modifying(+st: S.State, +entropy: B.Bytes(), +skey: U32, +s: S.Session, +
   ser = Equal.sym(Bool, U32.is_lt(S.Guard.retries(guard), Up.N4.n1()), True{}, er)
   %ser : Re.Sent(N.Step.of(st, Gsm.Gsm.resend_if(skey, s, S.Modifying{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, Gsm.Gsm.drop(st, skey, s, S.State.pfcp_seq(st)), _)), skey, s, S.SVar{S.Session.up_seid(s), S.Session.seq(s), S.Modifying{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}}, request)
   Re.out(st, skey, s, S.SVar{S.Session.up_seid(s), S.Session.seq(s), S.Modifying{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}}, request, eg)
+
+
+# Pending Session Deletion Requests
+# ---------------------------------
+# A deletion's key is its session's SEID with the top bit set, even: such a
+# key is no context's, no session's and not timer 0, and the key a
+# transaction writes a deletion under always is one.
+
+def Dk.pending(+w: U32) -> {S.Ids.pending(S.Ids.deletion(w)) == True{} : Bool}:
+  match w:
+    case U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
+      {==}
+
+def Dk.fix(+w: U32, +e: {S.Ids.pending(w) == True{} : Bool}) -> {S.Ids.deletion(w) == w : U32}:
+  match w:
+    case U32{WCon{True{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
+      Empty.absurd({S.Ids.deletion(U32{WCon{True{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}) == U32{WCon{True{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} : U32}, P.Refute.bool(e))
+    case U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{True{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
+      {==}
+    case U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{False{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
+      Empty.absurd({S.Ids.deletion(U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{False{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}) == U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{False{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}} : U32}, P.Refute.bool(e))
+
+def Dk.apart(+w: U32, +e: {S.Ids.pending(w) == True{} : Bool}) -> {S.Ids.odd(w) == False{} : Bool} & ({S.Ids.seid(w) == False{} : Bool} & {U32.is_eq(w, S.N4.timer()) == False{} : Bool}):
+  match w:
+    case U32{WCon{True{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
+      Empty.absurd({S.Ids.odd(U32{WCon{True{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}) == False{} : Bool} & ({S.Ids.seid(U32{WCon{True{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}) == False{} : Bool} & {U32.is_eq(U32{WCon{True{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{b31, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}, S.N4.timer()) == False{} : Bool}), P.Refute.bool(e))
+    case U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{True{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
+      ({==}, ({==}, {==}))
+    case U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{False{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}:
+      Empty.absurd({S.Ids.odd(U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{False{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}) == False{} : Bool} & ({S.Ids.seid(U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{False{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}) == False{} : Bool} & {U32.is_eq(U32{WCon{False{}, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, WCon{b6, WCon{b7, WCon{b8, WCon{b9, WCon{b10, WCon{b11, WCon{b12, WCon{b13, WCon{b14, WCon{b15, WCon{b16, WCon{b17, WCon{b18, WCon{b19, WCon{b20, WCon{b21, WCon{b22, WCon{b23, WCon{b24, WCon{b25, WCon{b26, WCon{b27, WCon{b28, WCon{b29, WCon{b30, WCon{False{}, WNil{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}, S.N4.timer()) == False{} : Bool}), P.Refute.bool(e))
+
+def Dk.keep(+k: U32, +d: S.Deletion, +rest: Tb.Table(S.Deletion), +b: Bool, +hk: {S.Ids.pending(k) == True{} : Bool}, +hr: {S.Deletions.keyed(rest) == True{} : Bool}) -> {S.Deletions.keyed(Tb.Table.keep(S.Deletion, k, d, rest, b)) == True{} : Bool}:
+  match b:
+    case True{}:
+      P.Bool.and_intro(S.Ids.pending(k), S.Deletions.keyed(rest), hk, hr)
+    case False{}:
+      hr
+
+def Dk.drop(+key: U32, +ds: Tb.Table(S.Deletion), +e: {S.Deletions.keyed(ds) == True{} : Bool}) -> {S.Deletions.keyed(S.Deletions.drop(key, ds)) == True{} : Bool}:
+  match ds:
+    case Nil{}:
+      {==}
+    case (+k, +d) <> +more:
+      Dk.keep(k, d, S.Deletions.drop(key, more), Bool.not(U32.is_eq(k, key)), P.Bool.and_true_l(S.Ids.pending(k), S.Deletions.keyed(more), e), Dk.drop(key, more, P.Bool.and_true_r(S.Ids.pending(k), S.Deletions.keyed(more), e)))
+
+def Dk.set(+key: U32, +m: Maybe<&2, S.Deletion>, +ds: Tb.Table(S.Deletion), +e: {S.Deletions.keyed(ds) == True{} : Bool}) -> {S.Deletions.keyed(S.Deletions.set(S.Ids.deletion(key), m, ds)) == True{} : Bool}:
+  match m:
+    case None{}:
+      Dk.drop(S.Ids.deletion(key), ds, e)
+    case Some{+d}:
+      P.Bool.and_intro(S.Ids.pending(S.Ids.deletion(key)), S.Deletions.keyed(S.Deletions.drop(S.Ids.deletion(key), ds)), Dk.pending(key), Dk.drop(S.Ids.deletion(key), ds, e))
+
+def Dk.tx(+tx: S.Tx, +st: S.State, +e: {S.Deletions.keyed(S.State.deletions(st)) == True{} : Bool}) -> {S.Deletions.keyed(S.State.deletions(S.Tx.apply(tx, st))) == True{} : Bool}:
+  match tx:
+    case S.Keep{}:
+      e
+    case S.Put{key, ue}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.Rephase{key, phase}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.Del{key}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.PutSession{key, s}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.Revar{key, v}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.DelSession{key}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.Subs{new}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.SetLink{link}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, +n4}:
+          match n4:
+            case S.N4{recovery, l, ds}:
+              e
+    case S.BumpUe{bk}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.BumpSeq{n}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          e
+    case S.Pend{+key, +m}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, +n4}:
+          match n4:
+            case S.N4{recovery, link, +ds}:
+              Dk.set(key, m, ds, e)
+    case S.Both{+first, +second}:
+      Dk.tx(second, S.Tx.apply(first, st), Dk.tx(first, st, e))
+
+def Dk.Held(+o: N.Step()) -> Data:
+  {S.Deletions.keyed(S.State.deletions(K.Kernel.state(o))) == True{} : Bool}
+
+def Dk.out(+st: S.State, +o: N.GOut(), +e: {S.Deletions.keyed(S.State.deletions(st)) == True{} : Bool}) -> Dk.Held(N.Step.of(st, o)):
+  r = Equal.sym(S.State, K.Kernel.state(N.Step.of(st, o)), S.Tx.apply(N.Out.tx(o), st), PW.N4s.render(st, o))
+  (%r : {S.Deletions.keyed(S.State.deletions(_)) == True{} : Bool}; Dk.tx(N.Out.tx(o), st, e))
+
+def Dk.assocs(+st: S.State, +as: Tb.Table(B.Bytes()), +e: {S.Deletions.keyed(S.State.deletions(st)) == True{} : Bool}) -> {S.Deletions.keyed(S.State.deletions(S.State.with_assocs(st, as))) == True{} : Bool}:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      e
+
+def Dk.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +e: {S.Deletions.keyed(S.State.deletions(st)) == True{} : Bool}) -> Dk.Held(K.Kernel.config(complete, st, tlvs, entropy)):
+  match complete:
+    case False{}:
+      e
+    case True{}:
+      match st:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          +cfg = S.Cfg.of(tlvs)
+          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}, []}}
+          Dk.out(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]), {==})
+
+def Dk.drop_assoc(+st: S.State, +assoc: U32, +e: {S.Deletions.keyed(S.State.deletions(st)) == True{} : Bool}) -> Dk.Held(K.Kernel.drop(st, assoc)):
+  match st:
+    case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
+      +gone = S.Sessions.sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions)
+      Dk.tx(N.Out.tx(Up.N4.deletions(gone, pfcp_seq)), S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}, e)
+
+def L.smf.deletion.keyed(st, ev, entropy, k, e):
+  +held = PW.Walk.any(o => Dk.Held(o), st, ev, entropy, acts => x => e, +as => acts => x => Dk.assocs(st, as, e), +tlvs => Dk.config(S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => Dk.drop_assoc(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), a, Dk.out(st, Ho.Ho.down(st, a), e)), +o => Dk.out(st, o, e))
+  ({==}, (held, ek => Dk.apart(k, ek)))
+
+# A deletion's guard fired
+# ------------------------
+
+def Dk.drop_row(+key: U32, +k: U32, +d: S.Deletion, +rest: Tb.Table(S.Deletion), +b: Bool, +eb: {U32.is_eq(k, key) == b : Bool}, +hr: {Tb.Table.get(S.Deletion, key, rest) == None{} : Maybe<&2, S.Deletion>}) -> {Tb.Table.get(S.Deletion, key, Tb.Table.keep(S.Deletion, k, d, rest, Bool.not(U32.is_eq(k, key)))) == None{} : Maybe<&2, S.Deletion>}:
+  match b:
+    case True{}:
+      seb = Equal.sym(Bool, U32.is_eq(k, key), True{}, eb)
+      (%seb : {Tb.Table.get(S.Deletion, key, Tb.Table.keep(S.Deletion, k, d, rest, Bool.not(_))) == None{} : Maybe<&2, S.Deletion>}; hr)
+    case False{}:
+      seb = Equal.sym(Bool, U32.is_eq(k, key), False{}, eb)
+      seb2 = Equal.sym(Bool, U32.is_eq(k, key), False{}, eb)
+      (%seb : {Tb.Table.get(S.Deletion, key, Tb.Table.keep(S.Deletion, k, d, rest, Bool.not(_))) == None{} : Maybe<&2, S.Deletion>}; (%seb2 : {Tb.Table.hit(S.Deletion, d, Tb.Table.get(S.Deletion, key, rest), _) == None{} : Maybe<&2, S.Deletion>}; hr))
+
+def Dk.drop_get(+key: U32, +ds: Tb.Table(S.Deletion)) -> {Tb.Table.get(S.Deletion, key, S.Deletions.drop(key, ds)) == None{} : Maybe<&2, S.Deletion>}:
+  match ds:
+    case Nil{}:
+      {==}
+    case (+k, +d) <> +more:
+      Dk.drop_row(key, k, d, S.Deletions.drop(key, more), U32.is_eq(k, key), {==}, Dk.drop_get(key, more))
+
+
+def Dk.put(+st: S.State, +k: U32, +d: S.Deletion, +ek: {S.Ids.pending(k) == True{} : Bool}) -> {Tb.Table.get(S.Deletion, k, S.State.deletions(S.Tx.apply(S.Pend{k, Some{d}}, st))) == Some{d} : Maybe<&2, S.Deletion>}:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, +n4}:
+      match n4:
+        case S.N4{recovery, link, +ds}:
+          ef = Equal.sym(U32, S.Ids.deletion(k), k, Dk.fix(k, ek))
+          %ef : {Tb.Table.get(S.Deletion, k, (_, d) <> S.Deletions.drop(_, ds)) == Some{d} : Maybe<&2, S.Deletion>}
+          er = Equal.sym(Bool, U32.is_eq(k, k), True{}, P.U32.is_eq_refl(k))
+          (%er : {Tb.Table.hit(S.Deletion, d, Tb.Table.get(S.Deletion, k, S.Deletions.drop(k, ds)), _) == Some{d} : Maybe<&2, S.Deletion>}; {==})
+
+def Dk.gone(+st: S.State, +k: U32, +ek: {S.Ids.pending(k) == True{} : Bool}) -> {Tb.Table.get(S.Deletion, k, S.State.deletions(S.Tx.apply(S.Pend{k, None{}}, st))) == None{} : Maybe<&2, S.Deletion>}:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, +n4}:
+      match n4:
+        case S.N4{recovery, link, +ds}:
+          ef = Equal.sym(U32, S.Ids.deletion(k), k, Dk.fix(k, ek))
+          (%ef : {Tb.Table.get(S.Deletion, k, S.Deletions.drop(_, ds)) == None{} : Maybe<&2, S.Deletion>}; Dk.drop_get(k, ds))
+
+# The deletion's guard reached through the context and session tables.
+def Dk.Q(+st: S.State, +k: U32, +request: B.Bytes(), +seq: U32, +guard: S.Guard, +o: N.Step()) -> Type:
+  {Tb.Table.get(S.Deletion, k, S.State.deletions(K.Kernel.state(o))) == Some{S.Deletion{request, seq, S.Guard{U32.add(S.Guard.retries(guard), 1)}}} : Maybe<&2, S.Deletion>} & {K.Kernel.actions(o) == [N.Pfcp{None{}, request}, N.TimerStart{None{}, k, Up.N4.t1_ms()}] : List<&2, N.Act>}
+
+def Dk.G(+st: S.State, +k: U32, +o: N.Step()) -> Data:
+  {Tb.Table.get(S.Deletion, k, S.State.deletions(K.Kernel.state(o))) == None{} : Maybe<&2, S.Deletion>}
+
+def Dk.fired(-Q: N.Step() -> Type, +st: S.State, +k: U32, +request: B.Bytes(), +seq: U32, +guard: S.Guard, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == None{} : Maybe<&2, S.Ue>}, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, +ed: {Tb.Table.get(S.Deletion, k, S.State.deletions(st)) == Some{S.Deletion{request, seq, guard}} : Maybe<&2, S.Deletion>}, h: Q(N.Step.of(st, Up.N4.redelete(k, request, seq, guard, U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))))) -> Q(N.Step.of(st, K.Kernel.fired(st, k))):
+  seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), None{}, eu)
+  %seu : Q(N.Step.of(st, K.Kernel.fired_ue(st, k, _)))
+  ses = Equal.sym(Maybe<&2, S.Session>, Tb.Table.get(S.Session, k, S.State.sessions(st)), None{}, es)
+  %ses : Q(N.Step.of(st, K.Kernel.fired_session(st, k, _)))
+  sed = Equal.sym(Maybe<&2, S.Deletion>, Tb.Table.get(S.Deletion, k, S.State.deletions(st)), Some{S.Deletion{request, seq, guard}}, ed)
+  (%sed : Q(N.Step.of(st, K.Kernel.fired_deletion(st, k, _))); h)
+
+def Dk.resent(+st: S.State, +k: U32, +request: B.Bytes(), +seq: U32, +guard: S.Guard, +ek: {S.Ids.pending(k) == True{} : Bool}, +er: {U32.is_lt(S.Guard.retries(guard), Up.N4.n1()) == True{} : Bool}) -> Dk.Q(st, k, request, seq, guard, N.Step.of(st, Up.N4.redelete(k, request, seq, guard, U32.is_lt(S.Guard.retries(guard), Up.N4.n1())))):
+  ser = Equal.sym(Bool, U32.is_lt(S.Guard.retries(guard), Up.N4.n1()), True{}, er)
+  (%ser : Dk.Q(st, k, request, seq, guard, N.Step.of(st, Up.N4.redelete(k, request, seq, guard, _))); (Dk.put(st, k, S.Deletion{request, seq, S.Guard{U32.add(S.Guard.retries(guard), 1)}}, ek), {==}))
+
+def Dk.given_up(+st: S.State, +k: U32, +request: B.Bytes(), +seq: U32, +guard: S.Guard, +ek: {S.Ids.pending(k) == True{} : Bool}, +er: {U32.is_lt(S.Guard.retries(guard), Up.N4.n1()) == False{} : Bool}) -> Dk.G(st, k, N.Step.of(st, Up.N4.redelete(k, request, seq, guard, U32.is_lt(S.Guard.retries(guard), Up.N4.n1())))):
+  ser = Equal.sym(Bool, U32.is_lt(S.Guard.retries(guard), Up.N4.n1()), False{}, er)
+  (%ser : Dk.G(st, k, N.Step.of(st, Up.N4.redelete(k, request, seq, guard, _))); Dk.gone(st, k, ek))
+
+def L.smf.deletion.retransmitted(st, entropy, k, request, seq, guard, ek, eu, es, ed):
+  (er => Dk.fired(o => Dk.Q(st, k, request, seq, guard, o), st, k, request, seq, guard, eu, es, ed, Dk.resent(st, k, request, seq, guard, ek, er)), er => Dk.fired(o => Dk.G(st, k, o), st, k, request, seq, guard, eu, es, ed, Dk.given_up(st, k, request, seq, guard, ek, er)))
 
 def L.smf.request.retransmitted(st, entropy, skey, s, guard, pti, accept, request, et, eg, er):
   (ep => Re.creating(st, entropy, skey, s, guard, pti, accept, request, et, eg, er, ep), ep => Re.modifying(st, entropy, skey, s, guard, request, et, eg, er, ep))

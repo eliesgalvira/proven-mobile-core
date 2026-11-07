@@ -1382,7 +1382,7 @@ law amf.guard.expires:
   for +et: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{u} : Maybe<&2, St.Ue>}
   for +eg: {St.Ue.guard(u) == Some{g} : Maybe<&2, St.Guard>}
   (({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> Empty) -> {U32.is_lt(St.Guard.retries(g), Gm.Gmm.max_retries()) == False{} : Bool} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == Some{St.Ue.with_phase(u, St.Releasing{St.Guard{0}})} : Maybe<&2, St.Ue>})
-  & ({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == None{} : Maybe<&2, St.Ue>} & ({St.Sessions.of_ue(k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == [] : Tb.Table(St.Session)} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{k}, entropy)) == List.append(&2, Ng.Act, List.append(&2, Ng.Act, Up.N4.deletions(St.Sessions.of_ue(k, St.State.sessions(st)), St.State.pfcp_seq(st)), [Ng.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}]), Ng.Gone.cancels(St.State.sessions(st), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) : List<&2, Ng.Act>}))
+  & ({St.Ue.phase(u) == St.Releasing{g} : St.Phase} -> {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == None{} : Maybe<&2, St.Ue>} & ({St.Sessions.of_ue(k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == [] : Tb.Table(St.Session)} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{k}, entropy)) == List.append(&2, Ng.Act, List.append(&2, Ng.Act, Ng.Out.acts(Up.N4.deletions(St.Sessions.of_ue(k, St.State.sessions(st)), St.State.pfcp_seq(st))), [Ng.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}]), Ng.Gone.cancels(St.State.sessions(st), St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) : List<&2, Ng.Act>}))
 
 # Every session belongs to a UE context, in the initial state and after every
 # step: whatever forgets a context forgets its sessions.
@@ -1629,6 +1629,40 @@ law smf.request.retransmitted:
   for +er: {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == True{} : Bool}
   ({St.Session.phase(s) == St.Creating{guard, pti, accept, request} : St.SPhase} -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == Some{St.Session.with_var(s, St.SVar{St.Session.up_seid(s), St.Session.seq(s), St.Creating{St.Guard{U32.add(St.Guard.retries(guard), 1)}, pti, accept, request}})} : Maybe<&2, St.Session>} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)) == [Ng.Pfcp{Some{St.Session.ue(s)}, request}, Ng.TimerStart{Some{St.Session.ue(s)}, skey, Up.N4.t1_ms()}] : List<&2, Ng.Act>})
   & ({St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == Some{St.Session.with_var(s, St.SVar{St.Session.up_seid(s), St.Session.seq(s), St.Modifying{St.Guard{U32.add(St.Guard.retries(guard), 1)}, request}})} : Maybe<&2, St.Session>} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)) == [Ng.Pfcp{Some{St.Session.ue(s)}, request}, Ng.TimerStart{Some{St.Session.ue(s)}, skey, Up.N4.t1_ms()}] : List<&2, Ng.Act>})
+
+# TS 29.244 §6.4: a Session Deletion Request still unanswered when its guard
+# fires, before it has gone N1 times again, goes again unchanged, its
+# sequence number included, under its guard started again; at the next expiry
+# the deletion is given up. Every Session Deletion Request is pending under
+# its guard from the step that sends it (Up.N4.deletions) until the UPF
+# answers it.
+law smf.deletion.retransmitted:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +k: U32
+  for +request: B.Bytes()
+  for +seq: U32
+  for +guard: St.Guard
+  for +ek: {St.Ids.pending(k) == True{} : Bool}
+  for +eu: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == None{} : Maybe<&2, St.Ue>}
+  for +es: {Tb.Table.get(St.Session, k, St.State.sessions(st)) == None{} : Maybe<&2, St.Session>}
+  for +ed: {Tb.Table.get(St.Deletion, k, St.State.deletions(st)) == Some{St.Deletion{request, seq, guard}} : Maybe<&2, St.Deletion>}
+  ({U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == True{} : Bool} -> {Tb.Table.get(St.Deletion, k, St.State.deletions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == Some{St.Deletion{request, seq, St.Guard{U32.add(St.Guard.retries(guard), 1)}}} : Maybe<&2, St.Deletion>} & {Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{k}, entropy)) == [Ng.Pfcp{None{}, request}, Ng.TimerStart{None{}, k, Up.N4.t1_ms()}] : List<&2, Ng.Act>})
+  & ({U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {Tb.Table.get(St.Deletion, k, St.State.deletions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy)))) == None{} : Maybe<&2, St.Deletion>})
+
+# A pending Session Deletion Request's guard timer, its key, is even and at
+# least 2^31, in the initial state and after every step, so it is neither a
+# context's (odd), a session's (below 2^31, state.ids.free) nor timer 0: no
+# two rows share a guard timer.
+law smf.deletion.keyed:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +k: U32
+  for +e: {St.Deletions.keyed(St.State.deletions(st)) == True{} : Bool}
+  {St.Deletions.keyed(St.State.deletions(St.State.initial())) == True{} : Bool}
+  & {St.Deletions.keyed(St.State.deletions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
+  & ({St.Ids.pending(k) == True{} : Bool} -> {St.Ids.odd(k) == False{} : Bool} & ({St.Ids.seid(k) == False{} : Bool} & {U32.is_eq(k, St.N4.timer()) == False{} : Bool}))
 
 # The UPF knows every session past Creating, by the UP SEID it answered with,
 # and none being created, in the initial state and after every step.

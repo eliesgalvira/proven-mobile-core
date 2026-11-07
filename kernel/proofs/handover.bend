@@ -70,7 +70,7 @@ def Hp.still(tx: S.Tx) -> Bool:
       False{}
 
 def Hp.calm(o: N.GOut()) -> Bool:
-  Hp.still(PT.Tk.tx(o))
+  Hp.still(N.Out.tx(o))
 
 def Hp.same_refl(+m: Maybe<&2, S.Ue>) -> {S.Ue.same_owner(m, m) == True{} : Bool}:
   match m:
@@ -128,6 +128,8 @@ def Hp.same_still(+tx: S.Tx, +ues: Tb.Table(S.Ue), +j: U32, +e: {Hp.still(tx) ==
       Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.Subs{subs}, ues))) == True{} : Bool}, P.Refute.bool(e))
     case S.SetLink{link}:
       Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.SetLink{link}, ues))) == True{} : Bool}, P.Refute.bool(e))
+    case S.Pend{pk, pd}:
+      Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.Pend{pk, pd}, ues))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpUe{bk}:
       Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.BumpUe{bk}, ues))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpSeq{n}:
@@ -137,9 +139,9 @@ def Hp.same_still(+tx: S.Tx, +ues: Tb.Table(S.Ue), +j: U32, +e: {Hp.still(tx) ==
 
 # The step a calm outcome makes leaves every context's owner.
 def Hp.same_step(+st: S.State, +o: N.GOut(), +j: U32, +e: {Hp.calm(o) == True{} : Bool}) -> {S.Ue.same_owner(Tb.Table.get(S.Ue, j, S.State.ues(st)), Tb.Table.get(S.Ue, j, S.State.ues(K.Kernel.state(N.Step.of(st, o))))) == True{} : Bool}:
-  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)), PT.Tk.render(st, o))
+  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), PT.Tk.render(st, o))
   %sr : {S.Ue.same_owner(Tb.Table.get(S.Ue, j, S.State.ues(st)), Tb.Table.get(S.Ue, j, _)) == True{} : Bool}
-  Hp.same_still(PT.Tk.tx(o), S.State.ues(st), j, e)
+  Hp.same_still(N.Out.tx(o), S.State.ues(st), j, e)
 
 # The handover procedures
 # -----------------------
@@ -542,12 +544,12 @@ def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +c
   +b : N.GOut() = (S.Put{k, v}, [])
   +more : List<&2, N.Act> = [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
   +o = N.Out.also(N.Out.join(a, b), more)
-  e12 = Equal.trans(S.Tx, PT.Tk.tx(o), PT.Tk.tx(N.Out.join(a, b)), S.Both{PT.Tk.tx(a), S.Put{k, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PT.Tk.tx_join(a, b))
-  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(PT.Tk.tx(o), ues), PT.Tk.render(st, o))
+  e12 = Equal.trans(S.Tx, N.Out.tx(o), N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), S.Put{k, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PW.Out.tx_join(a, b))
+  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), ues), PT.Tk.render(st, o))
   %sr : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, _)), S.Ue.on(Tb.Table.get(S.Ue, k, _), t)) == True{} : Bool}
-  se = Equal.sym(S.Tx, PT.Tk.tx(o), S.Both{PT.Tk.tx(a), S.Put{k, v}}, e12)
+  se = Equal.sym(S.Tx, N.Out.tx(o), S.Both{N.Out.tx(a), S.Put{k, v}}, e12)
   %se : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues))), S.Ue.on(Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues)), t)) == True{} : Bool}
-  sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues))), Some{v}, PPs.Mv.get_put(k, v, PT.Tk.ues(PT.Tk.tx(a), ues)))
+  sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.put(k, v, PT.Tk.ues(N.Out.tx(a), ues))), Some{v}, PPs.Mv.get_put(k, v, PT.Tk.ues(N.Out.tx(a), ues)))
   %sg : {Bool.or(S.Ue.same_owner(g, _), S.Ue.on(_, t)) == True{} : Bool}
   sa = Equal.sym(U32, S.Ue.assoc(v), assoc, Hp.assoc_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))
   %sa : {Bool.or(S.Ue.same_owner(g, Some{v}), U32.is_eq(_, t)) == True{} : Bool}
@@ -705,6 +707,8 @@ def Hp.g_tx(+st: S.State, +k: U32, +tx: S.Tx, +acts: List<&2, N.Act>, +e: {Bool.
       ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Subs{subs}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Subs{subs}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.SetLink{link}:
       ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.SetLink{link}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.SetLink{link}, st))))) == True{} : Bool}, P.Refute.bool(e))
+    case S.Pend{pk, pd}:
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Pend{pk, pd}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Pend{pk, pd}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpUe{bk}:
       ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.BumpUe{bk}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.BumpUe{bk}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpSeq{n}:
