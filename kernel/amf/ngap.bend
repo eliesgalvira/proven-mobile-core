@@ -575,6 +575,33 @@ def Owner.of(m: Maybe<&2, S.Ue>, assoc: U32, ran: B.Bytes()) -> Maybe<&2, S.Ue>:
     case Some{+ue}:
       Owner.check(ue, Bool.and(U32.is_eq(S.Ue.assoc(ue), assoc), B.bytes_eq(S.Ue.ran_id(ue), ran)))
 
+# A UE context with its key.
+def Keyed() -> Data:
+  Sigma<&2, &2, U32, _ => S.Ue>
+
+def Ue.with_key(key: U32, m: Maybe<&2, S.Ue>) -> Maybe<&2, Keyed()>:
+  match m:
+    case None{}:
+      None{}
+    case Some{ue}:
+      Some{(key, ue)}
+
+# The context under the key an AMF-UE-NGAP-ID names, as find gives it.
+def Ue.keyed(m: Maybe<&2, U32>, find: U32 -> Maybe<&2, S.Ue>) -> Maybe<&2, Keyed()>:
+  match m:
+    case None{}:
+      None{}
+    case Some{+key}:
+      Ue.with_key(key, find(key))
+
+# The outcome for the context found, or none.
+def Ue.found(m: Maybe<&2, Keyed()>, none: GOut(), go: U32 -> S.Ue -> GOut()) -> GOut():
+  match m:
+    case None{}:
+      none
+    case Some{(key, ue)}:
+      go(key, ue)
+
 # A verified NAS message not acted on still moves the uplink COUNT on, so it
 # cannot be replayed; the context's phase keeps its shape.
 def Out.verified(key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, why: String) -> GOut():

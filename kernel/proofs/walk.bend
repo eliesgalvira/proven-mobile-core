@@ -2,6 +2,7 @@ import Base
 import ../bytes.bend as B
 import ../aper.bend as Ap
 import ../ngap/frame.bend as Fr
+import ../ngap/gen/types.bend as G
 import ../ngap/gen/views.bend as V
 import ../frame.bend as F
 import ../tlv.bend as T
@@ -15,6 +16,8 @@ import ../amf/path_switch.bend as Ps
 import ../amf/handover.bend as Ho
 import ./lib.bend as P
 import ../smf/gsm.bend as Gsm
+import ../smf/switch.bend as Sw
+import ../nas/security.bend as Sec
 
 # The step function, walked once
 # ------------------------------
@@ -225,3 +228,84 @@ def Walk.assocs(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.Stat
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       e
+
+# A context looked up by key
+# --------------------------
+# N.Ue.found on N.Ue.keyed ends in its none outcome, or in go for a key m
+# names and the context find gives under it.
+
+def Walk.with_key(-Q: N.GOut() -> Type, -C: Type, +key: U32, +r: Maybe<&2, S.Ue>, +none: N.GOut(), go: U32 -> S.Ue -> N.GOut(), c: C, hn: C -> Q(none), hg: C -> @ue:S.Ue -> {r == Some{ue} : Maybe<&2, S.Ue>} -> Q(go(key, ue))) -> Q(N.Ue.found(N.Ue.with_key(key, r), none, go)):
+  match r:
+    case None{}:
+      hn(c)
+    case Some{+ue}:
+      hg(c, ue, {==})
+
+# c is what both outcomes need, handed to the one taken.
+def Walk.keyed(-Q: N.GOut() -> Type, -C: Type, +m: Maybe<&2, U32>, find: U32 -> Maybe<&2, S.Ue>, +none: N.GOut(), go: U32 -> S.Ue -> N.GOut(), c: C, hn: C -> Q(none), hg: C -> @key:U32 -> @ue:S.Ue -> {m == Some{key} : Maybe<&2, U32>} -> {find(key) == Some{ue} : Maybe<&2, S.Ue>} -> Q(go(key, ue))) -> Q(N.Ue.found(N.Ue.keyed(m, find), none, go)):
+  match m:
+    case None{}:
+      hn(c)
+    case Some{+key}:
+      Walk.with_key(Q, C, key, find(key), none, go, c, hn, x => +ue => ef => hg(x, key, ue, {==}, ef))
+
+# A Path Switch Request, walked
+# -----------------------------
+# A Path Switch Request ends in Ps.Ps.fail, which keeps the state, or in the
+# switch of a registered context its AMF-UE-NGAP-ID names, whose SUPI 5G-AKA
+# verified.
+
+def Pw.Fail(-Q: N.GOut() -> Type, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList()) -> Type:
+  @cause:G.Cause -> Q(Ps.Ps.fail(assoc, stream, amf, ran, items, cause))
+
+def Pw.Go(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>) -> Type:
+  @key:U32 -> @ue:S.Ue -> @ctx:Sec.Nas.Ctx -> @nh:S.Nh -> @sp:B.Digits() -> {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>} -> {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} -> {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>} -> Q(Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), True{}))
+
+def Pw.go(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +sp: B.Digits(), +ok: Bool, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +es: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items, ts)) -> Q(Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), ok)):
+  match ok:
+    case False{}:
+      fail(N.Ngap.radio_cause(G.CauseRadioNetwork.unknown_PDU_session_ID()))
+    case True{}:
+      go(key, ue, ctx, nh, sp, ek, eg, es)
+
+def Pw.free(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +sp: B.Digits(), +ok: Bool, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +es: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items, ts)) -> Q(Ps.Ps.free(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, ok)):
+  match ok:
+    case False{}:
+      fail(N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))
+    case True{}:
+      Pw.go(Q, st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, sp, Sw.Sw.any(ts, S.Sessions.of_ue(key, S.State.sessions(st))), ek, eg, es, fail, go)
+
+def Pw.identified(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +supi: Maybe<&2, B.Digits()>, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +es: {S.Ue.supi(ue) == supi : Maybe<&2, B.Digits()>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items, ts)) -> Q(Ps.Ps.identified(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, supi)):
+  match supi:
+    case None{}:
+      fail(Ps.Ps.unknown())
+    case Some{+sp}:
+      Pw.free(Q, st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, sp, S.Ues.ran_free(key, assoc, ran, S.State.ues(st)), ek, eg, es, fail, go)
+
+def Pw.phase(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +key: U32, +ue: S.Ue, +p: S.Phase, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items, ts)) -> Q(Ps.Ps.phase(st, assoc, stream, amf, ran, items, ts, key, ue, p)):
+  match p:
+    case S.Created{}:
+      fail(Ps.Ps.unknown())
+    case S.Identifying{guard}:
+      fail(Ps.Ps.unknown())
+    case S.Authenticating{guard, av, resynced, supi}:
+      fail(Ps.Ps.unknown())
+    case S.SecurityMode{guard, ctx, k_amf}:
+      fail(Ps.Ps.unknown())
+    case S.ContextSetup{guard, ctx, nh, response, complete}:
+      fail(Ps.Ps.unknown())
+    case S.Registered{+ctx, +nh, released}:
+      Pw.identified(Q, st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Ue.supi(ue), ek, eg, {==}, fail, go)
+    case S.Switching{guard, ctx, nh, released}:
+      fail(Ps.Ps.unknown())
+    case S.Handover{ctx, nh, source, leg}:
+      fail(Ps.Ps.unknown())
+    case S.Releasing{guard}:
+      fail(Ps.Ps.unknown())
+
+def Pw.ready(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +ok: Bool, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items, ts)) -> Q(Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, Ps.Ps.named(st, amf), ok)):
+  match ok:
+    case False{}:
+      fail(N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()))
+    case True{}:
+      Walk.keyed(Q, Pw.Fail(Q, assoc, stream, amf, ran, items), N.Ngap.ue_key(amf), k => Tb.Table.get(S.Ue, k, S.State.ues(st)), Ps.Ps.fail(assoc, stream, amf, ran, items, Ps.Ps.unknown()), +key => +ue => Ps.Ps.phase(st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue)), fail, f => f(Ps.Ps.unknown()), f => +key => +ue => ek => eg => Pw.phase(Q, st, assoc, stream, amf, ran, items, ts, key, ue, S.Ue.phase(ue), ek, eg, f, go))

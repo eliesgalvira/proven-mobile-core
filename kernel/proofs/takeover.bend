@@ -1712,86 +1712,30 @@ def W.ps_put_case(+k: U32, +u: S.Ue, +key: U32, +ue: S.Ue, +a: U32, +r: B.Bytes(
       sec : {S.Ue.secures(v, S.Ue.supi(u)) == True{} : Bool} = (%eue : {S.Ue.secures(v, S.Ue.supi(_)) == True{} : Bool}; W.secures_moved(ue, a, r, s, p, sp, esupi, ec))
       Inr{P.Bool.or_l(S.Ue.secures(v, S.Ue.supi(u)), S.Ues.secured(S.Ue.supi(u), S.Ues.sift(S.Clear{key, v}, ues)), sec)}
 
-def W.ps_go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +rows: Tb.Table(S.Session), +ok: Bool, +sp: B.Digits(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +em: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +esupi: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, ok)):
-  match ok:
-    case False{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case True{}:
-      +g : S.Guard = S.Guard{0}
-      +n = S.Nh.next(nh)
-      +rel = Sw.Sw.released(Sw.Sw.path_tunnels(items), rows)
-      +v = S.Ue.moved(ue, assoc, ran, stream, S.Switching{g, ctx, n, rel})
-      +a = Sw.Sw.sessions(Sw.Sw.path_tunnels(items), rows, S.State.pfcp_seq(st))
-      +b : N.GOut() = (S.Put{key, v}, [])
-      +ues = S.State.ues(st)
-      ha = Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(u)), ea)
-      es = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(a), ues), ues, W.ps_sessions_ues(Sw.Sw.path_tunnels(items), rows, S.State.pfcp_seq(st), ues))
-      h : Tk.Kept(k, u, Tk.ues(Tk.tx(b), Tk.ues(Tk.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, ran, stream, S.Switching{g, ctx, n, rel}, sp, ues, eu, eun, ha, em, esupi, {==}, U32.is_eq(k, key), {==}))
-      Tk.ok_also(k, u, ues, N.Out.join(a, b), [N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}], Tk.ok_join(k, u, ues, a, b, h))
-
-def W.ps_free(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ok: Bool, +sp: B.Digits(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +em: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +esupi: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.free(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, ok)):
-  match ok:
-    case False{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case True{}:
-      +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      W.ps_go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, Sw.Sw.any(Sw.Sw.path_tunnels(items), rows), sp, k, u, eu, eun, ea, em, esupi)
-
-def W.ps_identified(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +supi: Maybe<&2, B.Digits()>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +em: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +es: {S.Ue.supi(ue) == supi : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.identified(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, supi)):
-  match supi:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+sp}:
-      W.ps_free(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ues.ran_free(key, assoc, ran, S.State.ues(st)), sp, k, u, eu, eun, ea, em, es)
-
-def W.ps_phase(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +p: S.Phase, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +em: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.phase(st, assoc, stream, amf, ran, items, key, ue, p)):
-  match p:
-    case S.Created{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Identifying{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Authenticating{guard, av, resynced, supi}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.SecurityMode{guard, ctx, k_amf}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Registered{+ctx, +nh, released}:
-      W.ps_identified(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ue.supi(ue), k, u, eu, eun, ea, em, {==})
-    case S.Switching{guard, ctx, nh, released}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Handover{ctx, nh, source, leg}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case S.Releasing{guard}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-
-def W.ps_found(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +em: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == m : Maybe<&2, S.Ue>}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.found(st, assoc, stream, amf, ran, items, key, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+ue}:
-      W.ps_phase(st, assoc, stream, amf, ran, items, key, ue, S.Ue.phase(ue), k, u, eu, eun, ea, em)
-
-def W.ps_keyed(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.keyed(st, assoc, stream, amf, ran, items, m)):
-  match m:
-    case None{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case Some{+key}:
-      W.ps_found(st, assoc, stream, amf, ran, items, key, Tb.Table.get(S.Ue, key, S.State.ues(st)), k, u, eu, eun, ea, {==})
-
-def W.ps_ready(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ok: Bool, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.ready(st, assoc, stream, amf, ran, items, ok)):
-  match ok:
-    case False{}:
-      Tk.kept_get(k, u, S.State.ues(st), eu)
-    case True{}:
-      W.ps_keyed(st, assoc, stream, amf, ran, items, N.Ngap.ue_key(amf), k, u, eu, eun, ea)
+def W.ps_go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +sp: B.Digits(), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}, +em: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +esupi: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), True{})):
+  +rows = S.Sessions.of_ue(key, S.State.sessions(st))
+  +g : S.Guard = S.Guard{0}
+  +n = S.Nh.next(nh)
+  +rel = Sw.Sw.released(ts, rows)
+  +v = S.Ue.moved(ue, assoc, ran, stream, S.Switching{g, ctx, n, rel})
+  +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
+  +b : N.GOut() = (S.Put{key, v}, [])
+  +ues = S.State.ues(st)
+  ha = Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(u)), ea)
+  es = Equal.sym(Tb.Table(S.Ue), Tk.ues(Tk.tx(a), ues), ues, W.ps_sessions_ues(ts, rows, S.State.pfcp_seq(st), ues))
+  h : Tk.Kept(k, u, Tk.ues(Tk.tx(b), Tk.ues(Tk.tx(a), ues))) = (%es : Tk.Kept(k, u, S.Ues.put(key, v, _)); W.ps_put_case(k, u, key, ue, assoc, ran, stream, S.Switching{g, ctx, n, rel}, sp, ues, eu, eun, ha, em, esupi, {==}, U32.is_eq(k, key), {==}))
+  Tk.ok_also(k, u, ues, N.Out.join(a, b), [N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}], Tk.ok_join(k, u, ues, a, b, h))
 
 def W.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err, V.PathSwitchRequest.View>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +eun: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Ps.Ps.of_view(st, assoc, stream, r)):
   match r:
     case Fail{e}:
       Tk.kept_get(k, u, S.State.ues(st), eu)
     case Done{V.PathSwitchRequest.View{+ran, +amf, uli, caps, +items, failed, rrc}}:
-      Tk.ok_also(k, u, S.State.ues(st), Ps.Ps.ready(st, assoc, stream, amf, ran, items, S.Assocs.has(assoc, S.State.assocs(st))), Ps.Ps.caps_note(st, caps, N.Ngap.ue_key(amf)), W.ps_ready(st, assoc, stream, amf, ran, items, S.Assocs.has(assoc, S.State.assocs(st)), k, u, eu, eun, ea))
+      +ok = S.Assocs.has(assoc, S.State.assocs(st))
+      +ts = Sw.Sw.path_tunnels(items)
+      +m = Ps.Ps.named(st, amf)
+      +h = PW.Pw.ready(o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, amf, ran, items, ts, ok, cause => Tk.kept_get(k, u, S.State.ues(st), eu), +key => +ue => +ctx => +nh => +sp => ek => +eg => +es => W.ps_go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, sp, k, u, eu, eun, ea, eg, es))
+      Tk.ok_also(k, u, S.State.ues(st), Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, m, ok), Ps.Ps.caps_note(caps, m), h)
 
 # N2 handover
 # -----------

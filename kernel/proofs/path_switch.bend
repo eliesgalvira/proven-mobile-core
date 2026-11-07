@@ -16,6 +16,7 @@ import ../amf/route.bend as R
 import ../amf/path_switch.bend as Ps
 import ../LAWS.bend as L
 import ./lib.bend as P
+import ./walk.bend as PW
 import ./takeover.bend as PT
 import ./liveness.bend as PL
 
@@ -34,81 +35,6 @@ def Psw.route(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len
 
 def Psw.route_view(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +v: V.PathSwitchRequest.View, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev: {V.PathSwitchRequest.view(ies) == Done{v} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}) -> {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v})) : N.Step()}:
   (%ev : {K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, _)) : N.Step()}; Psw.route(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ep, ei))
-
-# The request's checks, walked once
-# ---------------------------------
-# A Path Switch Request ends in Ps.Ps.fail, which keeps the state, or in the
-# switch of a context the request's AMF-UE-NGAP-ID names.
-
-def Pw.Fail(-Q: N.GOut() -> Type, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList()) -> Type:
-  @cause:G.Cause -> Q(Ps.Ps.fail(assoc, stream, amf, ran, items, cause))
-
-def Pw.Go(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList()) -> Type:
-  @key:U32 -> @ue:S.Ue -> @ctx:Sec.Nas.Ctx -> @nh:S.Nh -> @rows:Tb.Table(S.Session) -> {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>} -> Q(Ps.Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, True{}))
-
-def Pw.go(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +rows: Tb.Table(S.Session), +ok: Bool, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items)) -> Q(Ps.Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, ok)):
-  match ok:
-    case False{}:
-      fail(N.Ngap.radio_cause(G.CauseRadioNetwork.unknown_PDU_session_ID()))
-    case True{}:
-      go(key, ue, ctx, nh, rows, ek)
-
-def Pw.free(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ok: Bool, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items)) -> Q(Ps.Ps.free(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, ok)):
-  match ok:
-    case False{}:
-      fail(N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()))
-    case True{}:
-      +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      Pw.go(Q, st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, Sw.Sw.any(Sw.Sw.path_tunnels(items), rows), ek, fail, go)
-
-def Pw.identified(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +supi: Maybe<&2, B.Digits()>, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items)) -> Q(Ps.Ps.identified(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, supi)):
-  match supi:
-    case None{}:
-      fail(Ps.Ps.unknown())
-    case Some{sp}:
-      Pw.free(Q, st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ues.ran_free(key, assoc, ran, S.State.ues(st)), ek, fail, go)
-
-def Pw.phase(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +p: S.Phase, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items)) -> Q(Ps.Ps.phase(st, assoc, stream, amf, ran, items, key, ue, p)):
-  match p:
-    case S.Created{}:
-      fail(Ps.Ps.unknown())
-    case S.Identifying{guard}:
-      fail(Ps.Ps.unknown())
-    case S.Authenticating{guard, av, resynced, supi}:
-      fail(Ps.Ps.unknown())
-    case S.SecurityMode{guard, ctx, k_amf}:
-      fail(Ps.Ps.unknown())
-    case S.ContextSetup{guard, ctx, nh, response, complete}:
-      fail(Ps.Ps.unknown())
-    case S.Registered{+ctx, +nh, released}:
-      Pw.identified(Q, st, assoc, stream, amf, ran, items, key, ue, ctx, nh, S.Ue.supi(ue), ek, fail, go)
-    case S.Switching{guard, ctx, nh, released}:
-      fail(Ps.Ps.unknown())
-    case S.Handover{ctx, nh, source, leg}:
-      fail(Ps.Ps.unknown())
-    case S.Releasing{guard}:
-      fail(Ps.Ps.unknown())
-
-def Pw.found(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +m: Maybe<&2, S.Ue>, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items)) -> Q(Ps.Ps.found(st, assoc, stream, amf, ran, items, key, m)):
-  match m:
-    case None{}:
-      fail(Ps.Ps.unknown())
-    case Some{+ue}:
-      Pw.phase(Q, st, assoc, stream, amf, ran, items, key, ue, S.Ue.phase(ue), ek, fail, go)
-
-def Pw.keyed(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +m: Maybe<&2, U32>, +em: {N.Ngap.ue_key(amf) == m : Maybe<&2, U32>}, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items)) -> Q(Ps.Ps.keyed(st, assoc, stream, amf, ran, items, m)):
-  match m:
-    case None{}:
-      fail(Ps.Ps.unknown())
-    case Some{+key}:
-      Pw.found(Q, st, assoc, stream, amf, ran, items, key, Tb.Table.get(S.Ue, key, S.State.ues(st)), em, fail, go)
-
-def Pw.ready(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ok: Bool, fail: Pw.Fail(Q, assoc, stream, amf, ran, items), go: Pw.Go(Q, st, assoc, stream, amf, ran, items)) -> Q(Ps.Ps.ready(st, assoc, stream, amf, ran, items, ok)):
-  match ok:
-    case False{}:
-      fail(N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()))
-    case True{}:
-      Pw.keyed(Q, st, assoc, stream, amf, ran, items, N.Ngap.ue_key(amf), {==}, fail, go)
 
 # Failure leaves the state
 # ------------------------
@@ -208,26 +134,20 @@ def Fl.caps_same(+ok: Bool) -> {N.Ngap.any_switch_failure(Ps.Ps.caps_same(ok)) =
     case False{}:
       {==}
 
-def Fl.caps_ue(+caps: G.UESecurityCapabilities, +m: Maybe<&2, S.Ue>) -> {N.Ngap.any_switch_failure(Ps.Ps.caps_ue(caps, m)) == False{} : Bool}:
+def Fl.caps_note(+caps: G.UESecurityCapabilities, +m: Maybe<&2, N.Keyed()>) -> {N.Ngap.any_switch_failure(Ps.Ps.caps_note(caps, m)) == False{} : Bool}:
   match m:
     case None{}:
       {==}
-    case Some{+ue}:
+    case Some{(+key, +ue)}:
       Fl.caps_same(B.bytes_eq(Ap.pack(G.UESecurityCapabilities.write(N.Ngap.ue_caps(N.Ue.caps(ue)), 0n, [])), Ap.pack(G.UESecurityCapabilities.write(caps, 0n, []))))
 
-def Fl.caps_note(+st: S.State, +caps: G.UESecurityCapabilities, +m: Maybe<&2, U32>) -> {N.Ngap.any_switch_failure(Ps.Ps.caps_note(st, caps, m)) == False{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+key}:
-      Fl.caps_ue(caps, Tb.Table.get(S.Ue, key, S.State.ues(st)))
-
-def Fl.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +rows: Tb.Table(S.Session)) -> Fl.Cls(Ps.Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, True{})):
-  +v = S.Ue.moved(ue, assoc, ran, stream, S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Sw.Sw.released(Sw.Sw.path_tunnels(items), rows)})
-  +a = Sw.Sw.sessions(Sw.Sw.path_tunnels(items), rows, S.State.pfcp_seq(st))
+def Fl.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh) -> Fl.Cls(Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), True{})):
+  +rows = S.Sessions.of_ue(key, S.State.sessions(st))
+  +v = S.Ue.moved(ue, assoc, ran, stream, S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Sw.Sw.released(ts, rows)})
+  +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
   +b : N.GOut() = (S.Put{key, v}, [])
   +more : List<&2, N.Act> = [N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}]
-  Inr{Fl.also(N.Out.join(a, b), more, Fl.join(a, b, Fl.sessions(Sw.Sw.path_tunnels(items), rows, S.State.pfcp_seq(st)), {==}), {==})}
+  Inr{Fl.also(N.Out.join(a, b), more, Fl.join(a, b, Fl.sessions(ts, rows, S.State.pfcp_seq(st)), {==}), {==})}
 
 def Fl.also_cls(+o: N.GOut(), +more: List<&2, N.Act>, +h: Fl.Cls(o), +hm: {N.Ngap.any_switch_failure(more) == False{} : Bool}) -> Fl.Cls(N.Out.also(o, more)):
   match o:
@@ -244,8 +164,10 @@ def Fl.of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err
       Inl{{==}}
     case Done{V.PathSwitchRequest.View{+ran, +amf, uli, +caps, +items, failed, rrc}}:
       +ok = S.Assocs.has(assoc, S.State.assocs(st))
-      +h = Pw.ready(o => Fl.Cls(o), st, assoc, stream, amf, ran, items, ok, cause => Inl{{==}}, +key => +ue => +ctx => +nh => +rows => ek => Fl.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows))
-      Fl.also_cls(Ps.Ps.ready(st, assoc, stream, amf, ran, items, ok), Ps.Ps.caps_note(st, caps, N.Ngap.ue_key(amf)), h, Fl.caps_note(st, caps, N.Ngap.ue_key(amf)))
+      +ts = Sw.Sw.path_tunnels(items)
+      +m = Ps.Ps.named(st, amf)
+      +h = PW.Pw.ready(o => Fl.Cls(o), st, assoc, stream, amf, ran, items, ts, ok, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Fl.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh))
+      Fl.also_cls(Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, m, ok), Ps.Ps.caps_note(caps, m), h, Fl.caps_note(caps, m))
 
 def Fl.final(+st: S.State, +o: N.GOut(), +h: Fl.Cls(o), +ef: {N.Ngap.any_switch_failure(K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool}) -> {K.Kernel.state(N.Step.of(st, o)) == st : S.State}:
   match o:
@@ -297,10 +219,11 @@ def Mv.put(+key: U32, +ue: S.Ue, +a: U32, +r: B.Bytes(), +s: U32, +p: S.Phase, +
   %seg : {Tb.Table.present(S.Ue, _) == True{} : Bool} & {N.Owner.of(_, a, r) == _ : Maybe<&2, S.Ue>}
   ({==}, Mv.owner(ue, a, r, s, p))
 
-def Mv.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +k: U32, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +rows: Tb.Table(S.Session), +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}) -> Mv.Qt(st, k, assoc, ran, PT.Tk.tx(Ps.Ps.go(st, assoc, stream, amf, ran, items, key, ue, ctx, nh, rows, True{}))):
-  +p : S.Phase = S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Sw.Sw.released(Sw.Sw.path_tunnels(items), rows)}
+def Mv.go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +k: U32, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}) -> Mv.Qt(st, k, assoc, ran, PT.Tk.tx(Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), True{}))):
+  +rows = S.Sessions.of_ue(key, S.State.sessions(st))
+  +p : S.Phase = S.Switching{S.Guard{0}, ctx, S.Nh.next(nh), Sw.Sw.released(ts, rows)}
   +v = S.Ue.moved(ue, assoc, ran, stream, p)
-  +a = Sw.Sw.sessions(Sw.Sw.path_tunnels(items), rows, S.State.pfcp_seq(st))
+  +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
   +b : N.GOut() = (S.Put{key, v}, [])
   +more : List<&2, N.Act> = [N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}, N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}]
   e12 = Equal.trans(S.Tx, PT.Tk.tx(N.Out.also(N.Out.join(a, b), more)), PT.Tk.tx(N.Out.join(a, b)), S.Both{PT.Tk.tx(a), S.Put{key, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PT.Tk.tx_join(a, b))
@@ -314,8 +237,9 @@ def L.amf.path_switch.moves_owner(st, entropy, assoc, stream, len, bytes, crit, 
   +v : V.PathSwitchRequest.View = V.PathSwitchRequest.View{ran, amf, uli, caps, items, failed, rrc}
   +o = Ps.Ps.of_view(st, assoc, stream, Done{v})
   +ok = S.Assocs.has(assoc, S.State.assocs(st))
-  +rr = Ps.Ps.ready(st, assoc, stream, amf, ran, items, ok)
-  +n = Ps.Ps.caps_note(st, caps, N.Ngap.ue_key(amf))
+  +ts = Sw.Sw.path_tunnels(items)
+  +rr = Ps.Ps.ready(st, assoc, stream, amf, ran, items, ts, Ps.Ps.named(st, amf), ok)
+  +n = Ps.Ps.caps_note(caps, Ps.Ps.named(st, amf))
   +step = K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)
   sr = Equal.sym(N.Step(), step, N.Step.of(st, o), Psw.route_view(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, v, ep, ei, ev))
   eu : {S.State.ues(K.Kernel.state(step)) == PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)} = (%sr : {S.State.ues(K.Kernel.state(_)) == PT.Tk.ues(PT.Tk.tx(o), S.State.ues(st)) : Tb.Table(S.Ue)}; PT.Tk.render(st, o))
@@ -323,7 +247,7 @@ def L.amf.path_switch.moves_owner(st, entropy, assoc, stream, len, bytes, crit, 
   %seu : Mv.Qu(st, k, assoc, ran, _)
   sa = Equal.sym(S.Tx, PT.Tk.tx(N.Out.also(rr, n)), PT.Tk.tx(rr), PL.Lv.tx_also(rr, n))
   %sa : Mv.Qt(st, k, assoc, ran, _)
-  Pw.ready(x => Mv.Qt(st, k, assoc, ran, PT.Tk.tx(x)), st, assoc, stream, amf, ran, items, ok, cause => Inl{{==}}, +key => +ue => +ctx => +nh => +rows => ek => Mv.go(st, assoc, stream, amf, ran, items, k, eid, key, ue, ctx, nh, rows, ek))
+  PW.Pw.ready(x => Mv.Qt(st, k, assoc, ran, PT.Tk.tx(x)), st, assoc, stream, amf, ran, items, ts, ok, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Mv.go(st, assoc, stream, amf, ran, items, ts, k, eid, key, ue, ctx, nh, ek))
 
 # The request's capabilities change nothing
 # -----------------------------------------
@@ -336,9 +260,9 @@ def Psw.also_state(+st: S.State, +o: N.GOut(), +n: List<&2, N.Act>) -> {K.Kernel
 def Psw.same_state(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len1: U32, +bytes1: B.Bytes(), +crit1: U32, +value1: B.Bytes(), +ies1: List<&2, Fr.Ie>, +c1: Ap.Cur, +len2: U32, +bytes2: B.Bytes(), +crit2: U32, +value2: B.Bytes(), +ies2: List<&2, Fr.Ie>, +c2: Ap.Cur, +ran: B.Bytes(), +amf: B.Bytes(), +uli: G.UserLocationInformation, +caps1: G.UESecurityCapabilities, +caps2: G.UESecurityCapabilities, +items: G.PDUSessionResourceToBeSwitchedDLList(), +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListPSReq()>, +rrc: Maybe<&2, G.RRCEstablishmentCause()>, +ep1: {Fr.Pdu.read(bytes1) == Done{Fr.Pdu{0, 25, crit1, value1}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei1: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value1), 1n)}) == Done{(ies1, c1)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev1: {V.PathSwitchRequest.view(ies1) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps1, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}, +ep2: {Fr.Pdu.read(bytes2) == Done{Fr.Pdu{0, 25, crit2, value2}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei2: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value2), 1n)}) == Done{(ies2, c2)} : Ap.Rd(List<&2, Fr.Ie>)}, +ev2: {V.PathSwitchRequest.view(ies2) == Done{V.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, V.PathSwitchRequest.View>}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : S.State}:
   +v1 : V.PathSwitchRequest.View = V.PathSwitchRequest.View{ran, amf, uli, caps1, items, failed, rrc}
   +v2 : V.PathSwitchRequest.View = V.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}
-  +rr = Ps.Ps.ready(st, assoc, stream, amf, ran, items, S.Assocs.has(assoc, S.State.assocs(st)))
-  +n1 = Ps.Ps.caps_note(st, caps1, N.Ngap.ue_key(amf))
-  +n2 = Ps.Ps.caps_note(st, caps2, N.Ngap.ue_key(amf))
+  +rr = Ps.Ps.ready(st, assoc, stream, amf, ran, items, Sw.Sw.path_tunnels(items), Ps.Ps.named(st, amf), S.Assocs.has(assoc, S.State.assocs(st)))
+  +n1 = Ps.Ps.caps_note(caps1, Ps.Ps.named(st, amf))
+  +n2 = Ps.Ps.caps_note(caps2, Ps.Ps.named(st, amf))
   +step2 = K.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)
   s1 = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy), N.Step.of(st, Ps.Ps.of_view(st, assoc, stream, Done{v1})), Psw.route_view(st, entropy, assoc, stream, len1, bytes1, crit1, value1, ies1, c1, v1, ep1, ei1, ev1))
   %s1 : {K.Kernel.state(_) == K.Kernel.state(step2) : S.State}
