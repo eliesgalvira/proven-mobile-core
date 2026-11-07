@@ -76,3 +76,7 @@ def kdf.k_nas_int(k_amf: List<&2, U32>, alg: U32) -> List<&2, U32>:
 # A.9: KgNB from the uplink NAS COUNT, 3GPP access
 def kdf.k_gnb(k_amf: List<&2, U32>, ul_nas_count: U32) -> List<&2, U32>:
   kdf(k_amf, 110, [B.write_u32(ul_nas_count, []), [1]])
+
+# A.10: NH from the SYNC-input, KgNB for the first NH and the previous NH after
+def kdf.nh(k_amf: List<&2, U32>, sync: List<&2, U32>) -> List<&2, U32>:
+  kdf(k_amf, 111, [sync])

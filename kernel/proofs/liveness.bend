@@ -89,14 +89,14 @@ def Lv.retried(+st: S.State, +k: U32, +u: S.Ue, +g: S.Guard, +eg: {S.Ue.guard(u)
           %eq : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.retry_if(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.SecurityMode{_, ctx, k_amf}, last_dl}, _, S.SecurityMode{_, ctx, k_amf}, U32.is_lt(S.Guard.retries(_), Gmm.Gmm.max_retries())))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}
           %ser : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.retry_if(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.SecurityMode{g, ctx, k_amf}, last_dl}, g, S.SecurityMode{g, ctx, k_amf}, _))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}
           Lv.release_get(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.SecurityMode{g, ctx, k_amf}, last_dl}, N.Ngap.nas_cause(G.CauseNas.unspecified()))
-        case S.ContextSetup{+guard, ctx, response, complete}:
+        case S.ContextSetup{+guard, ctx, nh, response, complete}:
           eq = Equal.sym(S.Guard, guard, g, P.Some.inj(S.Guard, guard, g, eg))
           ser = Equal.sym(Bool, U32.is_lt(S.Guard.retries(g), Gmm.Gmm.max_retries()), False{}, er)
-          %eq : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.retry_if(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.ContextSetup{_, ctx, response, complete}, last_dl}, _, S.ContextSetup{_, ctx, response, complete}, U32.is_lt(S.Guard.retries(_), Gmm.Gmm.max_retries())))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}
-          %ser : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.retry_if(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.ContextSetup{g, ctx, response, complete}, last_dl}, g, S.ContextSetup{g, ctx, response, complete}, _))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}
-          Lv.release_get(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.ContextSetup{g, ctx, response, complete}, last_dl}, N.Ngap.nas_cause(G.CauseNas.unspecified()))
-        case S.Registered{ctx}:
-          Empty.absurd({Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Registered{ctx}, last_dl}, S.Registered{ctx}))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}, P.Refute.none_some(S.Guard, g, eg))
+          %eq : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.retry_if(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.ContextSetup{_, ctx, nh, response, complete}, last_dl}, _, S.ContextSetup{_, ctx, nh, response, complete}, U32.is_lt(S.Guard.retries(_), Gmm.Gmm.max_retries())))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}
+          %ser : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.retry_if(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.ContextSetup{g, ctx, nh, response, complete}, last_dl}, g, S.ContextSetup{g, ctx, nh, response, complete}, _))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}
+          Lv.release_get(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.ContextSetup{g, ctx, nh, response, complete}, last_dl}, N.Ngap.nas_cause(G.CauseNas.unspecified()))
+        case S.Registered{ctx, nh}:
+          Empty.absurd({Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Registered{ctx, nh}, last_dl}, S.Registered{ctx, nh}))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}, P.Refute.none_some(S.Guard, g, eg))
         case S.Releasing{+guard}:
           eq = Equal.sym(S.Guard, guard, g, P.Some.inj(S.Guard, guard, g, eg))
           Empty.absurd({Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.expired(st, k, S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{guard}, last_dl}, S.Releasing{guard}))))) == Some{S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, S.Releasing{S.Guard{0}}, last_dl}} : Maybe<&2, S.Ue>}, np((%eq : {S.Releasing{_} == S.Releasing{g} : S.Phase}; {==})))
@@ -320,9 +320,9 @@ def Lv.g_ctx(+q: S.Phase, +c: Sec.Nas.Ctx, +e: {Tb.Table.present(Sec.Nas.Ctx, S.
       Empty.absurd({S.Phase.guarded(S.Phase.with_ctx(S.Authenticating{guard, av, resynced, supi}, c)) == True{} : Bool}, P.Refute.bool(e))
     case S.SecurityMode{guard, ctx, k_amf}:
       {==}
-    case S.ContextSetup{guard, ctx, response, complete}:
+    case S.ContextSetup{guard, ctx, nh, response, complete}:
       {==}
-    case S.Registered{ctx}:
+    case S.Registered{ctx, nh}:
       {==}
     case S.Releasing{guard}:
       Empty.absurd({S.Phase.guarded(S.Phase.with_ctx(S.Releasing{guard}, c)) == True{} : Bool}, P.Refute.bool(e))
@@ -1171,9 +1171,9 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
           Lw.response(st, key, ue, av, supi, I.Opts.find(I.Iei.authentication_response_parameter(), opts), ek)
         case S.SecurityMode{guard, old, k_amf}:
           {==}
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           {==}
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           {==}
         case S.Releasing{guard}:
           {==}
@@ -1189,9 +1189,9 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
           Lw.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(I.Iei.authentication_failure_parameter(), opts), entropy, ek)
         case S.SecurityMode{guard, old, k_amf}:
           {==}
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           {==}
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           {==}
         case S.Releasing{guard}:
           {==}
@@ -1207,9 +1207,9 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
           {==}
         case S.SecurityMode{guard, old, k_amf}:
           {==}
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           {==}
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           {==}
         case S.Releasing{guard}:
           {==}
@@ -1243,9 +1243,10 @@ def Lw.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: 
     case Some{+c} Some{+tmsi}:
       +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
       +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.registration_accept(c, tmsi))
-      +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), False{}, False{}}
+      +k_gnb = Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count))
+      +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), S.Nh.initial(k_amf, k_gnb), False{}, False{}}
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi)
-      +x : N.Act = N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.Gmm.caps(ue2), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(p)}
+      +x : N.Act = N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.Gmm.caps(ue2), k_gnb, Sec.Nas.Protected.msg(p)}
       +y : N.Act = N.TimerStart{Some{key}, key, Gmm.Gmm.guard_ms()}
       Lv.also(st, Gmm.Gmm.place(st, key, ue2), [x, y], Lw.place(st, key, ue2, Lv.g_ics(ue, ph, Sec.Nas.Protected.msg(p), reg, tmsi), ek), Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], ek, {==})))
     case Some{c} None{}:
@@ -1255,15 +1256,15 @@ def Lw.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: 
     case None{} None{}:
       Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek)
 
-def Lw.setup_done(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +response: Bool, +complete: Bool, +both: Bool) -> {Lv.okf(st, Gmm.Gmm.setup_done(st, key, ue, guard, ctx, response, complete, both)) == True{} : Bool}:
+def Lw.setup_done(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +both: Bool) -> {Lv.okf(st, Gmm.Gmm.setup_done(st, key, ue, guard, ctx, nh, response, complete, both)) == True{} : Bool}:
   match both:
     case True{}:
       {==}
     case False{}:
       {==}
 
-def Lw.setup_step(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +response: Bool, +complete: Bool) -> {Lv.okf(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, response, complete)) == True{} : Bool}:
-  Lw.setup_done(st, key, ue, guard, ctx, response, complete, Bool.and(response, complete))
+def Lw.setup_step(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool) -> {Lv.okf(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, nh, response, complete)) == True{} : Bool}:
+  Lw.setup_done(st, key, ue, guard, ctx, nh, response, complete, Bool.and(response, complete))
 
 def Lw.dereg_answer(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +switch_off: Bool, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.dereg_answer(st, key, ue, ctx, switch_off)) == True{} : Bool}:
   match switch_off:
@@ -1293,9 +1294,9 @@ def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: S
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.SecurityMode{guard, old, k_amf}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
-        case S.ContextSetup{+guard, old, +response, complete}:
-          Lv.ok_of(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, response, True{}), Lw.setup_step(st, key, ue, guard, ctx, response, True{}))
-        case S.Registered{old}:
+        case S.ContextSetup{+guard, old, nh, +response, complete}:
+          Lv.ok_of(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, nh, response, True{}), Lw.setup_step(st, key, ue, guard, ctx, nh, response, True{}))
+        case S.Registered{old, nh}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.Releasing{guard}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
@@ -1311,9 +1312,9 @@ def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: S
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.SecurityMode{guard, old, k_amf}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           Lv.ok_of(st, Gmm.Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields)), Lw.deregister(st, key, ue, ctx, I.Fields.byte1(fields), Lv.has_live(st, key, eh)))
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Lv.ok_of(st, Gmm.Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields)), Lw.deregister(st, key, ue, ctx, I.Fields.byte1(fields), Lv.has_live(st, key, eh)))
         case S.Releasing{guard}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
@@ -1345,9 +1346,9 @@ def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: S
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.SecurityMode{guard, old, +k_amf}:
           Lv.ok_of(st, Gmm.Gmm.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n))), Lw.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n)), Lv.has_live(st, key, eh)))
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.Releasing{guard}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
@@ -1361,9 +1362,9 @@ def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: S
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.SecurityMode{guard, old, k_amf}:
           Lv.ok_of(st, Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), Lv.has_live(st, key, eh)))
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.Releasing{guard}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
@@ -1379,9 +1380,9 @@ def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: S
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
         case S.SecurityMode{guard, old, k_amf}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
-        case S.ContextSetup{guard, old, response, complete}:
+        case S.ContextSetup{guard, old, nh, response, complete}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
-        case S.Registered{old}:
+        case S.Registered{old, nh}:
           Lw.ul_transport(st, key, ue, ctx, fields, opts, entropy, eh, ec)
         case S.Releasing{guard}:
           Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec)
@@ -1454,9 +1455,9 @@ def Lw.setup_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase) -> {Lv.okf(s
       {==}
     case S.SecurityMode{guard, old, k_amf}:
       {==}
-    case S.ContextSetup{+guard, +ctx, response, +complete}:
-      Lw.setup_step(st, key, ue, guard, ctx, True{}, complete)
-    case S.Registered{old}:
+    case S.ContextSetup{+guard, +ctx, nh, response, +complete}:
+      Lw.setup_step(st, key, ue, guard, ctx, nh, True{}, complete)
+    case S.Registered{old, nh}:
       {==}
     case S.Releasing{guard}:
       {==}
@@ -1562,9 +1563,9 @@ def Lw.expired(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ek: {Lv.live(st
       Lw.retry_if(st, key, ue, guard, S.Authenticating{guard, av, resynced, supi}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==})
     case S.SecurityMode{+guard, +ctx, +k_amf}:
       Lw.retry_if(st, key, ue, guard, S.SecurityMode{guard, ctx, k_amf}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==})
-    case S.ContextSetup{+guard, +ctx, +response, +complete}:
-      Lw.retry_if(st, key, ue, guard, S.ContextSetup{guard, ctx, response, complete}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==})
-    case S.Registered{ctx}:
+    case S.ContextSetup{+guard, +ctx, nh, +response, +complete}:
+      Lw.retry_if(st, key, ue, guard, S.ContextSetup{guard, ctx, nh, response, complete}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==})
+    case S.Registered{ctx, nh}:
       {==}
     case S.Releasing{guard}:
       Lv.also(st, Gmm.Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}], Lw.forget(st, key), {==})

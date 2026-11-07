@@ -8,6 +8,7 @@ import ../ngap/gen/views.bend as W
 import ../nas/mm.bend as Mm
 import ../nas/ie.bend as I
 import ../crypto/milenage.bend as Mil
+import ../crypto/kdf.bend as Kd
 import ../nas/security.bend as Sec
 import ../frame.bend as F
 import ../table.bend as Tb
@@ -46,6 +47,28 @@ def k_amf_of(m: Maybe<&2, S.Ue>) -> B.Bytes():
       k_amf_phase(S.Ue.phase(u))
     case None{}:
       []
+
+# The UE's stored {NH, NCC} is the first NH from this KAMF and KgNB, NCC 1.
+def nh_is_first(c: S.Nh, +k_amf: B.Bytes(), +k_gnb: B.Bytes()) -> Bool:
+  match c:
+    case S.Nh{k, nh, ncc}:
+      Bool.and(B.bytes_eq(k, k_amf), Bool.and(B.bytes_eq(nh, Kd.kdf.nh(k_amf, k_gnb)), U32.is_eq(ncc, 1)))
+
+def nh_first(p: S.Phase, +k_amf: B.Bytes(), +k_gnb: B.Bytes()) -> Bool:
+  match p:
+    case S.ContextSetup{g, ctx, nh, response, complete}:
+      nh_is_first(nh, k_amf, k_gnb)
+    case S.Registered{ctx, nh}:
+      nh_is_first(nh, k_amf, k_gnb)
+    case _:
+      False{}
+
+def nh_first_of(m: Maybe<&2, S.Ue>, +k_amf: B.Bytes(), +k_gnb: B.Bytes()) -> Bool:
+  match m:
+    case Some{u}:
+      nh_first(S.Ue.phase(u), k_amf, k_gnb)
+    case None{}:
+      False{}
 
 def fire(times: Nat, st: S.State) -> S.State:
   match times:
@@ -125,6 +148,8 @@ def main() -> IO(Unit):
     C.Check.report("Security Mode Complete: the captured one verifies; Initial Context Setup Request follows", Bool.and(A.phase_is(st3, "context_setup"), Bool.and(A.pdu_is(Fr.Pdu.read(ics), Fr.Pdu.initiating(), 14), Nat.is_eq(A.timer_starts(K.Kernel.frames(o3)), 1n))))
     C.Check.report("Initial Context Setup Request: the captured KgNB, GUAMI, Allowed NSSAI and UE security capabilities", Bool.and(A.same_ie(94, ics, ics_cap), Bool.and(A.same_ie(28, ics, ics_cap), Bool.and(A.same_ie(0, ics, ics_cap), A.same_ie(119, ics, ics_cap)))))
     C.Check.report("Registration Accept: ciphered, with the 5G-GUTI from entropy, the TAI, the slice and T3512", B.bytes_eq(List.drop(&2, U32, ics_nas(W.InitialContextSetupRequest.view(A.ies_of(Fr.Pdu.read(ics)))), 7n), [126, 0, 66, 1, 1, 119, 0, 11, 242, 0, 241, 16, 2, 0, 64, 0, 0, 0, 0, 84, 7, 0, 0, 241, 16, 0, 0, 1, 21, 2, 1, 1, 94, 1, 5]))
+    +s : V.Vec = V.Vec.field(Capture.data(), "secrets")
+    C.Check.report("Initial Context Setup: the UE keeps NH 1 from KAMF and the KgNB sent, with NCC 1", nh_first_of(A.ue1(st3), V.Vec.secret(s, "k_amf"), V.Vec.secret(s, "k_gnb")))
     +o_replay : N.Step() = K.Kernel.step(st3, A.data(1, A.hex_of(A.entry(22n, msgs), "hex")), A.entropy())
     C.Check.report("Security Mode Complete replayed: ignored", Bool.and(A.phase_is(K.Kernel.state(o_replay), "context_setup"), Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.frames(o_replay))), 0n)))
     +o_plain : N.Step() = K.Kernel.step(st2, A.data(1, A.uplink(ran, uli, auth_resp)), A.entropy())
@@ -134,6 +159,7 @@ def main() -> IO(Unit):
     +st5 : S.State = K.Kernel.state(o5)
     C.Check.report("Initial Context Setup Response, then the captured Registration Complete: registered, T3550 stopped", Bool.and(A.phase_is(K.Kernel.state(o4), "context_setup"), Bool.and(A.phase_is(st5, "registered"), Nat.is_eq(A.timer_cancels(K.Kernel.frames(o5)), 1n))))
     +o5b : N.Step() = K.Kernel.step(K.Kernel.state(K.Kernel.step(st3, A.data(1, A.hex_of(A.entry(28n, msgs), "hex")), A.entropy())), A.data(1, A.hex_of(A.entry(27n, msgs), "hex")), A.entropy())
+    C.Check.report("Registered: the UE still keeps NH 1, NCC 1", nh_first_of(A.ue1(st5), V.Vec.secret(s, "k_amf"), V.Vec.secret(s, "k_gnb")))
     C.Check.report("Registration Complete, then Initial Context Setup Response: registered", A.phase_is(K.Kernel.state(o5b), "registered"))
     +o_rel2 : N.Step() = K.Kernel.step(st5, A.data_on(2, A.release_request(ran)), A.entropy())
     C.Check.report("UE Context Release Request from another association: Error Indication, state unchanged", Bool.and(A.phase_is(K.Kernel.state(o_rel2), "registered"), A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_rel2)))), Fr.Pdu.initiating(), 9)))
