@@ -90,28 +90,11 @@ def rand_of(nas: B.Bytes()) -> B.Bytes():
 def phase_at(st: S.State, +key: U32) -> String:
   A.phase_name(Tb.Table.get(S.Ue, key, S.State.ues(st)))
 
-def timer_of(g: Maybe<&2, S.Guard>) -> U32:
-  match g:
-    case Some{guard}:
-      S.Guard.timer(guard)
-    case None{}:
-      0
-
-def guard_of(m: Maybe<&2, S.Ue>) -> U32:
-  match m:
-    case Some{u}:
-      timer_of(S.Ue.guard(u))
-    case None{}:
-      0
-
-def timer_at(st: S.State, +key: U32) -> U32:
-  guard_of(Tb.Table.get(S.Ue, key, S.State.ues(st)))
-
-# The id counters set where they will be after counting through 2^32 ids.
-def rewound(st: S.State, ue: U32, timer: U32) -> S.State:
+# The AMF-UE-NGAP-ID search set to start at an id.
+def rewound(st: S.State, ue: U32) -> S.State:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-      S.State{config, subs, assocs, ues, sessions, pfcp_seq, ue, timer, n4}
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      S.State{config, subs, assocs, ues, sessions, pfcp_seq, ue, n4}
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -163,14 +146,14 @@ def main() -> IO(Unit):
     +o_replay2 : N.Step() = K.Kernel.step(st5, A.data_on(2, initial), A.entropy())
     +st_r : S.State = K.Kernel.state(o_replay2)
     C.Check.report("a captured SUCI replayed from another gNB: the registered UE stays, the newcomer is only challenged", Bool.and(String.eq(phase_at(st_r, 1), "registered"), Bool.and(Nat.is_eq(A.ue_count(st_r), 2n), Bool.and(Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.frames(o_replay2))), 1n), U32.is_eq(A.nas_type(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_replay2))))), 86)))))
-    +st_w1 : S.State = K.Kernel.state(K.Kernel.step(rewound(st1, 0, 4294967295), A.data_on(2, initial), A.entropy()))
-    +st_w2 : S.State = K.Kernel.state(K.Kernel.step(st_w1, A.data_on(3, initial), A.entropy()))
-    C.Check.report("the id counters wrap: AMF-UE-NGAP-ID 1 and guard timers 0 (N4) and 1, still live, are skipped", Bool.and(Nat.is_eq(A.ue_count(st_w2), 3n), Bool.and(String.eq(phase_at(st_w2, 1), "authenticating"), Bool.and(String.eq(phase_at(st_w2, 2), "authenticating"), Bool.and(U32.is_eq(timer_at(st_w2, 1), 1), Bool.and(U32.is_eq(timer_at(st_w2, 0), 4294967295), U32.is_eq(timer_at(st_w2, 2), 2)))))))
-    +o_fail2 : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, flip_last(auth_resp))), A.entropy())
-    C.Check.report("the newcomer fails 5G-AKA: the registered UE is untouched", Bool.and(String.eq(phase_at(K.Kernel.state(o_fail2), 1), "registered"), String.eq(phase_at(K.Kernel.state(o_fail2), 2), "releasing")))
-    +o_take : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([2], ran, uli, auth_resp)), A.entropy())
+    C.Check.report("a second context: the next odd AMF-UE-NGAP-ID, 3, whose guard timer is 3", Bool.and(String.eq(phase_at(st_r, 3), "authenticating"), U32.is_eq(A.first_timer(K.Kernel.frames(o_replay2)), 3)))
+    +st_w : S.State = K.Kernel.state(K.Kernel.step(rewound(st1, 1), A.data_on(2, initial), A.entropy()))
+    C.Check.report("the AMF-UE-NGAP-ID search skips an id a context holds", Bool.and(Nat.is_eq(A.ue_count(st_w), 2n), Bool.and(String.eq(phase_at(st_w, 1), "authenticating"), String.eq(phase_at(st_w, 3), "authenticating"))))
+    +o_fail2 : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([3], ran, uli, flip_last(auth_resp))), A.entropy())
+    C.Check.report("the newcomer fails 5G-AKA: the registered UE is untouched", Bool.and(String.eq(phase_at(K.Kernel.state(o_fail2), 1), "registered"), String.eq(phase_at(K.Kernel.state(o_fail2), 3), "releasing")))
+    +o_take : N.Step() = K.Kernel.step(st_r, A.data_on(2, A.uplink_as([3], ran, uli, auth_resp)), A.entropy())
     +st_t : S.State = K.Kernel.state(o_take)
-    C.Check.report("the newcomer passes 5G-AKA: only then is the old context released", Bool.and(Nat.is_eq(A.ue_count(st_t), 1n), Bool.and(String.eq(phase_at(st_t, 2), "security_mode"), Bool.and(A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_take)))), Fr.Pdu.initiating(), 41), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_take)), 1n))), Fr.Pdu.initiating(), 4)))))
+    C.Check.report("the newcomer passes 5G-AKA: only then is the old context released", Bool.and(Nat.is_eq(A.ue_count(st_t), 1n), Bool.and(String.eq(phase_at(st_t, 3), "security_mode"), Bool.and(A.pdu_is(Fr.Pdu.read(A.first_bytes(A.sends(K.Kernel.frames(o_take)))), Fr.Pdu.initiating(), 41), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_take)), 1n))), Fr.Pdu.initiating(), 4)))))
     +o_dereg : N.Step() = K.Kernel.step(st5, A.data(1, A.uplink(ran, uli, A.ue_protect(2, deregistration(1)))), A.entropy())
     C.Check.report("Deregistration Request: Deregistration Accept, then Release Command", Bool.and(A.phase_is(K.Kernel.state(o_dereg), "releasing"), Bool.and(B.bytes_eq(List.drop(&2, U32, A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_dereg)))), 7n), [126, 0, 70]), A.pdu_is(Fr.Pdu.read(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_dereg)), 1n))), Fr.Pdu.initiating(), 41))))
     +o_big : N.Step() = K.Kernel.step(st5, A.data(1, A.uplink_as([1, 0, 0, 0, 1], ran, uli, A.ue_protect(2, deregistration(1)))), A.entropy())

@@ -139,7 +139,7 @@ def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.o
 
 def L.amf.assoc_down.releases_all(st, entropy, assoc):
   match st:
-    case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
       Ues.drop_none(assoc, ues)
 
 # Registration, part 1 (ticket 17)
@@ -247,12 +247,12 @@ def L.amf.ue_context_release.owner_only(st, entropy, assoc, stream, len, bytes, 
 
 def Tx.forget_ue(+key: U32, n: U32, st: S.State) -> {Tb.Table.get(S.Ue, key, S.State.ues(S.Tx.apply(S.Both{S.Del{key}, S.BumpSeq{n}}, st))) == None{} : Maybe<&2, S.Ue>}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Del.get(key, ues)
 
 def Tx.forget_sessions(+key: U32, n: U32, st: S.State) -> {S.Sessions.of_ue(key, S.State.sessions(S.Tx.apply(S.Both{S.Del{key}, S.BumpSeq{n}}, st))) == [] : Tb.Table(S.Session)}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Sessions.drop_none(key, sessions)
 
 def L.amf.release.complete_forgets(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, k, ran, uli, rel, diag, ue, ep, ei, ev, eid, eo):
@@ -344,49 +344,45 @@ def Tx.unique(tx: S.Tx, +st: S.State, e: {S.Ues.unique(S.State.ues(st)) == True{
       e
     case S.Put{+key, +ue}:
       match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
           P.Bool.and_intro(S.Ues.clear(key, ue, S.Ues.sift(S.Clear{key, ue}, ues)), S.Ues.unique(S.Ues.sift(S.Clear{key, ue}, ues)), Clear.own(key, ue, ues), Unique.sift(S.Clear{key, ue}, ues, e))
     case S.Rephase{+key, +phase}:
       match st:
-        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
           er = Equal.sym(Bool, S.Ues.unique(S.Ues.rephase(key, phase, ues)), S.Ues.unique(ues), Unique.rephase(key, phase, ues))
           %er : {_ == True{} : Bool}
           e
     case S.Del{+key}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           Unique.sift(S.Except{key}, ues, e)
     case S.PutSession{key, s}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
     case S.Revar{key, v}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
     case S.DelSession{key}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
     case S.Subs{new}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
     case S.SetLink{link}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
-    case S.BumpUe{}:
+    case S.BumpUe{bk}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          e
-    case S.BumpTimer{}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
     case S.BumpSeq{n}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
     case S.Both{+first, second}:
       Tx.unique(second, S.Tx.apply(first, st), Tx.unique(first, st, e))
@@ -430,17 +426,17 @@ def Config.unique(complete: Bool, st: S.State, tlvs: List<&2, T.Tlv>, entropy: B
       e
     case True{}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           e
 
 def AssocUp.unique(st: S.State, assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_up(st, assoc)))) == True{} : Bool}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       e
 
 def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.assoc_down(st, assoc)))) == True{} : Bool}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Unique.sift(S.Others{assoc}, ues, e)
 
 def Step.unique(+st: S.State, ev: F.Evt, +entropy: B.Bytes(), e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))) == True{} : Bool}:
@@ -491,47 +487,43 @@ def Cfgv.tx(tx: S.Tx, +st: S.State) -> {S.State.config(S.Tx.apply(tx, st)) == S.
       {==}
     case S.Put{key, ue}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.Rephase{key, phase}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.Del{key}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.PutSession{key, s}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.Revar{key, v}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.DelSession{key}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.Subs{new}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.SetLink{link}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
-    case S.BumpUe{}:
+    case S.BumpUe{bk}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          {==}
-    case S.BumpTimer{}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.BumpSeq{n}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
     case S.Both{+first, second}:
       Equal.trans(Maybe<&2, S.Cfg>, S.State.config(S.Tx.apply(second, S.Tx.apply(first, st))), S.State.config(S.Tx.apply(first, st)), S.State.config(st), Cfgv.tx(second, S.Tx.apply(first, st)), Cfgv.tx(first, st))
@@ -571,12 +563,12 @@ def Cfgv.pdu(+st: S.State, +assoc: U32, stream: U32, entropy: B.Bytes(), r: Resu
 
 def Cfgv.up(st: S.State, assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.assoc_up(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
 
 def Cfgv.down(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(K.Kernel.assoc_down(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
 
 # A step that keeps the configuration keeps it valid.
@@ -590,8 +582,8 @@ def Cfgv.config(complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: 
       e(cfg, ec)
     case True{}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          +st2 : S.State = S.State{Some{S.Cfg.of(tlvs)}, Au.Subscribers.of(S.Cfg.subscribers(S.Cfg.of(tlvs))), assocs, ues, sessions, pfcp_seq, next_ue, next_timer, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          +st2 : S.State = S.State{Some{S.Cfg.of(tlvs)}, Au.Subscribers.of(S.Cfg.subscribers(S.Cfg.of(tlvs))), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
           +o : N.GOut() = N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}])
           es = Equal.trans(Maybe<&2, S.Cfg>, Some{S.Cfg.of(tlvs)}, S.State.config(K.Kernel.state(N.Step.of(st2, o))), Some{cfg}, Equal.sym(Maybe<&2, S.Cfg>, S.State.config(K.Kernel.state(N.Step.of(st2, o))), Some{S.Cfg.of(tlvs)}, Cfgv.render(st2, o)), ec)
           ev = Equal.cong(Maybe<&2, S.Cfg>, S.Cfg, m => P.Maybe.value(S.Cfg, m, cfg), Some{S.Cfg.of(tlvs)}, Some{cfg}, es)

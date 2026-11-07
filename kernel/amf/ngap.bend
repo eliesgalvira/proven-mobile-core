@@ -342,12 +342,13 @@ def Out.join(a: GOut(), b: GOut()) -> GOut():
 def Out.warn(why: String) -> GOut():
   (S.Keep{}, [Note{F.Warn{}, why}])
 
-def Guard.cancel(g: Maybe<&2, S.Guard>) -> List<&2, Act>:
+# The guard of the row keyed key stopped, if it has one.
+def Guard.cancel(key: U32, g: Maybe<&2, S.Guard>) -> List<&2, Act>:
   match g:
     case None{}:
       []
     case Some{guard}:
-      [TimerCancel{S.Guard.timer(guard)}]
+      [TimerCancel{key}]
 
 # The UE under an AMF-UE-NGAP-ID, if the association owns it under that RAN-UE-NGAP-ID.
 def Owner.check(ue: S.Ue, ok: Bool) -> Maybe<&2, S.Ue>:
@@ -385,6 +386,9 @@ def Ngap.unhandled(assoc: U32) -> List<&2, Act>:
 
 def Ngap.bad_nas(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.semantic_error())}, Note{F.Warn{}, "NGAP: NAS message not understood, no context created"}]
+
+def Ngap.no_key(assoc: U32) -> List<&2, Act>:
+  [ErrInd{assoc, Ngap.misc(G.CauseMisc.control_processing_overload())}, Note{F.Warn{}, "NGAP: no AMF-UE-NGAP-ID free, InitialUEMessage refused"}]
 
 def Ngap.unknown_ue(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID())}, Note{F.Warn{}, "NGAP: UE-associated message for a UE this association does not own"}]

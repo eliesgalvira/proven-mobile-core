@@ -217,12 +217,12 @@ def ue_keys(st: S.State) -> List<&2, U32>:
   Tb_keys(S.State.ues(st))
 
 def ue_of(assoc: U32, ran: B.Bytes()) -> S.Ue:
-  S.Ue{assoc, ran, 1, None{}, None{}, [], 0, S.Releasing{S.Guard{2, 0}}, []}
+  S.Ue{assoc, ran, 1, None{}, None{}, [], 0, S.Releasing{S.Guard{0}}, []}
 
 def with_ues(st: S.State, ues: List<&2, Sigma<&2, &2, U32, _ => S.Ue>>, sessions: List<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> S.State:
   match st:
-    case S.State{config, subs, assocs, old_ues, old_sessions, pfcp_seq, next_ue, next_timer, recovery}:
-      S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, recovery}
+    case S.State{config, subs, assocs, old_ues, old_sessions, pfcp_seq, next_ue, recovery}:
+      S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, recovery}
 
 def main() -> IO(Unit):
   do IO<Unit>:

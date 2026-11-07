@@ -35,23 +35,23 @@ def Kernel.config(complete: Bool, st: S.State, +tlvs: List<&2, T.Tlv>, +entropy:
       (st, [N.Note{F.Error{}, "Config: a required tag is missing or invalid; configuration unchanged"}])
     case True{}:
       match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           +cfg = S.Cfg.of(tlvs)
-          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, next_timer, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
+          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
           N.Step.of(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]))
 
 def Kernel.assoc_up(st: S.State, assoc: U32) -> N.Step():
   match st:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-      (S.State{config, subs, S.Assocs.add(assoc, assocs), ues, sessions, pfcp_seq, next_ue, next_timer, n4}, [])
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      (S.State{config, subs, S.Assocs.add(assoc, assocs), ues, sessions, pfcp_seq, next_ue, n4}, [])
 
 # An association going down releases every UE it owned, their sessions at eUPF included.
 def Kernel.assoc_down(st: S.State, +assoc: U32) -> N.Step():
   match st:
-    case S.State{config, subs, assocs, ues, +sessions, +pfcp_seq, next_ue, next_timer, n4}:
+    case S.State{config, subs, assocs, ues, +sessions, +pfcp_seq, next_ue, n4}:
       +left = S.Ues.drop_assoc(assoc, ues)
       +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
-      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, S.Sessions.sift(S.SOwned{left}, sessions), U32.add(pfcp_seq, Up.N4.deletion_count(gone)), next_ue, next_timer, n4}, List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}]))
+      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, S.Sessions.sift(S.SOwned{left}, sessions), U32.add(pfcp_seq, Up.N4.deletion_count(gone)), next_ue, n4}, List.append(&2, N.Act, Up.N4.deletions(gone, pfcp_seq), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}]))
 
 # A guard timer fired: a UE's, a session's, or the N4 association's (timer 0).
 def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
@@ -61,22 +61,23 @@ def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
     case False{}:
       (S.Keep{}, [])
 
-def Kernel.fired_session(+st: S.State, +timer: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
+def Kernel.fired_session(+st: S.State, +timer: U32, m: Maybe<&2, S.Session>) -> N.GOut():
   match m:
     case None{}:
       Kernel.node_timer(st, U32.is_eq(timer, S.N4.timer()))
-    case Some{(skey, +s)}:
-      Gsm.Gsm.expired(st, skey, s, S.Session.phase(s))
+    case Some{+s}:
+      Gsm.Gsm.expired(st, timer, s, S.Session.phase(s))
 
-def Kernel.fired_ue(+st: S.State, +timer: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Ue>>) -> N.GOut():
+def Kernel.fired_ue(+st: S.State, +timer: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
-      Kernel.fired_session(st, timer, S.Sessions.by_timer(timer, S.State.sessions(st)))
-    case Some{(key, +ue)}:
-      Gmm.Gmm.expired(st, key, ue, S.Ue.phase(ue))
+      Kernel.fired_session(st, timer, Tb.Table.get(S.Session, timer, S.State.sessions(st)))
+    case Some{+ue}:
+      Gmm.Gmm.expired(st, timer, ue, S.Ue.phase(ue))
 
+# A guard timer is the key of its row (S.Ids).
 def Kernel.fired(+st: S.State, +timer: U32) -> N.GOut():
-  Kernel.fired_ue(st, timer, S.Ues.by_timer(timer, S.State.ues(st)))
+  Kernel.fired_ue(st, timer, Tb.Table.get(S.Ue, timer, S.State.ues(st)))
 
 def Kernel.step(+st: S.State, ev: F.Evt, +entropy: B.Bytes()) -> N.Step():
   match ev:

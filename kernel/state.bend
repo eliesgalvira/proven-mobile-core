@@ -145,18 +145,14 @@ def Cfg.given_all(+tl: List<&2, T.Tlv>) -> Bool:
 def Cfg.complete(+tl: List<&2, T.Tlv>) -> Bool:
   Bool.and(Cfg.given_all(tl), Cfg.valid(Cfg.of(tl)))
 
-# A guard timer the edge runs for a UE: its id and how often it has fired.
+# A guard timer the edge runs for a row, and how often it has fired; its id
+# is the row's key (§ Keys).
 type Guard is Data:
-  Guard{timer: U32, retries: U32}
-
-def Guard.timer(g: Guard) -> U32:
-  match g:
-    case Guard{timer, retries}:
-      timer
+  Guard{retries: U32}
 
 def Guard.retries(g: Guard) -> U32:
   match g:
-    case Guard{timer, retries}:
+    case Guard{retries}:
       retries
 
 # Where a UE is in registration. Every phase but Registered carries the guard
@@ -455,7 +451,7 @@ type Link is Data:
 type N4 is Data:
   N4{recovery: B.Bytes(), link: Link}
 
-# Timer 0 is the N4 association's; UE and session guards take the others.
+# Timer 0 is the N4 association's; a context's or a session's guard is its key.
 def N4.timer() -> U32:
   0
 
@@ -475,54 +471,49 @@ def N4.with_link(n: N4, l: Link) -> N4:
       N4{recovery, l}
 
 type State is Data:
-  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, next_timer: U32, n4: N4}
+  State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: List<&2, U32>, ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, n4: N4}
 
 def State.initial() -> State:
-  State{None{}, [], [], [], [], 1, 1, 1, N4{[], Idle{}}}
+  State{None{}, [], [], [], [], 1, 1, N4{[], Idle{}}}
 
 def State.config(st: State) -> Maybe<&2, Cfg>:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       config
 
 def State.subs(st: State) -> List<&2, Au.Subscriber>:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       subs
 
 def State.assocs(st: State) -> List<&2, U32>:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       assocs
 
 def State.ues(st: State) -> Tb.Table(Ue):
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       ues
 
 def State.sessions(st: State) -> Tb.Table(Session):
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       sessions
 
 def State.pfcp_seq(st: State) -> U32:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       pfcp_seq
 
 def State.next_ue(st: State) -> U32:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       next_ue
-
-def State.next_timer(st: State) -> U32:
-  match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-      next_timer
 
 def State.n4(st: State) -> N4:
   match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       n4
 
 # Associations
@@ -569,30 +560,6 @@ def Ues.none_assoc(+a: U32, ues: Tb.Table(Ue)) -> Bool:
       True{}
     case (key, u) <> more:
       Bool.and(Bool.not(U32.is_eq(Ue.assoc(u), a)), Ues.none_assoc(a, more))
-
-# The UE whose guard timer this is
-# --------------------------------
-
-def Ues.timer_is(g: Maybe<&2, Guard>, +timer: U32) -> Bool:
-  match g:
-    case None{}:
-      False{}
-    case Some{guard}:
-      U32.is_eq(Guard.timer(guard), timer)
-
-def Ues.pick_timer(key: U32, u: Ue, later: Maybe<&2, Sigma<&2, &2, U32, _ => Ue>>, hit: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => Ue>>:
-  match hit:
-    case True{}:
-      Some{(key, u)}
-    case False{}:
-      later
-
-def Ues.by_timer(+timer: U32, ues: Tb.Table(Ue)) -> Maybe<&2, Sigma<&2, &2, U32, _ => Ue>>:
-  match ues:
-    case Nil{}:
-      None{}
-    case (key, +u) <> more:
-      Ues.pick_timer(key, u, Ues.by_timer(timer, more), Ues.timer_is(Ue.guard(u), timer))
 
 # Indexes
 # -------
@@ -822,13 +789,20 @@ def Sessions.revar(+key: U32, +v: SVar, sessions: Tb.Table(Session)) -> Tb.Table
     case (+k, s) <> more:
       (k, Session.revar_if(s, v, U32.is_eq(k, key))) <> Sessions.revar(key, v, more)
 
-# The session with a given UE IPv4 address, pending PFCP sequence number, guard timer, or UE and PDU session identity.
+# The session with a given UE IPv4 address or uplink TEID, pending PFCP sequence number, or UE and PDU session identity.
 def Sessions.has_ip(+ip: U32, sessions: Tb.Table(Session)) -> Bool:
   match sessions:
     case Nil{}:
       False{}
     case (k, s) <> more:
       Bool.or(U32.is_eq(Session.ip(s), ip), Sessions.has_ip(ip, more))
+
+def Sessions.has_teid(+teid: U32, sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      False{}
+    case (k, s) <> more:
+      Bool.or(U32.is_eq(Session.teid(s), teid), Sessions.has_teid(teid, more))
 
 def Sessions.pick(key: U32, s: Session, later: Maybe<&2, Sigma<&2, &2, U32, _ => Session>>, hit: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
   match hit:
@@ -844,13 +818,6 @@ def Sessions.by_seq(+seq: U32, sessions: Tb.Table(Session)) -> Maybe<&2, Sigma<&
     case (key, +s) <> more:
       Sessions.pick(key, s, Sessions.by_seq(seq, more), U32.is_eq(Session.seq(s), seq))
 
-def Sessions.by_timer(+timer: U32, sessions: Tb.Table(Session)) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
-  match sessions:
-    case Nil{}:
-      None{}
-    case (key, +s) <> more:
-      Sessions.pick(key, s, Sessions.by_timer(timer, more), Ues.timer_is(SPhase.guard(Session.phase(s)), timer))
-
 def Sessions.by_psi(+ue: U32, +psi: U32, sessions: Tb.Table(Session)) -> Maybe<&2, Sigma<&2, &2, U32, _ => Session>>:
   match sessions:
     case Nil{}:
@@ -858,36 +825,57 @@ def Sessions.by_psi(+ue: U32, +psi: U32, sessions: Tb.Table(Session)) -> Maybe<&
     case (key, +s) <> more:
       Sessions.pick(key, s, Sessions.by_psi(ue, psi, more), Bool.and(U32.is_eq(Session.ue(s), ue), U32.is_eq(Session.psi(s), psi)))
 
-# Fresh ids
-# ---------
-# AMF-UE-NGAP-IDs and timer ids count up and wrap at 2^32, skipping every id
-# still live. Fewer ids are live than the fuel given, so among that many
-# candidates one is free and the search never runs out.
+# Keys
+# ----
+# A context's guard timer is its key, its AMF-UE-NGAP-ID, and a session's is
+# its key, its local SEID; timer 0 is the N4 association's. AMF-UE-NGAP-IDs
+# are odd and local SEIDs even and not zero, so no two rows share a guard
+# timer (state.ids.free).
 
-def Ids.next(id: U32, later: Unit -> U32, taken: Bool) -> U32:
+def Ids.odd(+k: U32) -> Bool:
+  Bool.not(U32.is_eq(U32.and(1, k), 0))
+
+def Ids.seid(+k: U32) -> Bool:
+  Bool.and(Bool.not(Ids.odd(k)), Bool.not(U32.is_eq(k, 0)))
+
+def Ues.keyed(ues: Tb.Table(Ue)) -> Bool:
+  match ues:
+    case Nil{}:
+      True{}
+    case (+k, u) <> more:
+      Bool.and(Ids.odd(k), Ues.keyed(more))
+
+def Sessions.keyed(sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      True{}
+    case (+k, s) <> more:
+      Bool.and(Ids.seid(k), Sessions.keyed(more))
+
+def Ids.free(ues: Tb.Table(Ue), sessions: Tb.Table(Session)) -> Bool:
+  Bool.and(Ues.keyed(ues), Sessions.keyed(sessions))
+
+def Ids.next(id: U32, later: Unit -> Maybe<&2, U32>, taken: Bool) -> Maybe<&2, U32>:
   match taken:
     case True{}:
       later(Unit{})
     case False{}:
-      id
+      Some{id}
 
-def Ues.free_key(fuel: Nat, +id: U32, +ues: Tb.Table(Ue)) -> U32:
+# The first odd id from the counter that no context holds, among one more
+# than there are contexts: none only when every odd id is held.
+def Ues.free_key(fuel: Nat, +id: U32, +ues: Tb.Table(Ue)) -> Maybe<&2, U32>:
   match fuel:
     case 0n:
-      id
+      None{}
     case 1n+n:
-      Ids.next(id, u => Ues.free_key(n, U32.add(id, 1), ues), Tb.Table.has(Ue, id, ues))
+      +c = U32.or(1, id)
+      Ids.next(c, u => Ues.free_key(n, U32.add(c, 2), ues), Tb.Table.has(Ue, c, ues))
 
-# A timer id is the N4 association's, a context's guard or a session's guard.
-def Timers.taken(+t: U32, ues: Tb.Table(Ue), sessions: Tb.Table(Session)) -> Bool:
-  Bool.or(U32.is_eq(t, N4.timer()), Bool.or(Tb.Table.present(Sigma<&2, &2, U32, _ => Ue>, Ues.by_timer(t, ues)), Tb.Table.present(Sigma<&2, &2, U32, _ => Session>, Sessions.by_timer(t, sessions))))
-
-def Timers.free(fuel: Nat, +id: U32, +ues: Tb.Table(Ue), +sessions: Tb.Table(Session)) -> U32:
-  match fuel:
-    case 0n:
-      id
-    case 1n+n:
-      Ids.next(id, u => Timers.free(n, U32.add(id, 1), ues, sessions), Timers.taken(id, ues, sessions))
+# The AMF-UE-NGAP-ID the next InitialUEMessage gives its context.
+def State.fresh(+st: State) -> Maybe<&2, U32>:
+  +ues = State.ues(st)
+  Ues.free_key(1n+List.length(&2, Sigma<&2, &2, U32, _ => Ue>, ues), State.next_ue(st), ues)
 
 # Transactions
 # ------------
@@ -896,7 +884,7 @@ def Timers.free(fuel: Nat, +id: U32, +ues: Tb.Table(Ue), +sessions: Tb.Table(Ses
 # rephased in place,
 # a context and its sessions forgotten, a session put (evicting likewise),
 # changed in place or forgotten, the subscribers replaced, the N4 link moved,
-# fresh ids (the next free ones) and PFCP sequence numbers consumed.
+# an AMF-UE-NGAP-ID given and PFCP sequence numbers consumed.
 
 type Tx is Data:
   Keep{}
@@ -908,8 +896,7 @@ type Tx is Data:
   DelSession{key: U32}
   Subs{subs: List<&2, Au.Subscriber>}
   SetLink{link: Link}
-  BumpUe{}
-  BumpTimer{}
+  BumpUe{key: U32}
   BumpSeq{n: U32}
   Both{first: Tx, second: Tx}
 
@@ -919,48 +906,44 @@ def Tx.apply(tx: Tx, st: State) -> State:
       st
     case Put{+key, +ue}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           +left = Ues.put(key, ue, ues)
-          State{config, subs, assocs, left, Sessions.sift(SOwned{left}, sessions), pfcp_seq, next_ue, next_timer, n4}
+          State{config, subs, assocs, left, Sessions.sift(SOwned{left}, sessions), pfcp_seq, next_ue, n4}
     case Rephase{key, phase}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, Ues.rephase(key, phase, ues), sessions, pfcp_seq, next_ue, next_timer, n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, Ues.rephase(key, phase, ues), sessions, pfcp_seq, next_ue, n4}
     case Del{+key}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, Ues.del(key, ues), Sessions.drop_ue(key, sessions), pfcp_seq, next_ue, next_timer, n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, Ues.del(key, ues), Sessions.drop_ue(key, sessions), pfcp_seq, next_ue, n4}
     case PutSession{key, s}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, Sessions.put(key, s, sessions), pfcp_seq, next_ue, next_timer, n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, ues, Sessions.put(key, s, sessions), pfcp_seq, next_ue, n4}
     case Revar{key, v}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, Sessions.revar(key, v, sessions), pfcp_seq, next_ue, next_timer, n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, ues, Sessions.revar(key, v, sessions), pfcp_seq, next_ue, n4}
     case DelSession{key}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, Sessions.del(key, sessions), pfcp_seq, next_ue, next_timer, n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, ues, Sessions.del(key, sessions), pfcp_seq, next_ue, n4}
     case Subs{new}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, new, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, new, assocs, ues, sessions, pfcp_seq, next_ue, n4}
     case SetLink{link}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, N4.with_link(n4, link)}
-    case BumpUe{}:
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, N4.with_link(n4, link)}
+    case BumpUe{key}:
       match st:
-        case State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, sessions, pfcp_seq, Ues.free_key(1n+List.length(&2, Sigma<&2, &2, U32, _ => Ue>, ues), U32.add(next_ue, 1), ues), next_timer, n4}
-    case BumpTimer{}:
-      match st:
-        case State{config, subs, assocs, +ues, +sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, Timers.free(2n+Nat.add(List.length(&2, Sigma<&2, &2, U32, _ => Ue>, ues), List.length(&2, Sigma<&2, &2, U32, _ => Session>, sessions)), U32.add(next_timer, 1), ues, sessions), n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, ues, sessions, pfcp_seq, U32.add(key, 2), n4}
     case BumpSeq{n}:
       match st:
-        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, next_timer, n4}:
-          State{config, subs, assocs, ues, sessions, U32.add(pfcp_seq, n), next_ue, next_timer, n4}
+        case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+          State{config, subs, assocs, ues, sessions, U32.add(pfcp_seq, n), next_ue, n4}
     case Both{first, second}:
       Tx.apply(second, Tx.apply(first, st))

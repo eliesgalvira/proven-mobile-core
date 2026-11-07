@@ -163,35 +163,19 @@ def sphase_name(m: Maybe<&2, S.Session>) -> String:
 def sphase_is(st: S.State, name: String) -> Bool:
   String.eq(sphase_name(session1(S.State.sessions(st))), name)
 
-def guard_timer(g: Maybe<&2, S.Guard>) -> U32:
-  match g:
-    case None{}:
-      0
-    case Some{guard}:
-      S.Guard.timer(guard)
-
-def timer_of(m: Maybe<&2, S.Session>) -> U32:
-  match m:
-    case None{}:
-      0
-    case Some{s}:
-      guard_timer(S.SPhase.guard(S.Session.phase(s)))
-
 def session_count(st: S.State) -> Nat:
   List.length(&2, Sigma<&2, &2, U32, _ => S.Session>, S.State.sessions(st))
 
+# A session's guard timer is its key, the first session's here.
+def key1(t: Tb.Table(S.Session)) -> U32:
+  match t:
+    case (key, s) <> more:
+      key
+    case _:
+      0
+
 def session_timer(st: S.State) -> U32:
-  timer_of(session1(S.State.sessions(st)))
-
-def ue_guard(m: Maybe<&2, S.Ue>) -> Maybe<&2, S.Guard>:
-  match m:
-    case None{}:
-      None{}
-    case Some{u}:
-      S.Ue.guard(u)
-
-def ue_timer(st: S.State) -> U32:
-  guard_timer(ue_guard(A.ue1(st)))
+  key1(S.State.sessions(st))
 
 # The first item of a PDU Session Resource Setup Request: its transfer and NAS-PDU.
 def item_transfer(items: G.PDUSessionResourceSetupListSUReq()) -> B.Bytes():
@@ -258,6 +242,7 @@ def main() -> IO(Unit):
     +req_ies : List<&2, T.Tlv> = pfcp_ies(req)
     +cap_ies : List<&2, T.Tlv> = pfcp_ies(A.hex_of(A.entry(35n, msgs), "hex"))
     C.Check.report("UL NAS Transport: one session creating, one PFCP Session Establishment Request, one guard", Bool.and(Nat.is_eq(session_count(st1), 1n), Bool.and(sphase_is(st1, "creating"), Bool.and(U32.is_eq(pfcp_kind(req), 50), Nat.is_eq(A.timer_starts(K.Kernel.frames(o1)), 1n)))))
+    C.Check.report("UL NAS Transport: the session's guard timer is its local SEID, the captured 466", U32.is_eq(A.first_timer(K.Kernel.frames(o1)), 466))
     C.Check.report("UL NAS Transport: the Accept the creating session holds has QoS rules within sixteen packet filters", Gs.Gsm.bounded(S.State.sessions(st1)))
     C.Check.report("Session Establishment Request: the captured F-SEID, two PDRs, two FARs, one QER", Bool.and(B.bytes_eq(body(57, req_ies), body(57, cap_ies)), Bool.and(Nat.is_eq(count_kind(1, req_ies), 2n), Bool.and(Nat.is_eq(count_kind(3, req_ies), 2n), Nat.is_eq(count_kind(7, req_ies), 1n)))))
     C.Check.report("Session Establishment Request: the uplink PDR has the captured N3 F-TEID, the downlink one the captured UE address", Bool.and(B.bytes_eq(body(21, inside(2, inside(1, req_ies))), [1, 0, 0, 199, 196, 10, 33, 0, 20]), B.bytes_eq(body(93, inside(2, inside(1, List.drop(&2, T.Tlv, req_ies, 3n)))), [6, 10, 45, 0, 2])))
@@ -280,6 +265,9 @@ def main() -> IO(Unit):
     C.Check.report("Heartbeat Request from eUPF: Heartbeat Response with its sequence number", Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_heart))), 2), U32.is_eq(pfcp_seq(first_pfcp(K.Kernel.frames(o_heart))), 2)))
     +o_tick : N.Step() = step(st4, F.TimerFired{0})
     C.Check.report("the N4 timer: a Heartbeat Request and the timer again", Bool.and(U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_tick))), 1), Nat.is_eq(A.timer_starts(K.Kernel.frames(o_tick)), 1n)))
+    +o_two : N.Step() = step(st4, A.data(1, A.uplink(ran, uli, A.ue_protect(3, ul_transport([46, 2, 3, 193, 255, 255], [])))))
+    +two_ies : List<&2, T.Tlv> = pfcp_ies(first_pfcp(K.Kernel.frames(o_two)))
+    C.Check.report("a TEID and a SEID drawn that a live session holds are drawn again, never evicting it", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_two)), 2n), Bool.and(B.bytes_eq(body(21, inside(2, inside(1, two_ies))), [1, 0, 0, 1, 210, 10, 33, 0, 20]), B.bytes_eq(List.take(&2, U32, body(57, two_ies), 9n), [2, 0, 0, 0, 0, 45, 202, 228, 28]))))
     +o_mod : N.Step() = step(st4, A.data(1, A.uplink(ran, uli, A.ue_protect(3, ul_transport([46, 1, 2, 201], [])))))
     C.Check.report("PDU Session Modification Request: Modification Reject #31, the session as it was", Bool.and(sphase_is(K.Kernel.state(o_mod), "active"), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod))))), [126, 0, 104, 1, 0, 5, 46, 1, 2, 202, 31, 18, 1])))
     +o_refused : N.Step() = step(st1, pfcp_event(with_cause(with_seq(A.hex_of(A.entry(36n, msgs), "hex"), pfcp_seq(req)), 73)))
@@ -305,7 +293,7 @@ def main() -> IO(Unit):
     +o_rel : N.Step() = step(K.Kernel.state(step(st4, A.data(1, A.release_request(ran)))), A.data(1, N.Ngap.pdu(Fr.Pdu.successful(), 41, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, []))])))
     C.Check.report("the UE released: its session is deleted at eUPF with it", Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_rel)), 0n), Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_rel)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_rel))), 54))))
     +st_releasing : S.State = K.Kernel.state(step(st4, A.data(1, A.release_request(ran))))
-    +o_silent : N.Step() = step(st_releasing, F.TimerFired{ue_timer(st_releasing)})
+    +o_silent : N.Step() = step(st_releasing, F.TimerFired{1})
     C.Check.report("the gNB never sends Release Complete: when the guard fires, the UE and its session are forgotten and the session deleted at eUPF", Bool.and(Nat.is_eq(A.ue_count(K.Kernel.state(o_silent)), 0n), Bool.and(Nat.is_eq(session_count(K.Kernel.state(o_silent)), 0n), U32.is_eq(pfcp_kind(first_pfcp(K.Kernel.frames(o_silent))), 54))))
     +o_cfg : N.Step() = step(S.State.initial(), F.Evt.config_make(A.config([])))
     +seq0 : U32 = pfcp_seq(first_pfcp(K.Kernel.frames(o_cfg)))
