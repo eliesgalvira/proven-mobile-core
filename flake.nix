@@ -1,5 +1,5 @@
 {
-  description = "5G spec kernel: the Bend 2 kernel, the Rust edge, and the end-to-end test against UERANSIM and eUPF";
+  description = "5G spec kernel: the Bend 2 kernel, the Rust edge, and the end-to-end test against UERANSIM, PacketRusher and eUPF";
 
   # The revision the golden capture used: it packages UERANSIM 3.3.0 and Go 1.26.
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/d357a2b54f0b6dc4aeb4e993190a52cf151b6f24";
@@ -71,6 +71,22 @@
         cargoLock.lockFile = ./edge/Cargo.lock;
       };
 
+      # The edge's test binaries, which the edge-sctp check runs where SCTP is loaded.
+      edgeTests = edge.overrideAttrs (old: {
+        pname = "speck5g-edge-tests";
+        nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.jq ];
+        buildPhase = ''
+          cd edge
+          cargo test --offline --no-run --message-format=json | jq -r 'select(.profile.test) | .executable' > $NIX_BUILD_TOP/test-binaries
+        '';
+        doCheck = false;
+        installPhase = ''
+          install -Dt $out/bin $(cat $NIX_BUILD_TOP/test-binaries)
+        '';
+      });
+
+      packetrusher = pkgs.callPackage ./test-vectors/capture/setup/packetrusher/package.nix { };
+
       eupf = pkgs.buildGoModule (finalAttrs: {
         pname = "eupf";
         version = "0.7.2";
@@ -101,13 +117,16 @@
       });
     in
     {
-      packages.${system} = { inherit bend lean kernel edge eupf; };
+      packages.${system} = { inherit bend lean kernel edge eupf packetrusher; };
       # The NGAP generator needs pycrate's ASN.1 compiler only; cryptomobile (unfree) and pysctp are dropped.
       devShells.${system}.default = pkgs.mkShell {
         # pkgs.clang goes before lean, whose release bundles a clang without system headers.
         packages = [ bend pkgs.clang lean pkgs.cargo pkgs.rustc pkgs.nushell (pkgs.python3.withPackages (p: [ (p.pycrate.overridePythonAttrs (o: { dependencies = [ p.lxml ]; })) ])) ];
         BEND_NO_TELEMETRY = "1";
       };
-      checks.${system}.e2e = pkgs.testers.runNixOSTest (import ./e2e/test.nix { inherit kernel edge eupf; });
+      checks.${system} = {
+        e2e = pkgs.testers.runNixOSTest (import ./e2e/test.nix { inherit kernel edge eupf packetrusher; });
+        edge-sctp = pkgs.testers.runNixOSTest (import ./e2e/edge-sctp.nix { inherit edgeTests; });
+      };
     };
 }

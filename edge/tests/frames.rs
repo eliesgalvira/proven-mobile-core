@@ -40,8 +40,7 @@ fn action_of(v: &Value) -> Action {
 }
 
 fn vectors() -> Value {
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../test-vectors/frames.json");
-    serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
+    serde_json::from_str(include_str!("../../test-vectors/frames.json")).unwrap()
 }
 
 #[test]
