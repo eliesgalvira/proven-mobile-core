@@ -893,7 +893,7 @@ def Lw.setup_gone(+st: S.State, +skey: U32, +s: S.Session, +up_seid: B.Bytes(), 
   +s2 = S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}})
   Lw.gsm_forget(st, [(skey, s2)], S.State.pfcp_seq(st), Lw.one(st, skey, s2, Lv.owner_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}}, S.State.sessions(st), es)))
 
-def Lw.setup_ue(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, +accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, +ctx: Maybe<&2, Sec.Nas.Ctx>, +cfg: Maybe<&2, S.Cfg>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +ec: {S.Phase.ctx(S.Ue.phase(ue)) == ctx : Maybe<&2, Sec.Nas.Ctx>}, +e8: {Nat.is_eq(List.length(&2, U32, up_seid), 8n) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.setup_ue(st, skey, s, guard, pti, accept, up_seid, ue, ctx, cfg)) == True{} : Bool}:
+def Lw.setup_ue(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, +ctx: Maybe<&2, Sec.Nas.Ctx>, +cfg: Maybe<&2, S.Cfg>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +ec: {S.Phase.ctx(S.Ue.phase(ue)) == ctx : Maybe<&2, Sec.Nas.Ctx>}, +e8: {Nat.is_eq(List.length(&2, U32, up_seid), 8n) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.setup_ue(st, skey, s, pti, accept, up_seid, ue, ctx, cfg)) == True{} : Bool}:
   match ctx cfg:
     case Some{+c} Some{+cf}:
       +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))
@@ -1587,17 +1587,17 @@ def Lw.expired(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ek: {Lv.live(st
       Lv.also(st, Gmm.Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}], Lw.forget(st, key), {==})
 
 
-def Lw.setup(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, +accept: Sm.Sm, +up_seid: B.Bytes(), +m: Maybe<&2, S.Ue>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +e8: {Nat.is_eq(List.length(&2, U32, up_seid), 8n) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.setup(st, skey, s, guard, pti, accept, up_seid, m)) == True{} : Bool}:
+def Lw.setup(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +accept: Sm.Sm, +up_seid: B.Bytes(), +m: Maybe<&2, S.Ue>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +e8: {Nat.is_eq(List.length(&2, U32, up_seid), 8n) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.setup(st, skey, s, pti, accept, up_seid, m)) == True{} : Bool}:
   match m:
     case None{}:
       Lw.setup_gone(st, skey, s, up_seid, es)
     case Some{+ue}:
-      Lw.setup_ue(st, skey, s, guard, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st), es, {==}, e8)
+      Lw.setup_ue(st, skey, s, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st), es, {==}, e8)
 
-def Lw.established_as(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, +accept: Sm.Sm, +ok: Bool, +up: Maybe<&2, B.Bytes()>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +eu: {Lv.seid_ok(up) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.established_as(st, skey, s, guard, pti, accept, ok, up)) == True{} : Bool}:
+def Lw.established_as(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +accept: Sm.Sm, +ok: Bool, +up: Maybe<&2, B.Bytes()>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +eu: {Lv.seid_ok(up) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.established_as(st, skey, s, pti, accept, ok, up)) == True{} : Bool}:
   match ok up:
     case True{} Some{+up_seid}:
-      Lw.setup(st, skey, s, guard, pti, accept, up_seid, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), es, eu)
+      Lw.setup(st, skey, s, pti, accept, up_seid, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), es, eu)
     case True{} None{}:
       Lw.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st), es)
     case False{} Some{up_seid}:
@@ -1608,7 +1608,7 @@ def Lw.established_as(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, 
 def Lw.established_phase(+st: S.State, +skey: U32, +s: S.Session, +msg: Pf.Msg, +p: S.SPhase, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.established_phase(st, skey, s, msg, p)) == True{} : Bool}:
   match p:
     case S.Creating{+guard, +pti, +accept}:
-      Lw.established_as(st, skey, s, guard, pti, accept, Up.N4.accepted(Up.N4.cause(msg)), Up.N4.up_seid(msg), es, Lv.up_seid(msg))
+      Lw.established_as(st, skey, s, pti, accept, Up.N4.accepted(Up.N4.cause(msg)), Up.N4.up_seid(msg), es, Lv.up_seid(msg))
     case S.Setting{guard, pti}:
       {==}
     case S.Modifying{guard}:
@@ -1623,7 +1623,7 @@ def Lw.established(+st: S.State, +msg: Pf.Msg, +m: Maybe<&2, Sigma<&2, &2, U32, 
     case Some{(+skey, +s)}:
       Lw.established_phase(st, skey, s, msg, S.Session.phase(s), Lv.owns(skey, s, S.State.sessions(st), em))
 
-def Lw.modified_as(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +ok: Bool, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.modified_as(st, skey, s, guard, ok)) == True{} : Bool}:
+def Lw.modified_as(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.modified_as(st, skey, s, ok)) == True{} : Bool}:
   match ok:
     case True{}:
       kf
@@ -1637,7 +1637,7 @@ def Lw.modified_phase(+st: S.State, +skey: U32, +s: S.Session, +msg: Pf.Msg, +p:
     case S.Setting{guard, pti}:
       {==}
     case S.Modifying{+guard}:
-      Lw.modified_as(st, skey, s, guard, Up.N4.accepted(Up.N4.cause(msg)), es, kf)
+      Lw.modified_as(st, skey, s, Up.N4.accepted(Up.N4.cause(msg)), es, kf)
     case S.Active{}:
       {==}
 
@@ -1751,7 +1751,7 @@ def Lw.pfcp_data(+st: S.State, +bytes: B.Bytes()) -> {Lv.okf(st, Gsm.Gsm.pfcp_da
 # The gNB's answer to PDU Session Resource Setup
 # ----------------------------------------------
 
-def Lw.modify(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.modify(st, skey, s, guard, pti, seq, tunnel)) == True{} : Bool}:
+def Lw.modify(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.owner(S.Session.ue(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.modify(st, skey, s, pti, seq, tunnel)) == True{} : Bool}:
   match tunnel:
     case None{}:
       Lw.drop(st, skey, s, seq, es)
@@ -1767,7 +1767,7 @@ def Lw.set_up_phase(+st: S.State, +skey: U32, +s: S.Session, +transfer: B.Bytes(
     case S.Creating{guard, pti, accept}:
       {==}
     case S.Setting{+guard, +pti}:
-      Lw.modify(st, skey, s, guard, pti, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), es, kf)
+      Lw.modify(st, skey, s, pti, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), es, kf)
     case S.Modifying{guard}:
       {==}
     case S.Active{}:

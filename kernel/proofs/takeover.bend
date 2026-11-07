@@ -408,13 +408,6 @@ def Tk.evict(+vs: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +q: U32, +x: Tb.Tabl
       %ej : {Tk.ues(_, x) == x : Tb.Table(S.Ue)}
       Tk.evict(more, ss, U32.add(q, Up.N4.deletion_count(gone)), x)
 
-def Bool.or_true(+x: Bool) -> {Bool.or(x, True{}) == True{} : Bool}:
-  match x:
-    case True{}:
-      {==}
-    case False{}:
-      {==}
-
 def Tk.keeps_clear(+k: U32, +u: S.Ue, +key: U32, +v: S.Ue, +nk: {U32.is_eq(k, key) == False{} : Bool}, +nc: {S.Ue.conflicts(v, u) == False{} : Bool}) -> {S.Sieve.keeps(S.Clear{key, v}, k, u) == True{} : Bool}:
   snk = Equal.sym(Bool, U32.is_eq(k, key), False{}, nk)
   %snk : {Bool.not(Bool.or(_, S.Ue.conflicts(v, u))) == True{} : Bool}
@@ -819,7 +812,7 @@ def Ws.abort(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +cause: U32, +s
 def Ws.drop(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.drop(st, skey, s, seq)) == True{} : Bool}:
   Ws.give_up_m(skey, s, Gsm.Gsm.release_command(S.Session.psi(s)), seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), k, u, hs)
 
-def Ws.modify(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.modify(st, skey, s, guard, pti, seq, tunnel)) == True{} : Bool}:
+def Ws.modify(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.modify(st, skey, s, pti, seq, tunnel)) == True{} : Bool}:
   match tunnel:
     case None{}:
       Ws.drop(st, skey, s, seq, k, u, hs)
@@ -831,7 +824,7 @@ def Ws.set_up_phase(+st: S.State, +skey: U32, +s: S.Session, +transfer: B.Bytes(
     case S.Creating{guard, pti, accept}:
       {==}
     case S.Setting{+guard, +pti}:
-      Ws.modify(st, skey, s, guard, pti, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), k, u, hs)
+      Ws.modify(st, skey, s, pti, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), k, u, hs)
     case S.Modifying{guard}:
       {==}
     case S.Active{}:
