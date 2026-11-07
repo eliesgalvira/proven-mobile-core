@@ -213,6 +213,15 @@ def Side.is(m: Maybe<&2, Side>, +a: U32, +r: B.Bytes()) -> Bool:
     case Some{Side{assoc, Some{ran}}}:
       Bool.and(U32.is_eq(assoc, a), B.bytes_eq(ran, r))
 
+# Association a is a side released before it answered: an answer it sent may
+# still be on its way.
+def Side.unanswered(m: Maybe<&2, Side>, +a: U32) -> Bool:
+  match m:
+    case Some{Side{assoc, None{}}}:
+      U32.is_eq(assoc, a)
+    case _:
+      False{}
+
 # Where a UE is in registration. Every phase but Registered carries the guard
 # timer that bounds it (T3570 identifying, T3560 authenticating and in
 # security mode, T3550 setting up the context, the Path Switch waiting on the

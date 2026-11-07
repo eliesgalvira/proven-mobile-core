@@ -160,20 +160,21 @@ def Ho.required_cfg(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.
     case Some{+cfg}:
       Ho.prepare(key, ue, ctx, nh, t, cfg, cause, container, Ho.setup_items(cfg, items, S.Sessions.of_ue(key, S.State.sessions(st))))
 
-# The target is not the source.
-def Ho.required_other(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +t: U32, cause: G.Cause, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), same: Bool) -> N.GOut():
-  match same:
+# The target is neither the source nor a side the UE's last handover released
+# before it answered, so no answer to that attempt can be taken for this one's.
+def Ho.required_other(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +t: U32, cause: G.Cause, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), refused: Bool) -> N.GOut():
+  match refused:
     case True{}:
-      Ho.fail(key, ue, Ho.radio(G.CauseRadioNetwork.unknown_targetID()))
+      Ho.fail(key, ue, Ho.radio(G.CauseRadioNetwork.ho_target_not_allowed()))
     case False{}:
       Ho.required_cfg(st, key, ue, ctx, nh, t, cause, items, container, S.State.config(st))
 
-def Ho.required_target(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, cause: G.Cause, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
+def Ho.required_target(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, released: Maybe<&2, S.Side>, cause: G.Cause, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), m: Maybe<&2, U32>) -> N.GOut():
   match m:
     case None{}:
       Ho.fail(key, ue, Ho.radio(G.CauseRadioNetwork.unknown_targetID()))
     case Some{+t}:
-      Ho.required_other(st, key, ue, ctx, nh, t, cause, items, container, U32.is_eq(t, S.Ue.assoc(ue)))
+      Ho.required_other(st, key, ue, ctx, nh, t, cause, items, container, Bool.or(S.Side.unanswered(released, t), U32.is_eq(t, S.Ue.assoc(ue))))
 
 def Ho.intra_type(t: G.HandoverType()) -> Bool:
   match t:
@@ -201,7 +202,7 @@ def Ho.target(+st: S.State, intra: Bool, m: Maybe<&2, B.Bytes()>) -> Maybe<&2, U
 def Ho.required_phase(+st: S.State, +key: U32, +ue: S.Ue, kind: G.HandoverType(), cause: G.Cause, id: G.TargetID, items: G.PDUSessionResourceListHORqd(), container: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:
     case S.Registered{ctx, nh, released}:
-      Ho.required_target(st, key, ue, ctx, nh, cause, items, container, Ho.target(st, Ho.intra_type(kind), Ho.node(id)))
+      Ho.required_target(st, key, ue, ctx, nh, released, cause, items, container, Ho.target(st, Ho.intra_type(kind), Ho.node(id)))
     case _:
       Ho.fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()))
 

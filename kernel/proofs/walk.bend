@@ -355,24 +355,24 @@ def Hw.cfg(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +amf: B.Bytes(), +ra
     case Some{+cfg}:
       Hw.prepare(Q, st, assoc, amf, ran, key, ue, ctx, nh, t, cfg, cause, container, Ho.Ho.setup_items(cfg, items, S.Sessions.of_ue(key, S.State.sessions(st))), ek, eo, ne, fail, go)
 
-def Hw.other(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +amf: B.Bytes(), +ran: B.Bytes(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +same: Bool, +es: {U32.is_eq(t, S.Ue.assoc(ue)) == same : Bool}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}, fail: Hw.RFail(Q, st, assoc, amf, ran), go: Hw.RGo(Q, st, assoc, amf, ran)) -> Q(Ho.Ho.required_other(st, key, ue, ctx, nh, t, cause, items, container, same)):
+def Hw.other(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +amf: B.Bytes(), +ran: B.Bytes(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: Maybe<&2, S.Side>, +t: U32, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +same: Bool, +es: {Bool.or(S.Side.unanswered(released, t), U32.is_eq(t, S.Ue.assoc(ue))) == same : Bool}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}, fail: Hw.RFail(Q, st, assoc, amf, ran), go: Hw.RGo(Q, st, assoc, amf, ran)) -> Q(Ho.Ho.required_other(st, key, ue, ctx, nh, t, cause, items, container, same)):
   match same:
     case True{}:
-      fail(key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_targetID()), ek, eo)
+      fail(key, ue, Ho.Ho.radio(G.CauseRadioNetwork.ho_target_not_allowed()), ek, eo)
     case False{}:
-      Hw.cfg(Q, st, assoc, amf, ran, key, ue, ctx, nh, t, cause, items, container, S.State.config(st), ek, eo, es, fail, go)
+      Hw.cfg(Q, st, assoc, amf, ran, key, ue, ctx, nh, t, cause, items, container, S.State.config(st), ek, eo, P.Bool.or_false_r(S.Side.unanswered(released, t), U32.is_eq(t, S.Ue.assoc(ue)), es), fail, go)
 
-def Hw.target(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +amf: B.Bytes(), +ran: B.Bytes(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}, fail: Hw.RFail(Q, st, assoc, amf, ran), go: Hw.RGo(Q, st, assoc, amf, ran)) -> Q(Ho.Ho.required_target(st, key, ue, ctx, nh, cause, items, container, m)):
+def Hw.target(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +amf: B.Bytes(), +ran: B.Bytes(), +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: Maybe<&2, S.Side>, +cause: G.Cause, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +m: Maybe<&2, U32>, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}, fail: Hw.RFail(Q, st, assoc, amf, ran), go: Hw.RGo(Q, st, assoc, amf, ran)) -> Q(Ho.Ho.required_target(st, key, ue, ctx, nh, released, cause, items, container, m)):
   match m:
     case None{}:
       fail(key, ue, Ho.Ho.radio(G.CauseRadioNetwork.unknown_targetID()), ek, eo)
     case Some{+t}:
-      Hw.other(Q, st, assoc, amf, ran, key, ue, ctx, nh, t, cause, items, container, U32.is_eq(t, S.Ue.assoc(ue)), {==}, ek, eo, fail, go)
+      Hw.other(Q, st, assoc, amf, ran, key, ue, ctx, nh, released, t, cause, items, container, Bool.or(S.Side.unanswered(released, t), U32.is_eq(t, S.Ue.assoc(ue))), {==}, ek, eo, fail, go)
 
 def Hw.required_phase(-Q: N.GOut() -> Type, +st: S.State, +assoc: U32, +amf: B.Bytes(), +ran: B.Bytes(), +key: U32, +ue: S.Ue, +kind: G.HandoverType(), +cause: G.Cause, +id: G.TargetID, +items: G.PDUSessionResourceListHORqd(), +container: B.Bytes(), +p: S.Phase, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}, fail: Hw.RFail(Q, st, assoc, amf, ran), go: Hw.RGo(Q, st, assoc, amf, ran)) -> Q(Ho.Ho.required_phase(st, key, ue, kind, cause, id, items, container, p)):
   match p:
-    case S.Registered{+ctx, +nh, released}:
-      Hw.target(Q, st, assoc, amf, ran, key, ue, ctx, nh, cause, items, container, Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)), ek, eo, fail, go)
+    case S.Registered{+ctx, +nh, +released}:
+      Hw.target(Q, st, assoc, amf, ran, key, ue, ctx, nh, released, cause, items, container, Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)), ek, eo, fail, go)
     case S.Created{}:
       fail(key, ue, N.Ngap.protocol(G.CauseProtocol.message_not_compatible_with_receiver_state()), ek, eo)
     case S.Identifying{guard}:

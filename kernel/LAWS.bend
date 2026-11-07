@@ -32,6 +32,7 @@ import ./smf/gsm.bend as Gs
 import ./ausf.bend as Au
 import ./smf/n4.bend as Up
 import ./amf/path_switch.bend as Ps
+import ./amf/handover.bend as Ho
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -1869,7 +1870,11 @@ law amf.handover.owner_only:
 # Handover Notify for a UE with no handover pending, as after a cancel or the
 # guard firing (amf.handover.guarded), changes no state: the only actions are
 # Error Indication and a log line, so no PFCP message goes out. After a
-# Handover Cancel from the UE's owner no handover is pending.
+# Handover Cancel from the UE's owner no handover is pending. A Handover
+# Required from the owner to a target its last handover released before the
+# target answered is refused with Handover Preparation Failure and changes no
+# state, so an answer to that attempt crossing the cancel is never taken for
+# a new one's.
 law amf.handover.responses_correlated:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1892,6 +1897,15 @@ law amf.handover.responses_correlated:
   for +diag: Maybe<&2, G.CriticalityDiagnostics>
   for +npn: Maybe<&2, G.NPN_AccessInformation>
   for +uli: G.UserLocationInformation
+  for +kind: G.HandoverType()
+  for +hcause: G.Cause
+  for +id: G.TargetID
+  for +direct: Maybe<&2, G.DirectForwardingPathAvailability()>
+  for +items: G.PDUSessionResourceListHORqd()
+  for +container: B.Bytes()
+  for +ctx: N.Nas.Ctx
+  for +nh: St.Nh
+  for +t: U32
   for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == None{} : Maybe<&2, U32>} ->
@@ -1899,6 +1913,7 @@ law amf.handover.responses_correlated:
     & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{2, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverFailure.view(ies) == Done{GV.HandoverFailure.View{amf, cause, diag}} : Result<&2, &2, B.Err, GV.HandoverFailure.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
     & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverNotify.view(ies) == Done{GV.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, GV.HandoverNotify.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()}))
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 10, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverCancel.view(ies) == Done{GV.HandoverCancel.View{amf, ran, cause}} : Result<&2, &2, B.Err, GV.HandoverCancel.View>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{u} : Maybe<&2, St.Ue>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))) == None{} : Maybe<&2, U32>})
+  & ({St.Ue.phase(u) == St.Registered{ctx, nh, Some{St.Side{t, None{}}}} : St.Phase} -> {Ho.Ho.target(st, Ho.Ho.intra_type(kind), Ho.Ho.node(id)) == Some{t} : Maybe<&2, U32>} -> {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 12, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.HandoverRequired.view(ies) == Done{GV.HandoverRequired.View{amf, ran, kind, hcause, id, direct, items, container}} : Result<&2, &2, B.Err, GV.HandoverRequired.View>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{u} : Maybe<&2, St.Ue>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, [Ho.Ho.preparation_failure(k, u, Ho.Ho.radio(G.CauseRadioNetwork.ho_target_not_allowed())), Ng.Note{F.Warn{}, "NGAP: Handover Required refused"}]) : Ng.Step()})
 
 # At every reachable state each UE is one context, owned by one association:
 # no two contexts share a key or an identity. A pending handover names its
