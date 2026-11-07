@@ -4,7 +4,8 @@
 
 - **Milestone 1: tickets 01–23 done**, and the hardening tickets 32–38 the owner's review of 2026-11-03 asked for.
 - **Milestone 2, handover within one AMF and one UPF: tickets 24–31 done.** 25 of the 42 advisories are in scope, each ruled out by its laws (`loop/acceptance-report.md`); the flake checks `e2e` (registration, Xn and N2 handover) and `edge-sctp` pass.
-- **Next:** ticket 39 (second simplify). Deliberately out of scope: 4G, voice, roaming, policy and billing, and the handover cases excluded in `docs/spec/milestone-2.md`.
+- **Milestone 2 review fixes (2026-11-07):** one Path Switch walk (`Pw`) and one N2 handover walk (`Hw`) in `kernel/proofs/walk.bend` serve every proof; each handover message finds its UE through one lookup (`Ho.by_owner`, `Ho.by_target`, `N.Ue.keyed`); both handovers repoint sessions through `kernel/smf/switch.bend`; a Handover Required to a target released before it answered is refused (`amf.handover.responses_correlated`); the e2e checks eUPF's downlink FAR after each handover. Not done, still open: `amf.ncc.step` (every step stores an unchanged, next or initial {NH, NCC}) and the `amf.handover.guarded` clause that no step stops a pending handover's guard. Each is a property of every procedure's outcome, so it needs evidence at every leaf of the liveness walk, or a kernel where `N.Step.of` derives UE guard stops as it derives session ones (`N.Gone.cancels`).
+- **Next:** ticket 39 (second simplify), then the two laws above. Deliberately out of scope: 4G, voice, roaming, policy and billing, and the handover cases excluded in `docs/spec/milestone-2.md`.
 
 Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets are in `docs/spec/tickets/`.
 
