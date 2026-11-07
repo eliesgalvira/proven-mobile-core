@@ -5,6 +5,8 @@ for each type; proofs.bend fills them by composing the APER primitive laws
 (kernel/LAWS.bend, proven in kernel/proofs/aper.bend and canon.bend) along
 the shape of the generated codec: aliases defer to one primitive law, records
 go field by field, choices by alternative, lists by induction on the items.
+For each view, ngap.<Message>.mandatory states that it succeeds only when
+every mandatory IE occurs exactly once; its proof follows the view's lookups.
 """
 
 HEADER = """import Base
@@ -12,6 +14,7 @@ import ../../bytes.bend as B
 import ../../aper.bend as Ap
 import ../frame.bend as Fr
 import ./types.bend as G
+import ./views.bend as GV
 """
 
 PROOF_HEADER = HEADER + """import ./laws.bend as GL
@@ -164,7 +167,87 @@ class Proofs:
             self.out(f"  for +e: {cur_eq(d, f'G.{b}.read(Ap.Cur{{rem, bits}})')}")
             self.out(f"  {self.canon(name, 'bits', 'v', 'rem', 'bits2', 'rem2')}")
             self.out()
+        for msg, rows in self.mandatory_views():
+            mb = self.g.types[msg].bend
+            self.out(f"law ngap.{mb}.mandatory:")
+            self.out("  for +ies: List<&2, Fr.Ie>")
+            self.out(f"  for +v: GV.{mb}.View")
+            self.out(f"  for +e: {{GV.{mb}.view(ies) == Done{{v}} : Result<&2, &2, B.Err, GV.{mb}.View>}}")
+            self.out(f"  {self.once(rows, 0)}")
+            self.out()
         return "\n".join(self.lines).rstrip() + "\n"
+
+    # -- views -----------------------------------------------------------------
+
+    def mandatory_views(self):
+        """(message, view rows) for every view with a mandatory IE."""
+        for msg in sorted(self.g.messages):
+            rows = self.g.view_rows(msg)
+            if any(mand for _, _, _, mand in rows):
+                yield msg, rows
+
+    def once(self, rows, i, ies="ies"):
+        """Each mandatory IE from row i on occurs once in ies, as nested conjunctions."""
+        facts = [f"{{Fr.Ies.occurrences({iid}, {ies}) == 1n : Nat}}" for iid, _, _, mand in rows[i:] if mand]
+        goal = facts[-1]
+        for fact in reversed(facts[:-1]):
+            goal = f"{fact} & ({goal})" if " & " in goal else f"{fact} & {goal}"
+        return goal
+
+    def emit_view(self, msg, rows):
+        """The view's chain: v_<f> looks IE f up, d_<f> decodes it. Each step's
+        proof hands the next one its result, up to the last mandatory IE."""
+        mb = self.g.types[msg].bend
+        view = f"GV.{mb}.View"
+        last = max(i for i, (_, _, _, mand) in enumerate(rows) if mand)
+        nd = "+nd: {Fr.Ies.no_dups(ies) == True{} : Bool}"
+
+        def prev(i):
+            return [f"+{fn}: {self.g.gdata(tn, mand)}" for _, fn, tn, mand in rows[:i]]
+
+        def lookup(i, args, ies="ies", nd="nd"):
+            return f"{mb}.mand.v_{rows[i][1]}({', '.join([ies] + args + [f'Fr.Ies.lookup({rows[i][0]}, {ies})', '{==}', 'v', 'e', nd])})"
+
+        def absurd(goal, err):
+            return f"PF.View.absurd({view}, {goal}, {err}, v, e)"
+
+        for i in reversed(range(last + 1)):
+            iid, fn, tn, mand = rows[i]
+            d = self.g.gdata(tn, True)
+            fields = [f for _, f, _, _ in rows[:i]]
+            goal = self.once(rows, i)
+            if i < last:
+                after = self.once(rows, i + 1)
+                self.out(f"def {mb}.mand.d_{fn}({', '.join(['+ies: List<&2, Fr.Ie>'] + prev(i) + [f'r: Result<&2, &2, B.Err, {d}>', f'+v: {view}', f'+e: {{GV.{mb}.d_{fn}({", ".join(["ies"] + fields + ["r"])}) == Done{{v}} : Result<&2, &2, B.Err, {view}>}}', nd])}) -> {after}:")
+                self.out("  match r:")
+                self.out("    case Fail{err}:")
+                self.out(f"      {absurd(after, 'err')}")
+                self.out(f"    case Done{{+{fn}}}:")
+                self.out(f"      {lookup(i + 1, fields + [fn if mand else f'Some{{{fn}}}'])}")
+                self.out()
+            self.out(f"def {mb}.mand.v_{fn}({', '.join(['+ies: List<&2, Fr.Ie>'] + prev(i) + ['m: Maybe<&2, B.Bytes()>', f'+em: {{Fr.Ies.lookup({iid}, ies) == m : Maybe<&2, B.Bytes()>}}', f'+v: {view}', f'+e: {{GV.{mb}.v_{fn}({", ".join(["ies"] + fields + ["m"])}) == Done{{v}} : Result<&2, &2, B.Err, {view}>}}', nd])}) -> {goal}:")
+            self.out("  match m:")
+            self.out("    case None{}:")
+            self.out(f"      {absurd(goal, f'B.Invalid{{{iid}}}') if mand else lookup(i + 1, fields + ['None{}'])}")
+            self.out("    case Some{+bs}:")
+            count = f"PF.Ies.lookup_count({iid}, ies, bs, nd, em)"
+            decode = f"{mb}.mand.d_{fn}({', '.join(['ies'] + fields + [f'Fr.View.exact({d}, G.{self.g.types[tn].bend}.read(Ap.Cur{{0n, Ap.unpack(bs)}}))', 'v', 'e', 'nd'])})"
+            self.out(f"      {count if i == last else f'({count}, {decode})' if mand else decode}")
+            self.out()
+        known = f"GV.{mb}.known()"
+        goal = self.once(rows, 0)
+        self.out(f"def {mb}.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {{Fr.View.prelude({known}, ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}}, +v: {view}, +e: {{GV.{mb}.v_prelude(rp) == Done{{v}} : Result<&2, &2, B.Err, {view}>}}) -> {goal}:")
+        self.out("  match rp:")
+        self.out("    case Fail{err}:")
+        self.out(f"      {absurd(goal, 'err')}")
+        self.out("    case Done{+ies2}:")
+        self.out(f"      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same({known}, ies, ies2, erp))")
+        self.out(f"      %seq : {self.once(rows, 0, '_')}")
+        self.out(f"      {lookup(0, [], 'ies2', f'PF.Prelude.nd({known}, ies, ies2, erp)')}")
+        self.out()
+        self.out(f"def GL.ngap.{mb}.mandatory(ies, v, e):")
+        self.out(f"  {mb}.mand(ies, Fr.View.prelude({known}, ies), {{==}}, v, e)")
+        self.out()
 
     # -- proofs ----------------------------------------------------------------
 
@@ -187,6 +270,8 @@ class Proofs:
 
         for name in self.g.order:
             emit(name)
+        for msg, rows in self.mandatory_views():
+            self.emit_view(msg, rows)
         return "\n".join(self.lines).rstrip() + "\n"
 
     def emit_sx_type(self, t):

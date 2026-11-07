@@ -3,6 +3,7 @@ import ../../bytes.bend as B
 import ../../aper.bend as Ap
 import ../frame.bend as Fr
 import ./types.bend as G
+import ./views.bend as GV
 import ./laws.bend as GL
 import ../../LAWS.bend as L
 import ../../proofs/lib.bend as P
@@ -28515,3 +28516,1758 @@ def DownlinkRANStatusTransfer.sx(+rem: Nat, bits: Ap.Bits(), +v: G.DownlinkRANSt
 
 def GL.ngap.DownlinkRANStatusTransfer.suffix(rem, bits, v, rem2, bits2, e):
   DownlinkRANStatusTransfer.sx(rem, bits, v, rem2, bits2, e)
+
+def DownlinkNASTransport.mand.v_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(38, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.DownlinkNASTransport.View, {Fr.Ies.occurrences(38, ies) == 1n : Nat}, B.Invalid{38}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(38, ies, bs, nd, em)
+
+def DownlinkNASTransport.mand.d_oldamf(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.AMFName()>, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.d_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.DownlinkNASTransport.View, {Fr.Ies.occurrences(38, ies) == 1n : Nat}, err, v, e)
+    case Done{+oldamf}:
+      DownlinkNASTransport.mand.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{oldamf}, Fr.Ies.lookup(38, ies), {==}, v, e, nd)
+
+def DownlinkNASTransport.mand.v_oldamf(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(48, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.v_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      DownlinkNASTransport.mand.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(38, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      DownlinkNASTransport.mand.d_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.AMFName(), G.AMFName.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def DownlinkNASTransport.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.DownlinkNASTransport.View, {Fr.Ies.occurrences(38, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      DownlinkNASTransport.mand.v_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(48, ies), {==}, v, e, nd)
+
+def DownlinkNASTransport.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.DownlinkNASTransport.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), DownlinkNASTransport.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def DownlinkNASTransport.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.DownlinkNASTransport.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      DownlinkNASTransport.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def DownlinkNASTransport.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.DownlinkNASTransport.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), DownlinkNASTransport.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def DownlinkNASTransport.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.DownlinkNASTransport.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.DownlinkNASTransport.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(38, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.DownlinkNASTransport.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(38, _) == 1n : Nat})
+      DownlinkNASTransport.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.DownlinkNASTransport.known(), ies, ies2, erp))
+
+def GL.ngap.DownlinkNASTransport.mandatory(ies, v, e):
+  DownlinkNASTransport.mand(ies, Fr.View.prelude(GV.DownlinkNASTransport.known(), ies), {==}, v, e)
+
+def DownlinkRANStatusTransfer.mand.v_ranstatustransfer_transparentcontainer(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(84, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkRANStatusTransfer.View, +e: {GV.DownlinkRANStatusTransfer.v_ranstatustransfer_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.DownlinkRANStatusTransfer.View, {Fr.Ies.occurrences(84, ies) == 1n : Nat}, B.Invalid{84}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(84, ies, bs, nd, em)
+
+def DownlinkRANStatusTransfer.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.DownlinkRANStatusTransfer.View, +e: {GV.DownlinkRANStatusTransfer.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.DownlinkRANStatusTransfer.View, {Fr.Ies.occurrences(84, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      DownlinkRANStatusTransfer.mand.v_ranstatustransfer_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(84, ies), {==}, v, e, nd)
+
+def DownlinkRANStatusTransfer.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkRANStatusTransfer.View, +e: {GV.DownlinkRANStatusTransfer.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.DownlinkRANStatusTransfer.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), DownlinkRANStatusTransfer.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def DownlinkRANStatusTransfer.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.DownlinkRANStatusTransfer.View, +e: {GV.DownlinkRANStatusTransfer.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.DownlinkRANStatusTransfer.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      DownlinkRANStatusTransfer.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def DownlinkRANStatusTransfer.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkRANStatusTransfer.View, +e: {GV.DownlinkRANStatusTransfer.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.DownlinkRANStatusTransfer.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), DownlinkRANStatusTransfer.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def DownlinkRANStatusTransfer.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.DownlinkRANStatusTransfer.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.DownlinkRANStatusTransfer.View, +e: {GV.DownlinkRANStatusTransfer.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkRANStatusTransfer.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.DownlinkRANStatusTransfer.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.DownlinkRANStatusTransfer.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(84, _) == 1n : Nat})
+      DownlinkRANStatusTransfer.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.DownlinkRANStatusTransfer.known(), ies, ies2, erp))
+
+def GL.ngap.DownlinkRANStatusTransfer.mandatory(ies, v, e):
+  DownlinkRANStatusTransfer.mand(ies, Fr.View.prelude(GV.DownlinkRANStatusTransfer.known(), ies), {==}, v, e)
+
+def HandoverCancel.mand.v_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCancel.View, +e: {GV.HandoverCancel.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancel.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCancel.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{15}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(15, ies, bs, nd, em)
+
+def HandoverCancel.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.HandoverCancel.View, +e: {GV.HandoverCancel.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancel.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCancel.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      HandoverCancel.mand.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def HandoverCancel.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCancel.View, +e: {GV.HandoverCancel.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancel.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCancel.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), HandoverCancel.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverCancel.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverCancel.View, +e: {GV.HandoverCancel.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancel.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCancel.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverCancel.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def HandoverCancel.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCancel.View, +e: {GV.HandoverCancel.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancel.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCancel.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverCancel.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverCancel.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverCancel.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverCancel.View, +e: {GV.HandoverCancel.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancel.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCancel.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverCancel.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(15, _) == 1n : Nat})
+      HandoverCancel.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverCancel.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverCancel.mandatory(ies, v, e):
+  HandoverCancel.mand(ies, Fr.View.prelude(GV.HandoverCancel.known(), ies), {==}, v, e)
+
+def HandoverCancelAcknowledge.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCancelAcknowledge.View, +e: {GV.HandoverCancelAcknowledge.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancelAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCancelAcknowledge.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(85, ies, bs, nd, em)
+
+def HandoverCancelAcknowledge.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverCancelAcknowledge.View, +e: {GV.HandoverCancelAcknowledge.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancelAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCancelAcknowledge.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverCancelAcknowledge.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def HandoverCancelAcknowledge.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCancelAcknowledge.View, +e: {GV.HandoverCancelAcknowledge.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancelAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCancelAcknowledge.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverCancelAcknowledge.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverCancelAcknowledge.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverCancelAcknowledge.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverCancelAcknowledge.View, +e: {GV.HandoverCancelAcknowledge.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCancelAcknowledge.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCancelAcknowledge.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverCancelAcknowledge.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & {Fr.Ies.occurrences(85, _) == 1n : Nat}
+      HandoverCancelAcknowledge.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverCancelAcknowledge.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverCancelAcknowledge.mandatory(ies, v, e):
+  HandoverCancelAcknowledge.mand(ies, Fr.View.prelude(GV.HandoverCancelAcknowledge.known(), ies), {==}, v, e)
+
+def HandoverCommand.mand.v_targettosource_transparentcontainer(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +pdusessionresourcehandoverlist: Maybe<&2, G.PDUSessionResourceHandoverList()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(106, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.v_targettosource_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, pdusessionresourcehandoverlist, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(106, ies) == 1n : Nat}, B.Invalid{106}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(106, ies, bs, nd, em)
+
+def HandoverCommand.mand.d_pdusessionresourcehandoverlist(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), r: Result<&2, &2, B.Err, G.PDUSessionResourceHandoverList()>, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.d_pdusessionresourcehandoverlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(106, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessionresourcehandoverlist}:
+      HandoverCommand.mand.v_targettosource_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, Some{pdusessionresourcehandoverlist}, Fr.Ies.lookup(106, ies), {==}, v, e, nd)
+
+def HandoverCommand.mand.v_pdusessionresourcehandoverlist(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(59, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.v_pdusessionresourcehandoverlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      HandoverCommand.mand.v_targettosource_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, None{}, Fr.Ies.lookup(106, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      HandoverCommand.mand.d_pdusessionresourcehandoverlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, Fr.View.exact(G.PDUSessionResourceHandoverList(), G.PDUSessionResourceHandoverList.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def HandoverCommand.mand.d_handovertype(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.HandoverType()>, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.d_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(106, ies) == 1n : Nat}, err, v, e)
+    case Done{+handovertype}:
+      HandoverCommand.mand.v_pdusessionresourcehandoverlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, Fr.Ies.lookup(59, ies), {==}, v, e, nd)
+
+def HandoverCommand.mand.v_handovertype(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(29, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.v_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}, B.Invalid{29}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(29, ies, bs, nd, em), HandoverCommand.mand.d_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.HandoverType(), G.HandoverType.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverCommand.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      HandoverCommand.mand.v_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(29, ies), {==}, v, e, nd)
+
+def HandoverCommand.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), HandoverCommand.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverCommand.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}), err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverCommand.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def HandoverCommand.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverCommand.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverCommand.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverCommand.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverCommand.View, +e: {GV.HandoverCommand.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverCommand.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverCommand.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverCommand.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(29, _) == 1n : Nat} & {Fr.Ies.occurrences(106, _) == 1n : Nat}))
+      HandoverCommand.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverCommand.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverCommand.mandatory(ies, v, e):
+  HandoverCommand.mand(ies, Fr.View.prelude(GV.HandoverCommand.known(), ies), {==}, v, e)
+
+def HandoverFailure.mand.v_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverFailure.View, +e: {GV.HandoverFailure.v_cause(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{15}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(15, ies, bs, nd, em)
+
+def HandoverFailure.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverFailure.View, +e: {GV.HandoverFailure.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverFailure.mand.v_cause(ies, amf_ue_ngap_id, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def HandoverFailure.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverFailure.View, +e: {GV.HandoverFailure.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverFailure.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverFailure.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverFailure.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverFailure.View, +e: {GV.HandoverFailure.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverFailure.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverFailure.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & {Fr.Ies.occurrences(15, _) == 1n : Nat}
+      HandoverFailure.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverFailure.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverFailure.mandatory(ies, v, e):
+  HandoverFailure.mand(ies, Fr.View.prelude(GV.HandoverFailure.known(), ies), {==}, v, e)
+
+def HandoverNotify.mand.v_userlocationinformation(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(121, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverNotify.View, +e: {GV.HandoverNotify.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverNotify.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat}, B.Invalid{121}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(121, ies, bs, nd, em)
+
+def HandoverNotify.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.HandoverNotify.View, +e: {GV.HandoverNotify.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverNotify.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      HandoverNotify.mand.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(121, ies), {==}, v, e, nd)
+
+def HandoverNotify.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverNotify.View, +e: {GV.HandoverNotify.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverNotify.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), HandoverNotify.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverNotify.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverNotify.View, +e: {GV.HandoverNotify.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverNotify.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverNotify.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def HandoverNotify.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverNotify.View, +e: {GV.HandoverNotify.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverNotify.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverNotify.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverNotify.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverNotify.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverNotify.View, +e: {GV.HandoverNotify.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverNotify.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverNotify.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(121, _) == 1n : Nat})
+      HandoverNotify.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverNotify.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverNotify.mandatory(ies, v, e):
+  HandoverNotify.mand(ies, Fr.View.prelude(GV.HandoverNotify.known(), ies), {==}, v, e)
+
+def HandoverPreparationFailure.mand.v_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverPreparationFailure.View, +e: {GV.HandoverPreparationFailure.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverPreparationFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverPreparationFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{15}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(15, ies, bs, nd, em)
+
+def HandoverPreparationFailure.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.HandoverPreparationFailure.View, +e: {GV.HandoverPreparationFailure.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverPreparationFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverPreparationFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      HandoverPreparationFailure.mand.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def HandoverPreparationFailure.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverPreparationFailure.View, +e: {GV.HandoverPreparationFailure.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverPreparationFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverPreparationFailure.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), HandoverPreparationFailure.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverPreparationFailure.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverPreparationFailure.View, +e: {GV.HandoverPreparationFailure.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverPreparationFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverPreparationFailure.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverPreparationFailure.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def HandoverPreparationFailure.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverPreparationFailure.View, +e: {GV.HandoverPreparationFailure.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverPreparationFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverPreparationFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverPreparationFailure.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverPreparationFailure.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverPreparationFailure.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverPreparationFailure.View, +e: {GV.HandoverPreparationFailure.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverPreparationFailure.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverPreparationFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverPreparationFailure.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(15, _) == 1n : Nat})
+      HandoverPreparationFailure.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverPreparationFailure.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverPreparationFailure.mandatory(ies, v, e):
+  HandoverPreparationFailure.mand(ies, Fr.View.prelude(GV.HandoverPreparationFailure.known(), ies), {==}, v, e)
+
+def HandoverRequest.mand.v_guami(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, +nasc: Maybe<&2, G.NAS_PDU()>, +pdusessionresourcesetuplisthoreq: G.PDUSessionResourceSetupListHOReq(), +allowednssai: G.AllowedNSSAI(), +sourcetotarget_transparentcontainer: G.SourceToTarget_TransparentContainer(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(28, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_guami(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, allowednssai, sourcetotarget_transparentcontainer, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(28, ies) == 1n : Nat}, B.Invalid{28}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(28, ies, bs, nd, em)
+
+def HandoverRequest.mand.d_sourcetotarget_transparentcontainer(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, +nasc: Maybe<&2, G.NAS_PDU()>, +pdusessionresourcesetuplisthoreq: G.PDUSessionResourceSetupListHOReq(), +allowednssai: G.AllowedNSSAI(), r: Result<&2, &2, B.Err, G.SourceToTarget_TransparentContainer()>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_sourcetotarget_transparentcontainer(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, allowednssai, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(28, ies) == 1n : Nat}, err, v, e)
+    case Done{+sourcetotarget_transparentcontainer}:
+      HandoverRequest.mand.v_guami(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, allowednssai, sourcetotarget_transparentcontainer, Fr.Ies.lookup(28, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_sourcetotarget_transparentcontainer(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, +nasc: Maybe<&2, G.NAS_PDU()>, +pdusessionresourcesetuplisthoreq: G.PDUSessionResourceSetupListHOReq(), +allowednssai: G.AllowedNSSAI(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(101, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_sourcetotarget_transparentcontainer(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, allowednssai, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}, B.Invalid{101}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(101, ies, bs, nd, em), HandoverRequest.mand.d_sourcetotarget_transparentcontainer(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, allowednssai, Fr.View.exact(G.SourceToTarget_TransparentContainer(), G.SourceToTarget_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_allowednssai(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, +nasc: Maybe<&2, G.NAS_PDU()>, +pdusessionresourcesetuplisthoreq: G.PDUSessionResourceSetupListHOReq(), r: Result<&2, &2, B.Err, G.AllowedNSSAI()>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_allowednssai(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}, err, v, e)
+    case Done{+allowednssai}:
+      HandoverRequest.mand.v_sourcetotarget_transparentcontainer(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, allowednssai, Fr.Ies.lookup(101, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_allowednssai(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, +nasc: Maybe<&2, G.NAS_PDU()>, +pdusessionresourcesetuplisthoreq: G.PDUSessionResourceSetupListHOReq(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(0, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_allowednssai(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}), B.Invalid{0}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(0, ies, bs, nd, em), HandoverRequest.mand.d_allowednssai(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, Fr.View.exact(G.AllowedNSSAI(), G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_pdusessionresourcesetuplisthoreq(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, +nasc: Maybe<&2, G.NAS_PDU()>, r: Result<&2, &2, B.Err, G.PDUSessionResourceSetupListHOReq()>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_pdusessionresourcesetuplisthoreq(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}), err, v, e)
+    case Done{+pdusessionresourcesetuplisthoreq}:
+      HandoverRequest.mand.v_allowednssai(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, pdusessionresourcesetuplisthoreq, Fr.Ies.lookup(0, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_pdusessionresourcesetuplisthoreq(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, +nasc: Maybe<&2, G.NAS_PDU()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(73, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_pdusessionresourcesetuplisthoreq(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})), B.Invalid{73}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(73, ies, bs, nd, em), HandoverRequest.mand.d_pdusessionresourcesetuplisthoreq(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, nasc, Fr.View.exact(G.PDUSessionResourceSetupListHOReq(), G.PDUSessionResourceSetupListHOReq.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_nasc(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, r: Result<&2, &2, B.Err, G.NAS_PDU()>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_nasc(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})), err, v, e)
+    case Done{+nasc}:
+      HandoverRequest.mand.v_pdusessionresourcesetuplisthoreq(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, Some{nasc}, Fr.Ies.lookup(73, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_nasc(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, +securitycontext: G.SecurityContext, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(37, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_nasc(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      HandoverRequest.mand.v_pdusessionresourcesetuplisthoreq(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, None{}, Fr.Ies.lookup(73, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      HandoverRequest.mand.d_nasc(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def HandoverRequest.mand.d_securitycontext(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, r: Result<&2, &2, B.Err, G.SecurityContext>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_securitycontext(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})), err, v, e)
+    case Done{+securitycontext}:
+      HandoverRequest.mand.v_nasc(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, securitycontext, Fr.Ies.lookup(37, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_securitycontext(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, +uesecuritycapabilities: G.UESecurityCapabilities, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(93, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_securitycontext(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))), B.Invalid{93}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(93, ies, bs, nd, em), HandoverRequest.mand.d_securitycontext(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, Fr.View.exact(G.SecurityContext, G.SecurityContext.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, r: Result<&2, &2, B.Err, G.UESecurityCapabilities>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_uesecuritycapabilities(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))), err, v, e)
+    case Done{+uesecuritycapabilities}:
+      HandoverRequest.mand.v_securitycontext(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, uesecuritycapabilities, Fr.Ies.lookup(93, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +ueaggregatemaximumbitrate: G.UEAggregateMaximumBitRate, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(119, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_uesecuritycapabilities(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))), B.Invalid{119}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(119, ies, bs, nd, em), HandoverRequest.mand.d_uesecuritycapabilities(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, Fr.View.exact(G.UESecurityCapabilities, G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, r: Result<&2, &2, B.Err, G.UEAggregateMaximumBitRate>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, handovertype, cause, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))), err, v, e)
+    case Done{+ueaggregatemaximumbitrate}:
+      HandoverRequest.mand.v_uesecuritycapabilities(ies, amf_ue_ngap_id, handovertype, cause, ueaggregatemaximumbitrate, Fr.Ies.lookup(119, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(110, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, handovertype, cause, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))), B.Invalid{110}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(110, ies, bs, nd, em), HandoverRequest.mand.d_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, handovertype, cause, Fr.View.exact(G.UEAggregateMaximumBitRate, G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), r: Result<&2, &2, B.Err, G.Cause>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_cause(ies, amf_ue_ngap_id, handovertype, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))), err, v, e)
+    case Done{+cause}:
+      HandoverRequest.mand.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, handovertype, cause, Fr.Ies.lookup(110, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +handovertype: G.HandoverType(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_cause(ies, amf_ue_ngap_id, handovertype, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))), B.Invalid{15}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(15, ies, bs, nd, em), HandoverRequest.mand.d_cause(ies, amf_ue_ngap_id, handovertype, Fr.View.exact(G.Cause, G.Cause.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_handovertype(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.HandoverType()>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_handovertype(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))), err, v, e)
+    case Done{+handovertype}:
+      HandoverRequest.mand.v_cause(ies, amf_ue_ngap_id, handovertype, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_handovertype(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(29, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_handovertype(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))))), B.Invalid{29}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(29, ies, bs, nd, em), HandoverRequest.mand.d_handovertype(ies, amf_ue_ngap_id, Fr.View.exact(G.HandoverType(), G.HandoverType.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat}))))))), err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverRequest.mand.v_handovertype(ies, amf_ue_ngap_id, Fr.Ies.lookup(29, ies), {==}, v, e, nd)
+
+def HandoverRequest.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))))), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverRequest.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequest.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverRequest.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverRequest.View, +e: {GV.HandoverRequest.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequest.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))))):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(110, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(73, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(101, ies) == 1n : Nat} & {Fr.Ies.occurrences(28, ies) == 1n : Nat})))))))), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverRequest.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(29, _) == 1n : Nat} & ({Fr.Ies.occurrences(15, _) == 1n : Nat} & ({Fr.Ies.occurrences(110, _) == 1n : Nat} & ({Fr.Ies.occurrences(119, _) == 1n : Nat} & ({Fr.Ies.occurrences(93, _) == 1n : Nat} & ({Fr.Ies.occurrences(73, _) == 1n : Nat} & ({Fr.Ies.occurrences(0, _) == 1n : Nat} & ({Fr.Ies.occurrences(101, _) == 1n : Nat} & {Fr.Ies.occurrences(28, _) == 1n : Nat}))))))))
+      HandoverRequest.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverRequest.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverRequest.mandatory(ies, v, e):
+  HandoverRequest.mand(ies, Fr.View.prelude(GV.HandoverRequest.known(), ies), {==}, v, e)
+
+def HandoverRequestAcknowledge.mand.v_targettosource_transparentcontainer(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +pdusessionresourceadmittedlist: G.PDUSessionResourceAdmittedList(), +pdusessionresourcefailedtosetuplisthoack: Maybe<&2, G.PDUSessionResourceFailedToSetupListHOAck()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(106, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.v_targettosource_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourceadmittedlist, pdusessionresourcefailedtosetuplisthoack, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(106, ies) == 1n : Nat}, B.Invalid{106}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(106, ies, bs, nd, em)
+
+def HandoverRequestAcknowledge.mand.d_pdusessionresourcefailedtosetuplisthoack(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +pdusessionresourceadmittedlist: G.PDUSessionResourceAdmittedList(), r: Result<&2, &2, B.Err, G.PDUSessionResourceFailedToSetupListHOAck()>, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.d_pdusessionresourcefailedtosetuplisthoack(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourceadmittedlist, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(106, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessionresourcefailedtosetuplisthoack}:
+      HandoverRequestAcknowledge.mand.v_targettosource_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourceadmittedlist, Some{pdusessionresourcefailedtosetuplisthoack}, Fr.Ies.lookup(106, ies), {==}, v, e, nd)
+
+def HandoverRequestAcknowledge.mand.v_pdusessionresourcefailedtosetuplisthoack(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +pdusessionresourceadmittedlist: G.PDUSessionResourceAdmittedList(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(56, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.v_pdusessionresourcefailedtosetuplisthoack(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourceadmittedlist, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      HandoverRequestAcknowledge.mand.v_targettosource_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourceadmittedlist, None{}, Fr.Ies.lookup(106, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      HandoverRequestAcknowledge.mand.d_pdusessionresourcefailedtosetuplisthoack(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourceadmittedlist, Fr.View.exact(G.PDUSessionResourceFailedToSetupListHOAck(), G.PDUSessionResourceFailedToSetupListHOAck.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def HandoverRequestAcknowledge.mand.d_pdusessionresourceadmittedlist(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.PDUSessionResourceAdmittedList()>, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.d_pdusessionresourceadmittedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(106, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessionresourceadmittedlist}:
+      HandoverRequestAcknowledge.mand.v_pdusessionresourcefailedtosetuplisthoack(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourceadmittedlist, Fr.Ies.lookup(56, ies), {==}, v, e, nd)
+
+def HandoverRequestAcknowledge.mand.v_pdusessionresourceadmittedlist(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(53, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.v_pdusessionresourceadmittedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}, B.Invalid{53}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(53, ies, bs, nd, em), HandoverRequestAcknowledge.mand.d_pdusessionresourceadmittedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.PDUSessionResourceAdmittedList(), G.PDUSessionResourceAdmittedList.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequestAcknowledge.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      HandoverRequestAcknowledge.mand.v_pdusessionresourceadmittedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(53, ies), {==}, v, e, nd)
+
+def HandoverRequestAcknowledge.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), HandoverRequestAcknowledge.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequestAcknowledge.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}), err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverRequestAcknowledge.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def HandoverRequestAcknowledge.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverRequestAcknowledge.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequestAcknowledge.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverRequestAcknowledge.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverRequestAcknowledge.View, +e: {GV.HandoverRequestAcknowledge.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequestAcknowledge.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat})), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverRequestAcknowledge.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(53, _) == 1n : Nat} & {Fr.Ies.occurrences(106, _) == 1n : Nat}))
+      HandoverRequestAcknowledge.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverRequestAcknowledge.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverRequestAcknowledge.mandatory(ies, v, e):
+  HandoverRequestAcknowledge.mand(ies, Fr.View.prelude(GV.HandoverRequestAcknowledge.known(), ies), {==}, v, e)
+
+def HandoverRequired.mand.v_sourcetotarget_transparentcontainer(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +targetid: G.TargetID, +directforwardingpathavailability: Maybe<&2, G.DirectForwardingPathAvailability()>, +pdusessionresourcelisthorqd: G.PDUSessionResourceListHORqd(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(101, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_sourcetotarget_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, directforwardingpathavailability, pdusessionresourcelisthorqd, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(101, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(101, ies) == 1n : Nat}, B.Invalid{101}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(101, ies, bs, nd, em)
+
+def HandoverRequired.mand.d_pdusessionresourcelisthorqd(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +targetid: G.TargetID, +directforwardingpathavailability: Maybe<&2, G.DirectForwardingPathAvailability()>, r: Result<&2, &2, B.Err, G.PDUSessionResourceListHORqd()>, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.d_pdusessionresourcelisthorqd(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, directforwardingpathavailability, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(101, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(101, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessionresourcelisthorqd}:
+      HandoverRequired.mand.v_sourcetotarget_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, directforwardingpathavailability, pdusessionresourcelisthorqd, Fr.Ies.lookup(101, ies), {==}, v, e, nd)
+
+def HandoverRequired.mand.v_pdusessionresourcelisthorqd(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +targetid: G.TargetID, +directforwardingpathavailability: Maybe<&2, G.DirectForwardingPathAvailability()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(61, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_pdusessionresourcelisthorqd(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, directforwardingpathavailability, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}, B.Invalid{61}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(61, ies, bs, nd, em), HandoverRequired.mand.d_pdusessionresourcelisthorqd(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, directforwardingpathavailability, Fr.View.exact(G.PDUSessionResourceListHORqd(), G.PDUSessionResourceListHORqd.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequired.mand.d_directforwardingpathavailability(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +targetid: G.TargetID, r: Result<&2, &2, B.Err, G.DirectForwardingPathAvailability()>, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.d_directforwardingpathavailability(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}, err, v, e)
+    case Done{+directforwardingpathavailability}:
+      HandoverRequired.mand.v_pdusessionresourcelisthorqd(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, Some{directforwardingpathavailability}, Fr.Ies.lookup(61, ies), {==}, v, e, nd)
+
+def HandoverRequired.mand.v_directforwardingpathavailability(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, +targetid: G.TargetID, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(22, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_directforwardingpathavailability(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      HandoverRequired.mand.v_pdusessionresourcelisthorqd(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, None{}, Fr.Ies.lookup(61, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      HandoverRequired.mand.d_directforwardingpathavailability(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, Fr.View.exact(G.DirectForwardingPathAvailability(), G.DirectForwardingPathAvailability.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def HandoverRequired.mand.d_targetid(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, r: Result<&2, &2, B.Err, G.TargetID>, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.d_targetid(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}, err, v, e)
+    case Done{+targetid}:
+      HandoverRequired.mand.v_directforwardingpathavailability(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, targetid, Fr.Ies.lookup(22, ies), {==}, v, e, nd)
+
+def HandoverRequired.mand.v_targetid(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), +cause: G.Cause, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(105, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_targetid(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}), B.Invalid{105}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(105, ies, bs, nd, em), HandoverRequired.mand.d_targetid(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, Fr.View.exact(G.TargetID, G.TargetID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequired.mand.d_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), r: Result<&2, &2, B.Err, G.Cause>, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.d_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}), err, v, e)
+    case Done{+cause}:
+      HandoverRequired.mand.v_targetid(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, cause, Fr.Ies.lookup(105, ies), {==}, v, e, nd)
+
+def HandoverRequired.mand.v_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +handovertype: G.HandoverType(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})), B.Invalid{15}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(15, ies, bs, nd, em), HandoverRequired.mand.d_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, Fr.View.exact(G.Cause, G.Cause.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequired.mand.d_handovertype(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.HandoverType()>, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.d_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})), err, v, e)
+    case Done{+handovertype}:
+      HandoverRequired.mand.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, handovertype, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def HandoverRequired.mand.v_handovertype(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(29, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))), B.Invalid{29}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(29, ies, bs, nd, em), HandoverRequired.mand.d_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.HandoverType(), G.HandoverType.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequired.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))), err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      HandoverRequired.mand.v_handovertype(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(29, ies), {==}, v, e, nd)
+
+def HandoverRequired.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})))), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), HandoverRequired.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequired.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})))), err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      HandoverRequired.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def HandoverRequired.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))))), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), HandoverRequired.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def HandoverRequired.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.HandoverRequired.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.HandoverRequired.View, +e: {GV.HandoverRequired.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))))):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.HandoverRequired.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat}))))), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.HandoverRequired.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(29, _) == 1n : Nat} & ({Fr.Ies.occurrences(15, _) == 1n : Nat} & ({Fr.Ies.occurrences(105, _) == 1n : Nat} & ({Fr.Ies.occurrences(61, _) == 1n : Nat} & {Fr.Ies.occurrences(101, _) == 1n : Nat})))))
+      HandoverRequired.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.HandoverRequired.known(), ies, ies2, erp))
+
+def GL.ngap.HandoverRequired.mandatory(ies, v, e):
+  HandoverRequired.mand(ies, Fr.View.prelude(GV.HandoverRequired.known(), ies), {==}, v, e)
+
+def InitialContextSetupFailure.mand.v_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupFailure.View, +e: {GV.InitialContextSetupFailure.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{15}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(15, ies, bs, nd, em)
+
+def InitialContextSetupFailure.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.InitialContextSetupFailure.View, +e: {GV.InitialContextSetupFailure.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      InitialContextSetupFailure.mand.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def InitialContextSetupFailure.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupFailure.View, +e: {GV.InitialContextSetupFailure.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupFailure.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), InitialContextSetupFailure.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupFailure.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.InitialContextSetupFailure.View, +e: {GV.InitialContextSetupFailure.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupFailure.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      InitialContextSetupFailure.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def InitialContextSetupFailure.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupFailure.View, +e: {GV.InitialContextSetupFailure.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), InitialContextSetupFailure.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupFailure.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.InitialContextSetupFailure.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.InitialContextSetupFailure.View, +e: {GV.InitialContextSetupFailure.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupFailure.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.InitialContextSetupFailure.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(15, _) == 1n : Nat})
+      InitialContextSetupFailure.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.InitialContextSetupFailure.known(), ies, ies2, erp))
+
+def GL.ngap.InitialContextSetupFailure.mandatory(ies, v, e):
+  InitialContextSetupFailure.mand(ies, Fr.View.prelude(GV.InitialContextSetupFailure.known(), ies), {==}, v, e)
+
+def InitialContextSetupRequest.mand.v_securitykey(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, +ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, +guami: G.GUAMI, +allowednssai: G.AllowedNSSAI(), +uesecuritycapabilities: G.UESecurityCapabilities, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(94, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_securitykey(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(94, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(94, ies) == 1n : Nat}, B.Invalid{94}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(94, ies, bs, nd, em)
+
+def InitialContextSetupRequest.mand.d_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, +ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, +guami: G.GUAMI, +allowednssai: G.AllowedNSSAI(), r: Result<&2, &2, B.Err, G.UESecurityCapabilities>, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.d_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(94, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(94, ies) == 1n : Nat}, err, v, e)
+    case Done{+uesecuritycapabilities}:
+      InitialContextSetupRequest.mand.v_securitykey(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, uesecuritycapabilities, Fr.Ies.lookup(94, ies), {==}, v, e, nd)
+
+def InitialContextSetupRequest.mand.v_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, +ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, +guami: G.GUAMI, +allowednssai: G.AllowedNSSAI(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(119, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}, B.Invalid{119}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(119, ies, bs, nd, em), InitialContextSetupRequest.mand.d_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, Fr.View.exact(G.UESecurityCapabilities, G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupRequest.mand.d_allowednssai(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, +ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, +guami: G.GUAMI, r: Result<&2, &2, B.Err, G.AllowedNSSAI()>, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.d_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}, err, v, e)
+    case Done{+allowednssai}:
+      InitialContextSetupRequest.mand.v_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, allowednssai, Fr.Ies.lookup(119, ies), {==}, v, e, nd)
+
+def InitialContextSetupRequest.mand.v_allowednssai(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, +ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, +guami: G.GUAMI, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(0, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}), B.Invalid{0}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(0, ies, bs, nd, em), InitialContextSetupRequest.mand.d_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, Fr.View.exact(G.AllowedNSSAI(), G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupRequest.mand.d_guami(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, +ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, r: Result<&2, &2, B.Err, G.GUAMI>, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.d_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}), err, v, e)
+    case Done{+guami}:
+      InitialContextSetupRequest.mand.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, guami, Fr.Ies.lookup(0, ies), {==}, v, e, nd)
+
+def InitialContextSetupRequest.mand.v_guami(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, +ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(28, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})), B.Invalid{28}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(28, ies, bs, nd, em), InitialContextSetupRequest.mand.d_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, ueaggregatemaximumbitrate, Fr.View.exact(G.GUAMI, G.GUAMI.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupRequest.mand.d_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, r: Result<&2, &2, B.Err, G.UEAggregateMaximumBitRate>, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.d_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})), err, v, e)
+    case Done{+ueaggregatemaximumbitrate}:
+      InitialContextSetupRequest.mand.v_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, Some{ueaggregatemaximumbitrate}, Fr.Ies.lookup(28, ies), {==}, v, e, nd)
+
+def InitialContextSetupRequest.mand.v_ueaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(110, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      InitialContextSetupRequest.mand.v_guami(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, None{}, Fr.Ies.lookup(28, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      InitialContextSetupRequest.mand.d_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, Fr.View.exact(G.UEAggregateMaximumBitRate, G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def InitialContextSetupRequest.mand.d_oldamf(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.AMFName()>, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.d_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})), err, v, e)
+    case Done{+oldamf}:
+      InitialContextSetupRequest.mand.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{oldamf}, Fr.Ies.lookup(110, ies), {==}, v, e, nd)
+
+def InitialContextSetupRequest.mand.v_oldamf(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(48, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      InitialContextSetupRequest.mand.v_ueaggregatemaximumbitrate(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(110, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      InitialContextSetupRequest.mand.d_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.AMFName(), G.AMFName.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def InitialContextSetupRequest.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})), err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      InitialContextSetupRequest.mand.v_oldamf(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(48, ies), {==}, v, e, nd)
+
+def InitialContextSetupRequest.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}))), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), InitialContextSetupRequest.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupRequest.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}))):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat}))), err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      InitialContextSetupRequest.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def InitialContextSetupRequest.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})))), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), InitialContextSetupRequest.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupRequest.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.InitialContextSetupRequest.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.InitialContextSetupRequest.View, +e: {GV.InitialContextSetupRequest.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupRequest.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})))):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(28, ies) == 1n : Nat} & ({Fr.Ies.occurrences(0, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(94, ies) == 1n : Nat})))), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.InitialContextSetupRequest.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(28, _) == 1n : Nat} & ({Fr.Ies.occurrences(0, _) == 1n : Nat} & ({Fr.Ies.occurrences(119, _) == 1n : Nat} & {Fr.Ies.occurrences(94, _) == 1n : Nat}))))
+      InitialContextSetupRequest.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.InitialContextSetupRequest.known(), ies, ies2, erp))
+
+def GL.ngap.InitialContextSetupRequest.mandatory(ies, v, e):
+  InitialContextSetupRequest.mand(ies, Fr.View.prelude(GV.InitialContextSetupRequest.known(), ies), {==}, v, e)
+
+def InitialContextSetupResponse.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupResponse.View, +e: {GV.InitialContextSetupResponse.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupResponse.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(85, ies, bs, nd, em)
+
+def InitialContextSetupResponse.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.InitialContextSetupResponse.View, +e: {GV.InitialContextSetupResponse.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupResponse.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      InitialContextSetupResponse.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def InitialContextSetupResponse.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialContextSetupResponse.View, +e: {GV.InitialContextSetupResponse.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialContextSetupResponse.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), InitialContextSetupResponse.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialContextSetupResponse.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.InitialContextSetupResponse.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.InitialContextSetupResponse.View, +e: {GV.InitialContextSetupResponse.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialContextSetupResponse.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.InitialContextSetupResponse.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & {Fr.Ies.occurrences(85, _) == 1n : Nat}
+      InitialContextSetupResponse.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.InitialContextSetupResponse.known(), ies, ies2, erp))
+
+def GL.ngap.InitialContextSetupResponse.mandatory(ies, v, e):
+  InitialContextSetupResponse.mand(ies, Fr.View.prelude(GV.InitialContextSetupResponse.known(), ies), {==}, v, e)
+
+def InitialUEMessage.mand.v_rrcestablishmentcause(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +nas_pdu: G.NAS_PDU(), +userlocationinformation: G.UserLocationInformation, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(90, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.v_rrcestablishmentcause(ies, ran_ue_ngap_id, nas_pdu, userlocationinformation, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(90, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(90, ies) == 1n : Nat}, B.Invalid{90}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(90, ies, bs, nd, em)
+
+def InitialUEMessage.mand.d_userlocationinformation(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +nas_pdu: G.NAS_PDU(), r: Result<&2, &2, B.Err, G.UserLocationInformation>, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.d_userlocationinformation(ies, ran_ue_ngap_id, nas_pdu, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(90, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(90, ies) == 1n : Nat}, err, v, e)
+    case Done{+userlocationinformation}:
+      InitialUEMessage.mand.v_rrcestablishmentcause(ies, ran_ue_ngap_id, nas_pdu, userlocationinformation, Fr.Ies.lookup(90, ies), {==}, v, e, nd)
+
+def InitialUEMessage.mand.v_userlocationinformation(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +nas_pdu: G.NAS_PDU(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(121, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.v_userlocationinformation(ies, ran_ue_ngap_id, nas_pdu, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}, B.Invalid{121}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(121, ies, bs, nd, em), InitialUEMessage.mand.d_userlocationinformation(ies, ran_ue_ngap_id, nas_pdu, Fr.View.exact(G.UserLocationInformation, G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialUEMessage.mand.d_nas_pdu(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.NAS_PDU()>, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.d_nas_pdu(ies, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}, err, v, e)
+    case Done{+nas_pdu}:
+      InitialUEMessage.mand.v_userlocationinformation(ies, ran_ue_ngap_id, nas_pdu, Fr.Ies.lookup(121, ies), {==}, v, e, nd)
+
+def InitialUEMessage.mand.v_nas_pdu(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(38, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.v_nas_pdu(ies, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}), B.Invalid{38}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(38, ies, bs, nd, em), InitialUEMessage.mand.d_nas_pdu(ies, ran_ue_ngap_id, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialUEMessage.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.d_ran_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}), err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      InitialUEMessage.mand.v_nas_pdu(ies, ran_ue_ngap_id, Fr.Ies.lookup(38, ies), {==}, v, e, nd)
+
+def InitialUEMessage.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.v_ran_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat})), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), InitialUEMessage.mand.d_ran_ue_ngap_id(ies, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def InitialUEMessage.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.InitialUEMessage.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.InitialUEMessage.View, +e: {GV.InitialUEMessage.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat})):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.InitialUEMessage.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat})), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.InitialUEMessage.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(38, _) == 1n : Nat} & ({Fr.Ies.occurrences(121, _) == 1n : Nat} & {Fr.Ies.occurrences(90, _) == 1n : Nat}))
+      InitialUEMessage.mand.v_ran_ue_ngap_id(ies2, Fr.Ies.lookup(85, ies2), {==}, v, e, PF.Prelude.nd(GV.InitialUEMessage.known(), ies, ies2, erp))
+
+def GL.ngap.InitialUEMessage.mandatory(ies, v, e):
+  InitialUEMessage.mand(ies, Fr.View.prelude(GV.InitialUEMessage.known(), ies), {==}, v, e)
+
+def NGSetupFailure.mand.v_cause(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupFailure.View, +e: {GV.NGSetupFailure.v_cause(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{15}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(15, ies, bs, nd, em)
+
+def NGSetupFailure.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.NGSetupFailure.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.NGSetupFailure.View, +e: {GV.NGSetupFailure.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupFailure.View>}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupFailure.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.NGSetupFailure.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(15, _) == 1n : Nat}
+      NGSetupFailure.mand.v_cause(ies2, Fr.Ies.lookup(15, ies2), {==}, v, e, PF.Prelude.nd(GV.NGSetupFailure.known(), ies, ies2, erp))
+
+def GL.ngap.NGSetupFailure.mandatory(ies, v, e):
+  NGSetupFailure.mand(ies, Fr.View.prelude(GV.NGSetupFailure.known(), ies), {==}, v, e)
+
+def NGSetupRequest.mand.v_defaultpagingdrx(+ies: List<&2, Fr.Ie>, +globalrannodeid: G.GlobalRANNodeID, +supportedtalist: G.SupportedTAList(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(21, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupRequest.View, +e: {GV.NGSetupRequest.v_defaultpagingdrx(ies, globalrannodeid, supportedtalist, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(21, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupRequest.View, {Fr.Ies.occurrences(21, ies) == 1n : Nat}, B.Invalid{21}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(21, ies, bs, nd, em)
+
+def NGSetupRequest.mand.d_supportedtalist(+ies: List<&2, Fr.Ie>, +globalrannodeid: G.GlobalRANNodeID, r: Result<&2, &2, B.Err, G.SupportedTAList()>, +v: GV.NGSetupRequest.View, +e: {GV.NGSetupRequest.d_supportedtalist(ies, globalrannodeid, r) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(21, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupRequest.View, {Fr.Ies.occurrences(21, ies) == 1n : Nat}, err, v, e)
+    case Done{+supportedtalist}:
+      NGSetupRequest.mand.v_defaultpagingdrx(ies, globalrannodeid, supportedtalist, Fr.Ies.lookup(21, ies), {==}, v, e, nd)
+
+def NGSetupRequest.mand.v_supportedtalist(+ies: List<&2, Fr.Ie>, +globalrannodeid: G.GlobalRANNodeID, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(102, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupRequest.View, +e: {GV.NGSetupRequest.v_supportedtalist(ies, globalrannodeid, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupRequest.View, {Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}, B.Invalid{102}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(102, ies, bs, nd, em), NGSetupRequest.mand.d_supportedtalist(ies, globalrannodeid, Fr.View.exact(G.SupportedTAList(), G.SupportedTAList.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def NGSetupRequest.mand.d_globalrannodeid(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.GlobalRANNodeID>, +v: GV.NGSetupRequest.View, +e: {GV.NGSetupRequest.d_globalrannodeid(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupRequest.View, {Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}, err, v, e)
+    case Done{+globalrannodeid}:
+      NGSetupRequest.mand.v_supportedtalist(ies, globalrannodeid, Fr.Ies.lookup(102, ies), {==}, v, e, nd)
+
+def NGSetupRequest.mand.v_globalrannodeid(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(27, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupRequest.View, +e: {GV.NGSetupRequest.v_globalrannodeid(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(27, ies) == 1n : Nat} & ({Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupRequest.View, {Fr.Ies.occurrences(27, ies) == 1n : Nat} & ({Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}), B.Invalid{27}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(27, ies, bs, nd, em), NGSetupRequest.mand.d_globalrannodeid(ies, Fr.View.exact(G.GlobalRANNodeID, G.GlobalRANNodeID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def NGSetupRequest.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.NGSetupRequest.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.NGSetupRequest.View, +e: {GV.NGSetupRequest.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupRequest.View>}) -> {Fr.Ies.occurrences(27, ies) == 1n : Nat} & ({Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupRequest.View, {Fr.Ies.occurrences(27, ies) == 1n : Nat} & ({Fr.Ies.occurrences(102, ies) == 1n : Nat} & {Fr.Ies.occurrences(21, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.NGSetupRequest.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(27, _) == 1n : Nat} & ({Fr.Ies.occurrences(102, _) == 1n : Nat} & {Fr.Ies.occurrences(21, _) == 1n : Nat})
+      NGSetupRequest.mand.v_globalrannodeid(ies2, Fr.Ies.lookup(27, ies2), {==}, v, e, PF.Prelude.nd(GV.NGSetupRequest.known(), ies, ies2, erp))
+
+def GL.ngap.NGSetupRequest.mandatory(ies, v, e):
+  NGSetupRequest.mand(ies, Fr.View.prelude(GV.NGSetupRequest.known(), ies), {==}, v, e)
+
+def NGSetupResponse.mand.v_plmnsupportlist(+ies: List<&2, Fr.Ie>, +amfname: G.AMFName(), +servedguamilist: G.ServedGUAMIList(), +relativeamfcapacity: G.RelativeAMFCapacity(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(80, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.v_plmnsupportlist(ies, amfname, servedguamilist, relativeamfcapacity, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(80, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(80, ies) == 1n : Nat}, B.Invalid{80}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(80, ies, bs, nd, em)
+
+def NGSetupResponse.mand.d_relativeamfcapacity(+ies: List<&2, Fr.Ie>, +amfname: G.AMFName(), +servedguamilist: G.ServedGUAMIList(), r: Result<&2, &2, B.Err, G.RelativeAMFCapacity()>, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.d_relativeamfcapacity(ies, amfname, servedguamilist, r) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(80, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(80, ies) == 1n : Nat}, err, v, e)
+    case Done{+relativeamfcapacity}:
+      NGSetupResponse.mand.v_plmnsupportlist(ies, amfname, servedguamilist, relativeamfcapacity, Fr.Ies.lookup(80, ies), {==}, v, e, nd)
+
+def NGSetupResponse.mand.v_relativeamfcapacity(+ies: List<&2, Fr.Ie>, +amfname: G.AMFName(), +servedguamilist: G.ServedGUAMIList(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(86, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.v_relativeamfcapacity(ies, amfname, servedguamilist, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}, B.Invalid{86}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(86, ies, bs, nd, em), NGSetupResponse.mand.d_relativeamfcapacity(ies, amfname, servedguamilist, Fr.View.exact(G.RelativeAMFCapacity(), G.RelativeAMFCapacity.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def NGSetupResponse.mand.d_servedguamilist(+ies: List<&2, Fr.Ie>, +amfname: G.AMFName(), r: Result<&2, &2, B.Err, G.ServedGUAMIList()>, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.d_servedguamilist(ies, amfname, r) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}, err, v, e)
+    case Done{+servedguamilist}:
+      NGSetupResponse.mand.v_relativeamfcapacity(ies, amfname, servedguamilist, Fr.Ies.lookup(86, ies), {==}, v, e, nd)
+
+def NGSetupResponse.mand.v_servedguamilist(+ies: List<&2, Fr.Ie>, +amfname: G.AMFName(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(96, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.v_servedguamilist(ies, amfname, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}), B.Invalid{96}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(96, ies, bs, nd, em), NGSetupResponse.mand.d_servedguamilist(ies, amfname, Fr.View.exact(G.ServedGUAMIList(), G.ServedGUAMIList.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def NGSetupResponse.mand.d_amfname(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMFName()>, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.d_amfname(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat}), err, v, e)
+    case Done{+amfname}:
+      NGSetupResponse.mand.v_servedguamilist(ies, amfname, Fr.Ies.lookup(96, ies), {==}, v, e, nd)
+
+def NGSetupResponse.mand.v_amfname(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(1, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.v_amfname(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(1, ies) == 1n : Nat} & ({Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(1, ies) == 1n : Nat} & ({Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat})), B.Invalid{1}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(1, ies, bs, nd, em), NGSetupResponse.mand.d_amfname(ies, Fr.View.exact(G.AMFName(), G.AMFName.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def NGSetupResponse.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.NGSetupResponse.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.NGSetupResponse.View, +e: {GV.NGSetupResponse.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.NGSetupResponse.View>}) -> {Fr.Ies.occurrences(1, ies) == 1n : Nat} & ({Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat})):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.NGSetupResponse.View, {Fr.Ies.occurrences(1, ies) == 1n : Nat} & ({Fr.Ies.occurrences(96, ies) == 1n : Nat} & ({Fr.Ies.occurrences(86, ies) == 1n : Nat} & {Fr.Ies.occurrences(80, ies) == 1n : Nat})), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.NGSetupResponse.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(1, _) == 1n : Nat} & ({Fr.Ies.occurrences(96, _) == 1n : Nat} & ({Fr.Ies.occurrences(86, _) == 1n : Nat} & {Fr.Ies.occurrences(80, _) == 1n : Nat}))
+      NGSetupResponse.mand.v_amfname(ies2, Fr.Ies.lookup(1, ies2), {==}, v, e, PF.Prelude.nd(GV.NGSetupResponse.known(), ies, ies2, erp))
+
+def GL.ngap.NGSetupResponse.mandatory(ies, v, e):
+  NGSetupResponse.mand(ies, Fr.View.prelude(GV.NGSetupResponse.known(), ies), {==}, v, e)
+
+def PDUSessionResourceSetupRequest.mand.v_pdusessionresourcesetuplistsureq(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +nas_pdu: Maybe<&2, G.NAS_PDU()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(74, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.v_pdusessionresourcesetuplistsureq(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(74, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequest.View, {Fr.Ies.occurrences(74, ies) == 1n : Nat}, B.Invalid{74}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(74, ies, bs, nd, em)
+
+def PDUSessionResourceSetupRequest.mand.d_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.NAS_PDU()>, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(74, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequest.View, {Fr.Ies.occurrences(74, ies) == 1n : Nat}, err, v, e)
+    case Done{+nas_pdu}:
+      PDUSessionResourceSetupRequest.mand.v_pdusessionresourcesetuplistsureq(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{nas_pdu}, Fr.Ies.lookup(74, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupRequest.mand.v_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(38, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(74, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PDUSessionResourceSetupRequest.mand.v_pdusessionresourcesetuplistsureq(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(74, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      PDUSessionResourceSetupRequest.mand.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def PDUSessionResourceSetupRequest.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(74, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequest.View, {Fr.Ies.occurrences(74, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      PDUSessionResourceSetupRequest.mand.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(38, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupRequest.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), PDUSessionResourceSetupRequest.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceSetupRequest.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      PDUSessionResourceSetupRequest.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupRequest.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), PDUSessionResourceSetupRequest.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceSetupRequest.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PDUSessionResourceSetupRequest.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(74, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PDUSessionResourceSetupRequest.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(74, _) == 1n : Nat})
+      PDUSessionResourceSetupRequest.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.PDUSessionResourceSetupRequest.known(), ies, ies2, erp))
+
+def GL.ngap.PDUSessionResourceSetupRequest.mandatory(ies, v, e):
+  PDUSessionResourceSetupRequest.mand(ies, Fr.View.prelude(GV.PDUSessionResourceSetupRequest.known(), ies), {==}, v, e)
+
+def PDUSessionResourceSetupRequestTransfer.mand.v_qosflowsetuprequestlist(+ies: List<&2, Fr.Ie>, +pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, +ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, +pdusessiontype: G.PDUSessionType(), +securityindication: Maybe<&2, G.SecurityIndication>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(136, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.v_qosflowsetuprequestlist(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, securityindication, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(136, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(136, ies) == 1n : Nat}, B.Invalid{136}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(136, ies, bs, nd, em)
+
+def PDUSessionResourceSetupRequestTransfer.mand.d_securityindication(+ies: List<&2, Fr.Ie>, +pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, +ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, +pdusessiontype: G.PDUSessionType(), r: Result<&2, &2, B.Err, G.SecurityIndication>, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.d_securityindication(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(136, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(136, ies) == 1n : Nat}, err, v, e)
+    case Done{+securityindication}:
+      PDUSessionResourceSetupRequestTransfer.mand.v_qosflowsetuprequestlist(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, Some{securityindication}, Fr.Ies.lookup(136, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupRequestTransfer.mand.v_securityindication(+ies: List<&2, Fr.Ie>, +pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, +ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, +pdusessiontype: G.PDUSessionType(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(138, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.v_securityindication(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(136, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PDUSessionResourceSetupRequestTransfer.mand.v_qosflowsetuprequestlist(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, None{}, Fr.Ies.lookup(136, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      PDUSessionResourceSetupRequestTransfer.mand.d_securityindication(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, Fr.View.exact(G.SecurityIndication, G.SecurityIndication.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def PDUSessionResourceSetupRequestTransfer.mand.d_pdusessiontype(+ies: List<&2, Fr.Ie>, +pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, +ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, r: Result<&2, &2, B.Err, G.PDUSessionType()>, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.d_pdusessiontype(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(136, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(136, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessiontype}:
+      PDUSessionResourceSetupRequestTransfer.mand.v_securityindication(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, pdusessiontype, Fr.Ies.lookup(138, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupRequestTransfer.mand.v_pdusessiontype(+ies: List<&2, Fr.Ie>, +pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, +ul_ngu_up_tnlinformation: G.UPTransportLayerInformation, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(134, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.v_pdusessiontype(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}, B.Invalid{134}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(134, ies, bs, nd, em), PDUSessionResourceSetupRequestTransfer.mand.d_pdusessiontype(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, Fr.View.exact(G.PDUSessionType(), G.PDUSessionType.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceSetupRequestTransfer.mand.d_ul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, +pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, r: Result<&2, &2, B.Err, G.UPTransportLayerInformation>, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.d_ul_ngu_up_tnlinformation(ies, pdusessionaggregatemaximumbitrate, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}, err, v, e)
+    case Done{+ul_ngu_up_tnlinformation}:
+      PDUSessionResourceSetupRequestTransfer.mand.v_pdusessiontype(ies, pdusessionaggregatemaximumbitrate, ul_ngu_up_tnlinformation, Fr.Ies.lookup(134, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupRequestTransfer.mand.v_ul_ngu_up_tnlinformation(+ies: List<&2, Fr.Ie>, +pdusessionaggregatemaximumbitrate: Maybe<&2, G.PDUSessionAggregateMaximumBitRate>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(139, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.v_ul_ngu_up_tnlinformation(ies, pdusessionaggregatemaximumbitrate, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(139, ies) == 1n : Nat} & ({Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(139, ies) == 1n : Nat} & ({Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}), B.Invalid{139}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(139, ies, bs, nd, em), PDUSessionResourceSetupRequestTransfer.mand.d_ul_ngu_up_tnlinformation(ies, pdusessionaggregatemaximumbitrate, Fr.View.exact(G.UPTransportLayerInformation, G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceSetupRequestTransfer.mand.d_pdusessionaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.PDUSessionAggregateMaximumBitRate>, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.d_pdusessionaggregatemaximumbitrate(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(139, ies) == 1n : Nat} & ({Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(139, ies) == 1n : Nat} & ({Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}), err, v, e)
+    case Done{+pdusessionaggregatemaximumbitrate}:
+      PDUSessionResourceSetupRequestTransfer.mand.v_ul_ngu_up_tnlinformation(ies, Some{pdusessionaggregatemaximumbitrate}, Fr.Ies.lookup(139, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupRequestTransfer.mand.v_pdusessionaggregatemaximumbitrate(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(130, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.v_pdusessionaggregatemaximumbitrate(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(139, ies) == 1n : Nat} & ({Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PDUSessionResourceSetupRequestTransfer.mand.v_ul_ngu_up_tnlinformation(ies, None{}, Fr.Ies.lookup(139, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      PDUSessionResourceSetupRequestTransfer.mand.d_pdusessionaggregatemaximumbitrate(ies, Fr.View.exact(G.PDUSessionAggregateMaximumBitRate, G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def PDUSessionResourceSetupRequestTransfer.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PDUSessionResourceSetupRequestTransfer.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PDUSessionResourceSetupRequestTransfer.View, +e: {GV.PDUSessionResourceSetupRequestTransfer.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequestTransfer.View>}) -> {Fr.Ies.occurrences(139, ies) == 1n : Nat} & ({Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupRequestTransfer.View, {Fr.Ies.occurrences(139, ies) == 1n : Nat} & ({Fr.Ies.occurrences(134, ies) == 1n : Nat} & {Fr.Ies.occurrences(136, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PDUSessionResourceSetupRequestTransfer.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(139, _) == 1n : Nat} & ({Fr.Ies.occurrences(134, _) == 1n : Nat} & {Fr.Ies.occurrences(136, _) == 1n : Nat})
+      PDUSessionResourceSetupRequestTransfer.mand.v_pdusessionaggregatemaximumbitrate(ies2, Fr.Ies.lookup(130, ies2), {==}, v, e, PF.Prelude.nd(GV.PDUSessionResourceSetupRequestTransfer.known(), ies, ies2, erp))
+
+def GL.ngap.PDUSessionResourceSetupRequestTransfer.mandatory(ies, v, e):
+  PDUSessionResourceSetupRequestTransfer.mand(ies, Fr.View.prelude(GV.PDUSessionResourceSetupRequestTransfer.known(), ies), {==}, v, e)
+
+def PDUSessionResourceSetupResponse.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupResponse.View, +e: {GV.PDUSessionResourceSetupResponse.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupResponse.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(85, ies, bs, nd, em)
+
+def PDUSessionResourceSetupResponse.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.PDUSessionResourceSetupResponse.View, +e: {GV.PDUSessionResourceSetupResponse.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupResponse.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      PDUSessionResourceSetupResponse.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def PDUSessionResourceSetupResponse.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupResponse.View, +e: {GV.PDUSessionResourceSetupResponse.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceSetupResponse.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), PDUSessionResourceSetupResponse.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceSetupResponse.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PDUSessionResourceSetupResponse.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PDUSessionResourceSetupResponse.View, +e: {GV.PDUSessionResourceSetupResponse.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceSetupResponse.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PDUSessionResourceSetupResponse.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & {Fr.Ies.occurrences(85, _) == 1n : Nat}
+      PDUSessionResourceSetupResponse.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.PDUSessionResourceSetupResponse.known(), ies, ies2, erp))
+
+def GL.ngap.PDUSessionResourceSetupResponse.mandatory(ies, v, e):
+  PDUSessionResourceSetupResponse.mand(ies, Fr.View.prelude(GV.PDUSessionResourceSetupResponse.known(), ies), {==}, v, e)
+
+def PathSwitchRequest.mand.v_pdusessionresourcetobeswitcheddllist(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +sourceamf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +userlocationinformation: G.UserLocationInformation, +uesecuritycapabilities: G.UESecurityCapabilities, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(76, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.v_pdusessionresourcetobeswitcheddllist(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, userlocationinformation, uesecuritycapabilities, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(76, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(76, ies) == 1n : Nat}, B.Invalid{76}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(76, ies, bs, nd, em)
+
+def PathSwitchRequest.mand.d_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +sourceamf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +userlocationinformation: G.UserLocationInformation, r: Result<&2, &2, B.Err, G.UESecurityCapabilities>, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.d_uesecuritycapabilities(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, userlocationinformation, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(76, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(76, ies) == 1n : Nat}, err, v, e)
+    case Done{+uesecuritycapabilities}:
+      PathSwitchRequest.mand.v_pdusessionresourcetobeswitcheddllist(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, userlocationinformation, uesecuritycapabilities, Fr.Ies.lookup(76, ies), {==}, v, e, nd)
+
+def PathSwitchRequest.mand.v_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +sourceamf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +userlocationinformation: G.UserLocationInformation, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(119, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.v_uesecuritycapabilities(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, userlocationinformation, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}, B.Invalid{119}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(119, ies, bs, nd, em), PathSwitchRequest.mand.d_uesecuritycapabilities(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, userlocationinformation, Fr.View.exact(G.UESecurityCapabilities, G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequest.mand.d_userlocationinformation(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +sourceamf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.UserLocationInformation>, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.d_userlocationinformation(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}, err, v, e)
+    case Done{+userlocationinformation}:
+      PathSwitchRequest.mand.v_uesecuritycapabilities(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, userlocationinformation, Fr.Ies.lookup(119, ies), {==}, v, e, nd)
+
+def PathSwitchRequest.mand.v_userlocationinformation(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +sourceamf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(121, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.v_userlocationinformation(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}), B.Invalid{121}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(121, ies, bs, nd, em), PathSwitchRequest.mand.d_userlocationinformation(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, Fr.View.exact(G.UserLocationInformation, G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequest.mand.d_sourceamf_ue_ngap_id(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.d_sourceamf_ue_ngap_id(ies, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}), err, v, e)
+    case Done{+sourceamf_ue_ngap_id}:
+      PathSwitchRequest.mand.v_userlocationinformation(ies, ran_ue_ngap_id, sourceamf_ue_ngap_id, Fr.Ies.lookup(121, ies), {==}, v, e, nd)
+
+def PathSwitchRequest.mand.v_sourceamf_ue_ngap_id(+ies: List<&2, Fr.Ie>, +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(100, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.v_sourceamf_ue_ngap_id(ies, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat})), B.Invalid{100}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(100, ies, bs, nd, em), PathSwitchRequest.mand.d_sourceamf_ue_ngap_id(ies, ran_ue_ngap_id, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequest.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.d_ran_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat})), err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      PathSwitchRequest.mand.v_sourceamf_ue_ngap_id(ies, ran_ue_ngap_id, Fr.Ies.lookup(100, ies), {==}, v, e, nd)
+
+def PathSwitchRequest.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.v_ran_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}))), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), PathSwitchRequest.mand.d_ran_ue_ngap_id(ies, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequest.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PathSwitchRequest.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PathSwitchRequest.View, +e: {GV.PathSwitchRequest.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}))):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat}))), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PathSwitchRequest.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(100, _) == 1n : Nat} & ({Fr.Ies.occurrences(121, _) == 1n : Nat} & ({Fr.Ies.occurrences(119, _) == 1n : Nat} & {Fr.Ies.occurrences(76, _) == 1n : Nat})))
+      PathSwitchRequest.mand.v_ran_ue_ngap_id(ies2, Fr.Ies.lookup(85, ies2), {==}, v, e, PF.Prelude.nd(GV.PathSwitchRequest.known(), ies, ies2, erp))
+
+def GL.ngap.PathSwitchRequest.mandatory(ies, v, e):
+  PathSwitchRequest.mand(ies, Fr.View.prelude(GV.PathSwitchRequest.known(), ies), {==}, v, e)
+
+def PathSwitchRequestAcknowledge.mand.v_allowednssai(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +uesecuritycapabilities: Maybe<&2, G.UESecurityCapabilities>, +securitycontext: G.SecurityContext, +pdusessionresourceswitchedlist: G.PDUSessionResourceSwitchedList(), +pdusessionresourcereleasedlistpsack: Maybe<&2, G.PDUSessionResourceReleasedListPSAck()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(0, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, pdusessionresourceswitchedlist, pdusessionresourcereleasedlistpsack, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(0, ies) == 1n : Nat}, B.Invalid{0}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(0, ies, bs, nd, em)
+
+def PathSwitchRequestAcknowledge.mand.d_pdusessionresourcereleasedlistpsack(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +uesecuritycapabilities: Maybe<&2, G.UESecurityCapabilities>, +securitycontext: G.SecurityContext, +pdusessionresourceswitchedlist: G.PDUSessionResourceSwitchedList(), r: Result<&2, &2, B.Err, G.PDUSessionResourceReleasedListPSAck()>, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.d_pdusessionresourcereleasedlistpsack(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, pdusessionresourceswitchedlist, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(0, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessionresourcereleasedlistpsack}:
+      PathSwitchRequestAcknowledge.mand.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, pdusessionresourceswitchedlist, Some{pdusessionresourcereleasedlistpsack}, Fr.Ies.lookup(0, ies), {==}, v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.v_pdusessionresourcereleasedlistpsack(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +uesecuritycapabilities: Maybe<&2, G.UESecurityCapabilities>, +securitycontext: G.SecurityContext, +pdusessionresourceswitchedlist: G.PDUSessionResourceSwitchedList(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(68, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_pdusessionresourcereleasedlistpsack(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, pdusessionresourceswitchedlist, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PathSwitchRequestAcknowledge.mand.v_allowednssai(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, pdusessionresourceswitchedlist, None{}, Fr.Ies.lookup(0, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      PathSwitchRequestAcknowledge.mand.d_pdusessionresourcereleasedlistpsack(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, pdusessionresourceswitchedlist, Fr.View.exact(G.PDUSessionResourceReleasedListPSAck(), G.PDUSessionResourceReleasedListPSAck.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.d_pdusessionresourceswitchedlist(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +uesecuritycapabilities: Maybe<&2, G.UESecurityCapabilities>, +securitycontext: G.SecurityContext, r: Result<&2, &2, B.Err, G.PDUSessionResourceSwitchedList()>, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.d_pdusessionresourceswitchedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(0, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(0, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessionresourceswitchedlist}:
+      PathSwitchRequestAcknowledge.mand.v_pdusessionresourcereleasedlistpsack(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, pdusessionresourceswitchedlist, Fr.Ies.lookup(68, ies), {==}, v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.v_pdusessionresourceswitchedlist(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +uesecuritycapabilities: Maybe<&2, G.UESecurityCapabilities>, +securitycontext: G.SecurityContext, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(77, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_pdusessionresourceswitchedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}, B.Invalid{77}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(77, ies, bs, nd, em), PathSwitchRequestAcknowledge.mand.d_pdusessionresourceswitchedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, Fr.View.exact(G.PDUSessionResourceSwitchedList(), G.PDUSessionResourceSwitchedList.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequestAcknowledge.mand.d_securitycontext(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +uesecuritycapabilities: Maybe<&2, G.UESecurityCapabilities>, r: Result<&2, &2, B.Err, G.SecurityContext>, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.d_securitycontext(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}, err, v, e)
+    case Done{+securitycontext}:
+      PathSwitchRequestAcknowledge.mand.v_pdusessionresourceswitchedlist(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, securitycontext, Fr.Ies.lookup(77, ies), {==}, v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.v_securitycontext(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +uesecuritycapabilities: Maybe<&2, G.UESecurityCapabilities>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(93, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_securitycontext(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}), B.Invalid{93}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(93, ies, bs, nd, em), PathSwitchRequestAcknowledge.mand.d_securitycontext(ies, amf_ue_ngap_id, ran_ue_ngap_id, uesecuritycapabilities, Fr.View.exact(G.SecurityContext, G.SecurityContext.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequestAcknowledge.mand.d_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.UESecurityCapabilities>, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.d_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}), err, v, e)
+    case Done{+uesecuritycapabilities}:
+      PathSwitchRequestAcknowledge.mand.v_securitycontext(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{uesecuritycapabilities}, Fr.Ies.lookup(93, ies), {==}, v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.v_uesecuritycapabilities(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(119, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PathSwitchRequestAcknowledge.mand.v_securitycontext(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(93, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      PathSwitchRequestAcknowledge.mand.d_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.UESecurityCapabilities, G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}), err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      PathSwitchRequestAcknowledge.mand.v_uesecuritycapabilities(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(119, ies), {==}, v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat})), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), PathSwitchRequestAcknowledge.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequestAcknowledge.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat})):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat})), err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      PathSwitchRequestAcknowledge.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def PathSwitchRequestAcknowledge.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}))):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}))), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), PathSwitchRequestAcknowledge.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequestAcknowledge.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PathSwitchRequestAcknowledge.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PathSwitchRequestAcknowledge.View, +e: {GV.PathSwitchRequestAcknowledge.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestAcknowledge.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}))):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestAcknowledge.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(93, ies) == 1n : Nat} & ({Fr.Ies.occurrences(77, ies) == 1n : Nat} & {Fr.Ies.occurrences(0, ies) == 1n : Nat}))), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PathSwitchRequestAcknowledge.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(93, _) == 1n : Nat} & ({Fr.Ies.occurrences(77, _) == 1n : Nat} & {Fr.Ies.occurrences(0, _) == 1n : Nat})))
+      PathSwitchRequestAcknowledge.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.PathSwitchRequestAcknowledge.known(), ies, ies2, erp))
+
+def GL.ngap.PathSwitchRequestAcknowledge.mandatory(ies, v, e):
+  PathSwitchRequestAcknowledge.mand(ies, Fr.View.prelude(GV.PathSwitchRequestAcknowledge.known(), ies), {==}, v, e)
+
+def PathSwitchRequestFailure.mand.v_pdusessionresourcereleasedlistpsfail(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(69, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestFailure.View, +e: {GV.PathSwitchRequestFailure.v_pdusessionresourcereleasedlistpsfail(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(69, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestFailure.View, {Fr.Ies.occurrences(69, ies) == 1n : Nat}, B.Invalid{69}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(69, ies, bs, nd, em)
+
+def PathSwitchRequestFailure.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.PathSwitchRequestFailure.View, +e: {GV.PathSwitchRequestFailure.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(69, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestFailure.View, {Fr.Ies.occurrences(69, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      PathSwitchRequestFailure.mand.v_pdusessionresourcereleasedlistpsfail(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(69, ies), {==}, v, e, nd)
+
+def PathSwitchRequestFailure.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestFailure.View, +e: {GV.PathSwitchRequestFailure.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestFailure.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), PathSwitchRequestFailure.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequestFailure.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.PathSwitchRequestFailure.View, +e: {GV.PathSwitchRequestFailure.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestFailure.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      PathSwitchRequestFailure.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def PathSwitchRequestFailure.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PathSwitchRequestFailure.View, +e: {GV.PathSwitchRequestFailure.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestFailure.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PathSwitchRequestFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), PathSwitchRequestFailure.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PathSwitchRequestFailure.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PathSwitchRequestFailure.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PathSwitchRequestFailure.View, +e: {GV.PathSwitchRequestFailure.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequestFailure.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PathSwitchRequestFailure.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(69, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PathSwitchRequestFailure.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(69, _) == 1n : Nat})
+      PathSwitchRequestFailure.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.PathSwitchRequestFailure.known(), ies, ies2, erp))
+
+def GL.ngap.PathSwitchRequestFailure.mandatory(ies, v, e):
+  PathSwitchRequestFailure.mand(ies, Fr.View.prelude(GV.PathSwitchRequestFailure.known(), ies), {==}, v, e)
+
+def UEContextReleaseCommand.mand.v_cause(+ies: List<&2, Fr.Ie>, +ue_ngap_ids: G.UE_NGAP_IDs, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseCommand.View, +e: {GV.UEContextReleaseCommand.v_cause(ies, ue_ngap_ids, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UEContextReleaseCommand.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{15}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(15, ies, bs, nd, em)
+
+def UEContextReleaseCommand.mand.d_ue_ngap_ids(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.UE_NGAP_IDs>, +v: GV.UEContextReleaseCommand.View, +e: {GV.UEContextReleaseCommand.d_ue_ngap_ids(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseCommand.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ue_ngap_ids}:
+      UEContextReleaseCommand.mand.v_cause(ies, ue_ngap_ids, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def UEContextReleaseCommand.mand.v_ue_ngap_ids(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(114, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseCommand.View, +e: {GV.UEContextReleaseCommand.v_ue_ngap_ids(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(114, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UEContextReleaseCommand.View, {Fr.Ies.occurrences(114, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{114}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(114, ies, bs, nd, em), UEContextReleaseCommand.mand.d_ue_ngap_ids(ies, Fr.View.exact(G.UE_NGAP_IDs, G.UE_NGAP_IDs.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UEContextReleaseCommand.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.UEContextReleaseCommand.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.UEContextReleaseCommand.View, +e: {GV.UEContextReleaseCommand.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseCommand.View>}) -> {Fr.Ies.occurrences(114, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseCommand.View, {Fr.Ies.occurrences(114, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.UEContextReleaseCommand.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(114, _) == 1n : Nat} & {Fr.Ies.occurrences(15, _) == 1n : Nat}
+      UEContextReleaseCommand.mand.v_ue_ngap_ids(ies2, Fr.Ies.lookup(114, ies2), {==}, v, e, PF.Prelude.nd(GV.UEContextReleaseCommand.known(), ies, ies2, erp))
+
+def GL.ngap.UEContextReleaseCommand.mandatory(ies, v, e):
+  UEContextReleaseCommand.mand(ies, Fr.View.prelude(GV.UEContextReleaseCommand.known(), ies), {==}, v, e)
+
+def UEContextReleaseComplete.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseComplete.View, +e: {GV.UEContextReleaseComplete.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UEContextReleaseComplete.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(85, ies, bs, nd, em)
+
+def UEContextReleaseComplete.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.UEContextReleaseComplete.View, +e: {GV.UEContextReleaseComplete.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseComplete.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      UEContextReleaseComplete.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def UEContextReleaseComplete.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseComplete.View, +e: {GV.UEContextReleaseComplete.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UEContextReleaseComplete.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), UEContextReleaseComplete.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UEContextReleaseComplete.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.UEContextReleaseComplete.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.UEContextReleaseComplete.View, +e: {GV.UEContextReleaseComplete.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}:
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseComplete.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & {Fr.Ies.occurrences(85, ies) == 1n : Nat}, err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.UEContextReleaseComplete.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & {Fr.Ies.occurrences(85, _) == 1n : Nat}
+      UEContextReleaseComplete.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.UEContextReleaseComplete.known(), ies, ies2, erp))
+
+def GL.ngap.UEContextReleaseComplete.mandatory(ies, v, e):
+  UEContextReleaseComplete.mand(ies, Fr.View.prelude(GV.UEContextReleaseComplete.known(), ies), {==}, v, e)
+
+def UEContextReleaseRequest.mand.v_cause(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +pdusessionresourcelistcxtrelreq: Maybe<&2, G.PDUSessionResourceListCxtRelReq()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(15, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcelistcxtrelreq, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UEContextReleaseRequest.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{15}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(15, ies, bs, nd, em)
+
+def UEContextReleaseRequest.mand.d_pdusessionresourcelistcxtrelreq(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.PDUSessionResourceListCxtRelReq()>, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.d_pdusessionresourcelistcxtrelreq(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseRequest.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+pdusessionresourcelistcxtrelreq}:
+      UEContextReleaseRequest.mand.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{pdusessionresourcelistcxtrelreq}, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+
+def UEContextReleaseRequest.mand.v_pdusessionresourcelistcxtrelreq(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(133, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.v_pdusessionresourcelistcxtrelreq(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      UEContextReleaseRequest.mand.v_cause(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(15, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      UEContextReleaseRequest.mand.d_pdusessionresourcelistcxtrelreq(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.PDUSessionResourceListCxtRelReq(), G.PDUSessionResourceListCxtRelReq.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def UEContextReleaseRequest.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseRequest.View, {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      UEContextReleaseRequest.mand.v_pdusessionresourcelistcxtrelreq(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(133, ies), {==}, v, e, nd)
+
+def UEContextReleaseRequest.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UEContextReleaseRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), UEContextReleaseRequest.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UEContextReleaseRequest.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseRequest.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      UEContextReleaseRequest.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def UEContextReleaseRequest.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UEContextReleaseRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), UEContextReleaseRequest.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UEContextReleaseRequest.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.UEContextReleaseRequest.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.UEContextReleaseRequest.View, +e: {GV.UEContextReleaseRequest.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.UEContextReleaseRequest.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(15, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.UEContextReleaseRequest.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(15, _) == 1n : Nat})
+      UEContextReleaseRequest.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.UEContextReleaseRequest.known(), ies, ies2, erp))
+
+def GL.ngap.UEContextReleaseRequest.mandatory(ies, v, e):
+  UEContextReleaseRequest.mand(ies, Fr.View.prelude(GV.UEContextReleaseRequest.known(), ies), {==}, v, e)
+
+def UplinkNASTransport.mand.v_userlocationinformation(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +nas_pdu: G.NAS_PDU(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(121, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, m) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat}, B.Invalid{121}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(121, ies, bs, nd, em)
+
+def UplinkNASTransport.mand.d_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.NAS_PDU()>, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(121, ies) == 1n : Nat}, err, v, e)
+    case Done{+nas_pdu}:
+      UplinkNASTransport.mand.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, Fr.Ies.lookup(121, ies), {==}, v, e, nd)
+
+def UplinkNASTransport.mand.v_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(38, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}, B.Invalid{38}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(38, ies, bs, nd, em), UplinkNASTransport.mand.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UplinkNASTransport.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      UplinkNASTransport.mand.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(38, ies), {==}, v, e, nd)
+
+def UplinkNASTransport.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}), B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), UplinkNASTransport.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UplinkNASTransport.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}):
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat}), err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      UplinkNASTransport.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def UplinkNASTransport.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat})):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat})), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), UplinkNASTransport.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UplinkNASTransport.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.UplinkNASTransport.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.UplinkNASTransport.View, +e: {GV.UplinkNASTransport.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat})):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.UplinkNASTransport.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & {Fr.Ies.occurrences(121, ies) == 1n : Nat})), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.UplinkNASTransport.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & ({Fr.Ies.occurrences(38, _) == 1n : Nat} & {Fr.Ies.occurrences(121, _) == 1n : Nat}))
+      UplinkNASTransport.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.UplinkNASTransport.known(), ies, ies2, erp))
+
+def GL.ngap.UplinkNASTransport.mandatory(ies, v, e):
+  UplinkNASTransport.mand(ies, Fr.View.prelude(GV.UplinkNASTransport.known(), ies), {==}, v, e)
+
+def UplinkRANStatusTransfer.mand.v_ranstatustransfer_transparentcontainer(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(84, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UplinkRANStatusTransfer.View, +e: {GV.UplinkRANStatusTransfer.v_ranstatustransfer_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.UplinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UplinkRANStatusTransfer.View, {Fr.Ies.occurrences(84, ies) == 1n : Nat}, B.Invalid{84}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(84, ies, bs, nd, em)
+
+def UplinkRANStatusTransfer.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.UplinkRANStatusTransfer.View, +e: {GV.UplinkRANStatusTransfer.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.UplinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UplinkRANStatusTransfer.View, {Fr.Ies.occurrences(84, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      UplinkRANStatusTransfer.mand.v_ranstatustransfer_transparentcontainer(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(84, ies), {==}, v, e, nd)
+
+def UplinkRANStatusTransfer.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UplinkRANStatusTransfer.View, +e: {GV.UplinkRANStatusTransfer.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.UplinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UplinkRANStatusTransfer.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), UplinkRANStatusTransfer.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UplinkRANStatusTransfer.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.UplinkRANStatusTransfer.View, +e: {GV.UplinkRANStatusTransfer.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.UplinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.UplinkRANStatusTransfer.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      UplinkRANStatusTransfer.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def UplinkRANStatusTransfer.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.UplinkRANStatusTransfer.View, +e: {GV.UplinkRANStatusTransfer.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.UplinkRANStatusTransfer.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.UplinkRANStatusTransfer.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), UplinkRANStatusTransfer.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def UplinkRANStatusTransfer.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.UplinkRANStatusTransfer.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.UplinkRANStatusTransfer.View, +e: {GV.UplinkRANStatusTransfer.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.UplinkRANStatusTransfer.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.UplinkRANStatusTransfer.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(84, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.UplinkRANStatusTransfer.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(84, _) == 1n : Nat})
+      UplinkRANStatusTransfer.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.UplinkRANStatusTransfer.known(), ies, ies2, erp))
+
+def GL.ngap.UplinkRANStatusTransfer.mandatory(ies, v, e):
+  UplinkRANStatusTransfer.mand(ies, Fr.View.prelude(GV.UplinkRANStatusTransfer.known(), ies), {==}, v, e)
