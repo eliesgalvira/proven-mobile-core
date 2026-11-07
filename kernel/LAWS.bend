@@ -1338,7 +1338,8 @@ law amf.contexts.guarded:
 # even and not zero (St.Ids.free); a row's guard timer is its key and timer 0
 # the N4 association's, so no two rows share a guard timer: no key holds both
 # a context and a session, and neither table holds timer 0. It holds in every
-# state whose sessions belong to contexts (amf.sessions.owned).
+# state that keeps the keys so, which is every state step reaches, and whose
+# sessions belong to contexts (amf.sessions.owned).
 law state.ids.free:
   for +st: St.State
   for +ev: F.Evt
