@@ -1201,7 +1201,6 @@ law amf.ue_context_release.owner_only:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
-  for +k: U32
   for +ran: B.Bytes()
   for +pdus: Maybe<&2, G.PDUSessionResourceListCxtRelReq()>
   for +cause: G.Cause
@@ -1213,8 +1212,7 @@ law amf.ue_context_release.owner_only:
   for +nas: B.Bytes()
   for +loc: G.UserLocationInformation
   for +ue: St.Ue
-  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
-  for +eu: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eu: {Tb.Table.get(St.Ue, Ng.Ngap.of_big(amf), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
   for +ea: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 42, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseRequest.view(ies) == Done{GV.UEContextReleaseRequest.View{amf, ran, pdus, cause}} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>} -> {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State})
@@ -1277,7 +1275,6 @@ law amf.nas.plaintext_after_security:
   for +ies: List<&2, Fr.Ie>
   for +c: Ap.Cur
   for +amf: B.Bytes()
-  for +k: U32
   for +ran: B.Bytes()
   for +nas: B.Bytes()
   for +uli: G.UserLocationInformation
@@ -1287,8 +1284,7 @@ law amf.nas.plaintext_after_security:
   for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev: {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, uli}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>}
-  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
-  for +eo: {Gm.Gmm.owner(st, assoc, k, ran) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eo: {Gm.Gmm.owner(st, assoc, Ng.Ngap.of_big(amf), ran) == Some{ue} : Maybe<&2, St.Ue>}
   for +ec: {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>}
   for +ef: {N.Nas.unprotect(ctx, nas) == Fail{err} : Result<&2, &2, B.Err, N.Nas.Unprotected>}
   {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}
@@ -1416,6 +1412,41 @@ law smf.guard.stopped:
   for +eg: {St.SPhase.guard(St.Session.phase(s)) == Some{g} : Maybe<&2, St.Guard>}
   for +eh: {Tb.Table.get(St.Session, k, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == None{} : Maybe<&2, St.Session>}
   {Ng.Acts.stops(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool}
+
+# An AMF-UE-NGAP-ID of 2^32 or more, which Ng.Ngap.ue_key gives no key for,
+# names no UE context, never the one its low 32 bits would fold onto: a UE
+# Context Release Request or Complete, an Initial Context Setup Response, a
+# PDU Session Resource Setup Response or an Uplink NAS Transport carrying one
+# changes no state, and the only actions are Error Indication and a log line.
+law amf.ue_key.unknown:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +pdus: Maybe<&2, G.PDUSessionResourceListCxtRelReq()>
+  for +cause: G.Cause
+  for +uli: Maybe<&2, G.UserLocationInformation>
+  for +rel: Maybe<&2, G.PDUSessionResourceListCxtRelCpl()>
+  for +diag: Maybe<&2, G.CriticalityDiagnostics>
+  for +oks: Maybe<&2, G.PDUSessionResourceSetupListSURes()>
+  for +fails: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>
+  for +nas: B.Bytes()
+  for +loc: G.UserLocationInformation
+  for +eid: {Ng.Ngap.ue_key(amf) == None{} : Maybe<&2, U32>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 42, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseRequest.view(ies) == Done{GV.UEContextReleaseRequest.View{amf, ran, pdus, cause}} : Result<&2, &2, B.Err, GV.UEContextReleaseRequest.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 41, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UEContextReleaseComplete.view(ies) == Done{GV.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}} : Result<&2, &2, B.Err, GV.UEContextReleaseComplete.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 14, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.InitialContextSetupResponse.view(ies) == Done{GV.InitialContextSetupResponse.View{amf, ran, diag}} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, fails, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, loc}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
 
 # smf (ticket 19)
 # ---------------
