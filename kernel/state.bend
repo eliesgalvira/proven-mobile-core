@@ -346,7 +346,7 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
     case Active{}:
       None{}
 
-# eUPF knows a session exactly when it is past Creating.
+# The UPF knows a session exactly when it is past Creating.
 def SPhase.knows(p: SPhase, +known: Bool) -> Bool:
   match p:
     case Creating{guard, pti, accept}:
@@ -432,11 +432,11 @@ def Session.seq(s: Session) -> U32:
 def Session.phase(s: Session) -> SPhase:
   SVar.phase(Session.var(s))
 
-# eUPF knows a session once it has answered with its UP SEID, eight octets.
+# The UPF knows a session once it has answered with its UP SEID, eight octets.
 def Session.known(s: Session) -> Bool:
   Nat.is_eq(List.length(&2, U32, Session.up_seid(s)), 8n)
 
-# The PFCP association with eUPF, which the SMF starts: asked for (the
+# The PFCP association with the UPF, which the SMF starts: asked for (the
 # Association Setup Request's sequence number and how often it was sent
 # again), paused after too many tries, up, or up with a Heartbeat Request
 # unanswered (likewise).
@@ -717,7 +717,7 @@ def Sessions.owned(sessions: Tb.Table(Session), +ues: Tb.Table(Ue)) -> Bool:
     case (k, s) <> more:
       Bool.and(Tb.Table.has(Ue, Session.ue(s), ues), Sessions.owned(more, ues))
 
-# eUPF knows every session past Creating and none being created.
+# The UPF knows every session past Creating and none being created.
 def Sessions.known(sessions: Tb.Table(Session)) -> Bool:
   match sessions:
     case Nil{}:

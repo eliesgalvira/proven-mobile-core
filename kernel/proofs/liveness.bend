@@ -124,13 +124,13 @@ def L.amf.guard.expires(st, entropy, k, u, g, et, eg):
 # from live keys and never answers NG Setup; every context it puts or rephases
 # is registered or guarded; every session it puts belongs to a context, with an
 # Accept within the packet-filter bound if it is being created, and every
-# session it puts or changes is known to eUPF exactly when past Creating, the
+# session it puts or changes is known to the UPF exactly when past Creating, the
 # changes relying on the sessions of the state before the step being so. A UE
 # that is gone holds none of these, so nothing is built from it
 # (amf.release.forgets_ue), no session outlives its context
 # (amf.sessions.owned), no context is left Created (amf.contexts.guarded), no
 # session holds an Accept beyond the bound (smf.packet_filters.capacity_reject)
-# and eUPF knows the sessions past Creating (smf.sessions.known).
+# and the UPF knows the sessions past Creating (smf.sessions.known).
 
 def Lv.owner(+x: U32, ss: Tb.Table(S.Session)) -> Bool:
   match ss:
@@ -167,11 +167,11 @@ def Lv.acts(+st: S.State, as: List<&2, N.Act>) -> Bool:
     case +a <> more:
       Bool.and(Lv.act(st, a), Lv.acts(st, more))
 
-# A session's variable part agrees with eUPF.
+# A session's variable part agrees with the UPF.
 def Lv.var_ok(+v: S.SVar) -> Bool:
   S.SPhase.knows(S.SVar.phase(v), Nat.is_eq(List.length(&2, U32, S.SVar.up_seid(v)), 8n))
 
-# A change of a session agrees with eUPF, given the sessions of st do.
+# A change of a session agrees with the UPF, given the sessions of st do.
 def Lv.revar_ok(+st: S.State, +v: S.SVar) -> Bool:
   Bool.and(Gsm.Gsm.phase_bounded(S.SVar.phase(v)), Bool.or(Lv.var_ok(v), Bool.not(S.Sessions.known(S.State.sessions(st)))))
 
@@ -490,7 +490,7 @@ def Lv.number(+st: S.State, +rows: Tb.Table(S.Session), +seq: U32, +e: {Lv.srows
     case (+key, +t) <> +more:
       Lv.cons(st, N.Pfcp{Some{S.Session.ue(t)}, Up.N4.delete(S.Session.up_seid(t), seq)}, Up.N4.number(more, U32.add(seq, 1)), Lv.owner_live(st, S.Session.ue(t), P.Bool.and_true_l(Lv.owner(S.Session.ue(t), S.State.sessions(st)), Lv.srows(more, S.State.sessions(st)), e)), Lv.number(st, more, U32.add(seq, 1), P.Bool.and_true_r(Lv.owner(S.Session.ue(t), S.State.sessions(st)), Lv.srows(more, S.State.sessions(st)), e)))
 
-# Session Deletions at eUPF are built from sessions of the state.
+# Session Deletions at the UPF are built from sessions of the state.
 def Lv.dels(+st: S.State, +rows: Tb.Table(S.Session), +seq: U32, +e: {Lv.srows(rows, S.State.sessions(st)) == True{} : Bool}) -> {Lv.acts(st, Up.N4.deletions(rows, seq)) == True{} : Bool}:
   Lv.number(st, Up.N4.known_rows(rows), seq, Lv.known(rows, S.State.sessions(st), e))
 
@@ -506,7 +506,7 @@ def Lw.gsm_forget(+st: S.State, +vs: Tb.Table(S.Session), +seq: U32, +e: {Lv.sro
   Lv.leaf(st, S.Both{Gsm.Gsm.dels(vs), S.BumpSeq{Up.N4.deletion_count(vs)}}, Up.N4.deletions(vs, seq), Lv.dels(st, vs, seq, e), P.Bool.and_intro(Lv.free(st, Gsm.Gsm.dels(vs)), True{}, Lv.dels_free(st, vs), {==}))
 
 # A row a session search finds is a session of the table: its UE owns a
-# session, and it agrees with eUPF when every session does.
+# session, and it agrees with the UPF when every session does.
 def Lv.found(m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +ss: Tb.Table(S.Session)) -> Bool:
   match m:
     case None{}:
@@ -549,7 +549,7 @@ def Lv.pick(+key: U32, +t: S.Session, +later: Maybe<&2, Sigma<&2, &2, U32, _ => 
     case False{}:
       Lv.found_cons(later, key, t, more, e)
 
-# The found row agrees with eUPF when every session does.
+# The found row agrees with the UPF when every session does.
 def Lv.found_known(+m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +ss: Tb.Table(S.Session), +skey: U32, +s: S.Session, +em: {m == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, +h: {Lv.found(m, ss) == True{} : Bool}, +ek: {S.Sessions.known(ss) == True{} : Bool}) -> {S.SPhase.knows(S.Session.phase(s), S.Session.known(s)) == True{} : Bool}:
   sem = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, m, Some{(skey, s)}, em)
   hf : {Lv.found(Some{(skey, s)}, ss) == True{} : Bool} = (%em : {Lv.found(_, ss) == True{} : Bool}; h)
@@ -756,8 +756,8 @@ def Ck.allocate(+r: Maybe<&2, U32>, +v4v6: Bool, +dns: Bool, +cfg: S.Cfg, +ss: T
       Ck.grant(v4v6, dns, Gsm.Ip.alloc(cfg, ss), Gsm.Ip.teid_from(ss, Gsm.Ip.around(entropy, 20n)), Gsm.Ip.seid_from(ss, Gsm.Ip.around(entropy, 24n)), Ck.seid_from(ss, Gsm.Ip.around(entropy, 24n)))
 
 def Ck.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +up: Bool, +ss: Tb.Table(S.Session), +entropy: B.Bytes()) -> {Ck.ok(Gsm.Gsm.validate(cfg, psi, mm_opts, sm_opts, up, ss, entropy)) == True{} : Bool}:
-  +t = I.Opts.t1(9, sm_opts)
-  Ck.allocate(Gsm.Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.Gsm.pick(Gsm.Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.Gsm.pick(Gsm.Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.Gsm.pick(Gsm.Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.Gsm.pick(up, 38, Gsm.Gsm.pick(Gsm.Gsm.type_ok(t), 50, None{})))))), Gsm.Gsm.v4v6(t), Gsm.Gsm.dns_asked(I.Opts.find(123, sm_opts)), cfg, ss, entropy)
+  +t = I.Opts.t1(I.Iei.pdu_session_type(), sm_opts)
+  Ck.allocate(Gsm.Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.Gsm.pick(Gsm.Gsm.request_type_ok(I.Opts.t1(I.Iei.request_type(), mm_opts)), 31, Gsm.Gsm.pick(Gsm.Gsm.dnn_ok(cfg, I.Opts.find(I.Iei.dnn(), mm_opts)), 27, Gsm.Gsm.pick(Gsm.Gsm.slice_ok(cfg, I.Opts.find(I.Iei.s_nssai(), mm_opts)), 70, Gsm.Gsm.pick(up, 38, Gsm.Gsm.pick(Gsm.Gsm.type_ok(t), 50, None{})))))), Gsm.Gsm.v4v6(t), Gsm.Gsm.dns_asked(I.Opts.find(I.Iei.extended_pco(), sm_opts)), cfg, ss, entropy)
 
 def Lw.checked(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +c: Gsm.Check, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eck: {Ck.ok(c) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.checked(st, key, ue, ctx, cfg, psi, pti, c)) == True{} : Bool}:
   match c:
@@ -812,10 +812,10 @@ def Lw.ul_transport(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +fiel
   Lw.n1(st, key, ue, ctx, opts, entropy, I.Fields.lve2(fields), U32.is_eq(I.Fields.byte1(fields), 1), eh, ec)
 
 
-# eUPF's answers
+# The UPF's answers
 # --------------
 
-# A UP SEID eUPF answers with has eight octets (pfcp.fseid.decode_valid).
+# A UP SEID the UPF answers with has eight octets (pfcp.fseid.decode_valid).
 def Lv.seid_ok(m: Maybe<&2, B.Bytes()>) -> Bool:
   match m:
     case None{}:
@@ -842,7 +842,7 @@ def Lv.fseid_of(+m: Maybe<&2, T.Tlv>) -> {Lv.seid_ok(Up.N4.fseid_of(m)) == True{
       Lv.seid_read(T.Tlv.body(t), Pf.Fseid.read(T.Tlv.body(t)), {==})
 
 def Lv.up_seid(+msg: Pf.Msg) -> {Lv.seid_ok(Up.N4.up_seid(msg)) == True{} : Bool}:
-  Lv.fseid_of(T.Tlvs.find(57, Pf.Msg.ies(msg)))
+  Lv.fseid_of(T.Tlvs.find(Pf.Ie.fseid(), Pf.Msg.ies(msg)))
 
 # What a session search finds, split.
 def Lv.owns(+skey: U32, +s: S.Session, +ss: Tb.Table(S.Session), +e: {Lv.found(Some{(skey, s)}, ss) == True{} : Bool}) -> {Lv.owner(S.Session.ue(s), ss) == True{} : Bool}:
@@ -1152,7 +1152,7 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
         case S.Identifying{guard}:
           {==}
         case S.Authenticating{guard, +av, +resynced, +supi}:
-          Lw.response(st, key, ue, av, supi, I.Opts.find(45, opts), ek)
+          Lw.response(st, key, ue, av, supi, I.Opts.find(I.Iei.authentication_response_parameter(), opts), ek)
         case S.SecurityMode{guard, old, k_amf}:
           {==}
         case S.ContextSetup{guard, old, response, complete}:
@@ -1170,7 +1170,7 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
         case S.Identifying{guard}:
           {==}
         case S.Authenticating{guard, +av, +resynced, +supi}:
-          Lw.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(48, opts), entropy, ek)
+          Lw.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(I.Iei.authentication_failure_parameter(), opts), entropy, ek)
         case S.SecurityMode{guard, old, k_amf}:
           {==}
         case S.ContextSetup{guard, old, response, complete}:
@@ -1225,7 +1225,7 @@ def Lw.plain(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +r: Result
 def Lw.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: Sec.Nas.Ctx, +count: Sec.Nas.Count, +opts: List<&2, I.Ie>, +cfg: Maybe<&2, S.Cfg>, +m: Maybe<&2, U32>, +ek: {Lv.live(st, key) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.sm_complete(st, key, ue, k_amf, ctx, count, opts, cfg, m)) == True{} : Bool}:
   match cfg m:
     case Some{+c} Some{+tmsi}:
-      +reg = I.Bytes.or(I.Opts.find(113, opts), S.Ue.reg(ue))
+      +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
       +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.registration_accept(c, tmsi))
       +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), False{}, False{}}
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi)
@@ -1674,35 +1674,35 @@ def Lw.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st,
     case True{}:
       Lw.established(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), Lv.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
     case False{}:
-      Lw.pfcp_k6(st, msg, U32.is_eq(kind, 53))
+      Lw.pfcp_k6(st, msg, U32.is_eq(kind, Pf.Type.session_modification_response()))
 
 def Lw.pfcp_k4(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k4(st, msg, kind, ok)) == True{} : Bool}:
   match ok:
     case True{}:
       {==}
     case False{}:
-      Lw.pfcp_k5(st, msg, kind, U32.is_eq(kind, 51))
+      Lw.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 
 def Lw.pfcp_k3(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k3(st, msg, kind, ok)) == True{} : Bool}:
   match ok:
     case True{}:
       Lw.assoc_for(st, S.N4.link(S.State.n4(st)), msg)
     case False{}:
-      Lw.pfcp_k4(st, msg, kind, U32.is_eq(kind, 55))
+      Lw.pfcp_k4(st, msg, kind, U32.is_eq(kind, Pf.Type.session_deletion_response()))
 
 def Lw.pfcp_k2(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k2(st, msg, kind, ok)) == True{} : Bool}:
   match ok:
     case True{}:
       Lw.alive_for(st, S.N4.link(S.State.n4(st)), Pf.Msg.seq(msg))
     case False{}:
-      Lw.pfcp_k3(st, msg, kind, U32.is_eq(kind, 6))
+      Lw.pfcp_k3(st, msg, kind, U32.is_eq(kind, Pf.Type.association_setup_response()))
 
 def Lw.pfcp_k1(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k1(st, msg, kind, ok)) == True{} : Bool}:
   match ok:
     case True{}:
       {==}
     case False{}:
-      Lw.pfcp_k2(st, msg, kind, U32.is_eq(kind, 2))
+      Lw.pfcp_k2(st, msg, kind, U32.is_eq(kind, Pf.Type.heartbeat_response()))
 
 def Lw.pfcp_msg(+st: S.State, +r: B.Read(Pf.Msg)) -> {Lv.okf(st, Gsm.Gsm.pfcp_msg(st, r)) == True{} : Bool}:
   match r:
@@ -1851,7 +1851,7 @@ def Lw.beat_again(+st: S.State, +seq: U32, +resent: U32, +more: Bool) -> {Lv.okf
     case True{}:
       {==}
     case False{}:
-      Lv.also(st, Up.N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with eUPF lost"}], Lw.n4_start(st), {==})
+      Lv.also(st, Up.N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with the UPF lost"}], Lw.n4_start(st), {==})
 
 def Lw.n4_expired(+st: S.State, +link: S.Link) -> {Lv.okf(st, Up.N4.expired(st, link)) == True{} : Bool}:
   match link:
@@ -1898,7 +1898,7 @@ def Lw.d2(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies:
   PW.Walk.d2(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, stream, kind, code, ies, entropy, b, {==}, +r => Lv.ok_of(st, Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, r), Lw.initial_of_view(st, assoc, stream, entropy, r)), +r => Lw.uplink_of_view(st, assoc, stream, entropy, r), +r => Lv.ok_of(st, Gmm.Gmm.ics_response_of_view(st, assoc, r), Lw.ics_response_of_view(st, assoc, r)), +r => Lv.ok_of(st, Gmm.Gmm.release_request_of_view(st, assoc, r), Lw.release_request_of_view(st, assoc, r)), +r => Lv.ok_of(st, Gmm.Gmm.release_complete_of_view(st, assoc, r), Lw.release_complete_of_view(st, assoc, r)), +r => Lv.ok_of(st, Gsm.Gsm.setup_response_of_view(st, assoc, r), Lw.setup_response_of_view(st, assoc, r)))
 
 def Lv.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32) -> PW.Walk.Routed(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, stream, entropy):
-  +kind => +code => +ies => Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n))
+  +kind => +code => +ies => Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code))
 
 # Every procedure's outcome is ok (Lw).
 def Lv.walk(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: PW.Walk.Keep(Q, st), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), up: @assoc:U32 -> Q(K.Kernel.assoc_up(st, assoc)), down: @assoc:U32 -> Q(K.Kernel.assoc_down(st, assoc)), out: PW.Walk.Out(Q, o => {Lv.ok(st, o) == True{} : Bool}, st)) -> Q(K.Kernel.step(st, ev, entropy)):

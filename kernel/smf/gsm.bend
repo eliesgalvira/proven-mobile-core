@@ -18,7 +18,7 @@ import ./n4.bend as Up
 
 # PDU session establishment (TS 24.501 §6.4.1, TS 23.502 §4.3.2.2): one IPv4
 # session per PDU session identity on the configured DNN and slice, set up at
-# eUPF over N4 and at the gNB over N2, and released with its UE. Every outcome
+# the UPF over N4 and at the gNB over N2, and released with its UE. Every outcome
 # is a transaction and actions, like the UE procedures.
 
 # 5GSM messages
@@ -145,7 +145,7 @@ def Gsm.flow() -> G.QosFlowSetupRequestItem:
   G.QosFlowSetupRequestItem{Ap.IRoot{1}, G.QosFlowLevelQosParameters{G.QosCharacteristics_nonDynamic5QI{G.NonDynamic5QIDescriptor{Ap.IRoot{9}, None{}, None{}, None{}, None{}}}, G.AllocationAndRetentionPriority{7, Ap.Root{0}, Ap.Root{0}, None{}}, None{}, None{}, None{}, None{}}, None{}, None{}}
 
 def Gsm.transfer(cfg: S.Cfg, teid: U32) -> B.Bytes():
-  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write([N.Ngap.ie(130, Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])), N.Ngap.ie(139, Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])), N.Ngap.ie(134, Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(136, Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))], 0n, []))
+  Ap.pack(G.PDUSessionResourceSetupRequestTransfer.write([N.Ngap.ie(N.Id.pdu_session_aggregate_maximum_bit_rate(), Fr.Criticality.reject(), G.PDUSessionAggregateMaximumBitRate.write(G.PDUSessionAggregateMaximumBitRate{N.Ngap.gbps(), N.Ngap.gbps(), None{}}, 0n, [])), N.Ngap.ie(N.Id.ul_ngu_up_tnl_information(), Fr.Criticality.reject(), G.UPTransportLayerInformation.write(G.UPTransportLayerInformation_gTPTunnel{G.GTPTunnel{Ap.unpack(S.Cfg.upf_n3(cfg)), B.write_u32(teid, []), None{}}}, 0n, [])), N.Ngap.ie(N.Id.pdu_session_type(), Fr.Criticality.reject(), G.PDUSessionType.write(Ap.Root{0}, 0n, [])), N.Ngap.ie(N.Id.qos_flow_setup_request_list(), Fr.Criticality.reject(), G.QosFlowSetupRequestList.write([Gsm.flow()], 0n, []))], 0n, []))
 
 # Allocation
 # ----------
@@ -209,7 +209,7 @@ def Gsm.dels(victims: Tb.Table(S.Session)) -> S.Tx:
     case (k, t) <> more:
       S.Both{S.DelSession{k}, Gsm.dels(more)}
 
-# Sessions forgotten, those eUPF knows deleted there, from sequence number seq.
+# Sessions forgotten, those the UPF knows deleted there, from sequence number seq.
 def Gsm.forget(+victims: Tb.Table(S.Session), seq: U32) -> N.GOut():
   (S.Both{Gsm.dels(victims), S.BumpSeq{Up.N4.deletion_count(victims)}}, Up.N4.deletions(victims, seq))
 
@@ -234,7 +234,7 @@ def Gsm.to_ue_m(key: U32, psi: U32, sm: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut
     case Some{+ue}:
       Gsm.to_ue_ctx(key, ue, psi, sm, S.Phase.ctx(S.Ue.phase(ue)))
 
-# A session given up: its UE told with the 5GSM message given, eUPF told, the row gone.
+# A session given up: its UE told with the 5GSM message given, the UPF told, the row gone.
 def Gsm.give_up_m(+skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
   N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), Gsm.forget([(skey, s)], seq))
 
@@ -332,14 +332,14 @@ def Gsm.request_type_ok(m: Maybe<&2, U32>) -> Bool:
       False{}
 
 # TS 24.501 §6.4.1.4.3: the identity must be one of a session (1 to 15), the
-# request an initial one, the DNN and slice the configured ones, eUPF
+# request an initial one, the DNN and slice the configured ones, the UPF
 # associated, the type IPv4 (IPv4v6 is granted IPv4), and the pool must hold
 # a free address, and entropy a free TEID and SEID.
 def Gsm.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, up: Bool, +sessions: Tb.Table(S.Session), +entropy: B.Bytes()) -> Check:
-  +t = I.Opts.t1(9, sm_opts)
-  Gsm.allocate(Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(8, mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(37, mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(34, mm_opts)), 70, Gsm.pick(up, 38, Gsm.pick(Gsm.type_ok(t), 50, None{})))))), Gsm.v4v6(t), Gsm.dns_asked(I.Opts.find(123, sm_opts)), cfg, sessions, entropy)
+  +t = I.Opts.t1(I.Iei.pdu_session_type(), sm_opts)
+  Gsm.allocate(Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.pick(Gsm.request_type_ok(I.Opts.t1(I.Iei.request_type(), mm_opts)), 31, Gsm.pick(Gsm.dnn_ok(cfg, I.Opts.find(I.Iei.dnn(), mm_opts)), 27, Gsm.pick(Gsm.slice_ok(cfg, I.Opts.find(I.Iei.s_nssai(), mm_opts)), 70, Gsm.pick(up, 38, Gsm.pick(Gsm.type_ok(t), 50, None{})))))), Gsm.v4v6(t), Gsm.dns_asked(I.Opts.find(I.Iei.extended_pco(), sm_opts)), cfg, sessions, entropy)
 
-# The PFCP Session Establishment Request goes out; the session waits for eUPF
+# The PFCP Session Establishment Request goes out; the session waits for the UPF
 # with its Accept ready, under its guard, its local SEID.
 def Gsm.create(+st: S.State, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +teid: U32, +seid: U32, v4v6: Bool, dns: Bool) -> N.GOut():
   +seq = S.State.pfcp_seq(st)
@@ -388,7 +388,7 @@ def Gsm.n1(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, mm_opts: List<&2, 
 def Gsm.ul_transport(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +fields: List<&2, I.Field>, opts: List<&2, I.Ie>, entropy: B.Bytes()) -> N.GOut():
   Gsm.n1(st, key, ue, ctx, opts, entropy, I.Fields.lve2(fields), U32.is_eq(I.Fields.byte1(fields), 1))
 
-# eUPF's answers
+# The UPF's answers
 # --------------
 
 # Session Establishment accepted: the UP SEID is kept and the gNB is asked to
@@ -464,35 +464,35 @@ def Gsm.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
     case True{}:
       Gsm.established(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
     case False{}:
-      Gsm.pfcp_k6(st, msg, U32.is_eq(kind, 53))
+      Gsm.pfcp_k6(st, msg, U32.is_eq(kind, Pf.Type.session_modification_response()))
 
 def Gsm.pfcp_k4(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       (S.Keep{}, [])
     case False{}:
-      Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, 51))
+      Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 
 def Gsm.pfcp_k3(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Up.N4.assoc_response(st, msg)
     case False{}:
-      Gsm.pfcp_k4(st, msg, kind, U32.is_eq(kind, 55))
+      Gsm.pfcp_k4(st, msg, kind, U32.is_eq(kind, Pf.Type.session_deletion_response()))
 
 def Gsm.pfcp_k2(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Up.N4.alive(st, msg)
     case False{}:
-      Gsm.pfcp_k3(st, msg, kind, U32.is_eq(kind, 6))
+      Gsm.pfcp_k3(st, msg, kind, U32.is_eq(kind, Pf.Type.association_setup_response()))
 
 def Gsm.pfcp_k1(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Up.N4.heartbeat_answer(st, msg)
     case False{}:
-      Gsm.pfcp_k2(st, msg, kind, U32.is_eq(kind, 2))
+      Gsm.pfcp_k2(st, msg, kind, U32.is_eq(kind, Pf.Type.heartbeat_response()))
 
 def Gsm.pfcp_msg(st: S.State, r: B.Read(Pf.Msg)) -> N.GOut():
   match r:
@@ -500,9 +500,9 @@ def Gsm.pfcp_msg(st: S.State, r: B.Read(Pf.Msg)) -> N.GOut():
       N.Out.warn("PFCP: message not decodable")
     case Done{(+msg, rest)}:
       +kind = Pf.Msg.kind(msg)
-      Gsm.pfcp_k1(st, msg, kind, U32.is_eq(kind, 1))
+      Gsm.pfcp_k1(st, msg, kind, U32.is_eq(kind, Pf.Type.heartbeat_request()))
 
-# A PFCP datagram from eUPF.
+# A PFCP datagram from the UPF.
 def Gsm.pfcp_data(st: S.State, bytes: B.Bytes()) -> N.GOut():
   Gsm.pfcp_msg(st, Pf.Msg.read(bytes))
 
@@ -544,7 +544,7 @@ def Gsm.tunnel_of(r: Ap.Rd(G.PDUSessionResourceSetupResponseTransfer)) -> Maybe<
     case Done{(t, c)}:
       Gsm.tunnel(t)
 
-# eUPF is told the gNB's tunnel; the session's guard bounds the wait.
+# The UPF is told the gNB's tunnel; the session's guard bounds the wait.
 def Gsm.modify(st: S.State, +skey: U32, +s: S.Session, pti: U32, +seq: U32, tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> N.GOut():
   match tunnel:
     case None{}:

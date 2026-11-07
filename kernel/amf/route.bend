@@ -24,45 +24,45 @@ def Route.d6(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.
     case True{}:
       Gmm.Gmm.release_complete_of_view(st, assoc, V.UEContextReleaseComplete.view(ies))
     case False{}:
-      Route.d7(st, assoc, ies, N.Ngap.is_procedure(kind, code, 1n, 29n))
+      Route.d7(st, assoc, ies, N.Ngap.is_pdu_session_resource_setup_response(kind, code))
 
 def Route.d5(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.release_request_of_view(st, assoc, V.UEContextReleaseRequest.view(ies))
     case False{}:
-      Route.d6(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 1n, 41n))
+      Route.d6(st, assoc, kind, code, ies, N.Ngap.is_ue_context_release_complete(kind, code))
 
 def Route.d4(st: S.State, +assoc: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.ics_response_of_view(st, assoc, V.InitialContextSetupResponse.view(ies))
     case False{}:
-      Route.d5(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 0n, 42n))
+      Route.d5(st, assoc, kind, code, ies, N.Ngap.is_ue_context_release_request(kind, code))
 
 def Route.d3(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.uplink_of_view(st, assoc, stream, entropy, V.UplinkNASTransport.view(ies))
     case False{}:
-      Route.d4(st, assoc, kind, code, ies, N.Ngap.is_procedure(kind, code, 1n, 14n))
+      Route.d4(st, assoc, kind, code, ies, N.Ngap.is_initial_context_setup_response(kind, code))
 
 def Route.d2(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Gmm.Gmm.initial_of_view(st, assoc, stream, entropy, V.InitialUEMessage.view(ies))
     case False{}:
-      Route.d3(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 46n))
+      Route.d3(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_uplink_nas_transport(kind, code))
 
 def Route.d1(+st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes(), ok: Bool) -> N.Step():
   match ok:
     case True{}:
       N.NgSetup.of_view(st, assoc, V.NGSetupRequest.view(ies))
     case False{}:
-      N.Step.of(st, Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n)))
+      N.Step.of(st, Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)))
 
 def Route.dispatch(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, entropy: B.Bytes()) -> N.Step():
-  Route.d1(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 21n))
+  Route.d1(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_ng_setup(kind, code))
 
 def Route.of_ies(st: S.State, +assoc: U32, stream: U32, kind: Nat, code: Nat, entropy: B.Bytes(), r: Ap.Rd(List<&2, Fr.Ie>)) -> N.Step():
   match r:

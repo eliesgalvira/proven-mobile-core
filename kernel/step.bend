@@ -28,7 +28,7 @@ def Kernel.actions(o: N.Step()) -> List<&2, N.Act>:
 def Kernel.frames(o: N.Step()) -> List<&2, F.Action>:
   N.Acts.render(Kernel.actions(o))
 
-# Config: keep it, choose the PFCP recovery stamp, ask eUPF for an association.
+# Config: keep it, choose the PFCP recovery stamp, ask the UPF for an association.
 def Kernel.config(complete: Bool, st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes()) -> N.Step():
   match complete:
     case False{}:
@@ -45,7 +45,7 @@ def Kernel.assoc_up(st: S.State, assoc: U32) -> N.Step():
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       (S.State{config, subs, S.Assocs.add(assoc, assocs), ues, sessions, pfcp_seq, next_ue, n4}, [])
 
-# An association going down releases every UE it owned, their sessions at eUPF included.
+# An association going down releases every UE it owned, their sessions at the UPF included.
 def Kernel.assoc_down(st: S.State, +assoc: U32) -> N.Step():
   match st:
     case S.State{config, subs, assocs, ues, +sessions, +pfcp_seq, next_ue, n4}:

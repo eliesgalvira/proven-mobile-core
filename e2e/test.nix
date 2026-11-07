@@ -16,6 +16,9 @@ in
   nodes = {
     core = { lib, pkgs, ... }: {
       imports = [ (lan ip.core) ];
+      # The edge binds the core's address, so it starts once that is configured.
+      systemd.services.edge.after = [ "network-online.target" ];
+      systemd.services.edge.wants = [ "network-online.target" ];
       systemd.services.edge.serviceConfig.ExecStart =
         let
           config = lib.recursiveUpdate (lib.importTOML ../edge/config.example.toml) {
@@ -62,7 +65,7 @@ in
 
     start_all()
     step("start eUPF", upf, "systemctl start eupf && journalctl -u eupf -q --grep 'Starting PFCP connection'", 120)
-    step("start core", core, "systemctl start edge && journalctl -u edge -q --grep 'association with eUPF up'", 120)
+    step("start core", core, "systemctl start edge && journalctl -u edge -q --grep 'association with the UPF up'", 120)
     step("start gnb", ran, "systemctl start gnb && journalctl -u gnb -q --grep 'NG Setup procedure is successful'", 60)
     step("register and establish", ran, "systemctl start ue && ip -4 -br addr show uesimtun0 | grep -q ' 10[.]45[.]'", 90)
     print(step("ping through eUPF", ran, "ping -c 4 -i 0.5 -W 2 -I uesimtun0 ${ip.dn}", 30))

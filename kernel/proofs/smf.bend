@@ -342,7 +342,7 @@ def L.smf.epco.accept_valid(cfg, wanted, e):
     case False{}:
       {==}
 
-# eUPF knows the sessions past Creating
+# The UPF knows the sessions past Creating
 # -------------------------------------
 
 def Kw.keep(+k: U32, +t: S.Session, +rest: Tb.Table(S.Session), b: Bool, +ht: {S.SPhase.knows(S.Session.phase(t), S.Session.known(t)) == True{} : Bool}, +hr: {S.Sessions.known(rest) == True{} : Bool}) -> {S.Sessions.known(Tb.Table.keep(S.Session, k, t, rest, b)) == True{} : Bool}:
@@ -378,7 +378,7 @@ def Kw.revar(+key: U32, +v: S.SVar, ss: Tb.Table(S.Session), +e: {S.Sessions.kno
       +t2 = S.Session.revar_if(t, v, U32.is_eq(k, key))
       P.Bool.and_intro(S.SPhase.knows(S.Session.phase(t2), S.Session.known(t2)), S.Sessions.known(S.Sessions.revar(key, v, more)), Kw.revar_if(U32.is_eq(k, key), t, v, P.Bool.and_true_l(x, S.Sessions.known(more), e), hv), Kw.revar(key, v, more, P.Bool.and_true_r(x, S.Sessions.known(more), e), hv))
 
-# The step starts from sessions eUPF knows, so every change agrees with it.
+# The step starts from sessions the UPF knows, so every change agrees with it.
 def Kw.pre(+st0: S.State) -> Bool:
   S.Sessions.known(S.State.sessions(st0))
 
@@ -418,7 +418,7 @@ def L.smf.sessions.known(st, ev, entropy, e):
 # -------------------------------------
 # An outcome releases a session when its transaction, applied to any state,
 # leaves no row under the session's key, and its actions delete the session at
-# eUPF whenever eUPF knows it. A failure's outcome joins the release of the
+# the UPF whenever the UPF knows it. A failure's outcome joins the release of the
 # session with steps that put no session.
 
 def Rel.Spec(+o: N.GOut(), +skey: U32, +s: S.Session) -> Type:
@@ -467,7 +467,7 @@ def Rel.by(+r: N.Step(), +st: S.State, +o: N.GOut(), +skey: U32, +s: S.Session, 
 # ------------------------------
 
 
-# The Session Deletion of a session eUPF knows.
+# The Session Deletion of a session the UPF knows.
 def Del.one(+skey: U32, +s: S.Session, +seq: U32, k: {S.Session.known(s) == True{} : Bool}) -> Up.N4.deleted(s, Up.N4.deletions([(skey, s)], seq)):
   sk = Equal.sym(Bool, S.Session.known(s), True{}, k)
   %sk : Up.N4.deleted(s, Up.N4.number(Tb.Table.keep(S.Session, skey, s, [], _), seq))
@@ -694,22 +694,22 @@ def Kn.guarded(+p: S.SPhase, np: {p == S.Active{} : S.SPhase} -> Empty) -> {Tb.T
     case S.Active{}:
       Empty.absurd({Tb.Table.present(S.Guard, S.SPhase.guard(S.Active{})) == True{} : Bool}, np({==}))
 
-# A session past Creating is known to eUPF.
+# A session past Creating is known to the UPF.
 def Kn.past(+s: S.Session, +p: S.SPhase, +ep: {S.Session.phase(s) == p : S.SPhase}, +k: {S.SPhase.knows(S.Session.phase(s), S.Session.known(s)) == True{} : Bool}) -> {S.SPhase.knows(p, S.Session.known(s)) == True{} : Bool}:
   %ep : {S.SPhase.knows(_, S.Session.known(s)) == True{} : Bool}
   k
 
-# The release alone, of a session eUPF never knew.
+# The release alone, of a session the UPF never knew.
 def Fail.gone(+r: N.Step(), +skey: U32, +s: S.Session, h: Rel.Law(r, skey, s)) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(r))) == None{} : Maybe<&2, S.Session>}:
   (g, d) = h
   g
 
-# The deletion of a session eUPF knows.
+# The deletion of a session the UPF knows.
 def Fail.del(+r: N.Step(), +skey: U32, +s: S.Session, h: Rel.Law(r, skey, s), +k: {S.Session.known(s) == True{} : Bool}) -> Up.N4.deleted(s, K.Kernel.actions(r)):
   (g, d) = h
   d(k)
 
-# The release, with the deletion of a session eUPF knows.
+# The release, with the deletion of a session the UPF knows.
 def Fail.known(+r: N.Step(), +skey: U32, +s: S.Session, h: Rel.Law(r, skey, s), +k: {S.Session.known(s) == True{} : Bool}) -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(r))) == None{} : Maybe<&2, S.Session>} & Up.N4.deleted(s, K.Kernel.actions(r)):
   (g, d) = h
   (g, d(k))

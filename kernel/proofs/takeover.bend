@@ -1157,7 +1157,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
         case S.Identifying{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Authenticating{guard, +av, resynced, +supi}:
-          W.response(st, key, ue, av, supi, I.Opts.find(45, opts), k, u, eu, h2)
+          W.response(st, key, ue, av, supi, I.Opts.find(I.Iei.authentication_response_parameter(), opts), k, u, eu, h2)
         case S.SecurityMode{guard, old, k_amf}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.ContextSetup{guard, old, response, complete}:
@@ -1175,7 +1175,7 @@ def W.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.
         case S.Identifying{guard}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.Authenticating{guard, +av, +resynced, +supi}:
-          W.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(48, opts), entropy, k, u, eu, h2)
+          W.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(I.Iei.authentication_failure_parameter(), opts), entropy, k, u, eu, h2)
         case S.SecurityMode{guard, old, k_amf}:
           Tk.kept_get(k, u, S.State.ues(st), eu)
         case S.ContextSetup{guard, old, response, complete}:
@@ -1229,7 +1229,7 @@ def W.plain(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +r: Result<
 def W.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: Sec.Nas.Ctx, +count: Sec.Nas.Count, +opts: List<&2, I.Ie>, +cfg: Maybe<&2, S.Cfg>, +m: Maybe<&2, U32>, +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +h2: {S.Row.conflicts(key, ue, k, u) == False{} : Bool}, +hm: {Tk.free(S.State.ues(st), m) == True{} : Bool}) -> Tk.Ok(k, u, S.State.ues(st), Gmm.Gmm.sm_complete(st, key, ue, k_amf, ctx, count, opts, cfg, m)):
   match cfg m:
     case Some{+c} Some{+tmsi}:
-      +reg = I.Bytes.or(I.Opts.find(113, opts), S.Ue.reg(ue))
+      +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
       +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.registration_accept(c, tmsi))
       +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), False{}, False{}}
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi)
@@ -1593,4 +1593,4 @@ def Tk.out(+st: S.State, +o: N.GOut(), +k: U32, +u: S.Ue, w: Tk.Ok(k, u, S.State
 
 def L.amf.takeover.authenticated(st, entropy, assoc, stream, len, bytes, k, u, e, eu, ea, eg):
   +x = S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
-  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => Tk.kept_get(k, u, S.State.ues(st), eu), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_procedure(kind, code, 0n, 15n), k, u, eu, e, ea)))
+  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => Tk.kept_get(k, u, S.State.ues(st), eu), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))

@@ -6,6 +6,34 @@ import ../bytes.bend as B
 # reproduces the input byte for byte. Typed views of the content are
 # separate functions (kernel/nas/mm.bend).
 
+# The IEIs the kernel looks for (TS 24.501 §8.2, §8.3)
+def Iei.request_type() -> U32:
+  8
+
+def Iei.pdu_session_type() -> U32:
+  9
+
+def Iei.s_nssai() -> U32:
+  34
+
+def Iei.dnn() -> U32:
+  37
+
+def Iei.authentication_response_parameter() -> U32:
+  45
+
+def Iei.ue_security_capability() -> U32:
+  46
+
+def Iei.authentication_failure_parameter() -> U32:
+  48
+
+def Iei.nas_message_container() -> U32:
+  113
+
+def Iei.extended_pco() -> U32:
+  123
+
 # A length prefix and the bytes it covers.
 type LenBody is Data:
   LenBody{len: U32, body: B.Bytes()}

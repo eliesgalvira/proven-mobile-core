@@ -79,7 +79,7 @@ def Gmm.caps_of(r: Result<&2, &2, B.Err, Mm.Mm>) -> B.Bytes():
     case Fail{e}:
       []
     case Done{Mm.Mm{mt, fields, opts}}:
-      I.Bytes.or(I.Opts.find(46, opts), [])
+      I.Bytes.or(I.Opts.find(I.Iei.ue_security_capability(), opts), [])
 
 def Gmm.caps(ue: S.Ue) -> B.Bytes():
   Gmm.caps_of(Mm.Mm.read(S.Ue.reg(ue)))
@@ -93,7 +93,7 @@ def Gmm.dl(key: U32, +ue: S.Ue, nas: B.Bytes()) -> N.Act:
 # Forgetting contexts
 # -------------------
 
-# A context forgotten, its sessions released at eUPF.
+# A context forgotten, its sessions released at the UPF.
 def Gmm.forget(+st: S.State, +key: U32) -> N.GOut():
   +gone = S.Sessions.of_ue(key, S.State.sessions(st))
   (S.Both{S.Del{key}, S.BumpSeq{Up.N4.deletion_count(gone)}}, Up.N4.deletions(gone, S.State.pfcp_seq(st)))
@@ -108,7 +108,7 @@ def Gmm.evict(victims: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session), +seq: U32
 
 # The one write of a context's identity: it takes its place, and every live
 # context it conflicts with (the same SUPI, 5G-TMSI or RAN id on the
-# association) goes with its sessions, which are deleted at eUPF. A SUPI enters a context
+# association) goes with its sessions, which are deleted at the UPF. A SUPI enters a context
 # only once 5G-AKA has verified it (Gmm.secure) and a 5G-TMSI is drawn free
 # (Gmm.tmsi), so another gNB's UE is taken over only after authentication.
 def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
@@ -385,9 +385,9 @@ def Gmm.identity_answer(st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), r: 
 def Gmm.phase(st: S.State, key: U32, ue: S.Ue, entropy: B.Bytes(), mt: Mm.Mm.Type, fields: List<&2, I.Field>, opts: List<&2, I.Ie>, p: S.Phase) -> N.GOut():
   match mt p:
     case Mm.AuthenticationResponse{} S.Authenticating{guard, av, resynced, supi}:
-      Gmm.response(st, key, ue, av, supi, I.Opts.find(45, opts))
+      Gmm.response(st, key, ue, av, supi, I.Opts.find(I.Iei.authentication_response_parameter(), opts))
     case Mm.AuthenticationFailure{} S.Authenticating{guard, av, resynced, supi}:
-      Gmm.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(48, opts), entropy)
+      Gmm.failure(st, key, ue, av, resynced, supi, I.Fields.byte1(fields), I.Opts.find(I.Iei.authentication_failure_parameter(), opts), entropy)
     case Mm.IdentityResponse{} S.Identifying{guard}:
       Gmm.identity_answer(st, key, ue, entropy, Mi.MobileId.read(I.Fields.lve1(fields)))
     case _ _:
@@ -419,7 +419,7 @@ def Gmm.tmsi(+ues: Tb.Table(S.Ue), words: B.Bytes()) -> Maybe<&2, U32>:
 def Gmm.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, k_amf: B.Bytes(), ctx: Sec.Nas.Ctx, count: Sec.Nas.Count, opts: List<&2, I.Ie>, cfg: Maybe<&2, S.Cfg>, m: Maybe<&2, U32>) -> N.GOut():
   match cfg m:
     case Some{+c} Some{+tmsi}:
-      +reg = I.Bytes.or(I.Opts.find(113, opts), S.Ue.reg(ue))
+      +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
       +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.registration_accept(c, tmsi))
       +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), False{}, False{}}, Sec.Nas.Protected.msg(p)), reg), tmsi)
       N.Out.also(Gmm.place(st, key, ue2), [N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, Gmm.caps(ue2), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(p)}, N.TimerStart{Some{key}, key, Gmm.guard_ms()}])

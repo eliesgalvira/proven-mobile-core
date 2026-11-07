@@ -2,11 +2,119 @@ import Base
 import ./bytes.bend as B
 import ./tlv.bend as T
 
-# PFCP (TS 29.244), the subset the milestone's SMF speaks to eUPF: the message
+# PFCP (TS 29.244), the subset the milestone's SMF speaks to the UPF: the message
 # header over TLV information elements (`tlv.bend`), bytes in and bytes out. A
 # grouped IE's body is a list of IEs; the typed views at the end decode the IEs
 # the SMF sends and receives, each over the whole body of its IE. Anything else
 # stays raw.
+
+# Message types and IE types (TS 29.244 §7.2, §8.1.2)
+# ----------------------------------------------------
+
+def Type.heartbeat_request() -> U32:
+  1
+
+def Type.heartbeat_response() -> U32:
+  2
+
+def Type.association_setup_request() -> U32:
+  5
+
+def Type.association_setup_response() -> U32:
+  6
+
+def Type.session_establishment_request() -> U32:
+  50
+
+def Type.session_establishment_response() -> U32:
+  51
+
+def Type.session_modification_request() -> U32:
+  52
+
+def Type.session_modification_response() -> U32:
+  53
+
+def Type.session_deletion_request() -> U32:
+  54
+
+def Type.session_deletion_response() -> U32:
+  55
+
+def Ie.create_pdr() -> U32:
+  1
+
+def Ie.pdi() -> U32:
+  2
+
+def Ie.create_far() -> U32:
+  3
+
+def Ie.forwarding() -> U32:
+  4
+
+def Ie.create_qer() -> U32:
+  7
+
+def Ie.update_far() -> U32:
+  10
+
+def Ie.update_forwarding() -> U32:
+  11
+
+def Ie.cause() -> U32:
+  19
+
+def Ie.source_interface() -> U32:
+  20
+
+def Ie.fteid() -> U32:
+  21
+
+def Ie.gate_status() -> U32:
+  25
+
+def Ie.mbr() -> U32:
+  26
+
+def Ie.precedence() -> U32:
+  29
+
+def Ie.destination_interface() -> U32:
+  42
+
+def Ie.apply_action() -> U32:
+  44
+
+def Ie.pdr_id() -> U32:
+  56
+
+def Ie.fseid() -> U32:
+  57
+
+def Ie.node_id() -> U32:
+  60
+
+def Ie.outer_header_creation() -> U32:
+  84
+
+def Ie.ue_ip() -> U32:
+  93
+
+def Ie.outer_header_removal() -> U32:
+  95
+
+def Ie.recovery() -> U32:
+  96
+
+def Ie.far_id() -> U32:
+  108
+
+def Ie.qer_id() -> U32:
+  109
+
+def Ie.qfi() -> U32:
+  124
 
 # Messages
 # --------

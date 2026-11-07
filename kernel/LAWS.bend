@@ -981,7 +981,7 @@ law pfcp.ie.suffix:
   & (@kind: U32 -> @len: U32 -> @tail: B.Bytes() -> {T.Tlv.header(bs) == Done{(T.Hdr{kind, len}, tail)} : B.Read(T.Hdr)} -> {B.all_bytes(bs) == True{} : Bool} -> {Nat.is_lt(List.length(&2, U32, tail), U32.to_nat(len)) == True{} : Bool} -> {T.Tlv.read(bs) == Fail{B.Short{}} : B.Read(T.Tlv)})
 
 # GHSA-3mxx-vq7h-x8ff: an F-TEID or an F-SEID (the one the kernel reads from
-# eUPF) decodes only when its body is exactly what its flags call for: what
+# the UPF) decodes only when its body is exactly what its flags call for: what
 # decodes is valid (each address of its length, an F-TEID naming at least one,
 # its CH form with no TEID and no address by construction, an F-SEID's SEID of
 # eight octets) and re-encodes to the body it was read from.
@@ -1278,7 +1278,7 @@ law amf.takeover.authenticated:
 
 # GHSA-cfp8-93x2-6h9x: a context whose guard fires at the retry limit moves to
 # Releasing with a new guard; a Releasing context whose guard fires is gone with
-# its sessions, which are deleted at eUPF and whose guards are stopped. A
+# its sessions, which are deleted at the UPF and whose guards are stopped. A
 # context's guard timer is its key.
 law amf.guard.expires:
   for +st: St.State
@@ -1428,10 +1428,10 @@ law smf.establish.reject_leaves_state:
 
 # GHSA-855g-699w-9w28: whichever later step fails, no session entry remains
 # for the PDU session, so no address, TEID or SEID is held for it, and once
-# the session is past Creating, so eUPF knows it (smf.sessions.known), a PFCP
-# Session Deletion Request for it goes out: eUPF refuses the Session
+# the session is past Creating, so the UPF knows it (smf.sessions.known), a PFCP
+# Session Deletion Request for it goes out: the UPF refuses the Session
 # Establishment; the guard, timer the session's key, expires while it is being
-# created, set up or modified; eUPF refuses the Session Modification; or the gNB lists the
+# created, set up or modified; the UPF refuses the Session Modification; or the gNB lists the
 # session among those that failed to set up, whatever else its response names.
 law smf.establish.failure_releases:
   for +st: St.State
@@ -1473,7 +1473,7 @@ law smf.establish.failure_releases:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
 
-# eUPF knows every session past Creating, by the UP SEID it answered with,
+# The UPF knows every session past Creating, by the UP SEID it answered with,
 # and none being created, in the initial state and after every step.
 law smf.sessions.known:
   for +st: St.State
@@ -1530,7 +1530,7 @@ law smf.modification.rejected:
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
   & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), k, St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}] : List<&2, Ng.Act>}
 
-# GHSA-g97g-v8mh-wg24: the Accept every session holds while eUPF creates it,
+# GHSA-g97g-v8mh-wg24: the Accept every session holds while the UPF creates it,
 # its QoS rules read as the UE reads them, carries at most sixteen packet
 # filters, in the initial state and after every step; modification, the only
 # way to add filters, is rejected (smf.modification.rejected).
