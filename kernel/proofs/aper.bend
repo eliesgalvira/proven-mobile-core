@@ -1001,6 +1001,32 @@ def UBitStr.dv(rl: Ap.Rd(Nat), +c0: Ap.Cur, +erl: {Ap.Len.read(c0) == rl : Ap.Rd
 def L.aper.ubitstr.decode_valid(c, bs, c2, e):
   UBitStr.dv(Ap.Len.read(c), c, {==}, bs, c2, e)
 
+def L.aper.wbitstr.roundtrip(lo, diff, bs, rem, rest, v):
+  sv = Equal.sym(Bool, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), True{}, P.Bool.and_true_l(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), Ap.UBitStr.valid(bs), v))
+  ur = Equal.sym(Ap.Rd(Ap.Bits()), Ap.UBitStr.read(Ap.Cur{rem, Ap.UBitStr.write(bs, rem, rest)}), Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})}, L.aper.ubitstr.roundtrip(bs, rem, rest, P.Bool.and_true_r(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs)), Ap.UBitStr.valid(bs), v)))
+  %ur : {Ap.WBitStr.inside(lo, diff, _) == Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+  %sv : {Ap.XBits.of(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest}, _) == Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+  {==}
+
+def WBitStr.dv.ok(+lo: Nat, +diff: Nat, +bs0: Ap.Bits(), +c: Ap.Cur, ok: Bool, eok: {Ap.Size.valid(lo, diff, List.length(&2, Bool, bs0)) == ok : Bool}, +bs: Ap.Bits(), +c2: Ap.Cur, +e: {Ap.XBits.of(bs0, c, ok) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}, uv: {Ap.UBitStr.valid(bs0) == True{} : Bool}) -> {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}:
+  match ok:
+    case False{}:
+      Rd.absurd(Ap.Bits(), {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}, B.Invalid{2}, bs, c2, e)
+    case True{}:
+      ev = Equal.cong(Ap.Rd(Ap.Bits()), Ap.Bits(), y => Rd.value(Ap.Bits(), y, bs), Done{(bs0, c)}, Done{(bs, c2)}, e)
+      %ev : {Ap.WBitStr.valid(lo, diff, _) == True{} : Bool}
+      P.Bool.and_intro(Ap.Size.valid(lo, diff, List.length(&2, Bool, bs0)), Ap.UBitStr.valid(bs0), eok, uv)
+
+def WBitStr.dv(+lo: Nat, +diff: Nat, +c0: Ap.Cur, ru: Ap.Rd(Ap.Bits()), +eru: {Ap.UBitStr.read(c0) == ru : Ap.Rd(Ap.Bits())}, +bs: Ap.Bits(), +c2: Ap.Cur, +e: {Ap.WBitStr.inside(lo, diff, ru) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}) -> {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}:
+  match ru:
+    case Fail{err}:
+      Rd.absurd(Ap.Bits(), {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}, err, bs, c2, e)
+    case Done{(+bs0, +c)}:
+      WBitStr.dv.ok(lo, diff, bs0, c, Ap.Size.valid(lo, diff, List.length(&2, Bool, bs0)), {==}, bs, c2, e, L.aper.ubitstr.decode_valid(c0, bs0, c, eru))
+
+def L.aper.wbitstr.decode_valid(lo, diff, c, bs, c2, e):
+  WBitStr.dv(lo, diff, c, Ap.UBitStr.read(c), {==}, bs, c2, e)
+
 def L.aper.open.roundtrip(bs, rem, rest, v):
   lr = Equal.sym(Ap.Rd(Nat), Ap.Len.read(Ap.Cur{rem, Ap.Len.write(List.length(&2, U32, bs), rem, Ap.Octets.write(bs, 0n, rest))}), Done{(List.length(&2, U32, bs), Ap.Cur{0n, Ap.Octets.write(bs, 0n, rest)})}, L.aper.len.roundtrip(List.length(&2, U32, bs), rem, Ap.Octets.write(bs, 0n, rest), P.Bool.and_true_l(Ap.Len.valid(List.length(&2, U32, bs)), B.all_bytes(bs), v)))
   %lr : {Ap.Open.count(_) == Done{(bs, Ap.Cur{0n, rest})} : Ap.Rd(B.Bytes())}

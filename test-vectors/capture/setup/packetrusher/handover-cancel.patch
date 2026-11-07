@@ -1,0 +1,156 @@
+Adds the control action `ng-handover-cancel` to PacketRusher v2.0.0 (Apache-2.0):
+the source gNB sends Handover Required as for `ng-handover`, then answers the
+Handover Command with a Handover Cancel (TS 38.413 8.4.6) instead of executing it.
+
+diff --git a/cmd/packetrusher.go b/cmd/packetrusher.go
+index fbc6068..a32f894 100644
+--- a/cmd/packetrusher.go
++++ b/cmd/packetrusher.go
+@@ -181,7 +181,7 @@ func newApp() *cli.App {
+ 					"Example for handing UE 1 over to another gNB: control --socket /tmp/pr.sock --ue 1 --action xn-handover --target 000009\n",
+ 				Flags: []cli.Flag{
+ 					&cli.PathFlag{Name: "socket", Required: true, Usage: "The --control-socket of the multi-ue test."},
+-					&cli.StringFlag{Name: "action", Value: "inspect", Usage: "One of inspect, wait, register, deregister, idle, reconnect, xn-handover, ng-handover."},
++					&cli.StringFlag{Name: "action", Value: "inspect", Usage: "One of inspect, wait, register, deregister, idle, reconnect, xn-handover, ng-handover, ng-handover-cancel."},
+ 					&cli.IntFlag{Name: "ue", Usage: "The UE, starting from 1. Only inspect can omit it, to report all the UEs."},
+ 					&cli.StringFlag{Name: "target", Usage: "The ID of the gNB to hand the UE over to."},
+ 					&cli.DurationFlag{Name: "timeout", Value: 30 * time.Second, Usage: "The time given to the action to complete."},
+diff --git a/internal/common/tools/tools.go b/internal/common/tools/tools.go
+index e5dbf5d..223dd11 100644
+--- a/internal/common/tools/tools.go
++++ b/internal/common/tools/tools.go
+@@ -228,14 +228,16 @@ func SimulateSingleUE(simConfig UESimulationConfig, wg *sync.WaitGroup) *UESimul
+ 					pending = append(pending, procedures.UeTesterMessage{Type: procedures.Idle})
+ 				case action == "reconnect" && status.State == "idle" && !status.Connected:
+ 					pending = append(pending, procedures.UeTesterMessage{Type: procedures.ServiceRequest})
+-				case (action == "xn-handover" || action == "ng-handover") && (target == nil || target == source):
++				case (action == "xn-handover" || action == "ng-handover" || action == "ng-handover-cancel") && (target == nil || target == source):
+ 					err = fmt.Errorf("target gNB %q is unknown or already serves the UE", request.Target)
+-				case (action == "xn-handover" || action == "ng-handover") && len(status.PduSessions) == 0:
++				case (action == "xn-handover" || action == "ng-handover" || action == "ng-handover-cancel") && len(status.PduSessions) == 0:
+ 					err = errors.New("a UE without PDU session cannot be handed over")
+ 				case action == "xn-handover" && status.Ready:
+ 					trigger.TriggerXnHandover(source, target, int64(simConfig.UeId))
+ 				case action == "ng-handover" && status.Ready:
+ 					trigger.TriggerNgapHandover(source, target, int64(simConfig.UeId))
++				case action == "ng-handover-cancel" && status.Ready:
++					trigger.TriggerNgapHandoverCancel(source, target, int64(simConfig.UeId))
+ 				default:
+ 					err = fmt.Errorf("cannot %s a UE that is %s (ready: %t)", action, status.State, status.Ready)
+ 				}
+diff --git a/internal/control/control.go b/internal/control/control.go
+index 6475541..b70e960 100644
+--- a/internal/control/control.go
++++ b/internal/control/control.go
+@@ -48,7 +48,7 @@ func (request Request) Validate() error {
+ 	handover := false
+ 	switch request.Action {
+ 	case "inspect", "wait", "register", "deregister", "idle", "reconnect":
+-	case "xn-handover", "ng-handover":
++	case "xn-handover", "ng-handover", "ng-handover-cancel":
+ 		handover = true
+ 	default:
+ 		return fmt.Errorf("unknown action %q", request.Action)
+diff --git a/internal/control_test_engine/gnb/ngap/dispatcher.go b/internal/control_test_engine/gnb/ngap/dispatcher.go
+index c2721b7..8e96a11 100644
+--- a/internal/control_test_engine/gnb/ngap/dispatcher.go
++++ b/internal/control_test_engine/gnb/ngap/dispatcher.go
+@@ -110,6 +110,8 @@ func handleMessage(amf *context.GNBAmf, gnb *context.GNBContext, msg ngapmsg.Mes
+ 		HandlerPathSwitchRequestAcknowledge(gnb, value)
+ 	case *ngapmsg.HandoverCommand:
+ 		HandlerHandoverCommand(amf, gnb, value)
++	case *ngapmsg.HandoverCancelAcknowledge:
++		log.Info("[GNB][NGAP] Handover Cancel Acknowledge for AMF UE NGAP ID ", value.AMFUENGAPID.Value)
+ 	case *ngapmsg.NGSetupFailure:
+ 		HandlerNgSetupFailure(amf, gnb, value)
+ 	default:
+diff --git a/internal/control_test_engine/gnb/ngap/handler.go b/internal/control_test_engine/gnb/ngap/handler.go
+index aea002c..697d954 100644
+--- a/internal/control_test_engine/gnb/ngap/handler.go
++++ b/internal/control_test_engine/gnb/ngap/handler.go
+@@ -1169,6 +1169,11 @@ func HandlerHandoverCommand(amf *context.GNBAmf, gnb *context.GNBContext, messag
+ 		// TODO SEND ERROR INDICATION
+ 		return
+ 	}
++	if trigger.CancelsHandover(ue) {
++		ue.SetHandoverGnodeB(nil)
++		trigger.SendHandoverCancel(ue)
++		return
++	}
+ 
+ 	newGnbRx := make(chan context.UEMessage, 1)
+ 	newGnbTx := make(chan context.UEMessage, 1)
+diff --git a/internal/control_test_engine/gnb/ngap/message/ngap_control/ue_mobility_management/handover-cancel.go b/internal/control_test_engine/gnb/ngap/message/ngap_control/ue_mobility_management/handover-cancel.go
+new file mode 100644
+index 0000000..817b9d8
+--- /dev/null
++++ b/internal/control_test_engine/gnb/ngap/message/ngap_control/ue_mobility_management/handover-cancel.go
+@@ -0,0 +1,17 @@
++package ue_mobility_management
++
++import (
++	"my5G-RANTester/internal/control_test_engine/gnb/context"
++
++	ngapType "github.com/free5gc/ngap/ie"
++	ngap "github.com/free5gc/ngap/message"
++)
++
++// HandoverCancel cancels the prepared handover of the UE (TS 38.413 8.4.6).
++func HandoverCancel(ue *context.GNBUe) ([]byte, error) {
++	return (&ngap.HandoverCancel{
++		AMFUENGAPID: &ngapType.AMFUENGAPID{Value: ue.GetAmfUeId()},
++		RANUENGAPID: &ngapType.RANUENGAPID{Value: ue.GetRanUeId()},
++		Cause:       &ngapType.Cause{Choice: &ngapType.CauseRadioNetwork{Value: ngapType.CauseRadioNetworkPresentHandoverCancelled}},
++	}).MarshalBinary()
++}
+diff --git a/internal/control_test_engine/gnb/ngap/trigger/trigger.go b/internal/control_test_engine/gnb/ngap/trigger/trigger.go
+index 30013c3..25d039f 100644
+--- a/internal/control_test_engine/gnb/ngap/trigger/trigger.go
++++ b/internal/control_test_engine/gnb/ngap/trigger/trigger.go
+@@ -6,6 +6,8 @@
+ package trigger
+ 
+ import (
++	"sync"
++
+ 	"my5G-RANTester/internal/control_test_engine/gnb/context"
+ 	ueSender "my5G-RANTester/internal/control_test_engine/gnb/nas/message/sender"
+ 	"my5G-RANTester/internal/control_test_engine/gnb/ngap/message/ngap_control/interface_management"
+@@ -227,6 +229,37 @@ func TriggerXnHandover(oldGnb *context.GNBContext, newGnb *context.GNBContext, p
+ 	ueSender.SendMessageToUe(gnbUeContext, msg)
+ }
+ 
++// cancelOnCommand holds the UEs whose prepared handover is cancelled instead of executed.
++var cancelOnCommand sync.Map
++
++// TriggerNgapHandoverCancel prepares an NGAP handover, then cancels it once the AMF
++// sends the Handover Command.
++func TriggerNgapHandoverCancel(oldGnb *context.GNBContext, newGnb *context.GNBContext, prUeId int64) {
++	if ue, err := oldGnb.GetGnbUeByPrUeId(prUeId); err == nil {
++		cancelOnCommand.Store(ue, struct{}{})
++	}
++	TriggerNgapHandover(oldGnb, newGnb, prUeId)
++}
++
++// CancelsHandover reports, once, whether the UE's prepared handover is to be cancelled.
++func CancelsHandover(ue *context.GNBUe) bool {
++	_, cancel := cancelOnCommand.LoadAndDelete(ue)
++	return cancel
++}
++
++func SendHandoverCancel(ue *context.GNBUe) {
++	log.Info("[GNB] Initiating Handover Cancel")
++
++	ngapMsg, err := ue_mobility_management.HandoverCancel(ue)
++	if err != nil {
++		log.Error("[GNB][NGAP] Error building Handover Cancel: ", err)
++		return
++	}
++	if err := sender.SendToAmF(ngapMsg, ue.GetSCTP()); err != nil {
++		log.Error("[GNB][NGAP] Error sending Handover Cancel: ", err)
++	}
++}
++
+ func TriggerNgapHandover(oldGnb *context.GNBContext, newGnb *context.GNBContext, prUeId int64) {
+ 	log.Info("[GNB] Initiating NGAP UE Handover")
+ 

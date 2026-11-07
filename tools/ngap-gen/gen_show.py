@@ -1,10 +1,12 @@
 """Emit show.bend: a normal form of every generated type's values, as text.
 
-oracle.py prints the same normal form from pycrate's decoding of the capture
-and compares. Numbers are decimal (an INTEGER's real value, an ENUMERATED's
-index, `x` marking an extension), bit strings `b` plus the bits, octet and
-character strings hex, records `{a,b,-}` (`-` an absent optional), choices
-`i:value`, lists and IE containers `[,a,b]`, raw IEs `id/crit/hex`.
+oracle.py prints the same normal form from pycrate's decoding of the NGAP
+vectors and compares. Numbers are decimal (an INTEGER's real value, an
+ENUMERATED's index, `x` marking an extension), bit strings `b` plus the bits,
+octet and character strings hex (an OCTET STRING (CONTAINING T) the normal
+form of the T it holds, `!` if it holds none), records `{a,b,-}` (`-` an
+absent optional), choices `i:value`, lists and IE containers `[,a,b]`, raw
+IEs `id/crit/hex`.
 """
 
 HEADER = """import Base
@@ -91,7 +93,7 @@ def Exts.show(ies: List<&2, Fr.Ie>) -> String:
   "[" ++ Ies.show(ies) ++ "]"
 """
 
-BITS = {"Bits", "ABits", "XBits", "BitStr", "XBitStr", "UBitStr"}
+BITS = {"Bits", "ABits", "XBits", "BitStr", "XBitStr", "UBitStr", "WBitStr"}
 BYTES = {"Big", "Octets", "AOctets", "OctStr", "Open", "Str", "XStr", "UStr"}
 
 
@@ -117,6 +119,12 @@ class Show:
             return f"Ie.show({v})"
         return f"{self.g.types[name].bend}.show({v})"
 
+    def deps(self, t):
+        """The types whose show functions t's show calls, which Bend needs defined first."""
+        if t.kind == "message":
+            return [tn for _, _, tn, _ in self.g.view_rows(t.name)]
+        return t.deps + ([t.contains] if t.contains is not None else [])
+
     def show(self):
         done = set()
 
@@ -125,14 +133,11 @@ class Show:
                 return
             done.add(name)
             t = self.g.types[name]
-            for d in t.deps:
+            for d in self.deps(t):
                 emit(d)
             getattr(self, "emit_" + t.kind)(t)
             self.emit_rd(t)
 
-        for name in self.g.order:
-            if self.g.types[name].kind != "message":
-                emit(name)
         for name in self.g.order:
             emit(name)
         self.emit_messages()
@@ -183,6 +188,9 @@ class Show:
             self.out('      "x" ++ Dec(i)')
         elif p in BITS:
             self.out('  "b" ++ Bits.show(v)')
+        elif t.contains is not None:
+            inner = self.g.types[t.contains].bend
+            self.out(f"  {inner}.show_rd(G.{inner}.read(Ap.Cur{{0n, Ap.unpack(v)}}))")
         elif p in BYTES:
             self.out("  Hex.bytes(v)")
         else:

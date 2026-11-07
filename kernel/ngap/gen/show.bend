@@ -81,48 +81,6 @@ def Ies.show(ies: List<&2, Fr.Ie>) -> String:
 def Exts.show(ies: List<&2, Fr.Ie>) -> String:
   "[" ++ Ies.show(ies) ++ "]"
 
-def PagingDRX.show(v: G.PagingDRX()) -> String:
-  match v:
-    case Ap.Root{i}:
-      Dec(i)
-    case Ap.Ext{i}:
-      "x" ++ Dec(i)
-
-def PagingDRX.show_end(+v: G.PagingDRX(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PagingDRX.show(v)
-    case False{}:
-      "!"
-
-def PagingDRX.show_rd(r: Ap.Rd(G.PagingDRX())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PagingDRX.show_end(v, Ap.Tail.zero(bits))
-
-def TAC.show(v: G.TAC()) -> String:
-  Hex.bytes(v)
-
-def TAC.show_end(+v: G.TAC(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      TAC.show(v)
-    case False{}:
-      "!"
-
-def TAC.show_rd(r: Ap.Rd(G.TAC())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          TAC.show_end(v, Ap.Tail.zero(bits))
-
 def PLMNIdentity.show(v: G.PLMNIdentity()) -> String:
   Hex.bytes(v)
 
@@ -141,241 +99,6 @@ def PLMNIdentity.show_rd(r: Ap.Rd(G.PLMNIdentity())) -> String:
       match c:
         case Ap.Cur{rem, bits}:
           PLMNIdentity.show_end(v, Ap.Tail.zero(bits))
-
-def SST.show(v: G.SST()) -> String:
-  Hex.bytes(v)
-
-def SST.show_end(+v: G.SST(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      SST.show(v)
-    case False{}:
-      "!"
-
-def SST.show_rd(r: Ap.Rd(G.SST())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          SST.show_end(v, Ap.Tail.zero(bits))
-
-def SD.show(v: G.SD()) -> String:
-  Hex.bytes(v)
-
-def SD.show_end(+v: G.SD(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      SD.show(v)
-    case False{}:
-      "!"
-
-def SD.show_rd(r: Ap.Rd(G.SD())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          SD.show_end(v, Ap.Tail.zero(bits))
-
-def S_NSSAI.m_sD(m: Maybe<&2, G.SD()>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      SD.show(v)
-
-def S_NSSAI.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def S_NSSAI.show(x: G.S_NSSAI) -> String:
-  match x:
-    case G.S_NSSAI{sST, sD, iE_Extensions}:
-      "{" ++ SST.show(sST) ++ "," ++ S_NSSAI.m_sD(sD) ++ "," ++ S_NSSAI.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def S_NSSAI.show_end(+v: G.S_NSSAI, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      S_NSSAI.show(v)
-    case False{}:
-      "!"
-
-def S_NSSAI.show_rd(r: Ap.Rd(G.S_NSSAI)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          S_NSSAI.show_end(v, Ap.Tail.zero(bits))
-
-def SliceSupportItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def SliceSupportItem.show(x: G.SliceSupportItem) -> String:
-  match x:
-    case G.SliceSupportItem{s_NSSAI, iE_Extensions}:
-      "{" ++ S_NSSAI.show(s_NSSAI) ++ "," ++ SliceSupportItem.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def SliceSupportItem.show_end(+v: G.SliceSupportItem, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      SliceSupportItem.show(v)
-    case False{}:
-      "!"
-
-def SliceSupportItem.show_rd(r: Ap.Rd(G.SliceSupportItem)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          SliceSupportItem.show_end(v, Ap.Tail.zero(bits))
-
-def SliceSupportList.show_items(xs: List<&2, G.SliceSupportItem>) -> String:
-  match xs:
-    case Nil{}:
-      ""
-    case x <> more:
-      "," ++ SliceSupportItem.show(x) ++ SliceSupportList.show_items(more)
-
-def SliceSupportList.show(xs: List<&2, G.SliceSupportItem>) -> String:
-  "[" ++ SliceSupportList.show_items(xs) ++ "]"
-
-def SliceSupportList.show_end(+v: G.SliceSupportList(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      SliceSupportList.show(v)
-    case False{}:
-      "!"
-
-def SliceSupportList.show_rd(r: Ap.Rd(G.SliceSupportList())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          SliceSupportList.show_end(v, Ap.Tail.zero(bits))
-
-def BroadcastPLMNItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def BroadcastPLMNItem.show(x: G.BroadcastPLMNItem) -> String:
-  match x:
-    case G.BroadcastPLMNItem{pLMNIdentity, tAISliceSupportList, iE_Extensions}:
-      "{" ++ PLMNIdentity.show(pLMNIdentity) ++ "," ++ SliceSupportList.show(tAISliceSupportList) ++ "," ++ BroadcastPLMNItem.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def BroadcastPLMNItem.show_end(+v: G.BroadcastPLMNItem, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      BroadcastPLMNItem.show(v)
-    case False{}:
-      "!"
-
-def BroadcastPLMNItem.show_rd(r: Ap.Rd(G.BroadcastPLMNItem)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          BroadcastPLMNItem.show_end(v, Ap.Tail.zero(bits))
-
-def BroadcastPLMNList.show_items(xs: List<&2, G.BroadcastPLMNItem>) -> String:
-  match xs:
-    case Nil{}:
-      ""
-    case x <> more:
-      "," ++ BroadcastPLMNItem.show(x) ++ BroadcastPLMNList.show_items(more)
-
-def BroadcastPLMNList.show(xs: List<&2, G.BroadcastPLMNItem>) -> String:
-  "[" ++ BroadcastPLMNList.show_items(xs) ++ "]"
-
-def BroadcastPLMNList.show_end(+v: G.BroadcastPLMNList(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      BroadcastPLMNList.show(v)
-    case False{}:
-      "!"
-
-def BroadcastPLMNList.show_rd(r: Ap.Rd(G.BroadcastPLMNList())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          BroadcastPLMNList.show_end(v, Ap.Tail.zero(bits))
-
-def SupportedTAItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def SupportedTAItem.show(x: G.SupportedTAItem) -> String:
-  match x:
-    case G.SupportedTAItem{tAC, broadcastPLMNList, iE_Extensions}:
-      "{" ++ TAC.show(tAC) ++ "," ++ BroadcastPLMNList.show(broadcastPLMNList) ++ "," ++ SupportedTAItem.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def SupportedTAItem.show_end(+v: G.SupportedTAItem, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      SupportedTAItem.show(v)
-    case False{}:
-      "!"
-
-def SupportedTAItem.show_rd(r: Ap.Rd(G.SupportedTAItem)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          SupportedTAItem.show_end(v, Ap.Tail.zero(bits))
-
-def SupportedTAList.show_items(xs: List<&2, G.SupportedTAItem>) -> String:
-  match xs:
-    case Nil{}:
-      ""
-    case x <> more:
-      "," ++ SupportedTAItem.show(x) ++ SupportedTAList.show_items(more)
-
-def SupportedTAList.show(xs: List<&2, G.SupportedTAItem>) -> String:
-  "[" ++ SupportedTAList.show_items(xs) ++ "]"
-
-def SupportedTAList.show_end(+v: G.SupportedTAList(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      SupportedTAList.show(v)
-    case False{}:
-      "!"
-
-def SupportedTAList.show_rd(r: Ap.Rd(G.SupportedTAList())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          SupportedTAList.show_end(v, Ap.Tail.zero(bits))
 
 def GNB_ID_gNB_ID.show(v: G.GNB_ID_gNB_ID()) -> String:
   "b" ++ Bits.show(v)
@@ -656,78 +379,340 @@ def GlobalRANNodeID.show_rd(r: Ap.Rd(G.GlobalRANNodeID)) -> String:
         case Ap.Cur{rem, bits}:
           GlobalRANNodeID.show_end(v, Ap.Tail.zero(bits))
 
-def PLMNSupportItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+def TAC.show(v: G.TAC()) -> String:
+  Hex.bytes(v)
+
+def TAC.show_end(+v: G.TAC(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      TAC.show(v)
+    case False{}:
+      "!"
+
+def TAC.show_rd(r: Ap.Rd(G.TAC())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          TAC.show_end(v, Ap.Tail.zero(bits))
+
+def SST.show(v: G.SST()) -> String:
+  Hex.bytes(v)
+
+def SST.show_end(+v: G.SST(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SST.show(v)
+    case False{}:
+      "!"
+
+def SST.show_rd(r: Ap.Rd(G.SST())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SST.show_end(v, Ap.Tail.zero(bits))
+
+def SD.show(v: G.SD()) -> String:
+  Hex.bytes(v)
+
+def SD.show_end(+v: G.SD(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SD.show(v)
+    case False{}:
+      "!"
+
+def SD.show_rd(r: Ap.Rd(G.SD())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SD.show_end(v, Ap.Tail.zero(bits))
+
+def S_NSSAI.m_sD(m: Maybe<&2, G.SD()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      SD.show(v)
+
+def S_NSSAI.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
   match m:
     case None{}:
       "-"
     case Some{v}:
       Exts.show(v)
 
-def PLMNSupportItem.show(x: G.PLMNSupportItem) -> String:
+def S_NSSAI.show(x: G.S_NSSAI) -> String:
   match x:
-    case G.PLMNSupportItem{pLMNIdentity, sliceSupportList, iE_Extensions}:
-      "{" ++ PLMNIdentity.show(pLMNIdentity) ++ "," ++ SliceSupportList.show(sliceSupportList) ++ "," ++ PLMNSupportItem.m_iE_Extensions(iE_Extensions) ++ "}"
+    case G.S_NSSAI{sST, sD, iE_Extensions}:
+      "{" ++ SST.show(sST) ++ "," ++ S_NSSAI.m_sD(sD) ++ "," ++ S_NSSAI.m_iE_Extensions(iE_Extensions) ++ "}"
 
-def PLMNSupportItem.show_end(+v: G.PLMNSupportItem, ok: Bool) -> String:
+def S_NSSAI.show_end(+v: G.S_NSSAI, ok: Bool) -> String:
   match ok:
     case True{}:
-      PLMNSupportItem.show(v)
+      S_NSSAI.show(v)
     case False{}:
       "!"
 
-def PLMNSupportItem.show_rd(r: Ap.Rd(G.PLMNSupportItem)) -> String:
+def S_NSSAI.show_rd(r: Ap.Rd(G.S_NSSAI)) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          PLMNSupportItem.show_end(v, Ap.Tail.zero(bits))
+          S_NSSAI.show_end(v, Ap.Tail.zero(bits))
 
-def PLMNSupportList.show_items(xs: List<&2, G.PLMNSupportItem>) -> String:
+def SliceSupportItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def SliceSupportItem.show(x: G.SliceSupportItem) -> String:
+  match x:
+    case G.SliceSupportItem{s_NSSAI, iE_Extensions}:
+      "{" ++ S_NSSAI.show(s_NSSAI) ++ "," ++ SliceSupportItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def SliceSupportItem.show_end(+v: G.SliceSupportItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SliceSupportItem.show(v)
+    case False{}:
+      "!"
+
+def SliceSupportItem.show_rd(r: Ap.Rd(G.SliceSupportItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SliceSupportItem.show_end(v, Ap.Tail.zero(bits))
+
+def SliceSupportList.show_items(xs: List<&2, G.SliceSupportItem>) -> String:
   match xs:
     case Nil{}:
       ""
     case x <> more:
-      "," ++ PLMNSupportItem.show(x) ++ PLMNSupportList.show_items(more)
+      "," ++ SliceSupportItem.show(x) ++ SliceSupportList.show_items(more)
 
-def PLMNSupportList.show(xs: List<&2, G.PLMNSupportItem>) -> String:
-  "[" ++ PLMNSupportList.show_items(xs) ++ "]"
+def SliceSupportList.show(xs: List<&2, G.SliceSupportItem>) -> String:
+  "[" ++ SliceSupportList.show_items(xs) ++ "]"
 
-def PLMNSupportList.show_end(+v: G.PLMNSupportList(), ok: Bool) -> String:
+def SliceSupportList.show_end(+v: G.SliceSupportList(), ok: Bool) -> String:
   match ok:
     case True{}:
-      PLMNSupportList.show(v)
+      SliceSupportList.show(v)
     case False{}:
       "!"
 
-def PLMNSupportList.show_rd(r: Ap.Rd(G.PLMNSupportList())) -> String:
+def SliceSupportList.show_rd(r: Ap.Rd(G.SliceSupportList())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          PLMNSupportList.show_end(v, Ap.Tail.zero(bits))
+          SliceSupportList.show_end(v, Ap.Tail.zero(bits))
 
-def RelativeAMFCapacity.show(v: G.RelativeAMFCapacity()) -> String:
-  Dec(U32.add(0, v))
+def BroadcastPLMNItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
 
-def RelativeAMFCapacity.show_end(+v: G.RelativeAMFCapacity(), ok: Bool) -> String:
+def BroadcastPLMNItem.show(x: G.BroadcastPLMNItem) -> String:
+  match x:
+    case G.BroadcastPLMNItem{pLMNIdentity, tAISliceSupportList, iE_Extensions}:
+      "{" ++ PLMNIdentity.show(pLMNIdentity) ++ "," ++ SliceSupportList.show(tAISliceSupportList) ++ "," ++ BroadcastPLMNItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def BroadcastPLMNItem.show_end(+v: G.BroadcastPLMNItem, ok: Bool) -> String:
   match ok:
     case True{}:
-      RelativeAMFCapacity.show(v)
+      BroadcastPLMNItem.show(v)
     case False{}:
       "!"
 
-def RelativeAMFCapacity.show_rd(r: Ap.Rd(G.RelativeAMFCapacity())) -> String:
+def BroadcastPLMNItem.show_rd(r: Ap.Rd(G.BroadcastPLMNItem)) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          RelativeAMFCapacity.show_end(v, Ap.Tail.zero(bits))
+          BroadcastPLMNItem.show_end(v, Ap.Tail.zero(bits))
+
+def BroadcastPLMNList.show_items(xs: List<&2, G.BroadcastPLMNItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ BroadcastPLMNItem.show(x) ++ BroadcastPLMNList.show_items(more)
+
+def BroadcastPLMNList.show(xs: List<&2, G.BroadcastPLMNItem>) -> String:
+  "[" ++ BroadcastPLMNList.show_items(xs) ++ "]"
+
+def BroadcastPLMNList.show_end(+v: G.BroadcastPLMNList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      BroadcastPLMNList.show(v)
+    case False{}:
+      "!"
+
+def BroadcastPLMNList.show_rd(r: Ap.Rd(G.BroadcastPLMNList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          BroadcastPLMNList.show_end(v, Ap.Tail.zero(bits))
+
+def SupportedTAItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def SupportedTAItem.show(x: G.SupportedTAItem) -> String:
+  match x:
+    case G.SupportedTAItem{tAC, broadcastPLMNList, iE_Extensions}:
+      "{" ++ TAC.show(tAC) ++ "," ++ BroadcastPLMNList.show(broadcastPLMNList) ++ "," ++ SupportedTAItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def SupportedTAItem.show_end(+v: G.SupportedTAItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SupportedTAItem.show(v)
+    case False{}:
+      "!"
+
+def SupportedTAItem.show_rd(r: Ap.Rd(G.SupportedTAItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SupportedTAItem.show_end(v, Ap.Tail.zero(bits))
+
+def SupportedTAList.show_items(xs: List<&2, G.SupportedTAItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ SupportedTAItem.show(x) ++ SupportedTAList.show_items(more)
+
+def SupportedTAList.show(xs: List<&2, G.SupportedTAItem>) -> String:
+  "[" ++ SupportedTAList.show_items(xs) ++ "]"
+
+def SupportedTAList.show_end(+v: G.SupportedTAList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SupportedTAList.show(v)
+    case False{}:
+      "!"
+
+def SupportedTAList.show_rd(r: Ap.Rd(G.SupportedTAList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SupportedTAList.show_end(v, Ap.Tail.zero(bits))
+
+def PagingDRX.show(v: G.PagingDRX()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def PagingDRX.show_end(+v: G.PagingDRX(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PagingDRX.show(v)
+    case False{}:
+      "!"
+
+def PagingDRX.show_rd(r: Ap.Rd(G.PagingDRX())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PagingDRX.show_end(v, Ap.Tail.zero(bits))
+
+def NGSetupRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 27n:
+      GlobalRANNodeID.show_rd(G.GlobalRANNodeID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 102n:
+      SupportedTAList.show_rd(G.SupportedTAList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 21n:
+      PagingDRX.show_rd(G.PagingDRX.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def NGSetupRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ NGSetupRequest.show_ie(U32.to_nat(id), value) ++ NGSetupRequest.show_ies(more)
+
+def NGSetupRequest.show(ies: G.NGSetupRequest()) -> String:
+  "[" ++ NGSetupRequest.show_ies(ies) ++ "]"
+
+def NGSetupRequest.show_end(+v: G.NGSetupRequest(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      NGSetupRequest.show(v)
+    case False{}:
+      "!"
+
+def NGSetupRequest.show_rd(r: Ap.Rd(G.NGSetupRequest())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          NGSetupRequest.show_end(v, Ap.Tail.zero(bits))
+
+def AMFName.show(v: G.AMFName()) -> String:
+  Hex.bytes(v)
+
+def AMFName.show_end(+v: G.AMFName(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      AMFName.show(v)
+    case False{}:
+      "!"
+
+def AMFName.show_rd(r: Ap.Rd(G.AMFName())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          AMFName.show_end(v, Ap.Tail.zero(bits))
 
 def AMFRegionID.show(v: G.AMFRegionID()) -> String:
   "b" ++ Bits.show(v)
@@ -814,25 +799,6 @@ def GUAMI.show_rd(r: Ap.Rd(G.GUAMI)) -> String:
         case Ap.Cur{rem, bits}:
           GUAMI.show_end(v, Ap.Tail.zero(bits))
 
-def AMFName.show(v: G.AMFName()) -> String:
-  Hex.bytes(v)
-
-def AMFName.show_end(+v: G.AMFName(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      AMFName.show(v)
-    case False{}:
-      "!"
-
-def AMFName.show_rd(r: Ap.Rd(G.AMFName())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          AMFName.show_end(v, Ap.Tail.zero(bits))
-
 def ServedGUAMIItem.m_backupAMFName(m: Maybe<&2, G.AMFName()>) -> String:
   match m:
     case None{}:
@@ -893,6 +859,339 @@ def ServedGUAMIList.show_rd(r: Ap.Rd(G.ServedGUAMIList())) -> String:
       match c:
         case Ap.Cur{rem, bits}:
           ServedGUAMIList.show_end(v, Ap.Tail.zero(bits))
+
+def RelativeAMFCapacity.show(v: G.RelativeAMFCapacity()) -> String:
+  Dec(U32.add(0, v))
+
+def RelativeAMFCapacity.show_end(+v: G.RelativeAMFCapacity(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      RelativeAMFCapacity.show(v)
+    case False{}:
+      "!"
+
+def RelativeAMFCapacity.show_rd(r: Ap.Rd(G.RelativeAMFCapacity())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          RelativeAMFCapacity.show_end(v, Ap.Tail.zero(bits))
+
+def PLMNSupportItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PLMNSupportItem.show(x: G.PLMNSupportItem) -> String:
+  match x:
+    case G.PLMNSupportItem{pLMNIdentity, sliceSupportList, iE_Extensions}:
+      "{" ++ PLMNIdentity.show(pLMNIdentity) ++ "," ++ SliceSupportList.show(sliceSupportList) ++ "," ++ PLMNSupportItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PLMNSupportItem.show_end(+v: G.PLMNSupportItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PLMNSupportItem.show(v)
+    case False{}:
+      "!"
+
+def PLMNSupportItem.show_rd(r: Ap.Rd(G.PLMNSupportItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PLMNSupportItem.show_end(v, Ap.Tail.zero(bits))
+
+def PLMNSupportList.show_items(xs: List<&2, G.PLMNSupportItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PLMNSupportItem.show(x) ++ PLMNSupportList.show_items(more)
+
+def PLMNSupportList.show(xs: List<&2, G.PLMNSupportItem>) -> String:
+  "[" ++ PLMNSupportList.show_items(xs) ++ "]"
+
+def PLMNSupportList.show_end(+v: G.PLMNSupportList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PLMNSupportList.show(v)
+    case False{}:
+      "!"
+
+def PLMNSupportList.show_rd(r: Ap.Rd(G.PLMNSupportList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PLMNSupportList.show_end(v, Ap.Tail.zero(bits))
+
+def ProcedureCode.show(v: G.ProcedureCode()) -> String:
+  Dec(U32.add(0, v))
+
+def ProcedureCode.show_end(+v: G.ProcedureCode(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      ProcedureCode.show(v)
+    case False{}:
+      "!"
+
+def ProcedureCode.show_rd(r: Ap.Rd(G.ProcedureCode())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          ProcedureCode.show_end(v, Ap.Tail.zero(bits))
+
+def TriggeringMessage.show(v: G.TriggeringMessage()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def TriggeringMessage.show_end(+v: G.TriggeringMessage(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      TriggeringMessage.show(v)
+    case False{}:
+      "!"
+
+def TriggeringMessage.show_rd(r: Ap.Rd(G.TriggeringMessage())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          TriggeringMessage.show_end(v, Ap.Tail.zero(bits))
+
+def Criticality.show(v: G.Criticality()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def Criticality.show_end(+v: G.Criticality(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      Criticality.show(v)
+    case False{}:
+      "!"
+
+def Criticality.show_rd(r: Ap.Rd(G.Criticality())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          Criticality.show_end(v, Ap.Tail.zero(bits))
+
+def ProtocolIE_ID.show(v: G.ProtocolIE_ID()) -> String:
+  Dec(U32.add(0, v))
+
+def ProtocolIE_ID.show_end(+v: G.ProtocolIE_ID(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      ProtocolIE_ID.show(v)
+    case False{}:
+      "!"
+
+def ProtocolIE_ID.show_rd(r: Ap.Rd(G.ProtocolIE_ID())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          ProtocolIE_ID.show_end(v, Ap.Tail.zero(bits))
+
+def TypeOfError.show(v: G.TypeOfError()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def TypeOfError.show_end(+v: G.TypeOfError(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      TypeOfError.show(v)
+    case False{}:
+      "!"
+
+def TypeOfError.show_rd(r: Ap.Rd(G.TypeOfError())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          TypeOfError.show_end(v, Ap.Tail.zero(bits))
+
+def CriticalityDiagnostics_IE_Item.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def CriticalityDiagnostics_IE_Item.show(x: G.CriticalityDiagnostics_IE_Item) -> String:
+  match x:
+    case G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}:
+      "{" ++ Criticality.show(iECriticality) ++ "," ++ ProtocolIE_ID.show(iE_ID) ++ "," ++ TypeOfError.show(typeOfError) ++ "," ++ CriticalityDiagnostics_IE_Item.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def CriticalityDiagnostics_IE_Item.show_end(+v: G.CriticalityDiagnostics_IE_Item, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      CriticalityDiagnostics_IE_Item.show(v)
+    case False{}:
+      "!"
+
+def CriticalityDiagnostics_IE_Item.show_rd(r: Ap.Rd(G.CriticalityDiagnostics_IE_Item)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          CriticalityDiagnostics_IE_Item.show_end(v, Ap.Tail.zero(bits))
+
+def CriticalityDiagnostics_IE_List.show_items(xs: List<&2, G.CriticalityDiagnostics_IE_Item>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ CriticalityDiagnostics_IE_Item.show(x) ++ CriticalityDiagnostics_IE_List.show_items(more)
+
+def CriticalityDiagnostics_IE_List.show(xs: List<&2, G.CriticalityDiagnostics_IE_Item>) -> String:
+  "[" ++ CriticalityDiagnostics_IE_List.show_items(xs) ++ "]"
+
+def CriticalityDiagnostics_IE_List.show_end(+v: G.CriticalityDiagnostics_IE_List(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      CriticalityDiagnostics_IE_List.show(v)
+    case False{}:
+      "!"
+
+def CriticalityDiagnostics_IE_List.show_rd(r: Ap.Rd(G.CriticalityDiagnostics_IE_List())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          CriticalityDiagnostics_IE_List.show_end(v, Ap.Tail.zero(bits))
+
+def CriticalityDiagnostics.m_procedureCode(m: Maybe<&2, G.ProcedureCode()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      ProcedureCode.show(v)
+
+def CriticalityDiagnostics.m_triggeringMessage(m: Maybe<&2, G.TriggeringMessage()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      TriggeringMessage.show(v)
+
+def CriticalityDiagnostics.m_procedureCriticality(m: Maybe<&2, G.Criticality()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Criticality.show(v)
+
+def CriticalityDiagnostics.m_iEsCriticalityDiagnostics(m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      CriticalityDiagnostics_IE_List.show(v)
+
+def CriticalityDiagnostics.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def CriticalityDiagnostics.show(x: G.CriticalityDiagnostics) -> String:
+  match x:
+    case G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}:
+      "{" ++ CriticalityDiagnostics.m_procedureCode(procedureCode) ++ "," ++ CriticalityDiagnostics.m_triggeringMessage(triggeringMessage) ++ "," ++ CriticalityDiagnostics.m_procedureCriticality(procedureCriticality) ++ "," ++ CriticalityDiagnostics.m_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics) ++ "," ++ CriticalityDiagnostics.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def CriticalityDiagnostics.show_end(+v: G.CriticalityDiagnostics, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      CriticalityDiagnostics.show(v)
+    case False{}:
+      "!"
+
+def CriticalityDiagnostics.show_rd(r: Ap.Rd(G.CriticalityDiagnostics)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          CriticalityDiagnostics.show_end(v, Ap.Tail.zero(bits))
+
+def NGSetupResponse.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 1n:
+      AMFName.show_rd(G.AMFName.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 96n:
+      ServedGUAMIList.show_rd(G.ServedGUAMIList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 86n:
+      RelativeAMFCapacity.show_rd(G.RelativeAMFCapacity.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 80n:
+      PLMNSupportList.show_rd(G.PLMNSupportList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def NGSetupResponse.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ NGSetupResponse.show_ie(U32.to_nat(id), value) ++ NGSetupResponse.show_ies(more)
+
+def NGSetupResponse.show(ies: G.NGSetupResponse()) -> String:
+  "[" ++ NGSetupResponse.show_ies(ies) ++ "]"
+
+def NGSetupResponse.show_end(+v: G.NGSetupResponse(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      NGSetupResponse.show(v)
+    case False{}:
+      "!"
+
+def NGSetupResponse.show_rd(r: Ap.Rd(G.NGSetupResponse())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          NGSetupResponse.show_end(v, Ap.Tail.zero(bits))
 
 def CauseRadioNetwork.show(v: G.CauseRadioNetwork()) -> String:
   match v:
@@ -1040,243 +1339,80 @@ def Cause.show_rd(r: Ap.Rd(G.Cause)) -> String:
         case Ap.Cur{rem, bits}:
           Cause.show_end(v, Ap.Tail.zero(bits))
 
-def CAG_ID.show(v: G.CAG_ID()) -> String:
-  "b" ++ Bits.show(v)
+def NGSetupFailure.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
 
-def CAG_ID.show_end(+v: G.CAG_ID(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      CAG_ID.show(v)
-    case False{}:
-      "!"
-
-def CAG_ID.show_rd(r: Ap.Rd(G.CAG_ID())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          CAG_ID.show_end(v, Ap.Tail.zero(bits))
-
-def CellCAGList.show_items(xs: List<&2, G.CAG_ID()>) -> String:
-  match xs:
+def NGSetupFailure.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
     case Nil{}:
       ""
-    case x <> more:
-      "," ++ CAG_ID.show(x) ++ CellCAGList.show_items(more)
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ NGSetupFailure.show_ie(U32.to_nat(id), value) ++ NGSetupFailure.show_ies(more)
 
-def CellCAGList.show(xs: List<&2, G.CAG_ID()>) -> String:
-  "[" ++ CellCAGList.show_items(xs) ++ "]"
+def NGSetupFailure.show(ies: G.NGSetupFailure()) -> String:
+  "[" ++ NGSetupFailure.show_ies(ies) ++ "]"
 
-def CellCAGList.show_end(+v: G.CellCAGList(), ok: Bool) -> String:
+def NGSetupFailure.show_end(+v: G.NGSetupFailure(), ok: Bool) -> String:
   match ok:
     case True{}:
-      CellCAGList.show(v)
+      NGSetupFailure.show(v)
     case False{}:
       "!"
 
-def CellCAGList.show_rd(r: Ap.Rd(G.CellCAGList())) -> String:
+def NGSetupFailure.show_rd(r: Ap.Rd(G.NGSetupFailure())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          CellCAGList.show_end(v, Ap.Tail.zero(bits))
+          NGSetupFailure.show_end(v, Ap.Tail.zero(bits))
 
-def NPN_AccessInformation.show(x: G.NPN_AccessInformation) -> String:
-  match x:
-    case G.NPN_AccessInformation_pNI_NPN_Access_Information{v}:
-      "0:" ++ CellCAGList.show(v)
-    case G.NPN_AccessInformation_choice_Extensions{v}:
-      "1:" ++ Ie.show(v)
-
-def NPN_AccessInformation.show_end(+v: G.NPN_AccessInformation, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      NPN_AccessInformation.show(v)
-    case False{}:
-      "!"
-
-def NPN_AccessInformation.show_rd(r: Ap.Rd(G.NPN_AccessInformation)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          NPN_AccessInformation.show_end(v, Ap.Tail.zero(bits))
-
-def CEmodeBSupport_Indicator.show(v: G.CEmodeBSupport_Indicator()) -> String:
-  match v:
-    case Ap.Root{i}:
-      Dec(i)
-    case Ap.Ext{i}:
-      "x" ++ Dec(i)
-
-def CEmodeBSupport_Indicator.show_end(+v: G.CEmodeBSupport_Indicator(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      CEmodeBSupport_Indicator.show(v)
-    case False{}:
-      "!"
-
-def CEmodeBSupport_Indicator.show_rd(r: Ap.Rd(G.CEmodeBSupport_Indicator())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          CEmodeBSupport_Indicator.show_end(v, Ap.Tail.zero(bits))
-
-def IABNodeIndication.show(v: G.IABNodeIndication()) -> String:
-  match v:
-    case Ap.Root{i}:
-      Dec(i)
-    case Ap.Ext{i}:
-      "x" ++ Dec(i)
-
-def IABNodeIndication.show_end(+v: G.IABNodeIndication(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      IABNodeIndication.show(v)
-    case False{}:
-      "!"
-
-def IABNodeIndication.show_rd(r: Ap.Rd(G.IABNodeIndication())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          IABNodeIndication.show_end(v, Ap.Tail.zero(bits))
-
-def AllowedNSSAI_Item.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def AllowedNSSAI_Item.show(x: G.AllowedNSSAI_Item) -> String:
-  match x:
-    case G.AllowedNSSAI_Item{s_NSSAI, iE_Extensions}:
-      "{" ++ S_NSSAI.show(s_NSSAI) ++ "," ++ AllowedNSSAI_Item.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def AllowedNSSAI_Item.show_end(+v: G.AllowedNSSAI_Item, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      AllowedNSSAI_Item.show(v)
-    case False{}:
-      "!"
-
-def AllowedNSSAI_Item.show_rd(r: Ap.Rd(G.AllowedNSSAI_Item)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          AllowedNSSAI_Item.show_end(v, Ap.Tail.zero(bits))
-
-def AllowedNSSAI.show_items(xs: List<&2, G.AllowedNSSAI_Item>) -> String:
-  match xs:
-    case Nil{}:
-      ""
-    case x <> more:
-      "," ++ AllowedNSSAI_Item.show(x) ++ AllowedNSSAI.show_items(more)
-
-def AllowedNSSAI.show(xs: List<&2, G.AllowedNSSAI_Item>) -> String:
-  "[" ++ AllowedNSSAI.show_items(xs) ++ "]"
-
-def AllowedNSSAI.show_end(+v: G.AllowedNSSAI(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      AllowedNSSAI.show(v)
-    case False{}:
-      "!"
-
-def AllowedNSSAI.show_rd(r: Ap.Rd(G.AllowedNSSAI())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          AllowedNSSAI.show_end(v, Ap.Tail.zero(bits))
-
-def FiveG_TMSI.show(v: G.FiveG_TMSI()) -> String:
+def RAN_UE_NGAP_ID.show(v: G.RAN_UE_NGAP_ID()) -> String:
   Hex.bytes(v)
 
-def FiveG_TMSI.show_end(+v: G.FiveG_TMSI(), ok: Bool) -> String:
+def RAN_UE_NGAP_ID.show_end(+v: G.RAN_UE_NGAP_ID(), ok: Bool) -> String:
   match ok:
     case True{}:
-      FiveG_TMSI.show(v)
+      RAN_UE_NGAP_ID.show(v)
     case False{}:
       "!"
 
-def FiveG_TMSI.show_rd(r: Ap.Rd(G.FiveG_TMSI())) -> String:
+def RAN_UE_NGAP_ID.show_rd(r: Ap.Rd(G.RAN_UE_NGAP_ID())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          FiveG_TMSI.show_end(v, Ap.Tail.zero(bits))
+          RAN_UE_NGAP_ID.show_end(v, Ap.Tail.zero(bits))
 
-def FiveG_S_TMSI.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
+def NAS_PDU.show(v: G.NAS_PDU()) -> String:
+  Hex.bytes(v)
 
-def FiveG_S_TMSI.show(x: G.FiveG_S_TMSI) -> String:
-  match x:
-    case G.FiveG_S_TMSI{aMFSetID, aMFPointer, fiveG_TMSI, iE_Extensions}:
-      "{" ++ AMFSetID.show(aMFSetID) ++ "," ++ AMFPointer.show(aMFPointer) ++ "," ++ FiveG_TMSI.show(fiveG_TMSI) ++ "," ++ FiveG_S_TMSI.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def FiveG_S_TMSI.show_end(+v: G.FiveG_S_TMSI, ok: Bool) -> String:
+def NAS_PDU.show_end(+v: G.NAS_PDU(), ok: Bool) -> String:
   match ok:
     case True{}:
-      FiveG_S_TMSI.show(v)
+      NAS_PDU.show(v)
     case False{}:
       "!"
 
-def FiveG_S_TMSI.show_rd(r: Ap.Rd(G.FiveG_S_TMSI)) -> String:
+def NAS_PDU.show_rd(r: Ap.Rd(G.NAS_PDU())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          FiveG_S_TMSI.show_end(v, Ap.Tail.zero(bits))
-
-def RRCEstablishmentCause.show(v: G.RRCEstablishmentCause()) -> String:
-  match v:
-    case Ap.Root{i}:
-      Dec(i)
-    case Ap.Ext{i}:
-      "x" ++ Dec(i)
-
-def RRCEstablishmentCause.show_end(+v: G.RRCEstablishmentCause(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      RRCEstablishmentCause.show(v)
-    case False{}:
-      "!"
-
-def RRCEstablishmentCause.show_rd(r: Ap.Rd(G.RRCEstablishmentCause())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          RRCEstablishmentCause.show_end(v, Ap.Tail.zero(bits))
+          NAS_PDU.show_end(v, Ap.Tail.zero(bits))
 
 def EUTRACellIdentity.show(v: G.EUTRACellIdentity()) -> String:
   "b" ++ Bits.show(v)
@@ -1582,43 +1718,317 @@ def UserLocationInformation.show_rd(r: Ap.Rd(G.UserLocationInformation)) -> Stri
         case Ap.Cur{rem, bits}:
           UserLocationInformation.show_end(v, Ap.Tail.zero(bits))
 
-def NAS_PDU.show(v: G.NAS_PDU()) -> String:
-  Hex.bytes(v)
+def RRCEstablishmentCause.show(v: G.RRCEstablishmentCause()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
 
-def NAS_PDU.show_end(+v: G.NAS_PDU(), ok: Bool) -> String:
+def RRCEstablishmentCause.show_end(+v: G.RRCEstablishmentCause(), ok: Bool) -> String:
   match ok:
     case True{}:
-      NAS_PDU.show(v)
+      RRCEstablishmentCause.show(v)
     case False{}:
       "!"
 
-def NAS_PDU.show_rd(r: Ap.Rd(G.NAS_PDU())) -> String:
+def RRCEstablishmentCause.show_rd(r: Ap.Rd(G.RRCEstablishmentCause())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          NAS_PDU.show_end(v, Ap.Tail.zero(bits))
+          RRCEstablishmentCause.show_end(v, Ap.Tail.zero(bits))
 
-def RAN_UE_NGAP_ID.show(v: G.RAN_UE_NGAP_ID()) -> String:
+def FiveG_TMSI.show(v: G.FiveG_TMSI()) -> String:
   Hex.bytes(v)
 
-def RAN_UE_NGAP_ID.show_end(+v: G.RAN_UE_NGAP_ID(), ok: Bool) -> String:
+def FiveG_TMSI.show_end(+v: G.FiveG_TMSI(), ok: Bool) -> String:
   match ok:
     case True{}:
-      RAN_UE_NGAP_ID.show(v)
+      FiveG_TMSI.show(v)
     case False{}:
       "!"
 
-def RAN_UE_NGAP_ID.show_rd(r: Ap.Rd(G.RAN_UE_NGAP_ID())) -> String:
+def FiveG_TMSI.show_rd(r: Ap.Rd(G.FiveG_TMSI())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          RAN_UE_NGAP_ID.show_end(v, Ap.Tail.zero(bits))
+          FiveG_TMSI.show_end(v, Ap.Tail.zero(bits))
+
+def FiveG_S_TMSI.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def FiveG_S_TMSI.show(x: G.FiveG_S_TMSI) -> String:
+  match x:
+    case G.FiveG_S_TMSI{aMFSetID, aMFPointer, fiveG_TMSI, iE_Extensions}:
+      "{" ++ AMFSetID.show(aMFSetID) ++ "," ++ AMFPointer.show(aMFPointer) ++ "," ++ FiveG_TMSI.show(fiveG_TMSI) ++ "," ++ FiveG_S_TMSI.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def FiveG_S_TMSI.show_end(+v: G.FiveG_S_TMSI, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      FiveG_S_TMSI.show(v)
+    case False{}:
+      "!"
+
+def FiveG_S_TMSI.show_rd(r: Ap.Rd(G.FiveG_S_TMSI)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          FiveG_S_TMSI.show_end(v, Ap.Tail.zero(bits))
+
+def AllowedNSSAI_Item.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def AllowedNSSAI_Item.show(x: G.AllowedNSSAI_Item) -> String:
+  match x:
+    case G.AllowedNSSAI_Item{s_NSSAI, iE_Extensions}:
+      "{" ++ S_NSSAI.show(s_NSSAI) ++ "," ++ AllowedNSSAI_Item.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def AllowedNSSAI_Item.show_end(+v: G.AllowedNSSAI_Item, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      AllowedNSSAI_Item.show(v)
+    case False{}:
+      "!"
+
+def AllowedNSSAI_Item.show_rd(r: Ap.Rd(G.AllowedNSSAI_Item)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          AllowedNSSAI_Item.show_end(v, Ap.Tail.zero(bits))
+
+def AllowedNSSAI.show_items(xs: List<&2, G.AllowedNSSAI_Item>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ AllowedNSSAI_Item.show(x) ++ AllowedNSSAI.show_items(more)
+
+def AllowedNSSAI.show(xs: List<&2, G.AllowedNSSAI_Item>) -> String:
+  "[" ++ AllowedNSSAI.show_items(xs) ++ "]"
+
+def AllowedNSSAI.show_end(+v: G.AllowedNSSAI(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      AllowedNSSAI.show(v)
+    case False{}:
+      "!"
+
+def AllowedNSSAI.show_rd(r: Ap.Rd(G.AllowedNSSAI())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          AllowedNSSAI.show_end(v, Ap.Tail.zero(bits))
+
+def IABNodeIndication.show(v: G.IABNodeIndication()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def IABNodeIndication.show_end(+v: G.IABNodeIndication(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      IABNodeIndication.show(v)
+    case False{}:
+      "!"
+
+def IABNodeIndication.show_rd(r: Ap.Rd(G.IABNodeIndication())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          IABNodeIndication.show_end(v, Ap.Tail.zero(bits))
+
+def CEmodeBSupport_Indicator.show(v: G.CEmodeBSupport_Indicator()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def CEmodeBSupport_Indicator.show_end(+v: G.CEmodeBSupport_Indicator(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      CEmodeBSupport_Indicator.show(v)
+    case False{}:
+      "!"
+
+def CEmodeBSupport_Indicator.show_rd(r: Ap.Rd(G.CEmodeBSupport_Indicator())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          CEmodeBSupport_Indicator.show_end(v, Ap.Tail.zero(bits))
+
+def CAG_ID.show(v: G.CAG_ID()) -> String:
+  "b" ++ Bits.show(v)
+
+def CAG_ID.show_end(+v: G.CAG_ID(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      CAG_ID.show(v)
+    case False{}:
+      "!"
+
+def CAG_ID.show_rd(r: Ap.Rd(G.CAG_ID())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          CAG_ID.show_end(v, Ap.Tail.zero(bits))
+
+def CellCAGList.show_items(xs: List<&2, G.CAG_ID()>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ CAG_ID.show(x) ++ CellCAGList.show_items(more)
+
+def CellCAGList.show(xs: List<&2, G.CAG_ID()>) -> String:
+  "[" ++ CellCAGList.show_items(xs) ++ "]"
+
+def CellCAGList.show_end(+v: G.CellCAGList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      CellCAGList.show(v)
+    case False{}:
+      "!"
+
+def CellCAGList.show_rd(r: Ap.Rd(G.CellCAGList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          CellCAGList.show_end(v, Ap.Tail.zero(bits))
+
+def NPN_AccessInformation.show(x: G.NPN_AccessInformation) -> String:
+  match x:
+    case G.NPN_AccessInformation_pNI_NPN_Access_Information{v}:
+      "0:" ++ CellCAGList.show(v)
+    case G.NPN_AccessInformation_choice_Extensions{v}:
+      "1:" ++ Ie.show(v)
+
+def NPN_AccessInformation.show_end(+v: G.NPN_AccessInformation, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      NPN_AccessInformation.show(v)
+    case False{}:
+      "!"
+
+def NPN_AccessInformation.show_rd(r: Ap.Rd(G.NPN_AccessInformation)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          NPN_AccessInformation.show_end(v, Ap.Tail.zero(bits))
+
+def InitialUEMessage.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 38n:
+      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 121n:
+      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 90n:
+      RRCEstablishmentCause.show_rd(G.RRCEstablishmentCause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 26n:
+      FiveG_S_TMSI.show_rd(G.FiveG_S_TMSI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 3n:
+      AMFSetID.show_rd(G.AMFSetID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 0n:
+      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 174n:
+      PLMNIdentity.show_rd(G.PLMNIdentity.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 201n:
+      IABNodeIndication.show_rd(G.IABNodeIndication.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 224n:
+      CEmodeBSupport_Indicator.show_rd(G.CEmodeBSupport_Indicator.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 259n:
+      NPN_AccessInformation.show_rd(G.NPN_AccessInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def InitialUEMessage.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialUEMessage.show_ie(U32.to_nat(id), value) ++ InitialUEMessage.show_ies(more)
+
+def InitialUEMessage.show(ies: G.InitialUEMessage()) -> String:
+  "[" ++ InitialUEMessage.show_ies(ies) ++ "]"
+
+def InitialUEMessage.show_end(+v: G.InitialUEMessage(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      InitialUEMessage.show(v)
+    case False{}:
+      "!"
+
+def InitialUEMessage.show_rd(r: Ap.Rd(G.InitialUEMessage())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          InitialUEMessage.show_end(v, Ap.Tail.zero(bits))
+
+def AMF_UE_NGAP_ID.show(v: G.AMF_UE_NGAP_ID()) -> String:
+  Hex.bytes(v)
+
+def AMF_UE_NGAP_ID.show_end(+v: G.AMF_UE_NGAP_ID(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      AMF_UE_NGAP_ID.show(v)
+    case False{}:
+      "!"
+
+def AMF_UE_NGAP_ID.show_rd(r: Ap.Rd(G.AMF_UE_NGAP_ID())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          AMF_UE_NGAP_ID.show_end(v, Ap.Tail.zero(bits))
 
 def BitRate.show(v: G.BitRate()) -> String:
   match v:
@@ -1671,43 +2081,91 @@ def UEAggregateMaximumBitRate.show_rd(r: Ap.Rd(G.UEAggregateMaximumBitRate)) -> 
         case Ap.Cur{rem, bits}:
           UEAggregateMaximumBitRate.show_end(v, Ap.Tail.zero(bits))
 
-def AMF_UE_NGAP_ID.show(v: G.AMF_UE_NGAP_ID()) -> String:
-  Hex.bytes(v)
+def DownlinkNASTransport.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 48n:
+      AMFName.show_rd(G.AMFName.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 38n:
+      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 110n:
+      UEAggregateMaximumBitRate.show_rd(G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 0n:
+      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
 
-def AMF_UE_NGAP_ID.show_end(+v: G.AMF_UE_NGAP_ID(), ok: Bool) -> String:
+def DownlinkNASTransport.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ DownlinkNASTransport.show_ie(U32.to_nat(id), value) ++ DownlinkNASTransport.show_ies(more)
+
+def DownlinkNASTransport.show(ies: G.DownlinkNASTransport()) -> String:
+  "[" ++ DownlinkNASTransport.show_ies(ies) ++ "]"
+
+def DownlinkNASTransport.show_end(+v: G.DownlinkNASTransport(), ok: Bool) -> String:
   match ok:
     case True{}:
-      AMF_UE_NGAP_ID.show(v)
+      DownlinkNASTransport.show(v)
     case False{}:
       "!"
 
-def AMF_UE_NGAP_ID.show_rd(r: Ap.Rd(G.AMF_UE_NGAP_ID())) -> String:
+def DownlinkNASTransport.show_rd(r: Ap.Rd(G.DownlinkNASTransport())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          AMF_UE_NGAP_ID.show_end(v, Ap.Tail.zero(bits))
+          DownlinkNASTransport.show_end(v, Ap.Tail.zero(bits))
 
-def SecurityKey.show(v: G.SecurityKey()) -> String:
-  "b" ++ Bits.show(v)
+def UplinkNASTransport.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 38n:
+      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 121n:
+      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
 
-def SecurityKey.show_end(+v: G.SecurityKey(), ok: Bool) -> String:
+def UplinkNASTransport.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UplinkNASTransport.show_ie(U32.to_nat(id), value) ++ UplinkNASTransport.show_ies(more)
+
+def UplinkNASTransport.show(ies: G.UplinkNASTransport()) -> String:
+  "[" ++ UplinkNASTransport.show_ies(ies) ++ "]"
+
+def UplinkNASTransport.show_end(+v: G.UplinkNASTransport(), ok: Bool) -> String:
   match ok:
     case True{}:
-      SecurityKey.show(v)
+      UplinkNASTransport.show(v)
     case False{}:
       "!"
 
-def SecurityKey.show_rd(r: Ap.Rd(G.SecurityKey())) -> String:
+def UplinkNASTransport.show_rd(r: Ap.Rd(G.UplinkNASTransport())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          SecurityKey.show_end(v, Ap.Tail.zero(bits))
+          UplinkNASTransport.show_end(v, Ap.Tail.zero(bits))
 
 def NRencryptionAlgorithms.show(v: G.NRencryptionAlgorithms()) -> String:
   "b" ++ Bits.show(v)
@@ -1813,6 +2271,156 @@ def UESecurityCapabilities.show_rd(r: Ap.Rd(G.UESecurityCapabilities)) -> String
         case Ap.Cur{rem, bits}:
           UESecurityCapabilities.show_end(v, Ap.Tail.zero(bits))
 
+def SecurityKey.show(v: G.SecurityKey()) -> String:
+  "b" ++ Bits.show(v)
+
+def SecurityKey.show_end(+v: G.SecurityKey(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SecurityKey.show(v)
+    case False{}:
+      "!"
+
+def SecurityKey.show_rd(r: Ap.Rd(G.SecurityKey())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SecurityKey.show_end(v, Ap.Tail.zero(bits))
+
+def InitialContextSetupRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 48n:
+      AMFName.show_rd(G.AMFName.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 110n:
+      UEAggregateMaximumBitRate.show_rd(G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 28n:
+      GUAMI.show_rd(G.GUAMI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 0n:
+      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 119n:
+      UESecurityCapabilities.show_rd(G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 94n:
+      SecurityKey.show_rd(G.SecurityKey.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 38n:
+      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def InitialContextSetupRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialContextSetupRequest.show_ie(U32.to_nat(id), value) ++ InitialContextSetupRequest.show_ies(more)
+
+def InitialContextSetupRequest.show(ies: G.InitialContextSetupRequest()) -> String:
+  "[" ++ InitialContextSetupRequest.show_ies(ies) ++ "]"
+
+def InitialContextSetupRequest.show_end(+v: G.InitialContextSetupRequest(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      InitialContextSetupRequest.show(v)
+    case False{}:
+      "!"
+
+def InitialContextSetupRequest.show_rd(r: Ap.Rd(G.InitialContextSetupRequest())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          InitialContextSetupRequest.show_end(v, Ap.Tail.zero(bits))
+
+def InitialContextSetupResponse.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def InitialContextSetupResponse.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialContextSetupResponse.show_ie(U32.to_nat(id), value) ++ InitialContextSetupResponse.show_ies(more)
+
+def InitialContextSetupResponse.show(ies: G.InitialContextSetupResponse()) -> String:
+  "[" ++ InitialContextSetupResponse.show_ies(ies) ++ "]"
+
+def InitialContextSetupResponse.show_end(+v: G.InitialContextSetupResponse(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      InitialContextSetupResponse.show(v)
+    case False{}:
+      "!"
+
+def InitialContextSetupResponse.show_rd(r: Ap.Rd(G.InitialContextSetupResponse())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          InitialContextSetupResponse.show_end(v, Ap.Tail.zero(bits))
+
+def InitialContextSetupFailure.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def InitialContextSetupFailure.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialContextSetupFailure.show_ie(U32.to_nat(id), value) ++ InitialContextSetupFailure.show_ies(more)
+
+def InitialContextSetupFailure.show(ies: G.InitialContextSetupFailure()) -> String:
+  "[" ++ InitialContextSetupFailure.show_ies(ies) ++ "]"
+
+def InitialContextSetupFailure.show_end(+v: G.InitialContextSetupFailure(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      InitialContextSetupFailure.show(v)
+    case False{}:
+      "!"
+
+def InitialContextSetupFailure.show_rd(r: Ap.Rd(G.InitialContextSetupFailure())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          InitialContextSetupFailure.show_end(v, Ap.Tail.zero(bits))
+
 def PDUSessionID.show(v: G.PDUSessionID()) -> String:
   Dec(U32.add(0, v))
 
@@ -1886,6 +2494,47 @@ def PDUSessionResourceListCxtRelReq.show_rd(r: Ap.Rd(G.PDUSessionResourceListCxt
         case Ap.Cur{rem, bits}:
           PDUSessionResourceListCxtRelReq.show_end(v, Ap.Tail.zero(bits))
 
+def UEContextReleaseRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 133n:
+      PDUSessionResourceListCxtRelReq.show_rd(G.PDUSessionResourceListCxtRelReq.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def UEContextReleaseRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UEContextReleaseRequest.show_ie(U32.to_nat(id), value) ++ UEContextReleaseRequest.show_ies(more)
+
+def UEContextReleaseRequest.show(ies: G.UEContextReleaseRequest()) -> String:
+  "[" ++ UEContextReleaseRequest.show_ies(ies) ++ "]"
+
+def UEContextReleaseRequest.show_end(+v: G.UEContextReleaseRequest(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      UEContextReleaseRequest.show(v)
+    case False{}:
+      "!"
+
+def UEContextReleaseRequest.show_rd(r: Ap.Rd(G.UEContextReleaseRequest())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          UEContextReleaseRequest.show_end(v, Ap.Tail.zero(bits))
+
 def UE_NGAP_ID_pair.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
   match m:
     case None{}:
@@ -1938,6 +2587,43 @@ def UE_NGAP_IDs.show_rd(r: Ap.Rd(G.UE_NGAP_IDs)) -> String:
       match c:
         case Ap.Cur{rem, bits}:
           UE_NGAP_IDs.show_end(v, Ap.Tail.zero(bits))
+
+def UEContextReleaseCommand.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 114n:
+      UE_NGAP_IDs.show_rd(G.UE_NGAP_IDs.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def UEContextReleaseCommand.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UEContextReleaseCommand.show_ie(U32.to_nat(id), value) ++ UEContextReleaseCommand.show_ies(more)
+
+def UEContextReleaseCommand.show(ies: G.UEContextReleaseCommand()) -> String:
+  "[" ++ UEContextReleaseCommand.show_ies(ies) ++ "]"
+
+def UEContextReleaseCommand.show_end(+v: G.UEContextReleaseCommand(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      UEContextReleaseCommand.show(v)
+    case False{}:
+      "!"
+
+def UEContextReleaseCommand.show_rd(r: Ap.Rd(G.UEContextReleaseCommand())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          UEContextReleaseCommand.show_end(v, Ap.Tail.zero(bits))
 
 def PDUSessionResourceItemCxtRelCpl.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
   match m:
@@ -1993,85 +2679,273 @@ def PDUSessionResourceListCxtRelCpl.show_rd(r: Ap.Rd(G.PDUSessionResourceListCxt
         case Ap.Cur{rem, bits}:
           PDUSessionResourceListCxtRelCpl.show_end(v, Ap.Tail.zero(bits))
 
-def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show(v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()) -> String:
-  Hex.bytes(v)
+def UEContextReleaseComplete.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 121n:
+      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 60n:
+      PDUSessionResourceListCxtRelCpl.show_rd(G.PDUSessionResourceListCxtRelCpl.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
 
-def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show_end(+v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer(), ok: Bool) -> String:
+def UEContextReleaseComplete.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UEContextReleaseComplete.show_ie(U32.to_nat(id), value) ++ UEContextReleaseComplete.show_ies(more)
+
+def UEContextReleaseComplete.show(ies: G.UEContextReleaseComplete()) -> String:
+  "[" ++ UEContextReleaseComplete.show_ies(ies) ++ "]"
+
+def UEContextReleaseComplete.show_end(+v: G.UEContextReleaseComplete(), ok: Bool) -> String:
   match ok:
     case True{}:
-      PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show(v)
+      UEContextReleaseComplete.show(v)
     case False{}:
       "!"
 
-def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())) -> String:
+def UEContextReleaseComplete.show_rd(r: Ap.Rd(G.UEContextReleaseComplete())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show_end(v, Ap.Tail.zero(bits))
+          UEContextReleaseComplete.show_end(v, Ap.Tail.zero(bits))
 
-def PDUSessionResourceSetupItemSUReq.m_pDUSessionNAS_PDU(m: Maybe<&2, G.NAS_PDU()>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      NAS_PDU.show(v)
-
-def PDUSessionResourceSetupItemSUReq.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+def PDUSessionAggregateMaximumBitRate.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
   match m:
     case None{}:
       "-"
     case Some{v}:
       Exts.show(v)
 
-def PDUSessionResourceSetupItemSUReq.show(x: G.PDUSessionResourceSetupItemSUReq) -> String:
+def PDUSessionAggregateMaximumBitRate.show(x: G.PDUSessionAggregateMaximumBitRate) -> String:
   match x:
-    case G.PDUSessionResourceSetupItemSUReq{pDUSessionID, pDUSessionNAS_PDU, s_NSSAI, pDUSessionResourceSetupRequestTransfer, iE_Extensions}:
-      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceSetupItemSUReq.m_pDUSessionNAS_PDU(pDUSessionNAS_PDU) ++ "," ++ S_NSSAI.show(s_NSSAI) ++ "," ++ PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show(pDUSessionResourceSetupRequestTransfer) ++ "," ++ PDUSessionResourceSetupItemSUReq.m_iE_Extensions(iE_Extensions) ++ "}"
+    case G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}:
+      "{" ++ BitRate.show(pDUSessionAggregateMaximumBitRateDL) ++ "," ++ BitRate.show(pDUSessionAggregateMaximumBitRateUL) ++ "," ++ PDUSessionAggregateMaximumBitRate.m_iE_Extensions(iE_Extensions) ++ "}"
 
-def PDUSessionResourceSetupItemSUReq.show_end(+v: G.PDUSessionResourceSetupItemSUReq, ok: Bool) -> String:
+def PDUSessionAggregateMaximumBitRate.show_end(+v: G.PDUSessionAggregateMaximumBitRate, ok: Bool) -> String:
   match ok:
     case True{}:
-      PDUSessionResourceSetupItemSUReq.show(v)
+      PDUSessionAggregateMaximumBitRate.show(v)
     case False{}:
       "!"
 
-def PDUSessionResourceSetupItemSUReq.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSUReq)) -> String:
+def PDUSessionAggregateMaximumBitRate.show_rd(r: Ap.Rd(G.PDUSessionAggregateMaximumBitRate)) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupItemSUReq.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionAggregateMaximumBitRate.show_end(v, Ap.Tail.zero(bits))
 
-def PDUSessionResourceSetupListSUReq.show_items(xs: List<&2, G.PDUSessionResourceSetupItemSUReq>) -> String:
-  match xs:
-    case Nil{}:
-      ""
-    case x <> more:
-      "," ++ PDUSessionResourceSetupItemSUReq.show(x) ++ PDUSessionResourceSetupListSUReq.show_items(more)
+def GTP_TEID.show(v: G.GTP_TEID()) -> String:
+  Hex.bytes(v)
 
-def PDUSessionResourceSetupListSUReq.show(xs: List<&2, G.PDUSessionResourceSetupItemSUReq>) -> String:
-  "[" ++ PDUSessionResourceSetupListSUReq.show_items(xs) ++ "]"
-
-def PDUSessionResourceSetupListSUReq.show_end(+v: G.PDUSessionResourceSetupListSUReq(), ok: Bool) -> String:
+def GTP_TEID.show_end(+v: G.GTP_TEID(), ok: Bool) -> String:
   match ok:
     case True{}:
-      PDUSessionResourceSetupListSUReq.show(v)
+      GTP_TEID.show(v)
     case False{}:
       "!"
 
-def PDUSessionResourceSetupListSUReq.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupListSUReq())) -> String:
+def GTP_TEID.show_rd(r: Ap.Rd(G.GTP_TEID())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupListSUReq.show_end(v, Ap.Tail.zero(bits))
+          GTP_TEID.show_end(v, Ap.Tail.zero(bits))
+
+def GTPTunnel.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def GTPTunnel.show(x: G.GTPTunnel) -> String:
+  match x:
+    case G.GTPTunnel{transportLayerAddress, gTP_TEID, iE_Extensions}:
+      "{" ++ TransportLayerAddress.show(transportLayerAddress) ++ "," ++ GTP_TEID.show(gTP_TEID) ++ "," ++ GTPTunnel.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def GTPTunnel.show_end(+v: G.GTPTunnel, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      GTPTunnel.show(v)
+    case False{}:
+      "!"
+
+def GTPTunnel.show_rd(r: Ap.Rd(G.GTPTunnel)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          GTPTunnel.show_end(v, Ap.Tail.zero(bits))
+
+def UPTransportLayerInformation.show(x: G.UPTransportLayerInformation) -> String:
+  match x:
+    case G.UPTransportLayerInformation_gTPTunnel{v}:
+      "0:" ++ GTPTunnel.show(v)
+    case G.UPTransportLayerInformation_choice_Extensions{v}:
+      "1:" ++ Ie.show(v)
+
+def UPTransportLayerInformation.show_end(+v: G.UPTransportLayerInformation, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      UPTransportLayerInformation.show(v)
+    case False{}:
+      "!"
+
+def UPTransportLayerInformation.show_rd(r: Ap.Rd(G.UPTransportLayerInformation)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          UPTransportLayerInformation.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionType.show(v: G.PDUSessionType()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def PDUSessionType.show_end(+v: G.PDUSessionType(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionType.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionType.show_rd(r: Ap.Rd(G.PDUSessionType())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionType.show_end(v, Ap.Tail.zero(bits))
+
+def IntegrityProtectionIndication.show(v: G.IntegrityProtectionIndication()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def IntegrityProtectionIndication.show_end(+v: G.IntegrityProtectionIndication(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      IntegrityProtectionIndication.show(v)
+    case False{}:
+      "!"
+
+def IntegrityProtectionIndication.show_rd(r: Ap.Rd(G.IntegrityProtectionIndication())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          IntegrityProtectionIndication.show_end(v, Ap.Tail.zero(bits))
+
+def ConfidentialityProtectionIndication.show(v: G.ConfidentialityProtectionIndication()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def ConfidentialityProtectionIndication.show_end(+v: G.ConfidentialityProtectionIndication(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      ConfidentialityProtectionIndication.show(v)
+    case False{}:
+      "!"
+
+def ConfidentialityProtectionIndication.show_rd(r: Ap.Rd(G.ConfidentialityProtectionIndication())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          ConfidentialityProtectionIndication.show_end(v, Ap.Tail.zero(bits))
+
+def MaximumIntegrityProtectedDataRate.show(v: G.MaximumIntegrityProtectedDataRate()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def MaximumIntegrityProtectedDataRate.show_end(+v: G.MaximumIntegrityProtectedDataRate(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      MaximumIntegrityProtectedDataRate.show(v)
+    case False{}:
+      "!"
+
+def MaximumIntegrityProtectedDataRate.show_rd(r: Ap.Rd(G.MaximumIntegrityProtectedDataRate())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          MaximumIntegrityProtectedDataRate.show_end(v, Ap.Tail.zero(bits))
+
+def SecurityIndication.m_maximumIntegrityProtectedDataRate_UL(m: Maybe<&2, G.MaximumIntegrityProtectedDataRate()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      MaximumIntegrityProtectedDataRate.show(v)
+
+def SecurityIndication.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def SecurityIndication.show(x: G.SecurityIndication) -> String:
+  match x:
+    case G.SecurityIndication{integrityProtectionIndication, confidentialityProtectionIndication, maximumIntegrityProtectedDataRate_UL, iE_Extensions}:
+      "{" ++ IntegrityProtectionIndication.show(integrityProtectionIndication) ++ "," ++ ConfidentialityProtectionIndication.show(confidentialityProtectionIndication) ++ "," ++ SecurityIndication.m_maximumIntegrityProtectedDataRate_UL(maximumIntegrityProtectedDataRate_UL) ++ "," ++ SecurityIndication.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def SecurityIndication.show_end(+v: G.SecurityIndication, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SecurityIndication.show(v)
+    case False{}:
+      "!"
+
+def SecurityIndication.show_rd(r: Ap.Rd(G.SecurityIndication)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SecurityIndication.show_end(v, Ap.Tail.zero(bits))
 
 def QosFlowIdentifier.show(v: G.QosFlowIdentifier()) -> String:
   match v:
@@ -2805,524 +3679,198 @@ def QosFlowSetupRequestList.show_rd(r: Ap.Rd(G.QosFlowSetupRequestList())) -> St
         case Ap.Cur{rem, bits}:
           QosFlowSetupRequestList.show_end(v, Ap.Tail.zero(bits))
 
-def PDUSessionType.show(v: G.PDUSessionType()) -> String:
+def DirectForwardingPathAvailability.show(v: G.DirectForwardingPathAvailability()) -> String:
   match v:
     case Ap.Root{i}:
       Dec(i)
     case Ap.Ext{i}:
       "x" ++ Dec(i)
 
-def PDUSessionType.show_end(+v: G.PDUSessionType(), ok: Bool) -> String:
+def DirectForwardingPathAvailability.show_end(+v: G.DirectForwardingPathAvailability(), ok: Bool) -> String:
   match ok:
     case True{}:
-      PDUSessionType.show(v)
+      DirectForwardingPathAvailability.show(v)
     case False{}:
       "!"
 
-def PDUSessionType.show_rd(r: Ap.Rd(G.PDUSessionType())) -> String:
+def DirectForwardingPathAvailability.show_rd(r: Ap.Rd(G.DirectForwardingPathAvailability())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          PDUSessionType.show_end(v, Ap.Tail.zero(bits))
+          DirectForwardingPathAvailability.show_end(v, Ap.Tail.zero(bits))
 
-def GTP_TEID.show(v: G.GTP_TEID()) -> String:
-  Hex.bytes(v)
+def PDUSessionResourceSetupRequestTransfer.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 130n:
+      PDUSessionAggregateMaximumBitRate.show_rd(G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 139n:
+      UPTransportLayerInformation.show_rd(G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 134n:
+      PDUSessionType.show_rd(G.PDUSessionType.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 138n:
+      SecurityIndication.show_rd(G.SecurityIndication.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 136n:
+      QosFlowSetupRequestList.show_rd(G.QosFlowSetupRequestList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 22n:
+      DirectForwardingPathAvailability.show_rd(G.DirectForwardingPathAvailability.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 195n:
+      UPTransportLayerInformation.show_rd(G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
 
-def GTP_TEID.show_end(+v: G.GTP_TEID(), ok: Bool) -> String:
+def PDUSessionResourceSetupRequestTransfer.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ PDUSessionResourceSetupRequestTransfer.show_ie(U32.to_nat(id), value) ++ PDUSessionResourceSetupRequestTransfer.show_ies(more)
+
+def PDUSessionResourceSetupRequestTransfer.show(ies: G.PDUSessionResourceSetupRequestTransfer()) -> String:
+  "[" ++ PDUSessionResourceSetupRequestTransfer.show_ies(ies) ++ "]"
+
+def PDUSessionResourceSetupRequestTransfer.show_end(+v: G.PDUSessionResourceSetupRequestTransfer(), ok: Bool) -> String:
   match ok:
     case True{}:
-      GTP_TEID.show(v)
+      PDUSessionResourceSetupRequestTransfer.show(v)
     case False{}:
       "!"
 
-def GTP_TEID.show_rd(r: Ap.Rd(G.GTP_TEID())) -> String:
+def PDUSessionResourceSetupRequestTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          GTP_TEID.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupRequestTransfer.show_end(v, Ap.Tail.zero(bits))
 
-def GTPTunnel.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show(v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer()) -> String:
+  PDUSessionResourceSetupRequestTransfer.show_rd(G.PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show_end(+v: G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceSetupItemSUReq.m_pDUSessionNAS_PDU(m: Maybe<&2, G.NAS_PDU()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      NAS_PDU.show(v)
+
+def PDUSessionResourceSetupItemSUReq.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
   match m:
     case None{}:
       "-"
     case Some{v}:
       Exts.show(v)
 
-def GTPTunnel.show(x: G.GTPTunnel) -> String:
+def PDUSessionResourceSetupItemSUReq.show(x: G.PDUSessionResourceSetupItemSUReq) -> String:
   match x:
-    case G.GTPTunnel{transportLayerAddress, gTP_TEID, iE_Extensions}:
-      "{" ++ TransportLayerAddress.show(transportLayerAddress) ++ "," ++ GTP_TEID.show(gTP_TEID) ++ "," ++ GTPTunnel.m_iE_Extensions(iE_Extensions) ++ "}"
+    case G.PDUSessionResourceSetupItemSUReq{pDUSessionID, pDUSessionNAS_PDU, s_NSSAI, pDUSessionResourceSetupRequestTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceSetupItemSUReq.m_pDUSessionNAS_PDU(pDUSessionNAS_PDU) ++ "," ++ S_NSSAI.show(s_NSSAI) ++ "," ++ PDUSessionResourceSetupItemSUReq_pDUSessionResourceSetupRequestTransfer.show(pDUSessionResourceSetupRequestTransfer) ++ "," ++ PDUSessionResourceSetupItemSUReq.m_iE_Extensions(iE_Extensions) ++ "}"
 
-def GTPTunnel.show_end(+v: G.GTPTunnel, ok: Bool) -> String:
+def PDUSessionResourceSetupItemSUReq.show_end(+v: G.PDUSessionResourceSetupItemSUReq, ok: Bool) -> String:
   match ok:
     case True{}:
-      GTPTunnel.show(v)
+      PDUSessionResourceSetupItemSUReq.show(v)
     case False{}:
       "!"
 
-def GTPTunnel.show_rd(r: Ap.Rd(G.GTPTunnel)) -> String:
+def PDUSessionResourceSetupItemSUReq.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSUReq)) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          GTPTunnel.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupItemSUReq.show_end(v, Ap.Tail.zero(bits))
 
-def UPTransportLayerInformation.show(x: G.UPTransportLayerInformation) -> String:
-  match x:
-    case G.UPTransportLayerInformation_gTPTunnel{v}:
-      "0:" ++ GTPTunnel.show(v)
-    case G.UPTransportLayerInformation_choice_Extensions{v}:
-      "1:" ++ Ie.show(v)
-
-def UPTransportLayerInformation.show_end(+v: G.UPTransportLayerInformation, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      UPTransportLayerInformation.show(v)
-    case False{}:
-      "!"
-
-def UPTransportLayerInformation.show_rd(r: Ap.Rd(G.UPTransportLayerInformation)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          UPTransportLayerInformation.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionAggregateMaximumBitRate.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def PDUSessionAggregateMaximumBitRate.show(x: G.PDUSessionAggregateMaximumBitRate) -> String:
-  match x:
-    case G.PDUSessionAggregateMaximumBitRate{pDUSessionAggregateMaximumBitRateDL, pDUSessionAggregateMaximumBitRateUL, iE_Extensions}:
-      "{" ++ BitRate.show(pDUSessionAggregateMaximumBitRateDL) ++ "," ++ BitRate.show(pDUSessionAggregateMaximumBitRateUL) ++ "," ++ PDUSessionAggregateMaximumBitRate.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def PDUSessionAggregateMaximumBitRate.show_end(+v: G.PDUSessionAggregateMaximumBitRate, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionAggregateMaximumBitRate.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionAggregateMaximumBitRate.show_rd(r: Ap.Rd(G.PDUSessionAggregateMaximumBitRate)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionAggregateMaximumBitRate.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show(v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()) -> String:
-  Hex.bytes(v)
-
-def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show_end(+v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceFailedToSetupItemSURes.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def PDUSessionResourceFailedToSetupItemSURes.show(x: G.PDUSessionResourceFailedToSetupItemSURes) -> String:
-  match x:
-    case G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}:
-      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show(pDUSessionResourceSetupUnsuccessfulTransfer) ++ "," ++ PDUSessionResourceFailedToSetupItemSURes.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def PDUSessionResourceFailedToSetupItemSURes.show_end(+v: G.PDUSessionResourceFailedToSetupItemSURes, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceFailedToSetupItemSURes.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceFailedToSetupItemSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceFailedToSetupItemSURes.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceFailedToSetupListSURes.show_items(xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>) -> String:
+def PDUSessionResourceSetupListSUReq.show_items(xs: List<&2, G.PDUSessionResourceSetupItemSUReq>) -> String:
   match xs:
     case Nil{}:
       ""
     case x <> more:
-      "," ++ PDUSessionResourceFailedToSetupItemSURes.show(x) ++ PDUSessionResourceFailedToSetupListSURes.show_items(more)
+      "," ++ PDUSessionResourceSetupItemSUReq.show(x) ++ PDUSessionResourceSetupListSUReq.show_items(more)
 
-def PDUSessionResourceFailedToSetupListSURes.show(xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>) -> String:
-  "[" ++ PDUSessionResourceFailedToSetupListSURes.show_items(xs) ++ "]"
+def PDUSessionResourceSetupListSUReq.show(xs: List<&2, G.PDUSessionResourceSetupItemSUReq>) -> String:
+  "[" ++ PDUSessionResourceSetupListSUReq.show_items(xs) ++ "]"
 
-def PDUSessionResourceFailedToSetupListSURes.show_end(+v: G.PDUSessionResourceFailedToSetupListSURes(), ok: Bool) -> String:
+def PDUSessionResourceSetupListSUReq.show_end(+v: G.PDUSessionResourceSetupListSUReq(), ok: Bool) -> String:
   match ok:
     case True{}:
-      PDUSessionResourceFailedToSetupListSURes.show(v)
+      PDUSessionResourceSetupListSUReq.show(v)
     case False{}:
       "!"
 
-def PDUSessionResourceFailedToSetupListSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())) -> String:
+def PDUSessionResourceSetupListSUReq.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupListSUReq())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          PDUSessionResourceFailedToSetupListSURes.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupListSUReq.show_end(v, Ap.Tail.zero(bits))
 
-def ProcedureCode.show(v: G.ProcedureCode()) -> String:
-  Dec(U32.add(0, v))
+def PDUSessionResourceSetupRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 38n:
+      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 74n:
+      PDUSessionResourceSetupListSUReq.show_rd(G.PDUSessionResourceSetupListSUReq.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 110n:
+      UEAggregateMaximumBitRate.show_rd(G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
 
-def ProcedureCode.show_end(+v: G.ProcedureCode(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      ProcedureCode.show(v)
-    case False{}:
-      "!"
-
-def ProcedureCode.show_rd(r: Ap.Rd(G.ProcedureCode())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          ProcedureCode.show_end(v, Ap.Tail.zero(bits))
-
-def TriggeringMessage.show(v: G.TriggeringMessage()) -> String:
-  match v:
-    case Ap.Root{i}:
-      Dec(i)
-    case Ap.Ext{i}:
-      "x" ++ Dec(i)
-
-def TriggeringMessage.show_end(+v: G.TriggeringMessage(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      TriggeringMessage.show(v)
-    case False{}:
-      "!"
-
-def TriggeringMessage.show_rd(r: Ap.Rd(G.TriggeringMessage())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          TriggeringMessage.show_end(v, Ap.Tail.zero(bits))
-
-def Criticality.show(v: G.Criticality()) -> String:
-  match v:
-    case Ap.Root{i}:
-      Dec(i)
-    case Ap.Ext{i}:
-      "x" ++ Dec(i)
-
-def Criticality.show_end(+v: G.Criticality(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      Criticality.show(v)
-    case False{}:
-      "!"
-
-def Criticality.show_rd(r: Ap.Rd(G.Criticality())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          Criticality.show_end(v, Ap.Tail.zero(bits))
-
-def ProtocolIE_ID.show(v: G.ProtocolIE_ID()) -> String:
-  Dec(U32.add(0, v))
-
-def ProtocolIE_ID.show_end(+v: G.ProtocolIE_ID(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      ProtocolIE_ID.show(v)
-    case False{}:
-      "!"
-
-def ProtocolIE_ID.show_rd(r: Ap.Rd(G.ProtocolIE_ID())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          ProtocolIE_ID.show_end(v, Ap.Tail.zero(bits))
-
-def TypeOfError.show(v: G.TypeOfError()) -> String:
-  match v:
-    case Ap.Root{i}:
-      Dec(i)
-    case Ap.Ext{i}:
-      "x" ++ Dec(i)
-
-def TypeOfError.show_end(+v: G.TypeOfError(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      TypeOfError.show(v)
-    case False{}:
-      "!"
-
-def TypeOfError.show_rd(r: Ap.Rd(G.TypeOfError())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          TypeOfError.show_end(v, Ap.Tail.zero(bits))
-
-def CriticalityDiagnostics_IE_Item.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def CriticalityDiagnostics_IE_Item.show(x: G.CriticalityDiagnostics_IE_Item) -> String:
-  match x:
-    case G.CriticalityDiagnostics_IE_Item{iECriticality, iE_ID, typeOfError, iE_Extensions}:
-      "{" ++ Criticality.show(iECriticality) ++ "," ++ ProtocolIE_ID.show(iE_ID) ++ "," ++ TypeOfError.show(typeOfError) ++ "," ++ CriticalityDiagnostics_IE_Item.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def CriticalityDiagnostics_IE_Item.show_end(+v: G.CriticalityDiagnostics_IE_Item, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      CriticalityDiagnostics_IE_Item.show(v)
-    case False{}:
-      "!"
-
-def CriticalityDiagnostics_IE_Item.show_rd(r: Ap.Rd(G.CriticalityDiagnostics_IE_Item)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          CriticalityDiagnostics_IE_Item.show_end(v, Ap.Tail.zero(bits))
-
-def CriticalityDiagnostics_IE_List.show_items(xs: List<&2, G.CriticalityDiagnostics_IE_Item>) -> String:
-  match xs:
+def PDUSessionResourceSetupRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
     case Nil{}:
       ""
-    case x <> more:
-      "," ++ CriticalityDiagnostics_IE_Item.show(x) ++ CriticalityDiagnostics_IE_List.show_items(more)
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ PDUSessionResourceSetupRequest.show_ie(U32.to_nat(id), value) ++ PDUSessionResourceSetupRequest.show_ies(more)
 
-def CriticalityDiagnostics_IE_List.show(xs: List<&2, G.CriticalityDiagnostics_IE_Item>) -> String:
-  "[" ++ CriticalityDiagnostics_IE_List.show_items(xs) ++ "]"
+def PDUSessionResourceSetupRequest.show(ies: G.PDUSessionResourceSetupRequest()) -> String:
+  "[" ++ PDUSessionResourceSetupRequest.show_ies(ies) ++ "]"
 
-def CriticalityDiagnostics_IE_List.show_end(+v: G.CriticalityDiagnostics_IE_List(), ok: Bool) -> String:
+def PDUSessionResourceSetupRequest.show_end(+v: G.PDUSessionResourceSetupRequest(), ok: Bool) -> String:
   match ok:
     case True{}:
-      CriticalityDiagnostics_IE_List.show(v)
+      PDUSessionResourceSetupRequest.show(v)
     case False{}:
       "!"
 
-def CriticalityDiagnostics_IE_List.show_rd(r: Ap.Rd(G.CriticalityDiagnostics_IE_List())) -> String:
+def PDUSessionResourceSetupRequest.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupRequest())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          CriticalityDiagnostics_IE_List.show_end(v, Ap.Tail.zero(bits))
-
-def CriticalityDiagnostics.m_procedureCode(m: Maybe<&2, G.ProcedureCode()>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      ProcedureCode.show(v)
-
-def CriticalityDiagnostics.m_triggeringMessage(m: Maybe<&2, G.TriggeringMessage()>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      TriggeringMessage.show(v)
-
-def CriticalityDiagnostics.m_procedureCriticality(m: Maybe<&2, G.Criticality()>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Criticality.show(v)
-
-def CriticalityDiagnostics.m_iEsCriticalityDiagnostics(m: Maybe<&2, G.CriticalityDiagnostics_IE_List()>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      CriticalityDiagnostics_IE_List.show(v)
-
-def CriticalityDiagnostics.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def CriticalityDiagnostics.show(x: G.CriticalityDiagnostics) -> String:
-  match x:
-    case G.CriticalityDiagnostics{procedureCode, triggeringMessage, procedureCriticality, iEsCriticalityDiagnostics, iE_Extensions}:
-      "{" ++ CriticalityDiagnostics.m_procedureCode(procedureCode) ++ "," ++ CriticalityDiagnostics.m_triggeringMessage(triggeringMessage) ++ "," ++ CriticalityDiagnostics.m_procedureCriticality(procedureCriticality) ++ "," ++ CriticalityDiagnostics.m_iEsCriticalityDiagnostics(iEsCriticalityDiagnostics) ++ "," ++ CriticalityDiagnostics.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def CriticalityDiagnostics.show_end(+v: G.CriticalityDiagnostics, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      CriticalityDiagnostics.show(v)
-    case False{}:
-      "!"
-
-def CriticalityDiagnostics.show_rd(r: Ap.Rd(G.CriticalityDiagnostics)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          CriticalityDiagnostics.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceSetupUnsuccessfulTransfer.m_criticalityDiagnostics(m: Maybe<&2, G.CriticalityDiagnostics>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      CriticalityDiagnostics.show(v)
-
-def PDUSessionResourceSetupUnsuccessfulTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def PDUSessionResourceSetupUnsuccessfulTransfer.show(x: G.PDUSessionResourceSetupUnsuccessfulTransfer) -> String:
-  match x:
-    case G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}:
-      "{" ++ Cause.show(cause) ++ "," ++ PDUSessionResourceSetupUnsuccessfulTransfer.m_criticalityDiagnostics(criticalityDiagnostics) ++ "," ++ PDUSessionResourceSetupUnsuccessfulTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def PDUSessionResourceSetupUnsuccessfulTransfer.show_end(+v: G.PDUSessionResourceSetupUnsuccessfulTransfer, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceSetupUnsuccessfulTransfer.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceSetupUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show(v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()) -> String:
-  Hex.bytes(v)
-
-def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show_end(+v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceSetupItemSURes.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
-  match m:
-    case None{}:
-      "-"
-    case Some{v}:
-      Exts.show(v)
-
-def PDUSessionResourceSetupItemSURes.show(x: G.PDUSessionResourceSetupItemSURes) -> String:
-  match x:
-    case G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}:
-      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show(pDUSessionResourceSetupResponseTransfer) ++ "," ++ PDUSessionResourceSetupItemSURes.m_iE_Extensions(iE_Extensions) ++ "}"
-
-def PDUSessionResourceSetupItemSURes.show_end(+v: G.PDUSessionResourceSetupItemSURes, ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceSetupItemSURes.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceSetupItemSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSURes)) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupItemSURes.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceSetupListSURes.show_items(xs: List<&2, G.PDUSessionResourceSetupItemSURes>) -> String:
-  match xs:
-    case Nil{}:
-      ""
-    case x <> more:
-      "," ++ PDUSessionResourceSetupItemSURes.show(x) ++ PDUSessionResourceSetupListSURes.show_items(more)
-
-def PDUSessionResourceSetupListSURes.show(xs: List<&2, G.PDUSessionResourceSetupItemSURes>) -> String:
-  "[" ++ PDUSessionResourceSetupListSURes.show_items(xs) ++ "]"
-
-def PDUSessionResourceSetupListSURes.show_end(+v: G.PDUSessionResourceSetupListSURes(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceSetupListSURes.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceSetupListSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupListSURes())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupListSURes.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupRequest.show_end(v, Ap.Tail.zero(bits))
 
 def AssociatedQosFlowItem_qosFlowMappingIndication.show(v: G.AssociatedQosFlowItem_qosFlowMappingIndication()) -> String:
   match v:
@@ -3667,603 +4215,186 @@ def PDUSessionResourceSetupResponseTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourc
         case Ap.Cur{rem, bits}:
           PDUSessionResourceSetupResponseTransfer.show_end(v, Ap.Tail.zero(bits))
 
-def NGSetupRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 27n:
-      GlobalRANNodeID.show_rd(G.GlobalRANNodeID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 102n:
-      SupportedTAList.show_rd(G.SupportedTAList.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 21n:
-      PagingDRX.show_rd(G.PagingDRX.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show(v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer()) -> String:
+  PDUSessionResourceSetupResponseTransfer.show_rd(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
 
-def NGSetupRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ NGSetupRequest.show_ie(U32.to_nat(id), value) ++ NGSetupRequest.show_ies(more)
-
-def NGSetupRequest.show(ies: G.NGSetupRequest()) -> String:
-  "[" ++ NGSetupRequest.show_ies(ies) ++ "]"
-
-def NGSetupRequest.show_end(+v: G.NGSetupRequest(), ok: Bool) -> String:
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show_end(+v: G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer(), ok: Bool) -> String:
   match ok:
     case True{}:
-      NGSetupRequest.show(v)
+      PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show(v)
     case False{}:
       "!"
 
-def NGSetupRequest.show_rd(r: Ap.Rd(G.NGSetupRequest())) -> String:
+def PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          NGSetupRequest.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show_end(v, Ap.Tail.zero(bits))
 
-def NGSetupResponse.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 1n:
-      AMFName.show_rd(G.AMFName.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 96n:
-      ServedGUAMIList.show_rd(G.ServedGUAMIList.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 86n:
-      RelativeAMFCapacity.show_rd(G.RelativeAMFCapacity.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 80n:
-      PLMNSupportList.show_rd(G.PLMNSupportList.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 19n:
-      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
+def PDUSessionResourceSetupItemSURes.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
 
-def NGSetupResponse.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ NGSetupResponse.show_ie(U32.to_nat(id), value) ++ NGSetupResponse.show_ies(more)
+def PDUSessionResourceSetupItemSURes.show(x: G.PDUSessionResourceSetupItemSURes) -> String:
+  match x:
+    case G.PDUSessionResourceSetupItemSURes{pDUSessionID, pDUSessionResourceSetupResponseTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceSetupItemSURes_pDUSessionResourceSetupResponseTransfer.show(pDUSessionResourceSetupResponseTransfer) ++ "," ++ PDUSessionResourceSetupItemSURes.m_iE_Extensions(iE_Extensions) ++ "}"
 
-def NGSetupResponse.show(ies: G.NGSetupResponse()) -> String:
-  "[" ++ NGSetupResponse.show_ies(ies) ++ "]"
-
-def NGSetupResponse.show_end(+v: G.NGSetupResponse(), ok: Bool) -> String:
+def PDUSessionResourceSetupItemSURes.show_end(+v: G.PDUSessionResourceSetupItemSURes, ok: Bool) -> String:
   match ok:
     case True{}:
-      NGSetupResponse.show(v)
+      PDUSessionResourceSetupItemSURes.show(v)
     case False{}:
       "!"
 
-def NGSetupResponse.show_rd(r: Ap.Rd(G.NGSetupResponse())) -> String:
+def PDUSessionResourceSetupItemSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemSURes)) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          NGSetupResponse.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupItemSURes.show_end(v, Ap.Tail.zero(bits))
 
-def NGSetupFailure.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 15n:
-      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 19n:
-      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def NGSetupFailure.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
+def PDUSessionResourceSetupListSURes.show_items(xs: List<&2, G.PDUSessionResourceSetupItemSURes>) -> String:
+  match xs:
     case Nil{}:
       ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ NGSetupFailure.show_ie(U32.to_nat(id), value) ++ NGSetupFailure.show_ies(more)
+    case x <> more:
+      "," ++ PDUSessionResourceSetupItemSURes.show(x) ++ PDUSessionResourceSetupListSURes.show_items(more)
 
-def NGSetupFailure.show(ies: G.NGSetupFailure()) -> String:
-  "[" ++ NGSetupFailure.show_ies(ies) ++ "]"
+def PDUSessionResourceSetupListSURes.show(xs: List<&2, G.PDUSessionResourceSetupItemSURes>) -> String:
+  "[" ++ PDUSessionResourceSetupListSURes.show_items(xs) ++ "]"
 
-def NGSetupFailure.show_end(+v: G.NGSetupFailure(), ok: Bool) -> String:
+def PDUSessionResourceSetupListSURes.show_end(+v: G.PDUSessionResourceSetupListSURes(), ok: Bool) -> String:
   match ok:
     case True{}:
-      NGSetupFailure.show(v)
+      PDUSessionResourceSetupListSURes.show(v)
     case False{}:
       "!"
 
-def NGSetupFailure.show_rd(r: Ap.Rd(G.NGSetupFailure())) -> String:
+def PDUSessionResourceSetupListSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupListSURes())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          NGSetupFailure.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupListSURes.show_end(v, Ap.Tail.zero(bits))
 
-def InitialUEMessage.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 38n:
-      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 121n:
-      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 90n:
-      RRCEstablishmentCause.show_rd(G.RRCEstablishmentCause.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 26n:
-      FiveG_S_TMSI.show_rd(G.FiveG_S_TMSI.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 3n:
-      AMFSetID.show_rd(G.AMFSetID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 0n:
-      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 174n:
-      PLMNIdentity.show_rd(G.PLMNIdentity.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 201n:
-      IABNodeIndication.show_rd(G.IABNodeIndication.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 224n:
-      CEmodeBSupport_Indicator.show_rd(G.CEmodeBSupport_Indicator.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 259n:
-      NPN_AccessInformation.show_rd(G.NPN_AccessInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
+def PDUSessionResourceSetupUnsuccessfulTransfer.m_criticalityDiagnostics(m: Maybe<&2, G.CriticalityDiagnostics>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      CriticalityDiagnostics.show(v)
 
-def InitialUEMessage.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialUEMessage.show_ie(U32.to_nat(id), value) ++ InitialUEMessage.show_ies(more)
+def PDUSessionResourceSetupUnsuccessfulTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
 
-def InitialUEMessage.show(ies: G.InitialUEMessage()) -> String:
-  "[" ++ InitialUEMessage.show_ies(ies) ++ "]"
+def PDUSessionResourceSetupUnsuccessfulTransfer.show(x: G.PDUSessionResourceSetupUnsuccessfulTransfer) -> String:
+  match x:
+    case G.PDUSessionResourceSetupUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}:
+      "{" ++ Cause.show(cause) ++ "," ++ PDUSessionResourceSetupUnsuccessfulTransfer.m_criticalityDiagnostics(criticalityDiagnostics) ++ "," ++ PDUSessionResourceSetupUnsuccessfulTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
 
-def InitialUEMessage.show_end(+v: G.InitialUEMessage(), ok: Bool) -> String:
+def PDUSessionResourceSetupUnsuccessfulTransfer.show_end(+v: G.PDUSessionResourceSetupUnsuccessfulTransfer, ok: Bool) -> String:
   match ok:
     case True{}:
-      InitialUEMessage.show(v)
+      PDUSessionResourceSetupUnsuccessfulTransfer.show(v)
     case False{}:
       "!"
 
-def InitialUEMessage.show_rd(r: Ap.Rd(G.InitialUEMessage())) -> String:
+def PDUSessionResourceSetupUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupUnsuccessfulTransfer)) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          InitialUEMessage.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceSetupUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
 
-def DownlinkNASTransport.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 48n:
-      AMFName.show_rd(G.AMFName.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 38n:
-      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 110n:
-      UEAggregateMaximumBitRate.show_rd(G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 0n:
-      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show(v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer()) -> String:
+  PDUSessionResourceSetupUnsuccessfulTransfer.show_rd(G.PDUSessionResourceSetupUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
 
-def DownlinkNASTransport.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ DownlinkNASTransport.show_ie(U32.to_nat(id), value) ++ DownlinkNASTransport.show_ies(more)
-
-def DownlinkNASTransport.show(ies: G.DownlinkNASTransport()) -> String:
-  "[" ++ DownlinkNASTransport.show_ies(ies) ++ "]"
-
-def DownlinkNASTransport.show_end(+v: G.DownlinkNASTransport(), ok: Bool) -> String:
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show_end(+v: G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer(), ok: Bool) -> String:
   match ok:
     case True{}:
-      DownlinkNASTransport.show(v)
+      PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show(v)
     case False{}:
       "!"
 
-def DownlinkNASTransport.show_rd(r: Ap.Rd(G.DownlinkNASTransport())) -> String:
+def PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          DownlinkNASTransport.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
 
-def UplinkNASTransport.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 38n:
-      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 121n:
-      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
+def PDUSessionResourceFailedToSetupItemSURes.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
 
-def UplinkNASTransport.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UplinkNASTransport.show_ie(U32.to_nat(id), value) ++ UplinkNASTransport.show_ies(more)
+def PDUSessionResourceFailedToSetupItemSURes.show(x: G.PDUSessionResourceFailedToSetupItemSURes) -> String:
+  match x:
+    case G.PDUSessionResourceFailedToSetupItemSURes{pDUSessionID, pDUSessionResourceSetupUnsuccessfulTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceFailedToSetupItemSURes_pDUSessionResourceSetupUnsuccessfulTransfer.show(pDUSessionResourceSetupUnsuccessfulTransfer) ++ "," ++ PDUSessionResourceFailedToSetupItemSURes.m_iE_Extensions(iE_Extensions) ++ "}"
 
-def UplinkNASTransport.show(ies: G.UplinkNASTransport()) -> String:
-  "[" ++ UplinkNASTransport.show_ies(ies) ++ "]"
-
-def UplinkNASTransport.show_end(+v: G.UplinkNASTransport(), ok: Bool) -> String:
+def PDUSessionResourceFailedToSetupItemSURes.show_end(+v: G.PDUSessionResourceFailedToSetupItemSURes, ok: Bool) -> String:
   match ok:
     case True{}:
-      UplinkNASTransport.show(v)
+      PDUSessionResourceFailedToSetupItemSURes.show(v)
     case False{}:
       "!"
 
-def UplinkNASTransport.show_rd(r: Ap.Rd(G.UplinkNASTransport())) -> String:
+def PDUSessionResourceFailedToSetupItemSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemSURes)) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          UplinkNASTransport.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceFailedToSetupItemSURes.show_end(v, Ap.Tail.zero(bits))
 
-def InitialContextSetupRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 48n:
-      AMFName.show_rd(G.AMFName.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 110n:
-      UEAggregateMaximumBitRate.show_rd(G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 28n:
-      GUAMI.show_rd(G.GUAMI.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 0n:
-      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 119n:
-      UESecurityCapabilities.show_rd(G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 94n:
-      SecurityKey.show_rd(G.SecurityKey.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 38n:
-      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def InitialContextSetupRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
+def PDUSessionResourceFailedToSetupListSURes.show_items(xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>) -> String:
+  match xs:
     case Nil{}:
       ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialContextSetupRequest.show_ie(U32.to_nat(id), value) ++ InitialContextSetupRequest.show_ies(more)
+    case x <> more:
+      "," ++ PDUSessionResourceFailedToSetupItemSURes.show(x) ++ PDUSessionResourceFailedToSetupListSURes.show_items(more)
 
-def InitialContextSetupRequest.show(ies: G.InitialContextSetupRequest()) -> String:
-  "[" ++ InitialContextSetupRequest.show_ies(ies) ++ "]"
+def PDUSessionResourceFailedToSetupListSURes.show(xs: List<&2, G.PDUSessionResourceFailedToSetupItemSURes>) -> String:
+  "[" ++ PDUSessionResourceFailedToSetupListSURes.show_items(xs) ++ "]"
 
-def InitialContextSetupRequest.show_end(+v: G.InitialContextSetupRequest(), ok: Bool) -> String:
+def PDUSessionResourceFailedToSetupListSURes.show_end(+v: G.PDUSessionResourceFailedToSetupListSURes(), ok: Bool) -> String:
   match ok:
     case True{}:
-      InitialContextSetupRequest.show(v)
+      PDUSessionResourceFailedToSetupListSURes.show(v)
     case False{}:
       "!"
 
-def InitialContextSetupRequest.show_rd(r: Ap.Rd(G.InitialContextSetupRequest())) -> String:
+def PDUSessionResourceFailedToSetupListSURes.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupListSURes())) -> String:
   match r:
     case Fail{e}:
       "!"
     case Done{(v, c)}:
       match c:
         case Ap.Cur{rem, bits}:
-          InitialContextSetupRequest.show_end(v, Ap.Tail.zero(bits))
-
-def InitialContextSetupResponse.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 19n:
-      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def InitialContextSetupResponse.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialContextSetupResponse.show_ie(U32.to_nat(id), value) ++ InitialContextSetupResponse.show_ies(more)
-
-def InitialContextSetupResponse.show(ies: G.InitialContextSetupResponse()) -> String:
-  "[" ++ InitialContextSetupResponse.show_ies(ies) ++ "]"
-
-def InitialContextSetupResponse.show_end(+v: G.InitialContextSetupResponse(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      InitialContextSetupResponse.show(v)
-    case False{}:
-      "!"
-
-def InitialContextSetupResponse.show_rd(r: Ap.Rd(G.InitialContextSetupResponse())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          InitialContextSetupResponse.show_end(v, Ap.Tail.zero(bits))
-
-def InitialContextSetupFailure.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 15n:
-      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 19n:
-      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def InitialContextSetupFailure.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ InitialContextSetupFailure.show_ie(U32.to_nat(id), value) ++ InitialContextSetupFailure.show_ies(more)
-
-def InitialContextSetupFailure.show(ies: G.InitialContextSetupFailure()) -> String:
-  "[" ++ InitialContextSetupFailure.show_ies(ies) ++ "]"
-
-def InitialContextSetupFailure.show_end(+v: G.InitialContextSetupFailure(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      InitialContextSetupFailure.show(v)
-    case False{}:
-      "!"
-
-def InitialContextSetupFailure.show_rd(r: Ap.Rd(G.InitialContextSetupFailure())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          InitialContextSetupFailure.show_end(v, Ap.Tail.zero(bits))
-
-def UEContextReleaseRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 133n:
-      PDUSessionResourceListCxtRelReq.show_rd(G.PDUSessionResourceListCxtRelReq.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 15n:
-      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def UEContextReleaseRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UEContextReleaseRequest.show_ie(U32.to_nat(id), value) ++ UEContextReleaseRequest.show_ies(more)
-
-def UEContextReleaseRequest.show(ies: G.UEContextReleaseRequest()) -> String:
-  "[" ++ UEContextReleaseRequest.show_ies(ies) ++ "]"
-
-def UEContextReleaseRequest.show_end(+v: G.UEContextReleaseRequest(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      UEContextReleaseRequest.show(v)
-    case False{}:
-      "!"
-
-def UEContextReleaseRequest.show_rd(r: Ap.Rd(G.UEContextReleaseRequest())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          UEContextReleaseRequest.show_end(v, Ap.Tail.zero(bits))
-
-def UEContextReleaseCommand.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 114n:
-      UE_NGAP_IDs.show_rd(G.UE_NGAP_IDs.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 15n:
-      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def UEContextReleaseCommand.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UEContextReleaseCommand.show_ie(U32.to_nat(id), value) ++ UEContextReleaseCommand.show_ies(more)
-
-def UEContextReleaseCommand.show(ies: G.UEContextReleaseCommand()) -> String:
-  "[" ++ UEContextReleaseCommand.show_ies(ies) ++ "]"
-
-def UEContextReleaseCommand.show_end(+v: G.UEContextReleaseCommand(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      UEContextReleaseCommand.show(v)
-    case False{}:
-      "!"
-
-def UEContextReleaseCommand.show_rd(r: Ap.Rd(G.UEContextReleaseCommand())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          UEContextReleaseCommand.show_end(v, Ap.Tail.zero(bits))
-
-def UEContextReleaseComplete.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 121n:
-      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 60n:
-      PDUSessionResourceListCxtRelCpl.show_rd(G.PDUSessionResourceListCxtRelCpl.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 19n:
-      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def UEContextReleaseComplete.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UEContextReleaseComplete.show_ie(U32.to_nat(id), value) ++ UEContextReleaseComplete.show_ies(more)
-
-def UEContextReleaseComplete.show(ies: G.UEContextReleaseComplete()) -> String:
-  "[" ++ UEContextReleaseComplete.show_ies(ies) ++ "]"
-
-def UEContextReleaseComplete.show_end(+v: G.UEContextReleaseComplete(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      UEContextReleaseComplete.show(v)
-    case False{}:
-      "!"
-
-def UEContextReleaseComplete.show_rd(r: Ap.Rd(G.UEContextReleaseComplete())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          UEContextReleaseComplete.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceSetupRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 10n:
-      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 85n:
-      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 38n:
-      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 74n:
-      PDUSessionResourceSetupListSUReq.show_rd(G.PDUSessionResourceSetupListSUReq.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 110n:
-      UEAggregateMaximumBitRate.show_rd(G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def PDUSessionResourceSetupRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ PDUSessionResourceSetupRequest.show_ie(U32.to_nat(id), value) ++ PDUSessionResourceSetupRequest.show_ies(more)
-
-def PDUSessionResourceSetupRequest.show(ies: G.PDUSessionResourceSetupRequest()) -> String:
-  "[" ++ PDUSessionResourceSetupRequest.show_ies(ies) ++ "]"
-
-def PDUSessionResourceSetupRequest.show_end(+v: G.PDUSessionResourceSetupRequest(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceSetupRequest.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceSetupRequest.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupRequest())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupRequest.show_end(v, Ap.Tail.zero(bits))
-
-def PDUSessionResourceSetupRequestTransfer.show_ie(id: Nat, +value: B.Bytes()) -> String:
-  match id:
-    case 130n:
-      PDUSessionAggregateMaximumBitRate.show_rd(G.PDUSessionAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 139n:
-      UPTransportLayerInformation.show_rd(G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 134n:
-      PDUSessionType.show_rd(G.PDUSessionType.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 136n:
-      QosFlowSetupRequestList.show_rd(G.QosFlowSetupRequestList.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case 195n:
-      UPTransportLayerInformation.show_rd(G.UPTransportLayerInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
-    case _:
-      Hex.bytes(value)
-
-def PDUSessionResourceSetupRequestTransfer.show_ies(ies: List<&2, Fr.Ie>) -> String:
-  match ies:
-    case Nil{}:
-      ""
-    case ie <> more:
-      match ie:
-        case Fr.Ie{+id, crit, value}:
-          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ PDUSessionResourceSetupRequestTransfer.show_ie(U32.to_nat(id), value) ++ PDUSessionResourceSetupRequestTransfer.show_ies(more)
-
-def PDUSessionResourceSetupRequestTransfer.show(ies: G.PDUSessionResourceSetupRequestTransfer()) -> String:
-  "[" ++ PDUSessionResourceSetupRequestTransfer.show_ies(ies) ++ "]"
-
-def PDUSessionResourceSetupRequestTransfer.show_end(+v: G.PDUSessionResourceSetupRequestTransfer(), ok: Bool) -> String:
-  match ok:
-    case True{}:
-      PDUSessionResourceSetupRequestTransfer.show(v)
-    case False{}:
-      "!"
-
-def PDUSessionResourceSetupRequestTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupRequestTransfer())) -> String:
-  match r:
-    case Fail{e}:
-      "!"
-    case Done{(v, c)}:
-      match c:
-        case Ap.Cur{rem, bits}:
-          PDUSessionResourceSetupRequestTransfer.show_end(v, Ap.Tail.zero(bits))
+          PDUSessionResourceFailedToSetupListSURes.show_end(v, Ap.Tail.zero(bits))
 
 def PDUSessionResourceSetupResponse.show_ie(id: Nat, +value: B.Bytes()) -> String:
   match id:
@@ -4353,19 +4484,2682 @@ def ErrorIndication.show_rd(r: Ap.Rd(G.ErrorIndication())) -> String:
         case Ap.Cur{rem, bits}:
           ErrorIndication.show_end(v, Ap.Tail.zero(bits))
 
+def DL_NGU_TNLInformationReused.show(v: G.DL_NGU_TNLInformationReused()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def DL_NGU_TNLInformationReused.show_end(+v: G.DL_NGU_TNLInformationReused(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DL_NGU_TNLInformationReused.show(v)
+    case False{}:
+      "!"
+
+def DL_NGU_TNLInformationReused.show_rd(r: Ap.Rd(G.DL_NGU_TNLInformationReused())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DL_NGU_TNLInformationReused.show_end(v, Ap.Tail.zero(bits))
+
+def UserPlaneSecurityInformation.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def UserPlaneSecurityInformation.show(x: G.UserPlaneSecurityInformation) -> String:
+  match x:
+    case G.UserPlaneSecurityInformation{securityResult, securityIndication, iE_Extensions}:
+      "{" ++ SecurityResult.show(securityResult) ++ "," ++ SecurityIndication.show(securityIndication) ++ "," ++ UserPlaneSecurityInformation.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def UserPlaneSecurityInformation.show_end(+v: G.UserPlaneSecurityInformation, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      UserPlaneSecurityInformation.show(v)
+    case False{}:
+      "!"
+
+def UserPlaneSecurityInformation.show_rd(r: Ap.Rd(G.UserPlaneSecurityInformation)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          UserPlaneSecurityInformation.show_end(v, Ap.Tail.zero(bits))
+
+def QosFlowAcceptedItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def QosFlowAcceptedItem.show(x: G.QosFlowAcceptedItem) -> String:
+  match x:
+    case G.QosFlowAcceptedItem{qosFlowIdentifier, iE_Extensions}:
+      "{" ++ QosFlowIdentifier.show(qosFlowIdentifier) ++ "," ++ QosFlowAcceptedItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def QosFlowAcceptedItem.show_end(+v: G.QosFlowAcceptedItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      QosFlowAcceptedItem.show(v)
+    case False{}:
+      "!"
+
+def QosFlowAcceptedItem.show_rd(r: Ap.Rd(G.QosFlowAcceptedItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          QosFlowAcceptedItem.show_end(v, Ap.Tail.zero(bits))
+
+def QosFlowAcceptedList.show_items(xs: List<&2, G.QosFlowAcceptedItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ QosFlowAcceptedItem.show(x) ++ QosFlowAcceptedList.show_items(more)
+
+def QosFlowAcceptedList.show(xs: List<&2, G.QosFlowAcceptedItem>) -> String:
+  "[" ++ QosFlowAcceptedList.show_items(xs) ++ "]"
+
+def QosFlowAcceptedList.show_end(+v: G.QosFlowAcceptedList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      QosFlowAcceptedList.show(v)
+    case False{}:
+      "!"
+
+def QosFlowAcceptedList.show_rd(r: Ap.Rd(G.QosFlowAcceptedList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          QosFlowAcceptedList.show_end(v, Ap.Tail.zero(bits))
+
+def PathSwitchRequestTransfer.m_dL_NGU_TNLInformationReused(m: Maybe<&2, G.DL_NGU_TNLInformationReused()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      DL_NGU_TNLInformationReused.show(v)
+
+def PathSwitchRequestTransfer.m_userPlaneSecurityInformation(m: Maybe<&2, G.UserPlaneSecurityInformation>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      UserPlaneSecurityInformation.show(v)
+
+def PathSwitchRequestTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PathSwitchRequestTransfer.show(x: G.PathSwitchRequestTransfer) -> String:
+  match x:
+    case G.PathSwitchRequestTransfer{dL_NGU_UP_TNLInformation, dL_NGU_TNLInformationReused, userPlaneSecurityInformation, qosFlowAcceptedList, iE_Extensions}:
+      "{" ++ UPTransportLayerInformation.show(dL_NGU_UP_TNLInformation) ++ "," ++ PathSwitchRequestTransfer.m_dL_NGU_TNLInformationReused(dL_NGU_TNLInformationReused) ++ "," ++ PathSwitchRequestTransfer.m_userPlaneSecurityInformation(userPlaneSecurityInformation) ++ "," ++ QosFlowAcceptedList.show(qosFlowAcceptedList) ++ "," ++ PathSwitchRequestTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PathSwitchRequestTransfer.show_end(+v: G.PathSwitchRequestTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PathSwitchRequestTransfer.show(v)
+    case False{}:
+      "!"
+
+def PathSwitchRequestTransfer.show_rd(r: Ap.Rd(G.PathSwitchRequestTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PathSwitchRequestTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.show(v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer()) -> String:
+  PathSwitchRequestTransfer.show_rd(G.PathSwitchRequestTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.show_end(+v: G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceToBeSwitchedDLItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceToBeSwitchedDLItem.show(x: G.PDUSessionResourceToBeSwitchedDLItem) -> String:
+  match x:
+    case G.PDUSessionResourceToBeSwitchedDLItem{pDUSessionID, pathSwitchRequestTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceToBeSwitchedDLItem_pathSwitchRequestTransfer.show(pathSwitchRequestTransfer) ++ "," ++ PDUSessionResourceToBeSwitchedDLItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceToBeSwitchedDLItem.show_end(+v: G.PDUSessionResourceToBeSwitchedDLItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceToBeSwitchedDLItem.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceToBeSwitchedDLItem.show_rd(r: Ap.Rd(G.PDUSessionResourceToBeSwitchedDLItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceToBeSwitchedDLItem.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceToBeSwitchedDLList.show_items(xs: List<&2, G.PDUSessionResourceToBeSwitchedDLItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceToBeSwitchedDLItem.show(x) ++ PDUSessionResourceToBeSwitchedDLList.show_items(more)
+
+def PDUSessionResourceToBeSwitchedDLList.show(xs: List<&2, G.PDUSessionResourceToBeSwitchedDLItem>) -> String:
+  "[" ++ PDUSessionResourceToBeSwitchedDLList.show_items(xs) ++ "]"
+
+def PDUSessionResourceToBeSwitchedDLList.show_end(+v: G.PDUSessionResourceToBeSwitchedDLList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceToBeSwitchedDLList.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceToBeSwitchedDLList.show_rd(r: Ap.Rd(G.PDUSessionResourceToBeSwitchedDLList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceToBeSwitchedDLList.show_end(v, Ap.Tail.zero(bits))
+
+def PathSwitchRequestSetupFailedTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PathSwitchRequestSetupFailedTransfer.show(x: G.PathSwitchRequestSetupFailedTransfer) -> String:
+  match x:
+    case G.PathSwitchRequestSetupFailedTransfer{cause, iE_Extensions}:
+      "{" ++ Cause.show(cause) ++ "," ++ PathSwitchRequestSetupFailedTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PathSwitchRequestSetupFailedTransfer.show_end(+v: G.PathSwitchRequestSetupFailedTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PathSwitchRequestSetupFailedTransfer.show(v)
+    case False{}:
+      "!"
+
+def PathSwitchRequestSetupFailedTransfer.show_rd(r: Ap.Rd(G.PathSwitchRequestSetupFailedTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PathSwitchRequestSetupFailedTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.show(v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer()) -> String:
+  PathSwitchRequestSetupFailedTransfer.show_rd(G.PathSwitchRequestSetupFailedTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.show_end(+v: G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceFailedToSetupItemPSReq.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceFailedToSetupItemPSReq.show(x: G.PDUSessionResourceFailedToSetupItemPSReq) -> String:
+  match x:
+    case G.PDUSessionResourceFailedToSetupItemPSReq{pDUSessionID, pathSwitchRequestSetupFailedTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceFailedToSetupItemPSReq_pathSwitchRequestSetupFailedTransfer.show(pathSwitchRequestSetupFailedTransfer) ++ "," ++ PDUSessionResourceFailedToSetupItemPSReq.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceFailedToSetupItemPSReq.show_end(+v: G.PDUSessionResourceFailedToSetupItemPSReq, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceFailedToSetupItemPSReq.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceFailedToSetupItemPSReq.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemPSReq)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceFailedToSetupItemPSReq.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceFailedToSetupListPSReq.show_items(xs: List<&2, G.PDUSessionResourceFailedToSetupItemPSReq>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceFailedToSetupItemPSReq.show(x) ++ PDUSessionResourceFailedToSetupListPSReq.show_items(more)
+
+def PDUSessionResourceFailedToSetupListPSReq.show(xs: List<&2, G.PDUSessionResourceFailedToSetupItemPSReq>) -> String:
+  "[" ++ PDUSessionResourceFailedToSetupListPSReq.show_items(xs) ++ "]"
+
+def PDUSessionResourceFailedToSetupListPSReq.show_end(+v: G.PDUSessionResourceFailedToSetupListPSReq(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceFailedToSetupListPSReq.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceFailedToSetupListPSReq.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupListPSReq())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceFailedToSetupListPSReq.show_end(v, Ap.Tail.zero(bits))
+
+def PathSwitchRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 100n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 121n:
+      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 119n:
+      UESecurityCapabilities.show_rd(G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 76n:
+      PDUSessionResourceToBeSwitchedDLList.show_rd(G.PDUSessionResourceToBeSwitchedDLList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 57n:
+      PDUSessionResourceFailedToSetupListPSReq.show_rd(G.PDUSessionResourceFailedToSetupListPSReq.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 237n:
+      RRCEstablishmentCause.show_rd(G.RRCEstablishmentCause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def PathSwitchRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ PathSwitchRequest.show_ie(U32.to_nat(id), value) ++ PathSwitchRequest.show_ies(more)
+
+def PathSwitchRequest.show(ies: G.PathSwitchRequest()) -> String:
+  "[" ++ PathSwitchRequest.show_ies(ies) ++ "]"
+
+def PathSwitchRequest.show_end(+v: G.PathSwitchRequest(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PathSwitchRequest.show(v)
+    case False{}:
+      "!"
+
+def PathSwitchRequest.show_rd(r: Ap.Rd(G.PathSwitchRequest())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PathSwitchRequest.show_end(v, Ap.Tail.zero(bits))
+
+def NextHopChainingCount.show(v: G.NextHopChainingCount()) -> String:
+  Dec(U32.add(0, v))
+
+def NextHopChainingCount.show_end(+v: G.NextHopChainingCount(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      NextHopChainingCount.show(v)
+    case False{}:
+      "!"
+
+def NextHopChainingCount.show_rd(r: Ap.Rd(G.NextHopChainingCount())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          NextHopChainingCount.show_end(v, Ap.Tail.zero(bits))
+
+def SecurityContext.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def SecurityContext.show(x: G.SecurityContext) -> String:
+  match x:
+    case G.SecurityContext{nextHopChainingCount, nextHopNH, iE_Extensions}:
+      "{" ++ NextHopChainingCount.show(nextHopChainingCount) ++ "," ++ SecurityKey.show(nextHopNH) ++ "," ++ SecurityContext.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def SecurityContext.show_end(+v: G.SecurityContext, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SecurityContext.show(v)
+    case False{}:
+      "!"
+
+def SecurityContext.show_rd(r: Ap.Rd(G.SecurityContext)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SecurityContext.show_end(v, Ap.Tail.zero(bits))
+
+def PathSwitchRequestAcknowledgeTransfer.m_uL_NGU_UP_TNLInformation(m: Maybe<&2, G.UPTransportLayerInformation>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      UPTransportLayerInformation.show(v)
+
+def PathSwitchRequestAcknowledgeTransfer.m_securityIndication(m: Maybe<&2, G.SecurityIndication>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      SecurityIndication.show(v)
+
+def PathSwitchRequestAcknowledgeTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PathSwitchRequestAcknowledgeTransfer.show(x: G.PathSwitchRequestAcknowledgeTransfer) -> String:
+  match x:
+    case G.PathSwitchRequestAcknowledgeTransfer{uL_NGU_UP_TNLInformation, securityIndication, iE_Extensions}:
+      "{" ++ PathSwitchRequestAcknowledgeTransfer.m_uL_NGU_UP_TNLInformation(uL_NGU_UP_TNLInformation) ++ "," ++ PathSwitchRequestAcknowledgeTransfer.m_securityIndication(securityIndication) ++ "," ++ PathSwitchRequestAcknowledgeTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PathSwitchRequestAcknowledgeTransfer.show_end(+v: G.PathSwitchRequestAcknowledgeTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PathSwitchRequestAcknowledgeTransfer.show(v)
+    case False{}:
+      "!"
+
+def PathSwitchRequestAcknowledgeTransfer.show_rd(r: Ap.Rd(G.PathSwitchRequestAcknowledgeTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PathSwitchRequestAcknowledgeTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.show(v: G.PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer()) -> String:
+  PathSwitchRequestAcknowledgeTransfer.show_rd(G.PathSwitchRequestAcknowledgeTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.show_end(+v: G.PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceSwitchedItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceSwitchedItem.show(x: G.PDUSessionResourceSwitchedItem) -> String:
+  match x:
+    case G.PDUSessionResourceSwitchedItem{pDUSessionID, pathSwitchRequestAcknowledgeTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceSwitchedItem_pathSwitchRequestAcknowledgeTransfer.show(pathSwitchRequestAcknowledgeTransfer) ++ "," ++ PDUSessionResourceSwitchedItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceSwitchedItem.show_end(+v: G.PDUSessionResourceSwitchedItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceSwitchedItem.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceSwitchedItem.show_rd(r: Ap.Rd(G.PDUSessionResourceSwitchedItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceSwitchedItem.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceSwitchedList.show_items(xs: List<&2, G.PDUSessionResourceSwitchedItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceSwitchedItem.show(x) ++ PDUSessionResourceSwitchedList.show_items(more)
+
+def PDUSessionResourceSwitchedList.show(xs: List<&2, G.PDUSessionResourceSwitchedItem>) -> String:
+  "[" ++ PDUSessionResourceSwitchedList.show_items(xs) ++ "]"
+
+def PDUSessionResourceSwitchedList.show_end(+v: G.PDUSessionResourceSwitchedList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceSwitchedList.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceSwitchedList.show_rd(r: Ap.Rd(G.PDUSessionResourceSwitchedList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceSwitchedList.show_end(v, Ap.Tail.zero(bits))
+
+def PathSwitchRequestUnsuccessfulTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PathSwitchRequestUnsuccessfulTransfer.show(x: G.PathSwitchRequestUnsuccessfulTransfer) -> String:
+  match x:
+    case G.PathSwitchRequestUnsuccessfulTransfer{cause, iE_Extensions}:
+      "{" ++ Cause.show(cause) ++ "," ++ PathSwitchRequestUnsuccessfulTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PathSwitchRequestUnsuccessfulTransfer.show_end(+v: G.PathSwitchRequestUnsuccessfulTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PathSwitchRequestUnsuccessfulTransfer.show(v)
+    case False{}:
+      "!"
+
+def PathSwitchRequestUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PathSwitchRequestUnsuccessfulTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PathSwitchRequestUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.show(v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer()) -> String:
+  PathSwitchRequestUnsuccessfulTransfer.show_rd(G.PathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.show_end(+v: G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceReleasedItemPSAck.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceReleasedItemPSAck.show(x: G.PDUSessionResourceReleasedItemPSAck) -> String:
+  match x:
+    case G.PDUSessionResourceReleasedItemPSAck{pDUSessionID, pathSwitchRequestUnsuccessfulTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceReleasedItemPSAck_pathSwitchRequestUnsuccessfulTransfer.show(pathSwitchRequestUnsuccessfulTransfer) ++ "," ++ PDUSessionResourceReleasedItemPSAck.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceReleasedItemPSAck.show_end(+v: G.PDUSessionResourceReleasedItemPSAck, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceReleasedItemPSAck.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceReleasedItemPSAck.show_rd(r: Ap.Rd(G.PDUSessionResourceReleasedItemPSAck)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceReleasedItemPSAck.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceReleasedListPSAck.show_items(xs: List<&2, G.PDUSessionResourceReleasedItemPSAck>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceReleasedItemPSAck.show(x) ++ PDUSessionResourceReleasedListPSAck.show_items(more)
+
+def PDUSessionResourceReleasedListPSAck.show(xs: List<&2, G.PDUSessionResourceReleasedItemPSAck>) -> String:
+  "[" ++ PDUSessionResourceReleasedListPSAck.show_items(xs) ++ "]"
+
+def PDUSessionResourceReleasedListPSAck.show_end(+v: G.PDUSessionResourceReleasedListPSAck(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceReleasedListPSAck.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceReleasedListPSAck.show_rd(r: Ap.Rd(G.PDUSessionResourceReleasedListPSAck())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceReleasedListPSAck.show_end(v, Ap.Tail.zero(bits))
+
+def PathSwitchRequestAcknowledge.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 119n:
+      UESecurityCapabilities.show_rd(G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 93n:
+      SecurityContext.show_rd(G.SecurityContext.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 77n:
+      PDUSessionResourceSwitchedList.show_rd(G.PDUSessionResourceSwitchedList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 68n:
+      PDUSessionResourceReleasedListPSAck.show_rd(G.PDUSessionResourceReleasedListPSAck.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 0n:
+      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def PathSwitchRequestAcknowledge.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ PathSwitchRequestAcknowledge.show_ie(U32.to_nat(id), value) ++ PathSwitchRequestAcknowledge.show_ies(more)
+
+def PathSwitchRequestAcknowledge.show(ies: G.PathSwitchRequestAcknowledge()) -> String:
+  "[" ++ PathSwitchRequestAcknowledge.show_ies(ies) ++ "]"
+
+def PathSwitchRequestAcknowledge.show_end(+v: G.PathSwitchRequestAcknowledge(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PathSwitchRequestAcknowledge.show(v)
+    case False{}:
+      "!"
+
+def PathSwitchRequestAcknowledge.show_rd(r: Ap.Rd(G.PathSwitchRequestAcknowledge())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PathSwitchRequestAcknowledge.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.show(v: G.PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer()) -> String:
+  PathSwitchRequestUnsuccessfulTransfer.show_rd(G.PathSwitchRequestUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.show_end(+v: G.PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceReleasedItemPSFail.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceReleasedItemPSFail.show(x: G.PDUSessionResourceReleasedItemPSFail) -> String:
+  match x:
+    case G.PDUSessionResourceReleasedItemPSFail{pDUSessionID, pathSwitchRequestUnsuccessfulTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceReleasedItemPSFail_pathSwitchRequestUnsuccessfulTransfer.show(pathSwitchRequestUnsuccessfulTransfer) ++ "," ++ PDUSessionResourceReleasedItemPSFail.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceReleasedItemPSFail.show_end(+v: G.PDUSessionResourceReleasedItemPSFail, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceReleasedItemPSFail.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceReleasedItemPSFail.show_rd(r: Ap.Rd(G.PDUSessionResourceReleasedItemPSFail)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceReleasedItemPSFail.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceReleasedListPSFail.show_items(xs: List<&2, G.PDUSessionResourceReleasedItemPSFail>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceReleasedItemPSFail.show(x) ++ PDUSessionResourceReleasedListPSFail.show_items(more)
+
+def PDUSessionResourceReleasedListPSFail.show(xs: List<&2, G.PDUSessionResourceReleasedItemPSFail>) -> String:
+  "[" ++ PDUSessionResourceReleasedListPSFail.show_items(xs) ++ "]"
+
+def PDUSessionResourceReleasedListPSFail.show_end(+v: G.PDUSessionResourceReleasedListPSFail(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceReleasedListPSFail.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceReleasedListPSFail.show_rd(r: Ap.Rd(G.PDUSessionResourceReleasedListPSFail())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceReleasedListPSFail.show_end(v, Ap.Tail.zero(bits))
+
+def PathSwitchRequestFailure.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 69n:
+      PDUSessionResourceReleasedListPSFail.show_rd(G.PDUSessionResourceReleasedListPSFail.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def PathSwitchRequestFailure.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ PathSwitchRequestFailure.show_ie(U32.to_nat(id), value) ++ PathSwitchRequestFailure.show_ies(more)
+
+def PathSwitchRequestFailure.show(ies: G.PathSwitchRequestFailure()) -> String:
+  "[" ++ PathSwitchRequestFailure.show_ies(ies) ++ "]"
+
+def PathSwitchRequestFailure.show_end(+v: G.PathSwitchRequestFailure(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PathSwitchRequestFailure.show(v)
+    case False{}:
+      "!"
+
+def PathSwitchRequestFailure.show_rd(r: Ap.Rd(G.PathSwitchRequestFailure())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PathSwitchRequestFailure.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverType.show(v: G.HandoverType()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def HandoverType.show_end(+v: G.HandoverType(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverType.show(v)
+    case False{}:
+      "!"
+
+def HandoverType.show_rd(r: Ap.Rd(G.HandoverType())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverType.show_end(v, Ap.Tail.zero(bits))
+
+def TargetRANNodeID.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def TargetRANNodeID.show(x: G.TargetRANNodeID) -> String:
+  match x:
+    case G.TargetRANNodeID{globalRANNodeID, selectedTAI, iE_Extensions}:
+      "{" ++ GlobalRANNodeID.show(globalRANNodeID) ++ "," ++ TAI.show(selectedTAI) ++ "," ++ TargetRANNodeID.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def TargetRANNodeID.show_end(+v: G.TargetRANNodeID, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      TargetRANNodeID.show(v)
+    case False{}:
+      "!"
+
+def TargetRANNodeID.show_rd(r: Ap.Rd(G.TargetRANNodeID)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          TargetRANNodeID.show_end(v, Ap.Tail.zero(bits))
+
+def EPS_TAC.show(v: G.EPS_TAC()) -> String:
+  Hex.bytes(v)
+
+def EPS_TAC.show_end(+v: G.EPS_TAC(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      EPS_TAC.show(v)
+    case False{}:
+      "!"
+
+def EPS_TAC.show_rd(r: Ap.Rd(G.EPS_TAC())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          EPS_TAC.show_end(v, Ap.Tail.zero(bits))
+
+def EPS_TAI.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def EPS_TAI.show(x: G.EPS_TAI) -> String:
+  match x:
+    case G.EPS_TAI{pLMNIdentity, ePS_TAC, iE_Extensions}:
+      "{" ++ PLMNIdentity.show(pLMNIdentity) ++ "," ++ EPS_TAC.show(ePS_TAC) ++ "," ++ EPS_TAI.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def EPS_TAI.show_end(+v: G.EPS_TAI, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      EPS_TAI.show(v)
+    case False{}:
+      "!"
+
+def EPS_TAI.show_rd(r: Ap.Rd(G.EPS_TAI)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          EPS_TAI.show_end(v, Ap.Tail.zero(bits))
+
+def TargeteNB_ID.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def TargeteNB_ID.show(x: G.TargeteNB_ID) -> String:
+  match x:
+    case G.TargeteNB_ID{globalENB_ID, selected_EPS_TAI, iE_Extensions}:
+      "{" ++ GlobalNgENB_ID.show(globalENB_ID) ++ "," ++ EPS_TAI.show(selected_EPS_TAI) ++ "," ++ TargeteNB_ID.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def TargeteNB_ID.show_end(+v: G.TargeteNB_ID, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      TargeteNB_ID.show(v)
+    case False{}:
+      "!"
+
+def TargeteNB_ID.show_rd(r: Ap.Rd(G.TargeteNB_ID)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          TargeteNB_ID.show_end(v, Ap.Tail.zero(bits))
+
+def TargetID.show(x: G.TargetID) -> String:
+  match x:
+    case G.TargetID_targetRANNodeID{v}:
+      "0:" ++ TargetRANNodeID.show(v)
+    case G.TargetID_targeteNB_ID{v}:
+      "1:" ++ TargeteNB_ID.show(v)
+    case G.TargetID_choice_Extensions{v}:
+      "2:" ++ Ie.show(v)
+
+def TargetID.show_end(+v: G.TargetID, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      TargetID.show(v)
+    case False{}:
+      "!"
+
+def TargetID.show_rd(r: Ap.Rd(G.TargetID)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          TargetID.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverRequiredTransfer.m_directForwardingPathAvailability(m: Maybe<&2, G.DirectForwardingPathAvailability()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      DirectForwardingPathAvailability.show(v)
+
+def HandoverRequiredTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def HandoverRequiredTransfer.show(x: G.HandoverRequiredTransfer) -> String:
+  match x:
+    case G.HandoverRequiredTransfer{directForwardingPathAvailability, iE_Extensions}:
+      "{" ++ HandoverRequiredTransfer.m_directForwardingPathAvailability(directForwardingPathAvailability) ++ "," ++ HandoverRequiredTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def HandoverRequiredTransfer.show_end(+v: G.HandoverRequiredTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverRequiredTransfer.show(v)
+    case False{}:
+      "!"
+
+def HandoverRequiredTransfer.show_rd(r: Ap.Rd(G.HandoverRequiredTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverRequiredTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceItemHORqd_handoverRequiredTransfer.show(v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer()) -> String:
+  HandoverRequiredTransfer.show_rd(G.HandoverRequiredTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceItemHORqd_handoverRequiredTransfer.show_end(+v: G.PDUSessionResourceItemHORqd_handoverRequiredTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceItemHORqd_handoverRequiredTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceItemHORqd_handoverRequiredTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceItemHORqd_handoverRequiredTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceItemHORqd_handoverRequiredTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceItemHORqd.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceItemHORqd.show(x: G.PDUSessionResourceItemHORqd) -> String:
+  match x:
+    case G.PDUSessionResourceItemHORqd{pDUSessionID, handoverRequiredTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceItemHORqd_handoverRequiredTransfer.show(handoverRequiredTransfer) ++ "," ++ PDUSessionResourceItemHORqd.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceItemHORqd.show_end(+v: G.PDUSessionResourceItemHORqd, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceItemHORqd.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceItemHORqd.show_rd(r: Ap.Rd(G.PDUSessionResourceItemHORqd)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceItemHORqd.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceListHORqd.show_items(xs: List<&2, G.PDUSessionResourceItemHORqd>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceItemHORqd.show(x) ++ PDUSessionResourceListHORqd.show_items(more)
+
+def PDUSessionResourceListHORqd.show(xs: List<&2, G.PDUSessionResourceItemHORqd>) -> String:
+  "[" ++ PDUSessionResourceListHORqd.show_items(xs) ++ "]"
+
+def PDUSessionResourceListHORqd.show_end(+v: G.PDUSessionResourceListHORqd(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceListHORqd.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceListHORqd.show_rd(r: Ap.Rd(G.PDUSessionResourceListHORqd())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceListHORqd.show_end(v, Ap.Tail.zero(bits))
+
+def SourceToTarget_TransparentContainer.show(v: G.SourceToTarget_TransparentContainer()) -> String:
+  Hex.bytes(v)
+
+def SourceToTarget_TransparentContainer.show_end(+v: G.SourceToTarget_TransparentContainer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      SourceToTarget_TransparentContainer.show(v)
+    case False{}:
+      "!"
+
+def SourceToTarget_TransparentContainer.show_rd(r: Ap.Rd(G.SourceToTarget_TransparentContainer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          SourceToTarget_TransparentContainer.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverRequired.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 29n:
+      HandoverType.show_rd(G.HandoverType.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 105n:
+      TargetID.show_rd(G.TargetID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 22n:
+      DirectForwardingPathAvailability.show_rd(G.DirectForwardingPathAvailability.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 61n:
+      PDUSessionResourceListHORqd.show_rd(G.PDUSessionResourceListHORqd.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 101n:
+      SourceToTarget_TransparentContainer.show_rd(G.SourceToTarget_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverRequired.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverRequired.show_ie(U32.to_nat(id), value) ++ HandoverRequired.show_ies(more)
+
+def HandoverRequired.show(ies: G.HandoverRequired()) -> String:
+  "[" ++ HandoverRequired.show_ies(ies) ++ "]"
+
+def HandoverRequired.show_end(+v: G.HandoverRequired(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverRequired.show(v)
+    case False{}:
+      "!"
+
+def HandoverRequired.show_rd(r: Ap.Rd(G.HandoverRequired())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverRequired.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.show(v: G.PDUSessionResourceSetupItemHOReq_handoverRequestTransfer()) -> String:
+  PDUSessionResourceSetupRequestTransfer.show_rd(G.PDUSessionResourceSetupRequestTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.show_end(+v: G.PDUSessionResourceSetupItemHOReq_handoverRequestTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemHOReq_handoverRequestTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceSetupItemHOReq.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceSetupItemHOReq.show(x: G.PDUSessionResourceSetupItemHOReq) -> String:
+  match x:
+    case G.PDUSessionResourceSetupItemHOReq{pDUSessionID, s_NSSAI, handoverRequestTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ S_NSSAI.show(s_NSSAI) ++ "," ++ PDUSessionResourceSetupItemHOReq_handoverRequestTransfer.show(handoverRequestTransfer) ++ "," ++ PDUSessionResourceSetupItemHOReq.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceSetupItemHOReq.show_end(+v: G.PDUSessionResourceSetupItemHOReq, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceSetupItemHOReq.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceSetupItemHOReq.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupItemHOReq)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceSetupItemHOReq.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceSetupListHOReq.show_items(xs: List<&2, G.PDUSessionResourceSetupItemHOReq>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceSetupItemHOReq.show(x) ++ PDUSessionResourceSetupListHOReq.show_items(more)
+
+def PDUSessionResourceSetupListHOReq.show(xs: List<&2, G.PDUSessionResourceSetupItemHOReq>) -> String:
+  "[" ++ PDUSessionResourceSetupListHOReq.show_items(xs) ++ "]"
+
+def PDUSessionResourceSetupListHOReq.show_end(+v: G.PDUSessionResourceSetupListHOReq(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceSetupListHOReq.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceSetupListHOReq.show_rd(r: Ap.Rd(G.PDUSessionResourceSetupListHOReq())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceSetupListHOReq.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverRequest.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 29n:
+      HandoverType.show_rd(G.HandoverType.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 110n:
+      UEAggregateMaximumBitRate.show_rd(G.UEAggregateMaximumBitRate.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 119n:
+      UESecurityCapabilities.show_rd(G.UESecurityCapabilities.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 93n:
+      SecurityContext.show_rd(G.SecurityContext.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 37n:
+      NAS_PDU.show_rd(G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 73n:
+      PDUSessionResourceSetupListHOReq.show_rd(G.PDUSessionResourceSetupListHOReq.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 0n:
+      AllowedNSSAI.show_rd(G.AllowedNSSAI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 101n:
+      SourceToTarget_TransparentContainer.show_rd(G.SourceToTarget_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 28n:
+      GUAMI.show_rd(G.GUAMI.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverRequest.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverRequest.show_ie(U32.to_nat(id), value) ++ HandoverRequest.show_ies(more)
+
+def HandoverRequest.show(ies: G.HandoverRequest()) -> String:
+  "[" ++ HandoverRequest.show_ies(ies) ++ "]"
+
+def HandoverRequest.show_end(+v: G.HandoverRequest(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverRequest.show(v)
+    case False{}:
+      "!"
+
+def HandoverRequest.show_rd(r: Ap.Rd(G.HandoverRequest())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverRequest.show_end(v, Ap.Tail.zero(bits))
+
+def DataForwardingAccepted.show(v: G.DataForwardingAccepted()) -> String:
+  match v:
+    case Ap.Root{i}:
+      Dec(i)
+    case Ap.Ext{i}:
+      "x" ++ Dec(i)
+
+def DataForwardingAccepted.show_end(+v: G.DataForwardingAccepted(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DataForwardingAccepted.show(v)
+    case False{}:
+      "!"
+
+def DataForwardingAccepted.show_rd(r: Ap.Rd(G.DataForwardingAccepted())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DataForwardingAccepted.show_end(v, Ap.Tail.zero(bits))
+
+def QosFlowItemWithDataForwarding.m_dataForwardingAccepted(m: Maybe<&2, G.DataForwardingAccepted()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      DataForwardingAccepted.show(v)
+
+def QosFlowItemWithDataForwarding.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def QosFlowItemWithDataForwarding.show(x: G.QosFlowItemWithDataForwarding) -> String:
+  match x:
+    case G.QosFlowItemWithDataForwarding{qosFlowIdentifier, dataForwardingAccepted, iE_Extensions}:
+      "{" ++ QosFlowIdentifier.show(qosFlowIdentifier) ++ "," ++ QosFlowItemWithDataForwarding.m_dataForwardingAccepted(dataForwardingAccepted) ++ "," ++ QosFlowItemWithDataForwarding.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def QosFlowItemWithDataForwarding.show_end(+v: G.QosFlowItemWithDataForwarding, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      QosFlowItemWithDataForwarding.show(v)
+    case False{}:
+      "!"
+
+def QosFlowItemWithDataForwarding.show_rd(r: Ap.Rd(G.QosFlowItemWithDataForwarding)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          QosFlowItemWithDataForwarding.show_end(v, Ap.Tail.zero(bits))
+
+def QosFlowListWithDataForwarding.show_items(xs: List<&2, G.QosFlowItemWithDataForwarding>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ QosFlowItemWithDataForwarding.show(x) ++ QosFlowListWithDataForwarding.show_items(more)
+
+def QosFlowListWithDataForwarding.show(xs: List<&2, G.QosFlowItemWithDataForwarding>) -> String:
+  "[" ++ QosFlowListWithDataForwarding.show_items(xs) ++ "]"
+
+def QosFlowListWithDataForwarding.show_end(+v: G.QosFlowListWithDataForwarding(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      QosFlowListWithDataForwarding.show(v)
+    case False{}:
+      "!"
+
+def QosFlowListWithDataForwarding.show_rd(r: Ap.Rd(G.QosFlowListWithDataForwarding())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          QosFlowListWithDataForwarding.show_end(v, Ap.Tail.zero(bits))
+
+def DRB_ID.show(v: G.DRB_ID()) -> String:
+  match v:
+    case Ap.IRoot{x}:
+      Dec(U32.add(1, x))
+    case Ap.IExt{bs}:
+      "x" ++ Hex.bytes(bs)
+
+def DRB_ID.show_end(+v: G.DRB_ID(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRB_ID.show(v)
+    case False{}:
+      "!"
+
+def DRB_ID.show_rd(r: Ap.Rd(G.DRB_ID())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRB_ID.show_end(v, Ap.Tail.zero(bits))
+
+def DataForwardingResponseDRBItem.m_dLForwardingUP_TNLInformation(m: Maybe<&2, G.UPTransportLayerInformation>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      UPTransportLayerInformation.show(v)
+
+def DataForwardingResponseDRBItem.m_uLForwardingUP_TNLInformation(m: Maybe<&2, G.UPTransportLayerInformation>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      UPTransportLayerInformation.show(v)
+
+def DataForwardingResponseDRBItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def DataForwardingResponseDRBItem.show(x: G.DataForwardingResponseDRBItem) -> String:
+  match x:
+    case G.DataForwardingResponseDRBItem{dRB_ID, dLForwardingUP_TNLInformation, uLForwardingUP_TNLInformation, iE_Extensions}:
+      "{" ++ DRB_ID.show(dRB_ID) ++ "," ++ DataForwardingResponseDRBItem.m_dLForwardingUP_TNLInformation(dLForwardingUP_TNLInformation) ++ "," ++ DataForwardingResponseDRBItem.m_uLForwardingUP_TNLInformation(uLForwardingUP_TNLInformation) ++ "," ++ DataForwardingResponseDRBItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def DataForwardingResponseDRBItem.show_end(+v: G.DataForwardingResponseDRBItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DataForwardingResponseDRBItem.show(v)
+    case False{}:
+      "!"
+
+def DataForwardingResponseDRBItem.show_rd(r: Ap.Rd(G.DataForwardingResponseDRBItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DataForwardingResponseDRBItem.show_end(v, Ap.Tail.zero(bits))
+
+def DataForwardingResponseDRBList.show_items(xs: List<&2, G.DataForwardingResponseDRBItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ DataForwardingResponseDRBItem.show(x) ++ DataForwardingResponseDRBList.show_items(more)
+
+def DataForwardingResponseDRBList.show(xs: List<&2, G.DataForwardingResponseDRBItem>) -> String:
+  "[" ++ DataForwardingResponseDRBList.show_items(xs) ++ "]"
+
+def DataForwardingResponseDRBList.show_end(+v: G.DataForwardingResponseDRBList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DataForwardingResponseDRBList.show(v)
+    case False{}:
+      "!"
+
+def DataForwardingResponseDRBList.show_rd(r: Ap.Rd(G.DataForwardingResponseDRBList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DataForwardingResponseDRBList.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverRequestAcknowledgeTransfer.m_dLForwardingUP_TNLInformation(m: Maybe<&2, G.UPTransportLayerInformation>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      UPTransportLayerInformation.show(v)
+
+def HandoverRequestAcknowledgeTransfer.m_securityResult(m: Maybe<&2, G.SecurityResult>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      SecurityResult.show(v)
+
+def HandoverRequestAcknowledgeTransfer.m_qosFlowFailedToSetupList(m: Maybe<&2, G.QosFlowListWithCause()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      QosFlowListWithCause.show(v)
+
+def HandoverRequestAcknowledgeTransfer.m_dataForwardingResponseDRBList(m: Maybe<&2, G.DataForwardingResponseDRBList()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      DataForwardingResponseDRBList.show(v)
+
+def HandoverRequestAcknowledgeTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def HandoverRequestAcknowledgeTransfer.show(x: G.HandoverRequestAcknowledgeTransfer) -> String:
+  match x:
+    case G.HandoverRequestAcknowledgeTransfer{dL_NGU_UP_TNLInformation, dLForwardingUP_TNLInformation, securityResult, qosFlowSetupResponseList, qosFlowFailedToSetupList, dataForwardingResponseDRBList, iE_Extensions}:
+      "{" ++ UPTransportLayerInformation.show(dL_NGU_UP_TNLInformation) ++ "," ++ HandoverRequestAcknowledgeTransfer.m_dLForwardingUP_TNLInformation(dLForwardingUP_TNLInformation) ++ "," ++ HandoverRequestAcknowledgeTransfer.m_securityResult(securityResult) ++ "," ++ QosFlowListWithDataForwarding.show(qosFlowSetupResponseList) ++ "," ++ HandoverRequestAcknowledgeTransfer.m_qosFlowFailedToSetupList(qosFlowFailedToSetupList) ++ "," ++ HandoverRequestAcknowledgeTransfer.m_dataForwardingResponseDRBList(dataForwardingResponseDRBList) ++ "," ++ HandoverRequestAcknowledgeTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def HandoverRequestAcknowledgeTransfer.show_end(+v: G.HandoverRequestAcknowledgeTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverRequestAcknowledgeTransfer.show(v)
+    case False{}:
+      "!"
+
+def HandoverRequestAcknowledgeTransfer.show_rd(r: Ap.Rd(G.HandoverRequestAcknowledgeTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverRequestAcknowledgeTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.show(v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer()) -> String:
+  HandoverRequestAcknowledgeTransfer.show_rd(G.HandoverRequestAcknowledgeTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.show_end(+v: G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceAdmittedItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceAdmittedItem.show(x: G.PDUSessionResourceAdmittedItem) -> String:
+  match x:
+    case G.PDUSessionResourceAdmittedItem{pDUSessionID, handoverRequestAcknowledgeTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceAdmittedItem_handoverRequestAcknowledgeTransfer.show(handoverRequestAcknowledgeTransfer) ++ "," ++ PDUSessionResourceAdmittedItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceAdmittedItem.show_end(+v: G.PDUSessionResourceAdmittedItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceAdmittedItem.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceAdmittedItem.show_rd(r: Ap.Rd(G.PDUSessionResourceAdmittedItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceAdmittedItem.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceAdmittedList.show_items(xs: List<&2, G.PDUSessionResourceAdmittedItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceAdmittedItem.show(x) ++ PDUSessionResourceAdmittedList.show_items(more)
+
+def PDUSessionResourceAdmittedList.show(xs: List<&2, G.PDUSessionResourceAdmittedItem>) -> String:
+  "[" ++ PDUSessionResourceAdmittedList.show_items(xs) ++ "]"
+
+def PDUSessionResourceAdmittedList.show_end(+v: G.PDUSessionResourceAdmittedList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceAdmittedList.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceAdmittedList.show_rd(r: Ap.Rd(G.PDUSessionResourceAdmittedList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceAdmittedList.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverResourceAllocationUnsuccessfulTransfer.m_criticalityDiagnostics(m: Maybe<&2, G.CriticalityDiagnostics>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      CriticalityDiagnostics.show(v)
+
+def HandoverResourceAllocationUnsuccessfulTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def HandoverResourceAllocationUnsuccessfulTransfer.show(x: G.HandoverResourceAllocationUnsuccessfulTransfer) -> String:
+  match x:
+    case G.HandoverResourceAllocationUnsuccessfulTransfer{cause, criticalityDiagnostics, iE_Extensions}:
+      "{" ++ Cause.show(cause) ++ "," ++ HandoverResourceAllocationUnsuccessfulTransfer.m_criticalityDiagnostics(criticalityDiagnostics) ++ "," ++ HandoverResourceAllocationUnsuccessfulTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def HandoverResourceAllocationUnsuccessfulTransfer.show_end(+v: G.HandoverResourceAllocationUnsuccessfulTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverResourceAllocationUnsuccessfulTransfer.show(v)
+    case False{}:
+      "!"
+
+def HandoverResourceAllocationUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.HandoverResourceAllocationUnsuccessfulTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverResourceAllocationUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.show(v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer()) -> String:
+  HandoverResourceAllocationUnsuccessfulTransfer.show_rd(G.HandoverResourceAllocationUnsuccessfulTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.show_end(+v: G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceFailedToSetupItemHOAck.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceFailedToSetupItemHOAck.show(x: G.PDUSessionResourceFailedToSetupItemHOAck) -> String:
+  match x:
+    case G.PDUSessionResourceFailedToSetupItemHOAck{pDUSessionID, handoverResourceAllocationUnsuccessfulTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceFailedToSetupItemHOAck_handoverResourceAllocationUnsuccessfulTransfer.show(handoverResourceAllocationUnsuccessfulTransfer) ++ "," ++ PDUSessionResourceFailedToSetupItemHOAck.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceFailedToSetupItemHOAck.show_end(+v: G.PDUSessionResourceFailedToSetupItemHOAck, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceFailedToSetupItemHOAck.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceFailedToSetupItemHOAck.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupItemHOAck)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceFailedToSetupItemHOAck.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceFailedToSetupListHOAck.show_items(xs: List<&2, G.PDUSessionResourceFailedToSetupItemHOAck>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceFailedToSetupItemHOAck.show(x) ++ PDUSessionResourceFailedToSetupListHOAck.show_items(more)
+
+def PDUSessionResourceFailedToSetupListHOAck.show(xs: List<&2, G.PDUSessionResourceFailedToSetupItemHOAck>) -> String:
+  "[" ++ PDUSessionResourceFailedToSetupListHOAck.show_items(xs) ++ "]"
+
+def PDUSessionResourceFailedToSetupListHOAck.show_end(+v: G.PDUSessionResourceFailedToSetupListHOAck(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceFailedToSetupListHOAck.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceFailedToSetupListHOAck.show_rd(r: Ap.Rd(G.PDUSessionResourceFailedToSetupListHOAck())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceFailedToSetupListHOAck.show_end(v, Ap.Tail.zero(bits))
+
+def TargetToSource_TransparentContainer.show(v: G.TargetToSource_TransparentContainer()) -> String:
+  Hex.bytes(v)
+
+def TargetToSource_TransparentContainer.show_end(+v: G.TargetToSource_TransparentContainer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      TargetToSource_TransparentContainer.show(v)
+    case False{}:
+      "!"
+
+def TargetToSource_TransparentContainer.show_rd(r: Ap.Rd(G.TargetToSource_TransparentContainer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          TargetToSource_TransparentContainer.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverRequestAcknowledge.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 53n:
+      PDUSessionResourceAdmittedList.show_rd(G.PDUSessionResourceAdmittedList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 56n:
+      PDUSessionResourceFailedToSetupListHOAck.show_rd(G.PDUSessionResourceFailedToSetupListHOAck.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 106n:
+      TargetToSource_TransparentContainer.show_rd(G.TargetToSource_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 259n:
+      NPN_AccessInformation.show_rd(G.NPN_AccessInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverRequestAcknowledge.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverRequestAcknowledge.show_ie(U32.to_nat(id), value) ++ HandoverRequestAcknowledge.show_ies(more)
+
+def HandoverRequestAcknowledge.show(ies: G.HandoverRequestAcknowledge()) -> String:
+  "[" ++ HandoverRequestAcknowledge.show_ies(ies) ++ "]"
+
+def HandoverRequestAcknowledge.show_end(+v: G.HandoverRequestAcknowledge(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverRequestAcknowledge.show(v)
+    case False{}:
+      "!"
+
+def HandoverRequestAcknowledge.show_rd(r: Ap.Rd(G.HandoverRequestAcknowledge())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverRequestAcknowledge.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverFailure.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverFailure.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverFailure.show_ie(U32.to_nat(id), value) ++ HandoverFailure.show_ies(more)
+
+def HandoverFailure.show(ies: G.HandoverFailure()) -> String:
+  "[" ++ HandoverFailure.show_ies(ies) ++ "]"
+
+def HandoverFailure.show_end(+v: G.HandoverFailure(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverFailure.show(v)
+    case False{}:
+      "!"
+
+def HandoverFailure.show_rd(r: Ap.Rd(G.HandoverFailure())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverFailure.show_end(v, Ap.Tail.zero(bits))
+
+def QosFlowToBeForwardedItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def QosFlowToBeForwardedItem.show(x: G.QosFlowToBeForwardedItem) -> String:
+  match x:
+    case G.QosFlowToBeForwardedItem{qosFlowIdentifier, iE_Extensions}:
+      "{" ++ QosFlowIdentifier.show(qosFlowIdentifier) ++ "," ++ QosFlowToBeForwardedItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def QosFlowToBeForwardedItem.show_end(+v: G.QosFlowToBeForwardedItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      QosFlowToBeForwardedItem.show(v)
+    case False{}:
+      "!"
+
+def QosFlowToBeForwardedItem.show_rd(r: Ap.Rd(G.QosFlowToBeForwardedItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          QosFlowToBeForwardedItem.show_end(v, Ap.Tail.zero(bits))
+
+def QosFlowToBeForwardedList.show_items(xs: List<&2, G.QosFlowToBeForwardedItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ QosFlowToBeForwardedItem.show(x) ++ QosFlowToBeForwardedList.show_items(more)
+
+def QosFlowToBeForwardedList.show(xs: List<&2, G.QosFlowToBeForwardedItem>) -> String:
+  "[" ++ QosFlowToBeForwardedList.show_items(xs) ++ "]"
+
+def QosFlowToBeForwardedList.show_end(+v: G.QosFlowToBeForwardedList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      QosFlowToBeForwardedList.show(v)
+    case False{}:
+      "!"
+
+def QosFlowToBeForwardedList.show_rd(r: Ap.Rd(G.QosFlowToBeForwardedList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          QosFlowToBeForwardedList.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverCommandTransfer.m_dLForwardingUP_TNLInformation(m: Maybe<&2, G.UPTransportLayerInformation>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      UPTransportLayerInformation.show(v)
+
+def HandoverCommandTransfer.m_qosFlowToBeForwardedList(m: Maybe<&2, G.QosFlowToBeForwardedList()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      QosFlowToBeForwardedList.show(v)
+
+def HandoverCommandTransfer.m_dataForwardingResponseDRBList(m: Maybe<&2, G.DataForwardingResponseDRBList()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      DataForwardingResponseDRBList.show(v)
+
+def HandoverCommandTransfer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def HandoverCommandTransfer.show(x: G.HandoverCommandTransfer) -> String:
+  match x:
+    case G.HandoverCommandTransfer{dLForwardingUP_TNLInformation, qosFlowToBeForwardedList, dataForwardingResponseDRBList, iE_Extensions}:
+      "{" ++ HandoverCommandTransfer.m_dLForwardingUP_TNLInformation(dLForwardingUP_TNLInformation) ++ "," ++ HandoverCommandTransfer.m_qosFlowToBeForwardedList(qosFlowToBeForwardedList) ++ "," ++ HandoverCommandTransfer.m_dataForwardingResponseDRBList(dataForwardingResponseDRBList) ++ "," ++ HandoverCommandTransfer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def HandoverCommandTransfer.show_end(+v: G.HandoverCommandTransfer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverCommandTransfer.show(v)
+    case False{}:
+      "!"
+
+def HandoverCommandTransfer.show_rd(r: Ap.Rd(G.HandoverCommandTransfer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverCommandTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceHandoverItem_handoverCommandTransfer.show(v: G.PDUSessionResourceHandoverItem_handoverCommandTransfer()) -> String:
+  HandoverCommandTransfer.show_rd(G.HandoverCommandTransfer.read(Ap.Cur{0n, Ap.unpack(v)}))
+
+def PDUSessionResourceHandoverItem_handoverCommandTransfer.show_end(+v: G.PDUSessionResourceHandoverItem_handoverCommandTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceHandoverItem_handoverCommandTransfer.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceHandoverItem_handoverCommandTransfer.show_rd(r: Ap.Rd(G.PDUSessionResourceHandoverItem_handoverCommandTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceHandoverItem_handoverCommandTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceHandoverItem.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def PDUSessionResourceHandoverItem.show(x: G.PDUSessionResourceHandoverItem) -> String:
+  match x:
+    case G.PDUSessionResourceHandoverItem{pDUSessionID, handoverCommandTransfer, iE_Extensions}:
+      "{" ++ PDUSessionID.show(pDUSessionID) ++ "," ++ PDUSessionResourceHandoverItem_handoverCommandTransfer.show(handoverCommandTransfer) ++ "," ++ PDUSessionResourceHandoverItem.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def PDUSessionResourceHandoverItem.show_end(+v: G.PDUSessionResourceHandoverItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceHandoverItem.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceHandoverItem.show_rd(r: Ap.Rd(G.PDUSessionResourceHandoverItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceHandoverItem.show_end(v, Ap.Tail.zero(bits))
+
+def PDUSessionResourceHandoverList.show_items(xs: List<&2, G.PDUSessionResourceHandoverItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ PDUSessionResourceHandoverItem.show(x) ++ PDUSessionResourceHandoverList.show_items(more)
+
+def PDUSessionResourceHandoverList.show(xs: List<&2, G.PDUSessionResourceHandoverItem>) -> String:
+  "[" ++ PDUSessionResourceHandoverList.show_items(xs) ++ "]"
+
+def PDUSessionResourceHandoverList.show_end(+v: G.PDUSessionResourceHandoverList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      PDUSessionResourceHandoverList.show(v)
+    case False{}:
+      "!"
+
+def PDUSessionResourceHandoverList.show_rd(r: Ap.Rd(G.PDUSessionResourceHandoverList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          PDUSessionResourceHandoverList.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverCommand.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 29n:
+      HandoverType.show_rd(G.HandoverType.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 59n:
+      PDUSessionResourceHandoverList.show_rd(G.PDUSessionResourceHandoverList.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 106n:
+      TargetToSource_TransparentContainer.show_rd(G.TargetToSource_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverCommand.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverCommand.show_ie(U32.to_nat(id), value) ++ HandoverCommand.show_ies(more)
+
+def HandoverCommand.show(ies: G.HandoverCommand()) -> String:
+  "[" ++ HandoverCommand.show_ies(ies) ++ "]"
+
+def HandoverCommand.show_end(+v: G.HandoverCommand(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverCommand.show(v)
+    case False{}:
+      "!"
+
+def HandoverCommand.show_rd(r: Ap.Rd(G.HandoverCommand())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverCommand.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverPreparationFailure.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverPreparationFailure.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverPreparationFailure.show_ie(U32.to_nat(id), value) ++ HandoverPreparationFailure.show_ies(more)
+
+def HandoverPreparationFailure.show(ies: G.HandoverPreparationFailure()) -> String:
+  "[" ++ HandoverPreparationFailure.show_ies(ies) ++ "]"
+
+def HandoverPreparationFailure.show_end(+v: G.HandoverPreparationFailure(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverPreparationFailure.show(v)
+    case False{}:
+      "!"
+
+def HandoverPreparationFailure.show_rd(r: Ap.Rd(G.HandoverPreparationFailure())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverPreparationFailure.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverNotify.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 121n:
+      UserLocationInformation.show_rd(G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverNotify.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverNotify.show_ie(U32.to_nat(id), value) ++ HandoverNotify.show_ies(more)
+
+def HandoverNotify.show(ies: G.HandoverNotify()) -> String:
+  "[" ++ HandoverNotify.show_ies(ies) ++ "]"
+
+def HandoverNotify.show_end(+v: G.HandoverNotify(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverNotify.show(v)
+    case False{}:
+      "!"
+
+def HandoverNotify.show_rd(r: Ap.Rd(G.HandoverNotify())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverNotify.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverCancel.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 15n:
+      Cause.show_rd(G.Cause.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverCancel.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverCancel.show_ie(U32.to_nat(id), value) ++ HandoverCancel.show_ies(more)
+
+def HandoverCancel.show(ies: G.HandoverCancel()) -> String:
+  "[" ++ HandoverCancel.show_ies(ies) ++ "]"
+
+def HandoverCancel.show_end(+v: G.HandoverCancel(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverCancel.show(v)
+    case False{}:
+      "!"
+
+def HandoverCancel.show_rd(r: Ap.Rd(G.HandoverCancel())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverCancel.show_end(v, Ap.Tail.zero(bits))
+
+def HandoverCancelAcknowledge.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 19n:
+      CriticalityDiagnostics.show_rd(G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def HandoverCancelAcknowledge.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ HandoverCancelAcknowledge.show_ie(U32.to_nat(id), value) ++ HandoverCancelAcknowledge.show_ies(more)
+
+def HandoverCancelAcknowledge.show(ies: G.HandoverCancelAcknowledge()) -> String:
+  "[" ++ HandoverCancelAcknowledge.show_ies(ies) ++ "]"
+
+def HandoverCancelAcknowledge.show_end(+v: G.HandoverCancelAcknowledge(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      HandoverCancelAcknowledge.show(v)
+    case False{}:
+      "!"
+
+def HandoverCancelAcknowledge.show_rd(r: Ap.Rd(G.HandoverCancelAcknowledge())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          HandoverCancelAcknowledge.show_end(v, Ap.Tail.zero(bits))
+
+def COUNTValueForPDCP_SN12_pDCP_SN12.show(v: G.COUNTValueForPDCP_SN12_pDCP_SN12()) -> String:
+  Dec(U32.add(0, v))
+
+def COUNTValueForPDCP_SN12_pDCP_SN12.show_end(+v: G.COUNTValueForPDCP_SN12_pDCP_SN12(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      COUNTValueForPDCP_SN12_pDCP_SN12.show(v)
+    case False{}:
+      "!"
+
+def COUNTValueForPDCP_SN12_pDCP_SN12.show_rd(r: Ap.Rd(G.COUNTValueForPDCP_SN12_pDCP_SN12())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          COUNTValueForPDCP_SN12_pDCP_SN12.show_end(v, Ap.Tail.zero(bits))
+
+def COUNTValueForPDCP_SN12_hFN_PDCP_SN12.show(v: G.COUNTValueForPDCP_SN12_hFN_PDCP_SN12()) -> String:
+  Hex.bytes(v)
+
+def COUNTValueForPDCP_SN12_hFN_PDCP_SN12.show_end(+v: G.COUNTValueForPDCP_SN12_hFN_PDCP_SN12(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      COUNTValueForPDCP_SN12_hFN_PDCP_SN12.show(v)
+    case False{}:
+      "!"
+
+def COUNTValueForPDCP_SN12_hFN_PDCP_SN12.show_rd(r: Ap.Rd(G.COUNTValueForPDCP_SN12_hFN_PDCP_SN12())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          COUNTValueForPDCP_SN12_hFN_PDCP_SN12.show_end(v, Ap.Tail.zero(bits))
+
+def COUNTValueForPDCP_SN12.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def COUNTValueForPDCP_SN12.show(x: G.COUNTValueForPDCP_SN12) -> String:
+  match x:
+    case G.COUNTValueForPDCP_SN12{pDCP_SN12, hFN_PDCP_SN12, iE_Extensions}:
+      "{" ++ COUNTValueForPDCP_SN12_pDCP_SN12.show(pDCP_SN12) ++ "," ++ COUNTValueForPDCP_SN12_hFN_PDCP_SN12.show(hFN_PDCP_SN12) ++ "," ++ COUNTValueForPDCP_SN12.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def COUNTValueForPDCP_SN12.show_end(+v: G.COUNTValueForPDCP_SN12, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      COUNTValueForPDCP_SN12.show(v)
+    case False{}:
+      "!"
+
+def COUNTValueForPDCP_SN12.show_rd(r: Ap.Rd(G.COUNTValueForPDCP_SN12)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          COUNTValueForPDCP_SN12.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.show(v: G.DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs()) -> String:
+  "b" ++ Bits.show(v)
+
+def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.show_end(+v: G.DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.show_rd(r: Ap.Rd(G.DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusUL12.m_receiveStatusOfUL_PDCP_SDUs(m: Maybe<&2, G.DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      DRBStatusUL12_receiveStatusOfUL_PDCP_SDUs.show(v)
+
+def DRBStatusUL12.m_iE_Extension(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def DRBStatusUL12.show(x: G.DRBStatusUL12) -> String:
+  match x:
+    case G.DRBStatusUL12{uL_COUNTValue, receiveStatusOfUL_PDCP_SDUs, iE_Extension}:
+      "{" ++ COUNTValueForPDCP_SN12.show(uL_COUNTValue) ++ "," ++ DRBStatusUL12.m_receiveStatusOfUL_PDCP_SDUs(receiveStatusOfUL_PDCP_SDUs) ++ "," ++ DRBStatusUL12.m_iE_Extension(iE_Extension) ++ "}"
+
+def DRBStatusUL12.show_end(+v: G.DRBStatusUL12, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusUL12.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusUL12.show_rd(r: Ap.Rd(G.DRBStatusUL12)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusUL12.show_end(v, Ap.Tail.zero(bits))
+
+def COUNTValueForPDCP_SN18_pDCP_SN18.show(v: G.COUNTValueForPDCP_SN18_pDCP_SN18()) -> String:
+  Hex.bytes(v)
+
+def COUNTValueForPDCP_SN18_pDCP_SN18.show_end(+v: G.COUNTValueForPDCP_SN18_pDCP_SN18(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      COUNTValueForPDCP_SN18_pDCP_SN18.show(v)
+    case False{}:
+      "!"
+
+def COUNTValueForPDCP_SN18_pDCP_SN18.show_rd(r: Ap.Rd(G.COUNTValueForPDCP_SN18_pDCP_SN18())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          COUNTValueForPDCP_SN18_pDCP_SN18.show_end(v, Ap.Tail.zero(bits))
+
+def COUNTValueForPDCP_SN18_hFN_PDCP_SN18.show(v: G.COUNTValueForPDCP_SN18_hFN_PDCP_SN18()) -> String:
+  Dec(U32.add(0, v))
+
+def COUNTValueForPDCP_SN18_hFN_PDCP_SN18.show_end(+v: G.COUNTValueForPDCP_SN18_hFN_PDCP_SN18(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      COUNTValueForPDCP_SN18_hFN_PDCP_SN18.show(v)
+    case False{}:
+      "!"
+
+def COUNTValueForPDCP_SN18_hFN_PDCP_SN18.show_rd(r: Ap.Rd(G.COUNTValueForPDCP_SN18_hFN_PDCP_SN18())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          COUNTValueForPDCP_SN18_hFN_PDCP_SN18.show_end(v, Ap.Tail.zero(bits))
+
+def COUNTValueForPDCP_SN18.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def COUNTValueForPDCP_SN18.show(x: G.COUNTValueForPDCP_SN18) -> String:
+  match x:
+    case G.COUNTValueForPDCP_SN18{pDCP_SN18, hFN_PDCP_SN18, iE_Extensions}:
+      "{" ++ COUNTValueForPDCP_SN18_pDCP_SN18.show(pDCP_SN18) ++ "," ++ COUNTValueForPDCP_SN18_hFN_PDCP_SN18.show(hFN_PDCP_SN18) ++ "," ++ COUNTValueForPDCP_SN18.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def COUNTValueForPDCP_SN18.show_end(+v: G.COUNTValueForPDCP_SN18, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      COUNTValueForPDCP_SN18.show(v)
+    case False{}:
+      "!"
+
+def COUNTValueForPDCP_SN18.show_rd(r: Ap.Rd(G.COUNTValueForPDCP_SN18)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          COUNTValueForPDCP_SN18.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.show(v: G.DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs()) -> String:
+  "b" ++ Bits.show(v)
+
+def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.show_end(+v: G.DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.show_rd(r: Ap.Rd(G.DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusUL18.m_receiveStatusOfUL_PDCP_SDUs(m: Maybe<&2, G.DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs()>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      DRBStatusUL18_receiveStatusOfUL_PDCP_SDUs.show(v)
+
+def DRBStatusUL18.m_iE_Extension(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def DRBStatusUL18.show(x: G.DRBStatusUL18) -> String:
+  match x:
+    case G.DRBStatusUL18{uL_COUNTValue, receiveStatusOfUL_PDCP_SDUs, iE_Extension}:
+      "{" ++ COUNTValueForPDCP_SN18.show(uL_COUNTValue) ++ "," ++ DRBStatusUL18.m_receiveStatusOfUL_PDCP_SDUs(receiveStatusOfUL_PDCP_SDUs) ++ "," ++ DRBStatusUL18.m_iE_Extension(iE_Extension) ++ "}"
+
+def DRBStatusUL18.show_end(+v: G.DRBStatusUL18, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusUL18.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusUL18.show_rd(r: Ap.Rd(G.DRBStatusUL18)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusUL18.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusUL.show(x: G.DRBStatusUL) -> String:
+  match x:
+    case G.DRBStatusUL_dRBStatusUL12{v}:
+      "0:" ++ DRBStatusUL12.show(v)
+    case G.DRBStatusUL_dRBStatusUL18{v}:
+      "1:" ++ DRBStatusUL18.show(v)
+    case G.DRBStatusUL_choice_Extensions{v}:
+      "2:" ++ Ie.show(v)
+
+def DRBStatusUL.show_end(+v: G.DRBStatusUL, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusUL.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusUL.show_rd(r: Ap.Rd(G.DRBStatusUL)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusUL.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusDL12.m_iE_Extension(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def DRBStatusDL12.show(x: G.DRBStatusDL12) -> String:
+  match x:
+    case G.DRBStatusDL12{dL_COUNTValue, iE_Extension}:
+      "{" ++ COUNTValueForPDCP_SN12.show(dL_COUNTValue) ++ "," ++ DRBStatusDL12.m_iE_Extension(iE_Extension) ++ "}"
+
+def DRBStatusDL12.show_end(+v: G.DRBStatusDL12, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusDL12.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusDL12.show_rd(r: Ap.Rd(G.DRBStatusDL12)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusDL12.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusDL18.m_iE_Extension(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def DRBStatusDL18.show(x: G.DRBStatusDL18) -> String:
+  match x:
+    case G.DRBStatusDL18{dL_COUNTValue, iE_Extension}:
+      "{" ++ COUNTValueForPDCP_SN18.show(dL_COUNTValue) ++ "," ++ DRBStatusDL18.m_iE_Extension(iE_Extension) ++ "}"
+
+def DRBStatusDL18.show_end(+v: G.DRBStatusDL18, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusDL18.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusDL18.show_rd(r: Ap.Rd(G.DRBStatusDL18)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusDL18.show_end(v, Ap.Tail.zero(bits))
+
+def DRBStatusDL.show(x: G.DRBStatusDL) -> String:
+  match x:
+    case G.DRBStatusDL_dRBStatusDL12{v}:
+      "0:" ++ DRBStatusDL12.show(v)
+    case G.DRBStatusDL_dRBStatusDL18{v}:
+      "1:" ++ DRBStatusDL18.show(v)
+    case G.DRBStatusDL_choice_Extensions{v}:
+      "2:" ++ Ie.show(v)
+
+def DRBStatusDL.show_end(+v: G.DRBStatusDL, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBStatusDL.show(v)
+    case False{}:
+      "!"
+
+def DRBStatusDL.show_rd(r: Ap.Rd(G.DRBStatusDL)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBStatusDL.show_end(v, Ap.Tail.zero(bits))
+
+def DRBsSubjectToStatusTransferItem.m_iE_Extension(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def DRBsSubjectToStatusTransferItem.show(x: G.DRBsSubjectToStatusTransferItem) -> String:
+  match x:
+    case G.DRBsSubjectToStatusTransferItem{dRB_ID, dRBStatusUL, dRBStatusDL, iE_Extension}:
+      "{" ++ DRB_ID.show(dRB_ID) ++ "," ++ DRBStatusUL.show(dRBStatusUL) ++ "," ++ DRBStatusDL.show(dRBStatusDL) ++ "," ++ DRBsSubjectToStatusTransferItem.m_iE_Extension(iE_Extension) ++ "}"
+
+def DRBsSubjectToStatusTransferItem.show_end(+v: G.DRBsSubjectToStatusTransferItem, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBsSubjectToStatusTransferItem.show(v)
+    case False{}:
+      "!"
+
+def DRBsSubjectToStatusTransferItem.show_rd(r: Ap.Rd(G.DRBsSubjectToStatusTransferItem)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBsSubjectToStatusTransferItem.show_end(v, Ap.Tail.zero(bits))
+
+def DRBsSubjectToStatusTransferList.show_items(xs: List<&2, G.DRBsSubjectToStatusTransferItem>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case x <> more:
+      "," ++ DRBsSubjectToStatusTransferItem.show(x) ++ DRBsSubjectToStatusTransferList.show_items(more)
+
+def DRBsSubjectToStatusTransferList.show(xs: List<&2, G.DRBsSubjectToStatusTransferItem>) -> String:
+  "[" ++ DRBsSubjectToStatusTransferList.show_items(xs) ++ "]"
+
+def DRBsSubjectToStatusTransferList.show_end(+v: G.DRBsSubjectToStatusTransferList(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DRBsSubjectToStatusTransferList.show(v)
+    case False{}:
+      "!"
+
+def DRBsSubjectToStatusTransferList.show_rd(r: Ap.Rd(G.DRBsSubjectToStatusTransferList())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DRBsSubjectToStatusTransferList.show_end(v, Ap.Tail.zero(bits))
+
+def RANStatusTransfer_TransparentContainer.m_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> String:
+  match m:
+    case None{}:
+      "-"
+    case Some{v}:
+      Exts.show(v)
+
+def RANStatusTransfer_TransparentContainer.show(x: G.RANStatusTransfer_TransparentContainer) -> String:
+  match x:
+    case G.RANStatusTransfer_TransparentContainer{dRBsSubjectToStatusTransferList, iE_Extensions}:
+      "{" ++ DRBsSubjectToStatusTransferList.show(dRBsSubjectToStatusTransferList) ++ "," ++ RANStatusTransfer_TransparentContainer.m_iE_Extensions(iE_Extensions) ++ "}"
+
+def RANStatusTransfer_TransparentContainer.show_end(+v: G.RANStatusTransfer_TransparentContainer, ok: Bool) -> String:
+  match ok:
+    case True{}:
+      RANStatusTransfer_TransparentContainer.show(v)
+    case False{}:
+      "!"
+
+def RANStatusTransfer_TransparentContainer.show_rd(r: Ap.Rd(G.RANStatusTransfer_TransparentContainer)) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          RANStatusTransfer_TransparentContainer.show_end(v, Ap.Tail.zero(bits))
+
+def UplinkRANStatusTransfer.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 84n:
+      RANStatusTransfer_TransparentContainer.show_rd(G.RANStatusTransfer_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def UplinkRANStatusTransfer.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ UplinkRANStatusTransfer.show_ie(U32.to_nat(id), value) ++ UplinkRANStatusTransfer.show_ies(more)
+
+def UplinkRANStatusTransfer.show(ies: G.UplinkRANStatusTransfer()) -> String:
+  "[" ++ UplinkRANStatusTransfer.show_ies(ies) ++ "]"
+
+def UplinkRANStatusTransfer.show_end(+v: G.UplinkRANStatusTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      UplinkRANStatusTransfer.show(v)
+    case False{}:
+      "!"
+
+def UplinkRANStatusTransfer.show_rd(r: Ap.Rd(G.UplinkRANStatusTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          UplinkRANStatusTransfer.show_end(v, Ap.Tail.zero(bits))
+
+def DownlinkRANStatusTransfer.show_ie(id: Nat, +value: B.Bytes()) -> String:
+  match id:
+    case 10n:
+      AMF_UE_NGAP_ID.show_rd(G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 85n:
+      RAN_UE_NGAP_ID.show_rd(G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case 84n:
+      RANStatusTransfer_TransparentContainer.show_rd(G.RANStatusTransfer_TransparentContainer.read(Ap.Cur{0n, Ap.unpack(value)}))
+    case _:
+      Hex.bytes(value)
+
+def DownlinkRANStatusTransfer.show_ies(ies: List<&2, Fr.Ie>) -> String:
+  match ies:
+    case Nil{}:
+      ""
+    case ie <> more:
+      match ie:
+        case Fr.Ie{+id, crit, value}:
+          "," ++ Dec(id) ++ "/" ++ Dec(crit) ++ "/" ++ DownlinkRANStatusTransfer.show_ie(U32.to_nat(id), value) ++ DownlinkRANStatusTransfer.show_ies(more)
+
+def DownlinkRANStatusTransfer.show(ies: G.DownlinkRANStatusTransfer()) -> String:
+  "[" ++ DownlinkRANStatusTransfer.show_ies(ies) ++ "]"
+
+def DownlinkRANStatusTransfer.show_end(+v: G.DownlinkRANStatusTransfer(), ok: Bool) -> String:
+  match ok:
+    case True{}:
+      DownlinkRANStatusTransfer.show(v)
+    case False{}:
+      "!"
+
+def DownlinkRANStatusTransfer.show_rd(r: Ap.Rd(G.DownlinkRANStatusTransfer())) -> String:
+  match r:
+    case Fail{e}:
+      "!"
+    case Done{(v, c)}:
+      match c:
+        case Ap.Cur{rem, bits}:
+          DownlinkRANStatusTransfer.show_end(v, Ap.Tail.zero(bits))
+
 # The normal form of a PDU's value octets, for the message its kind and procedure code name.
 def Message.show(kind: Nat, code: Nat, +value: B.Bytes()) -> Maybe<&2, String>:
   match kind code:
     case 0n 4n:
       Some{DownlinkNASTransport.show_rd(G.DownlinkNASTransport.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 0n 7n:
+      Some{DownlinkRANStatusTransfer.show_rd(G.DownlinkRANStatusTransfer.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 0n 9n:
       Some{ErrorIndication.show_rd(G.ErrorIndication.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 0n 10n:
+      Some{HandoverCancel.show_rd(G.HandoverCancel.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 0n 11n:
+      Some{HandoverNotify.show_rd(G.HandoverNotify.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 0n 12n:
+      Some{HandoverRequired.show_rd(G.HandoverRequired.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 0n 13n:
+      Some{HandoverRequest.show_rd(G.HandoverRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 0n 14n:
       Some{InitialContextSetupRequest.show_rd(G.InitialContextSetupRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 0n 15n:
       Some{InitialUEMessage.show_rd(G.InitialUEMessage.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 0n 21n:
       Some{NGSetupRequest.show_rd(G.NGSetupRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 0n 25n:
+      Some{PathSwitchRequest.show_rd(G.PathSwitchRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 0n 29n:
       Some{PDUSessionResourceSetupRequest.show_rd(G.PDUSessionResourceSetupRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 0n 41n:
@@ -4374,17 +7168,33 @@ def Message.show(kind: Nat, code: Nat, +value: B.Bytes()) -> Maybe<&2, String>:
       Some{UEContextReleaseRequest.show_rd(G.UEContextReleaseRequest.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 0n 46n:
       Some{UplinkNASTransport.show_rd(G.UplinkNASTransport.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 0n 49n:
+      Some{UplinkRANStatusTransfer.show_rd(G.UplinkRANStatusTransfer.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 1n 10n:
+      Some{HandoverCancelAcknowledge.show_rd(G.HandoverCancelAcknowledge.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 1n 12n:
+      Some{HandoverCommand.show_rd(G.HandoverCommand.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 1n 13n:
+      Some{HandoverRequestAcknowledge.show_rd(G.HandoverRequestAcknowledge.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 1n 14n:
       Some{InitialContextSetupResponse.show_rd(G.InitialContextSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 1n 21n:
       Some{NGSetupResponse.show_rd(G.NGSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 1n 25n:
+      Some{PathSwitchRequestAcknowledge.show_rd(G.PathSwitchRequestAcknowledge.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 1n 29n:
       Some{PDUSessionResourceSetupResponse.show_rd(G.PDUSessionResourceSetupResponse.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 1n 41n:
       Some{UEContextReleaseComplete.show_rd(G.UEContextReleaseComplete.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 2n 12n:
+      Some{HandoverPreparationFailure.show_rd(G.HandoverPreparationFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 2n 13n:
+      Some{HandoverFailure.show_rd(G.HandoverFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 2n 14n:
       Some{InitialContextSetupFailure.show_rd(G.InitialContextSetupFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case 2n 21n:
       Some{NGSetupFailure.show_rd(G.NGSetupFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
+    case 2n 25n:
+      Some{PathSwitchRequestFailure.show_rd(G.PathSwitchRequestFailure.read(Ap.Cur{0n, Ap.unpack(value)}))}
     case _ _:
       None{}

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Differential oracle: pycrate's APER runtime against our codec on the capture.
+"""Differential oracle: pycrate's APER runtime against our codec on the NGAP vectors.
 
-Every NGAP message in test-vectors/capture/vectors.json is decoded by pycrate
-(from the pinned ASN.1, compiled to a runtime module in a temporary directory)
-and by our codec (tools/ngap-gen/oracle.bend, built with bend); both are
-printed in the normal form gen_show.py defines and must agree. pycrate must
-also re-encode each message to the captured octets. Run with python -I from
-the repository root; exits 1 on any difference.
+Every NGAP message in VECTORS is decoded by pycrate (from the pinned ASN.1,
+compiled to a runtime module in a temporary directory) and by our codec
+(tools/ngap-gen/oracle.bend, built with bend, which reads the same files in
+the same order); both are printed in the normal form gen_show.py defines and
+must agree. pycrate must also re-encode each message to its octets, and a
+hand-made message's octets must be pycrate's encoding of its `jer` value.
+Run with python -I from the repository root; exits 1 on any difference.
 """
 import json
 import pathlib
@@ -22,6 +23,7 @@ import ngap_model as M  # noqa: E402
 from pycrate_asn1c.asnproc import generate_modules  # noqa: E402
 from pycrate_asn1c.generator import PycrateGenerator  # noqa: E402
 
+VECTORS = ["test-vectors/capture/vectors.json", "test-vectors/capture/handover.json", "test-vectors/hand/ngap-handover.json"]
 CRIT = {"reject": 0, "ignore": 1, "notify": 2}
 KIND = {"initiatingMessage": 0, "successfulOutcome": 1, "unsuccessfulOutcome": 2}
 
@@ -81,6 +83,8 @@ class Normal:
 
     def alias(self, t, val):
         p = t.prim
+        if t.contains is not None:
+            return self.show(val[1], t.contains)
         if p in ("Int", "AInt"):
             return str(val)
         if p in ("XInt", "XBig"):
@@ -121,7 +125,7 @@ def main():
     g = gen.Gen()
     for name in M.closure(M.MESSAGES + M.TRANSFERS, "R"):
         g.visit(name, M.find(name))
-    messages = [m for m in json.loads((ROOT / "test-vectors/capture/vectors.json").read_text())["messages"] if m["protocol"] == "NGAP"]
+    messages = [m for f in VECTORS for m in json.loads((ROOT / f).read_text())["messages"] if m["protocol"] == "NGAP"]
     with tempfile.TemporaryDirectory() as tmp:
         objs = runtime(tmp)
         bend = ours(tmp)
@@ -129,21 +133,27 @@ def main():
     pdu = objs["NGAP-PDU"]
     status = 0
     if len(bend) != len(messages):
-        print(f"FAIL our codec printed {len(bend)} messages, the capture has {len(messages)}")
+        print(f"FAIL our codec printed {len(bend)} messages, the vectors have {len(messages)}")
         return 1
     for m, (name, theirs_line) in zip(messages, bend):
         raw = bytes.fromhex(m["hex"])
+        where = f"frame {m['frame']}" if "frame" in m else "hand-made"
         pdu.from_aper(raw)
         kind, body = pdu.get_val()
         if pdu.to_aper() != raw:
-            print(f"FAIL {m['message']}: pycrate does not re-encode the captured octets")
+            print(f"FAIL {m['message']}: pycrate does not re-encode the octets")
             status = 1
+        if "jer" in m:
+            pdu.from_jer(json.dumps(m["jer"]))
+            if pdu.to_aper() != raw:
+                print(f"FAIL {m['message']}: the octets are not pycrate's encoding of its jer value")
+                status = 1
         expected = f"{KIND[kind]}/{body['procedureCode']}/{CRIT[body['criticality']]}/" + normal.show(body["value"][1], body["value"][0])
         if name != m["message"] or theirs_line != expected:
             status = 1
-            print(f"FAIL {m['message']} (frame {m['frame']})\n  pycrate: {expected}\n  ours:    {theirs_line}")
+            print(f"FAIL {m['message']} ({where})\n  pycrate: {expected}\n  ours:    {theirs_line}")
         else:
-            print(f"ok   {m['message']} (frame {m['frame']})")
+            print(f"ok   {m['message']} ({where})")
     print("oracle agrees" if status == 0 else "oracle disagrees")
     return status
 

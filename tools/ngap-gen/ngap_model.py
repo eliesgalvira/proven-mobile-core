@@ -20,16 +20,33 @@ MESSAGES = [
     "UEContextReleaseRequest", "UEContextReleaseCommand", "UEContextReleaseComplete",
     "PDUSessionResourceSetupRequest", "PDUSessionResourceSetupResponse",
     "ErrorIndication",
+    "PathSwitchRequest", "PathSwitchRequestAcknowledge", "PathSwitchRequestFailure",
+    "HandoverRequired", "HandoverRequest", "HandoverRequestAcknowledge",
+    "HandoverFailure", "HandoverCommand", "HandoverPreparationFailure",
+    "HandoverNotify", "HandoverCancel", "HandoverCancelAcknowledge",
+    "UplinkRANStatusTransfer", "DownlinkRANStatusTransfer",
 ]
-TRANSFERS = ["PDUSessionResourceSetupRequestTransfer", "PDUSessionResourceSetupResponseTransfer"]
+TRANSFERS = ["PDUSessionResourceSetupRequestTransfer", "PDUSessionResourceSetupResponseTransfer",
+             "PathSwitchRequestTransfer", "PathSwitchRequestAcknowledgeTransfer",
+             "PathSwitchRequestUnsuccessfulTransfer", "PathSwitchRequestSetupFailedTransfer",
+             "HandoverRequiredTransfer", "HandoverCommandTransfer",
+             "HandoverRequestAcknowledgeTransfer", "HandoverResourceAllocationUnsuccessfulTransfer"]
 # Sent by the gNB, so decoded by the AMF. ErrorIndication goes both ways.
 INBOUND = {"NGSetupRequest", "InitialUEMessage", "UplinkNASTransport", "InitialContextSetupResponse",
            "InitialContextSetupFailure", "UEContextReleaseRequest", "UEContextReleaseComplete",
-           "PDUSessionResourceSetupResponse", "ErrorIndication", "PDUSessionResourceSetupResponseTransfer"}
-# Optional IEs the milestone's SMF needs beyond the tiers: the PDU session setup
-# results (75, 58) it receives and the aggregate bit rates (110, 130) it sends.
-EXTRA_IES = {58, 75, 110, 130}
-EXT_CONTAINERS = {"iE-Extensions", "choice-Extensions"}
+           "PDUSessionResourceSetupResponse", "ErrorIndication", "PDUSessionResourceSetupResponseTransfer",
+           "PathSwitchRequest", "HandoverRequired", "HandoverRequestAcknowledge", "HandoverFailure",
+           "HandoverNotify", "HandoverCancel", "UplinkRANStatusTransfer",
+           "PathSwitchRequestTransfer", "PathSwitchRequestSetupFailedTransfer", "HandoverRequiredTransfer",
+           "HandoverRequestAcknowledgeTransfer", "HandoverResourceAllocationUnsuccessfulTransfer"}
+# Optional IEs the milestones need beyond the tiers: the PDU session setup
+# results (75, 58) the SMF receives and the aggregate bit rates (110, 130) it
+# sends; the handover session lists that carry a transfer: the sessions a
+# Path Switch could not set up (57) or released (68), the target's failed
+# sessions (56) and the Handover Command's sessions (59).
+EXTRA_IES = {56, 57, 58, 59, 68, 75, 110, 130}
+# TS 38.413 spells eleven of its iE-Extensions fields "iE-Extension".
+EXT_CONTAINERS = {"iE-Extensions", "iE-Extension", "choice-Extensions"}
 CONTAINER_TYPES = {"ProtocolIE-Container", "ProtocolIE-SingleContainer", "ProtocolIE-Field",
                    "ProtocolExtensionContainer", "ProtocolExtensionField"}
 TIERS = {"M": "reached from mandatory IEs (and from the fixed components of the types reached)",

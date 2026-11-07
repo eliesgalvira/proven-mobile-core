@@ -658,6 +658,24 @@ law aper.ubitstr.decode_valid:
   for +e: {Ap.UBitStr.read(c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}
   {Ap.UBitStr.valid(bs) == True{} : Bool}
 
+law aper.wbitstr.roundtrip:
+  for +lo: Nat
+  for +diff: Nat
+  for +bs: Ap.Bits()
+  for +rem: Nat
+  for +rest: Ap.Bits()
+  for +v: {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}
+  {Ap.WBitStr.read(lo, diff, Ap.Cur{rem, Ap.UBitStr.write(bs, rem, rest)}) == Done{(bs, Ap.Cur{Ap.UBitStr.after(bs, rem), rest})} : Ap.Rd(Ap.Bits())}
+
+law aper.wbitstr.decode_valid:
+  for +lo: Nat
+  for +diff: Nat
+  for +c: Ap.Cur
+  for +bs: Ap.Bits()
+  for +c2: Ap.Cur
+  for +e: {Ap.WBitStr.read(lo, diff, c) == Done{(bs, c2)} : Ap.Rd(Ap.Bits())}
+  {Ap.WBitStr.valid(lo, diff, bs) == True{} : Bool}
+
 law aper.open.roundtrip:
   for +bs: B.Bytes()
   for +rem: Nat
@@ -855,9 +873,11 @@ law aper.pack.padding_zero:
 
 # ngap framing (ticket 13)
 # ------------------------
-# The roundtrip and decode_valid laws of the 140 generated types are stated
-# with the code they are about, in kernel/ngap/gen/laws.bend, and proven in
-# kernel/ngap/gen/proofs.bend; PROOF.bend imports them.
+# The roundtrip, decode_valid and suffix laws of every generated type, and the
+# mandatory law of every view, are stated with the code they are about, in
+# kernel/ngap/gen/laws.bend, and proven in kernel/ngap/gen/proofs.bend;
+# PROOF.bend imports them. The mandatory laws below restate four of them
+# under the names the tickets give.
 
 law ngap.ie.roundtrip:
   for +ie: Fr.Ie
@@ -940,6 +960,33 @@ law ngap.initial_ue_message.mandatory:
   for +v: GV.InitialUEMessage.View
   for +e: {GV.InitialUEMessage.view(ies) == Done{v} : Result<&2, &2, B.Err, GV.InitialUEMessage.View>}
   {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(38, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & {Fr.Ies.occurrences(90, ies) == 1n : Nat}))
+
+# The Path Switch Request view succeeds only when RAN-UE-NGAP-ID (85),
+# Source AMF-UE-NGAP-ID (100), UserLocationInformation (121),
+# UESecurityCapabilities (119) and the PDU session list (76) are each present
+# exactly once.
+law ngap.path_switch_request.mandatory:
+  for +ies: List<&2, Fr.Ie>
+  for +v: GV.PathSwitchRequest.View
+  for +e: {GV.PathSwitchRequest.view(ies) == Done{v} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
+  {Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(100, ies) == 1n : Nat} & ({Fr.Ies.occurrences(121, ies) == 1n : Nat} & ({Fr.Ies.occurrences(119, ies) == 1n : Nat} & {Fr.Ies.occurrences(76, ies) == 1n : Nat})))
+
+# The Handover Request Acknowledge view: AMF-UE-NGAP-ID (10), RAN-UE-NGAP-ID
+# (85), the admitted PDU sessions (53) and the Target to Source container (106).
+law ngap.handover_request_acknowledge.mandatory:
+  for +ies: List<&2, Fr.Ie>
+  for +v: GV.HandoverRequestAcknowledge.View
+  for +e: {GV.HandoverRequestAcknowledge.view(ies) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequestAcknowledge.View>}
+  {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(53, ies) == 1n : Nat} & {Fr.Ies.occurrences(106, ies) == 1n : Nat}))
+
+# The Handover Required view: AMF-UE-NGAP-ID (10), RAN-UE-NGAP-ID (85),
+# HandoverType (29), Cause (15), TargetID (105), the PDU sessions (61) and the
+# Source to Target container (101).
+law ngap.handover_required.mandatory:
+  for +ies: List<&2, Fr.Ie>
+  for +v: GV.HandoverRequired.View
+  for +e: {GV.HandoverRequired.view(ies) == Done{v} : Result<&2, &2, B.Err, GV.HandoverRequired.View>}
+  {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & ({Fr.Ies.occurrences(29, ies) == 1n : Nat} & ({Fr.Ies.occurrences(15, ies) == 1n : Nat} & ({Fr.Ies.occurrences(105, ies) == 1n : Nat} & ({Fr.Ies.occurrences(61, ies) == 1n : Nat} & {Fr.Ies.occurrences(101, ies) == 1n : Nat})))))
 
 # pfcp (ticket 14)
 # ----------------

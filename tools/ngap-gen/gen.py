@@ -22,7 +22,6 @@ import ngap_model as M  # noqa: E402
 
 KEYWORDS = {"def", "type", "match", "case", "import", "as", "is", "for", "law", "return",
             "if", "else", "do", "with", "true", "false", "lambda", "let", "in", "fn", "use"}
-EXTS = "iE-Extensions"
 SINGLE = "ProtocolIE-SingleContainer"
 
 
@@ -75,12 +74,14 @@ def int_params(lb, ub):
 
 
 class Type:
-    """One emitted type: kind in alias|record|choice|list|message, with its codec expressions."""
+    """One emitted type: kind in alias|record|choice|list|message, with its codec expressions.
+    `contains` names the type an OCTET STRING (CONTAINING T) holds."""
 
     def __init__(self, name):
         self.name = name
         self.bend = bname(name)
         self.deps = []
+        self.contains = None
 
 
 class Gen:
@@ -150,10 +151,14 @@ class Gen:
                     t.prim, t.args = "XBits", (lb,)
                 elif lb == ub:
                     t.prim, t.args = ("Bits" if lb <= 16 else "ABits"), (lb,)
+                elif ub >= 65536 and not ext:
+                    t.prim, t.args = "WBitStr", (lb, ub - lb)
                 else:
                     t.prim, t.args = ("XBitStr" if ext else "BitStr"), size_params(lb, ub)
         elif kind == "OCTET STRING":
             t.kind, t.data = "alias", "B.Bytes()"
+            if const(obj, "CONTAINING") is not None:
+                t.contains = M.ref_name(const(obj, "CONTAINING")["obj"])
             c = const(obj, "SIZE")
             if c is None:
                 t.prim, t.args = "Open", ()
@@ -325,6 +330,10 @@ class Gen:
                     "Ap.XBitStr.after(v, rem)", f"Ap.XBitStr.valid({lo}n, {diff}n, v)")
         if p == "UBitStr":
             return ("Ap.UBitStr.read(c)", "Ap.UBitStr.write(v, rem, rest)", "Ap.UBitStr.after(v, rem)", "Ap.UBitStr.valid(v)")
+        if p == "WBitStr":
+            lo, diff = a
+            return (f"Ap.WBitStr.read({lo}n, {diff}n, c)", "Ap.UBitStr.write(v, rem, rest)", "Ap.UBitStr.after(v, rem)",
+                    f"Ap.WBitStr.valid({lo}n, {diff}n, v)")
         if p in ("Octets", "AOctets"):
             (n,) = a
             return (f"Ap.{p}.read({n}n, c)", f"Ap.{p}.write(v, rem, rest)",

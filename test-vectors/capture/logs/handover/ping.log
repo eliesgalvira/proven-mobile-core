@@ -1,0 +1,28 @@
+PING 10.33.0.40 (10.33.0.40) from 10.45.0.2 : 56(84) bytes of data.
+64 bytes from 10.33.0.40: icmp_seq=1 ttl=64 time=0.252 ms
+64 bytes from 10.33.0.40: icmp_seq=2 ttl=64 time=0.262 ms
+
+--- 10.33.0.40 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 507ms
+rtt min/avg/max/mdev = 0.252/0.257/0.262/0.005 ms
+PING 10.33.0.40 (10.33.0.40) from 10.45.0.2 : 56(84) bytes of data.
+64 bytes from 10.33.0.40: icmp_seq=1 ttl=64 time=0.140 ms
+64 bytes from 10.33.0.40: icmp_seq=2 ttl=64 time=0.175 ms
+
+--- 10.33.0.40 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 504ms
+rtt min/avg/max/mdev = 0.140/0.157/0.175/0.017 ms
+PING 10.33.0.40 (10.33.0.40) from 10.45.0.2 : 56(84) bytes of data.
+64 bytes from 10.33.0.40: icmp_seq=1 ttl=64 time=0.177 ms
+64 bytes from 10.33.0.40: icmp_seq=2 ttl=64 time=0.183 ms
+
+--- 10.33.0.40 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 505ms
+rtt min/avg/max/mdev = 0.177/0.180/0.183/0.003 ms
+PING 10.33.0.40 (10.33.0.40) from 10.45.0.2 : 56(84) bytes of data.
+64 bytes from 10.33.0.40: icmp_seq=1 ttl=64 time=0.152 ms
+64 bytes from 10.33.0.40: icmp_seq=2 ttl=64 time=0.126 ms
+
+--- 10.33.0.40 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 508ms
+rtt min/avg/max/mdev = 0.126/0.139/0.152/0.013 ms

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Turn the capture into vectors.json.
+"""Turn a capture into its vectors JSON.
 
-    extract.py <registration-pdu.pcapng> <setup-dir> <vectors.json>
+    extract.py registration <registration-pdu.pcapng> <setup-dir> <vectors.json>
+    extract.py handover <handover.pcapng> <setup-dir> <handover.json>
 
 Needs `tshark` (Wireshark 4.6) on PATH and the Python `cryptography` package.
 
@@ -14,7 +15,10 @@ script checks every tshark-located NAS-PDU against the NGAP bytes it parsed itse
 The crypto chain (Milenage, RES*, KAUSF..KAMF, K_NASint, K_gNB, NIA2 MACs, SUCI
 Profile A) is recomputed here from K/OPc/the home-network key and checked against
 the captured bytes: AUTN's MAC-A, the UE's RES*, every NAS MAC, the K_gNB in
-InitialContextSetupRequest and the SUCI MAC tag. A mismatch aborts the script.
+InitialContextSetupRequest and the SUCI MAC tag. Every NH sent in a Security
+Context (Path Switch Request Acknowledge, Handover Request) is placed on the NH
+chain from K_AMF and K_gNB, at a position whose NCC it carries. A mismatch aborts
+the script.
 """
 import hashlib
 import hmac
@@ -30,7 +34,29 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.cmac import CMAC
 
-GNB, AMF_IP, SMF, UPF = "10.33.0.30", "10.33.0.11", "10.33.0.12", "10.33.0.20"
+AMF_IP, SMF, UPF = "10.33.0.11", "10.33.0.12", "10.33.0.20"
+GNB1 = {"ip": "10.33.0.30", "gnb_id": "0x000001", "gnb_id_bits": 32, "nci": "0x000000010"}
+GNB2 = {"ip": "10.33.0.31", "gnb_id": "0x000002", "gnb_id_bits": 32, "nci": "0x000000020"}
+CAPTURES = {
+    "registration": {
+        "description": "UERANSIM 3.3.0 UE registration + IPv4 PDU session against Open5GS 2.8.0 "
+                       "(AMF/SMF) and eUPF v0.7.2, captured on the Docker bridge. NAS ciphering NEA0, "
+                       "integrity NIA2, SUCI Profile A. See NOTES.md and INVENTORY.md.",
+        "gnbs": {"gnb": GNB1},
+        "simulator": "UERANSIM",
+        "rrc": "RRC: UERANSIM's radio link is simulated over UDP 4997 and was not captured",
+    },
+    "handover": {
+        "description": "PacketRusher v2.0.0 (patched to send Handover Cancel) UE registration + IPv4 PDU "
+                       "session on gNB 1, Xn handover to gNB 2 (Path Switch), N2 handover back to gNB 1 "
+                       "cancelled after the Handover Command, then N2 handover back to gNB 1, against "
+                       "Open5GS 2.8.0 (AMF/SMF) and eUPF v0.7.2, captured on the Docker bridge. NAS "
+                       "ciphering NEA0, integrity NIA2, SUCI Profile A. See NOTES.md.",
+        "gnbs": {"gnbs": [GNB1, GNB2]},
+        "simulator": "PacketRusher",
+        "rrc": "RRC and Xn: PacketRusher simulates the radio and the gNB-to-gNB link inside one process",
+    },
+}
 PLMN = ("001", "01")
 SNN = "5G:mnc001.mcc001.3gppnetwork.org"
 
@@ -368,18 +394,17 @@ def tlv_e_ies(b, off, tv_len=None):
 # ---------------------------------------------------------------- main
 
 def main():
-    pcap, setup, out_path = sys.argv[1], Path(sys.argv[2]), sys.argv[3]
-    ue_cfg = (setup / "ueransim" / "ue.yaml").read_text()
-    cfg = lambda key: re.search(rf"^{key}:\s*'?([0-9A-Za-z-]+)'?", ue_cfg, re.M).group(1)
-    K, OPC, AMF_FIELD = bytes.fromhex(cfg("key")), bytes.fromhex(cfg("op")), bytes.fromhex(cfg("amf"))
-    SUPI = cfg("supi")
+    capture, pcap, setup, out_path = CAPTURES[sys.argv[1]], sys.argv[2], Path(sys.argv[3]), sys.argv[4]
+    gnb_ips = {g["ip"] for g in as_list(next(iter(capture["gnbs"].values())))}
+    subscriber = (setup / "subscriber.js").read_text()
+    field = lambda key: re.search(rf"{key}: (?:NumberLong\()?'?([0-9A-Fa-f]+)", subscriber).group(1)
+    K, OPC, AMF_FIELD = bytes.fromhex(field("k")), bytes.fromhex(field("opc")), bytes.fromhex(field("amf"))
+    SUPI, SQN = "imsi-" + field("imsi"), int(field("sqn"))
     hn_pem = (setup / "hnet" / "curve25519-1.key").read_bytes()
     hn_priv = serialization.load_pem_private_key(hn_pem, None)
     hn_priv_raw = hn_priv.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
                                         serialization.NoEncryption())
     hn_pub_raw = hn_priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
-    if hn_pub_raw.hex() != cfg("homeNetworkPublicKey").lower():
-        fail("UE homeNetworkPublicKey does not match the UDM private key")
 
     frames = read_pcapng(pcap)
     layers = tshark_json(pcap)
@@ -407,7 +432,7 @@ def main():
                 if len(ie_names) != len(ies):
                     fail(f"frame {fno}: IE count {len(ies)} vs tshark {len(ie_names)}")
                 e = add({**base, "protocol": "NGAP",
-                         "direction": "gNB->AMF" if src == GNB else "AMF->gNB",
+                         "direction": "gNB->AMF" if src in gnb_ips else "AMF->gNB",
                          "message": name, "pdu": pdu, "procedure_code": proc, "criticality": crit,
                          "sctp_stream": extra["sctp_stream"], "hex": payload.hex(),
                          "ies": [{"id": ie["id"], "name": n, "criticality": ie["criticality"]}
@@ -425,23 +450,21 @@ def main():
                          **h, "hex": payload.hex(), "ies": ies})
             elif proto == "udp" and 2152 in (extra["sport"], extra["dport"]):
                 add({**base, "protocol": "GTP-U",
-                     "direction": "gNB->UPF" if src == GNB else "UPF->gNB", **parse_gtpu(payload),
+                     "direction": "gNB->UPF" if src in gnb_ips else "UPF->gNB", **parse_gtpu(payload),
                      "hex": payload.hex()})
         if ngap_i != len(ngap_trees):
             fail(f"frame {fno}: tshark NGAP count mismatch")
 
-    secrets, checks = crypto(msgs, K, OPC, AMF_FIELD, SUPI, hn_priv, hn_priv_raw, hn_pub_raw)
+    secrets, checks = crypto(msgs, capture, K, OPC, AMF_FIELD, SUPI, SQN, hn_priv, hn_priv_raw, hn_pub_raw)
     for e in msgs:
         e.pop("_ies", None)
     out = {
-        "description": "UERANSIM 3.3.0 UE registration + IPv4 PDU session against Open5GS 2.8.0 "
-                       "(AMF/SMF) and eUPF v0.7.2, captured on the Docker bridge. NAS ciphering NEA0, "
-                       "integrity NIA2, SUCI Profile A. See NOTES.md and INVENTORY.md.",
+        "description": capture["description"],
         "pcapng": Path(pcap).name,
         "pcapng_sha256": hashlib.sha256(Path(pcap).read_bytes()).hexdigest(),
         "network": {"plmn": {"mcc": PLMN[0], "mnc": PLMN[1]}, "tac": 1,
                     "amf": {"region_id": 2, "set_id": 1, "pointer": 0, "name": "speck-amf0", "ngap_ip": AMF_IP},
-                    "gnb": {"ip": GNB, "gnb_id": "0x000001", "gnb_id_bits": 32, "nci": "0x000000010"},
+                    **capture["gnbs"],
                     "smf_n4_ip": SMF, "upf_n4_ip": UPF, "upf_n3_ip": UPF, "data_network_ip": "10.33.0.40",
                     "dnn": "internet", "s_nssai": {"sst": 1}, "ue_pool": "10.45.0.0/16"},
         "conventions": {
@@ -510,7 +533,7 @@ def handle_nas(add, ngap_e, nb, ntree, base, parent=None):
                  "message": MM_TYPES.get(inner[2], hex(inner[2])), "ies": nas_labels(sub)})
 
 
-def crypto(msgs, K, OPC, AMF_FIELD, SUPI, hn_priv, hn_priv_raw, hn_pub_raw):
+def crypto(msgs, capture, K, OPC, AMF_FIELD, SUPI, SQN, hn_priv, hn_priv_raw, hn_pub_raw):
     nas = [m for m in msgs if m["protocol"] == "NAS-5GMM"]
     by_type = lambda t: [m for m in nas if m["message_type"] == t]
     checks = {}
@@ -547,6 +570,8 @@ def crypto(msgs, K, OPC, AMF_FIELD, SUPI, hn_priv, hn_priv_raw, hn_pub_raw):
         fail("AUTN MAC-A")
     if autn[6:8] != AMF_FIELD:
         fail("AUTN AMF field")
+    if int.from_bytes(sqn, "big") != SQN:
+        fail(f"SQN {sqn.hex()} is not the subscriber's provisioned {SQN}")
     checks["autn_mac_a"] = "ok"
     ck_ik = m["ck"] + m["ik"]
     res_star = kdf(ck_ik, 0x6B, SNN.encode(), rand, m["res"])[16:]
@@ -603,7 +628,28 @@ def crypto(msgs, K, OPC, AMF_FIELD, SUPI, hn_priv, hn_priv_raw, hn_pub_raw):
         fail("K_gNB")
     checks["kgnb_from_kamf"] = f"ok (UL NAS COUNT {kgnb_count})"
 
-    pdu_accept = next((x for x in msgs if x["protocol"] == "NAS-5GSM" and x["message_type"] == 0xc2), None)
+    nh_chain = [kgnb_wire]
+    for _ in range(16):
+        nh_chain.append(kdf(kamf, 0x6F, nh_chain[-1]))
+    handovers = []
+    for x in msgs:
+        context = next((ie["value"] for ie in x.get("_ies", []) if ie["id"] == 93), None)
+        if context is None:
+            continue
+        if len(context) != 33:
+            fail(f"message {x['index']}: Security Context is not NCC + 256-bit NH")
+        ncc, nh = (context[0] >> 3) & 7, context[1:]
+        if nh not in nh_chain[1:]:
+            fail(f"message {x['index']}: NH is not on the chain from K_gNB")
+        position = nh_chain.index(nh)
+        if position % 8 != ncc:
+            fail(f"message {x['index']}: NH {position} sent with NCC {ncc}")
+        handovers.append({"index": x["index"], "message": x["message"], "ncc": ncc, "nh": nh.hex(),
+                          "nh_chain_position": position})
+    if handovers:
+        checks["nh_ncc_chain"] = f"ok ({len(handovers)} Security Contexts)"
+
+    pdu_accept = next(x for x in msgs if x["protocol"] == "NAS-5GSM" and x["message_type"] == 0xc2)
     secrets = {
         "note": "Values marked 'captured' are on the wire in this capture. 'configured' values come from the "
                 "setup files. 'derived' values were computed by setup/extract.py (an independent Python "
@@ -614,7 +660,7 @@ def crypto(msgs, K, OPC, AMF_FIELD, SUPI, hn_priv, hn_priv_raw, hn_pub_raw):
         "opc": {"value": OPC.hex(), "source": "configured"},
         "amf_field": {"value": AMF_FIELD.hex(), "source": "configured; equals AUTN octets 7-8"},
         "sqn": {"value": sqn.hex(), "source": "derived: AUTN[0:6] xor AK; equals the Open5GS subscriber's "
-                                              "provisioned SQN (64)",
+                                              f"provisioned SQN ({SQN})",
                 "sqn_xor_ak": autn[:6].hex()},
         "rand": {"value": rand.hex(), "source": "captured (Authentication request)"},
         "autn": {"value": autn.hex(), "source": "captured (Authentication request)"},
@@ -646,15 +692,33 @@ def crypto(msgs, K, OPC, AMF_FIELD, SUPI, hn_priv, hn_priv_raw, hn_pub_raw):
                  "ciphertext": ct.hex(), "mac_tag": tag.hex(), "decrypted_msin": msin,
                  "ecies": {"shared_secret": z.hex(), "enc_key": enc_key.hex(), "icb": icb.hex(),
                            "mac_key": mac_key.hex()},
-                 "ue_ephemeral_private_key": "not recoverable (UERANSIM generates it per SUCI and does not log it)",
+                 "ue_ephemeral_private_key": f"not recoverable ({capture['simulator']} generates it per SUCI "
+                                             "and does not log it)",
                  "source": "captured; ECIES values derived with the home-network private key"},
-        "pdu_session": {"pdu_session_id": pdu_accept["pdu_session_id"] if pdu_accept else None,
-                        "ue_ipv4": "10.45.0.2", "dnn": "internet", "sst": 1},
+        "pdu_session": {"pdu_session_id": pdu_accept["pdu_session_id"],
+                        "ue_ipv4": pdu_address(bytes.fromhex(pdu_accept["hex"])), "dnn": "internet", "sst": 1},
         "not_recoverable": ["UE ephemeral X25519 private key for the SUCI",
                             "SBI (HTTP/2) messages between AMF, AUSF, UDM, SMF: not captured by design",
-                            "RRC: UERANSIM's radio link is simulated over UDP 4997 and was not captured"],
+                            capture["rrc"]],
     }
+    if handovers:
+        secrets["handovers"] = {
+            "source": "captured (Security Context: NCC and NH) and derived: NH_1 = KDF(K_AMF, 0x6F, K_gNB), "
+                      "NH_i+1 = KDF(K_AMF, 0x6F, NH_i) (TS 33.501 A.10); nh_chain_position is i",
+            "security_contexts": handovers}
     return secrets, checks
+
+
+def pdu_address(accept):
+    """The IPv4 address in a PDU session establishment accept's PDU address IE."""
+    off = 5
+    off += 2 + struct.unpack_from("!H", accept, off)[0]
+    off += 1 + accept[off]
+    if accept[off] == 0x59:
+        off += 2
+    if accept[off] != 0x29 or accept[off + 2] & 7 != 1:
+        fail("PDU session establishment accept has no IPv4 PDU address after its mandatory IEs")
+    return ip4(accept[off + 3: off + 7])
 
 
 if __name__ == "__main__":

@@ -5,11 +5,12 @@ import ../ngap/frame.bend as F
 import ../ngap/gen/types.bend as G
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
-import ./vectors/capture-vectors.bend as Capture
+import ./lib/ngap_vectors.bend as N
 
-# Every IE of every captured NGAP PDU whose type the generated codec knows
-# decodes with that type, is valid, and re-encodes to the same octets with
-# only zero padding left; the IEs the codec does not know are counted.
+# Every NGAP PDU of the vectors re-encodes to its bytes, and each of its IEs
+# whose type the generated codec knows decodes with that type, is valid, and
+# re-encodes to the same octets with only zero padding left; the IEs the
+# codec does not know are counted.
 
 type Tally is Data:
   Tally{known: Nat, unknown: Nat, failed: Nat}
@@ -47,17 +48,20 @@ def container(+name: String, kind: Nat, code: Nat, r: A.Rd(List<&2, F.Ie>)) -> I
     case Done{(ies, c)}:
       report(name, tally(kind, code, ies, Tally{0n, 0n, 0n}))
 
-def pdu(+name: String, r: Result<&2, &2, B.Err, F.Pdu>) -> IO(Unit):
+def pdu(+name: String, +bytes: B.Bytes(), r: Result<&2, &2, B.Err, F.Pdu>) -> IO(Unit):
   match r:
     case Fail{e}:
       C.Check.report(name ++ ": PDU decodes", False{})
     case Done{+p}:
-      container(name, U32.to_nat(F.Pdu.kind(p)), U32.to_nat(F.Pdu.code(p)), F.Ies.read(A.Cur{7n, List.drop(&2, Bool, A.unpack(F.Pdu.value(p)), 1n)}))
+      do IO<Unit>:
+        C.Check.report(name ++ ": PDU re-encodes to its bytes", B.bytes_eq(F.Pdu.write(p), bytes))
+        container(name, U32.to_nat(F.Pdu.kind(p)), U32.to_nat(F.Pdu.code(p)), F.Ies.read(A.Cur{7n, List.drop(&2, Bool, A.unpack(F.Pdu.value(p)), 1n)}))
 
 def one(+m: V.Vec, protocol: String) -> IO(Unit):
   match protocol:
     case "NGAP":
-      pdu(V.Vec.text(V.Vec.field(m, "message")), F.Pdu.read(V.Vec.bytes(V.Vec.field(m, "hex"))))
+      +bytes : B.Bytes() = V.Vec.bytes(V.Vec.field(m, "hex"))
+      pdu(V.Vec.text(V.Vec.field(m, "message")), bytes, F.Pdu.read(bytes))
     case _:
       IO.pure(Unit, Unit{})
 
@@ -72,7 +76,7 @@ def run(msgs: List<&2, V.Vec>) -> IO(Unit):
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    run(V.Vec.items(V.Vec.field(Capture.data(), "messages")))
+    run(N.Ngap.vectors())
     C.Check.report("a RAN-UE-NGAP-ID of 1 roundtrips", G.RAN_UE_NGAP_ID.roundtrips([0, 1]))
     C.Check.report("a RAN-UE-NGAP-ID with a leading zero octet does not", Bool.not(G.RAN_UE_NGAP_ID.roundtrips([64, 0, 1])))
     C.Check.report("a PLMN identity of four octets does not", Bool.not(G.PLMNIdentity.roundtrips([0, 241, 16, 0])))
