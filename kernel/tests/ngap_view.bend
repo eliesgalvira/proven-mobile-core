@@ -6,12 +6,12 @@ import ../ngap/gen/types.bend as G
 import ../ngap/gen/views.bend as W
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
-import ./vectors/capture-vectors.bend as Capture
+import ./lib/ngap_vectors.bend as N
 
-# Every captured NGAP message passes its view; the InitialUEMessage view
-# yields the captured identities; and the view rejects a missing mandatory
-# IE, a duplicated IE, and an unknown IE with criticality reject, while it
-# skips an unknown IE with criticality ignore.
+# Every NGAP message of the vectors passes its view; the InitialUEMessage
+# view yields the captured identities; and the views reject a missing
+# mandatory IE, a duplicated IE, and an unknown IE with criticality reject,
+# while they skip an unknown IE with criticality ignore.
 
 def ies_of(p: F.Pdu) -> A.Rd(List<&2, F.Ie>):
   F.Ies.read(A.Cur{7n, List.drop(&2, Bool, A.unpack(F.Pdu.value(p)), 1n)})
@@ -67,20 +67,20 @@ def from_pdu(r: Result<&2, &2, B.Err, F.Pdu>) -> List<&2, F.Ie>:
     case Done{p}:
       from_rd(ies_of(p))
 
-def pick(+m: V.Vec, name: String, rest: List<&2, F.Ie>) -> List<&2, F.Ie>:
-  match name:
-    case "InitialUEMessage":
+def pick(+m: V.Vec, rest: List<&2, F.Ie>, hit: Bool) -> List<&2, F.Ie>:
+  match hit:
+    case True{}:
       from_pdu(F.Pdu.read(V.Vec.bytes(V.Vec.field(m, "hex"))))
-    case _:
+    case False{}:
       rest
 
-# The IEs of the captured InitialUEMessage.
-def initial_ue_ies(msgs: List<&2, V.Vec>) -> List<&2, F.Ie>:
+# The IEs of the first message of the vectors with this name.
+def first_ies(+name: String, msgs: List<&2, V.Vec>) -> List<&2, F.Ie>:
   match msgs:
     case Nil{}:
       []
     case +m <> rest:
-      pick(m, V.Vec.text(V.Vec.field(m, "message")), initial_ue_ies(rest))
+      pick(m, first_ies(name, rest), String.eq(V.Vec.text(V.Vec.field(m, "message")), name))
 
 def keep(ie: F.Ie, rest: List<&2, F.Ie>, drop: Bool) -> List<&2, F.Ie>:
   match drop:
@@ -105,17 +105,35 @@ def ran_ue_id(r: Result<&2, &2, B.Err, W.InitialUEMessage.View>) -> Bool:
         case W.InitialUEMessage.View{ran_ue_ngap_id, nas_pdu, userlocationinformation, rrcestablishmentcause, fiveg_s_tmsi, amfsetid, allowednssai, selectedplmnidentity, iabnodeindication, cemodebsupport_indicator, npn_accessinformation}:
           Bool.and(B.bytes_eq(ran_ue_ngap_id, [1]), U32.is_eq(A.Enum.index(rrcestablishmentcause), G.RRCEstablishmentCause.mo_Signalling()))
 
-def view_ok(ies: List<&2, F.Ie>) -> Bool:
-  Bool.not(Result.is_fail(&2, &2, B.Err, W.InitialUEMessage.View, W.InitialUEMessage.view(ies)))
+def passes(r: Maybe<&2, Bool>) -> Bool:
+  match r:
+    case None{}:
+      False{}
+    case Some{ok}:
+      ok
+
+# Whether the view of the message with this PDU kind and procedure code accepts the IEs.
+def accepts(kind: Nat, code: Nat, ies: List<&2, F.Ie>) -> Bool:
+  passes(W.View.check(kind, code, ies))
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    run(V.Vec.items(V.Vec.field(Capture.data(), "messages")))
-    +ies : List<&2, F.Ie> = initial_ue_ies(V.Vec.items(V.Vec.field(Capture.data(), "messages")))
+    run(N.Ngap.vectors())
+    +ies : List<&2, F.Ie> = first_ies("InitialUEMessage", N.Ngap.vectors())
     C.Check.report("the InitialUEMessage view carries RAN-UE-NGAP-ID 1 and cause mo-Signalling", ran_ue_id(W.InitialUEMessage.view(ies)))
-    C.Check.report("an InitialUEMessage without UserLocationInformation is rejected", Bool.not(view_ok(without(121, ies))))
-    C.Check.report("an InitialUEMessage without its NAS-PDU is rejected", Bool.not(view_ok(without(38, ies))))
-    C.Check.report("a duplicated RAN-UE-NGAP-ID is rejected", Bool.not(view_ok(F.Ie{85, 0, [0, 1]} <> ies)))
-    C.Check.report("an unknown IE with criticality reject is rejected", Bool.not(view_ok(F.Ie{60000, 0, [0]} <> ies)))
-    C.Check.report("an unknown IE with criticality ignore is skipped", view_ok(F.Ie{60000, 1, [0]} <> ies))
-    C.Check.report("a known IE with a malformed value is rejected", Bool.not(view_ok(F.Ie{85, 0, [64, 0, 1]} <> without(85, ies))))
+    C.Check.report("an InitialUEMessage without UserLocationInformation is rejected", Bool.not(accepts(0n, 15n, without(121, ies))))
+    C.Check.report("an InitialUEMessage without its NAS-PDU is rejected", Bool.not(accepts(0n, 15n, without(38, ies))))
+    C.Check.report("a duplicated RAN-UE-NGAP-ID is rejected", Bool.not(accepts(0n, 15n, F.Ie{85, 0, [0, 1]} <> ies)))
+    C.Check.report("an unknown IE with criticality reject is rejected", Bool.not(accepts(0n, 15n, F.Ie{60000, 0, [0]} <> ies)))
+    C.Check.report("an unknown IE with criticality ignore is skipped", accepts(0n, 15n, F.Ie{60000, 1, [0]} <> ies))
+    C.Check.report("a known IE with a malformed value is rejected", Bool.not(accepts(0n, 15n, F.Ie{85, 0, [64, 0, 1]} <> without(85, ies))))
+    +psr : List<&2, F.Ie> = first_ies("PathSwitchRequest", N.Ngap.vectors())
+    C.Check.report("a PathSwitchRequest without UESecurityCapabilities is rejected", Bool.not(accepts(0n, 25n, without(119, psr))))
+    C.Check.report("a PathSwitchRequest without its PDU session list is rejected", Bool.not(accepts(0n, 25n, without(76, psr))))
+    C.Check.report("a PathSwitchRequest with a duplicated Source AMF-UE-NGAP-ID is rejected", Bool.not(accepts(0n, 25n, F.Ie{100, 0, [0, 1]} <> psr)))
+    +hr : List<&2, F.Ie> = first_ies("HandoverRequired", N.Ngap.vectors())
+    C.Check.report("a HandoverRequired without TargetID is rejected", Bool.not(accepts(0n, 12n, without(105, hr))))
+    C.Check.report("a HandoverRequired with an unknown IE with criticality reject is rejected", Bool.not(accepts(0n, 12n, F.Ie{60000, 0, [0]} <> hr)))
+    +hra : List<&2, F.Ie> = first_ies("HandoverRequestAcknowledge", N.Ngap.vectors())
+    C.Check.report("a HandoverRequestAcknowledge without its Target to Source container is rejected", Bool.not(accepts(1n, 13n, without(106, hra))))
+    C.Check.report("a HandoverRequestAcknowledge with an unknown IE with criticality ignore passes", accepts(1n, 13n, F.Ie{60000, 1, [0]} <> hra))
