@@ -428,6 +428,20 @@ def Ngap.any_ng_setup_response(actions: List<&2, Act>) -> Bool:
     case a <> more:
       Bool.or(Ngap.is_ng_setup_response(a), Ngap.any_ng_setup_response(more))
 
+def Ngap.is_switch_failure(a: Act) -> Bool:
+  match a:
+    case SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
+      True{}
+    case _:
+      False{}
+
+def Ngap.any_switch_failure(actions: List<&2, Act>) -> Bool:
+  match actions:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Ngap.is_switch_failure(a), Ngap.any_switch_failure(more))
+
 # What one step answers: the next state and the actions to perform.
 def Step() -> Data:
   Sigma<&2, &2, S.State, _ => List<&2, Act>>

@@ -31,6 +31,7 @@ import ./amf/gmm.bend as Gm
 import ./smf/gsm.bend as Gs
 import ./ausf.bend as Au
 import ./smf/n4.bend as Up
+import ./amf/path_switch.bend as Ps
 
 # Range conditions are stated as mask equations: `U32.and(255, v) == v` is "v fits in 8 bits".
 
@@ -1708,3 +1709,107 @@ law smf.teid.unique:
   for +e2: {Tb.Table.get(St.Session, k2, ss) == Some{s2} : Maybe<&2, St.Session>}
   for +ne: {U32.is_eq(k1, k2) == False{} : Bool}
   {U32.is_eq(St.Session.teid(s1), St.Session.teid(s2)) == False{} : Bool}
+
+# amf (ticket 27)
+# ---------------
+# Xn handover: Path Switch (TS 23.502 §4.9.1.2.2, TS 38.413 §8.4.4). By
+# design there is no owner check: any gNB with NG Setup done may claim a
+# registered UE by its AMF-UE-NGAP-ID (loop/decisions.md).
+
+# A Path Switch Request answered with Path Switch Request Failure changes no
+# state: every failure comes before any PFCP request (the UE unknown or not
+# registered, the gNB without NG Setup, the RAN-UE-NGAP-ID taken on it, no
+# session the request names that can be switched).
+law amf.path_switch.failure_leaves_state:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ef: {Ng.Ngap.any_switch_failure(Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool}
+  {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}
+
+# After a Path Switch Request, the context it names is as it was, or owned by
+# the requesting association under the RAN-UE-NGAP-ID the request gives. It
+# is one row, so no other association owns the UE, and the switch completes
+# for that row: the acknowledgement goes to its owner (Gs.Gsm.switch_end).
+law amf.path_switch.moves_owner:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +ran: B.Bytes()
+  for +amf: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +caps: G.UESecurityCapabilities
+  for +items: G.PDUSessionResourceToBeSwitchedDLList()
+  for +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListPSReq()>
+  for +rrc: Maybe<&2, G.RRCEstablishmentCause()>
+  for +k: U32
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.PathSwitchRequest.view(ies) == Done{GV.PathSwitchRequest.View{ran, amf, uli, caps, items, failed, rrc}} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>}
+  | ({Tb.Table.has(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool}
+  & {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))), assoc, ran) == Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) : Maybe<&2, St.Ue>})
+
+# TS 33.501 §6.7.3.1: the UE security capabilities a Path Switch Request
+# carries are only compared with the stored ones. Two requests that differ in
+# nothing else leave the same state, and the acknowledgement, built from the
+# context the state holds, carries the capabilities of the Registration
+# Request stored for it.
+law amf.path_switch.stored_capabilities:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len1: U32
+  for +bytes1: B.Bytes()
+  for +crit1: U32
+  for +value1: B.Bytes()
+  for +ies1: List<&2, Fr.Ie>
+  for +c1: Ap.Cur
+  for +len2: U32
+  for +bytes2: B.Bytes()
+  for +crit2: U32
+  for +value2: B.Bytes()
+  for +ies2: List<&2, Fr.Ie>
+  for +c2: Ap.Cur
+  for +ran: B.Bytes()
+  for +amf: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +caps1: G.UESecurityCapabilities
+  for +caps2: G.UESecurityCapabilities
+  for +items: G.PDUSessionResourceToBeSwitchedDLList()
+  for +failed: Maybe<&2, G.PDUSessionResourceFailedToSetupListPSReq()>
+  for +rrc: Maybe<&2, G.RRCEstablishmentCause()>
+  for +key: U32
+  for +ue: St.Ue
+  for +ctx: N.Nas.Ctx
+  for +nh: St.Nh
+  for +released: List<&2, U32>
+  for +p: U32
+  for +more: List<&2, U32>
+  for +cfg: St.Cfg
+  for +ep1: {Fr.Pdu.read(bytes1) == Done{Fr.Pdu{0, 25, crit1, value1}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei1: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value1), 1n)}) == Done{(ies1, c1)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev1: {GV.PathSwitchRequest.view(ies1) == Done{GV.PathSwitchRequest.View{ran, amf, uli, caps1, items, failed, rrc}} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
+  for +ep2: {Fr.Pdu.read(bytes2) == Done{Fr.Pdu{0, 25, crit2, value2}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei2: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value2), 1n)}) == Done{(ies2, c2)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev2: {GV.PathSwitchRequest.view(ies2) == Done{GV.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
+  {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : St.State}
+  & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{ctx, nh}}, [Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)}, Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}]) : Ng.GOut()}

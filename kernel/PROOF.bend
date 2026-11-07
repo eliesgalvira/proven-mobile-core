@@ -21,3 +21,4 @@ import ./proofs/smf.bend as PSm
 import ./proofs/takeover.bend as PTk
 import ./proofs/liveness.bend as PL
 import ./proofs/ng_setup.bend as PNs
+import ./proofs/path_switch.bend as PPs
