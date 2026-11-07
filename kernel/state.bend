@@ -6,6 +6,7 @@ import ./table.bend as Tb
 import ./plmn.bend as P
 import ./ausf.bend as Au
 import ./nas/security.bend as N
+import ./nas/sm.bend as Sm
 
 # The kernel state (docs/spec/milestone-1.md § The step function): one record.
 # Each UE context is owned by one row keyed by AMF-UE-NGAP-ID; everything else
@@ -306,10 +307,10 @@ type SId is Data:
   SId{ue: U32, psi: U32, ip: U32, teid: U32}
 
 # Where a session is: PFCP Session Establishment pending (the PTI and the
-# plain Accept to send on success), the gNB's resource setup pending, the
+# Accept to send on success), the gNB's resource setup pending, the
 # PFCP Session Modification with the gNB's tunnel pending, or active.
 type SPhase is Data:
-  Creating{guard: Guard, pti: U32, accept: B.Bytes()}
+  Creating{guard: Guard, pti: U32, accept: Sm.Sm}
   Setting{guard: Guard, pti: U32}
   Modifying{guard: Guard}
   Active{}

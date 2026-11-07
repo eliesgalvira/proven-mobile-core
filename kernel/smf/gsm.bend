@@ -47,6 +47,40 @@ def Gsm.rule_filters(r: Q.Rule) -> Q.RuleFilters:
     case Q.Rule{qri, len, op, filters, tail}:
       filters
 
+def Gsm.filter_count(rs: List<&2, Q.Rule>) -> Nat:
+  match rs:
+    case Nil{}:
+      0n
+    case r <> more:
+      Nat.add(Q.RuleFilters.count(Gsm.rule_filters(r)), Gsm.filter_count(more))
+
+def Gsm.rules_bounded(r: Q.Res(List<&2, Q.Rule>)) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{rs}:
+      Nat.is_le(Gsm.filter_count(rs), 16n)
+
+# The QoS rules of an Accept, read as the UE reads them, hold at most sixteen
+# packet filters (GHSA-g97g-v8mh-wg24).
+def Gsm.accept_bounded(m: Sm.Sm) -> Bool:
+  Gsm.rules_bounded(Q.Rules.read(I.Fields.lve2(Sm.Sm.fields(m))))
+
+def Gsm.phase_bounded(p: S.SPhase) -> Bool:
+  match p:
+    case S.Creating{guard, pti, accept}:
+      Gsm.accept_bounded(accept)
+    case _:
+      True{}
+
+# Every session being created holds an Accept within the bound.
+def Gsm.bounded(ss: Tb.Table(S.Session)) -> Bool:
+  match ss:
+    case Nil{}:
+      True{}
+    case (k, t) <> more:
+      Bool.and(Gsm.phase_bounded(S.Session.phase(t)), Gsm.bounded(more))
+
 # The ePCO containers of an Accept: the DNS server, when asked for.
 def Gsm.epco_containers(cfg: S.Cfg, wanted: Bool) -> List<&2, Q.Container>:
   match wanted:
@@ -90,8 +124,8 @@ def Gsm.type_opts(v4v6: Bool) -> List<&2, I.Ie>:
 
 # PDU Session Establishment Accept: IPv4, SSC mode 1, the default rule, the
 # AMBR, the UE's address, the DNS server if asked for.
-def Gsm.accept(cfg: S.Cfg, psi: U32, pti: U32, ip: U32, dns: Bool, v4v6: Bool) -> B.Bytes():
-  Gsm.sm(psi, pti, Sm.EstablishmentAccept{}, [I.FByte{17}, I.FLvE{I.LenBody{9, Q.Rules.write([Gsm.default_rule()])}}, I.FLv{I.LenBody{6, Gsm.ambr()}}], List.append(&2, I.Ie, Gsm.type_opts(v4v6), I.Ie{41, I.Tlv{}, 5, Q.PduAddr.write(Q.Ipv4{ip})} <> Gsm.dns_opts(cfg, dns)))
+def Gsm.accept(cfg: S.Cfg, psi: U32, pti: U32, ip: U32, dns: Bool, v4v6: Bool) -> Sm.Sm:
+  Sm.Sm{psi, pti, Sm.EstablishmentAccept{}, [I.FByte{17}, I.FLvE{I.LenBody{9, Q.Rules.write([Gsm.default_rule()])}}, I.FLv{I.LenBody{6, Gsm.ambr()}}], List.append(&2, I.Ie, Gsm.type_opts(v4v6), I.Ie{41, I.Tlv{}, 5, Q.PduAddr.write(Q.Ipv4{ip})} <> Gsm.dns_opts(cfg, dns))}
 
 # DL NAS Transport carrying an N1 SM message for a PDU session.
 def Gsm.dl_transport(psi: U32, +sm: B.Bytes()) -> B.Bytes():
@@ -332,15 +366,15 @@ def Gsm.ul_transport(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +fields:
 
 # Session Establishment accepted: the UP SEID is kept and the gNB is asked to
 # set the session up, the Accept inside; the same guard bounds the wait.
-def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, pti: U32, accept: B.Bytes(), +up_seid: B.Bytes(), +ue: S.Ue, ctx: Maybe<&2, Sec.Nas.Ctx>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
+def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, pti: U32, accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, ctx: Maybe<&2, Sec.Nas.Ctx>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match ctx cfg:
     case Some{c} Some{+cf}:
-      +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), accept))
+      +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))
       (S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{S.Guard.timer(guard), 0}, pti}}}}, [N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.transfer(cf, S.Session.teid(s))}, N.TimerStart{Some{S.Session.ue(s)}, S.Guard.timer(guard), Up.N4.t1_ms()}])
     case _ _:
       Gsm.forget([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}}))], S.State.pfcp_seq(st))
 
-def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: B.Bytes(), up_seid: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
+def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: Sm.Sm, up_seid: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
       Gsm.forget([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}}))], S.State.pfcp_seq(st))
@@ -348,7 +382,7 @@ def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, 
       Gsm.setup_ue(st, skey, s, guard, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st))
 
 # Refused, or no UP SEID: the UE is told (#38), nothing of the session remains.
-def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: B.Bytes(), ok: Bool, up: Maybe<&2, B.Bytes()>) -> N.GOut():
+def Gsm.established_as(+st: S.State, skey: U32, +s: S.Session, guard: S.Guard, pti: U32, accept: Sm.Sm, ok: Bool, up: Maybe<&2, B.Bytes()>) -> N.GOut():
   match ok up:
     case True{} Some{up_seid}:
       Gsm.setup(st, skey, s, guard, pti, accept, up_seid, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))

@@ -11,6 +11,7 @@ import ../table.bend as Tb
 import ../state.bend as S
 import ../step.bend as K
 import ../smf/n4.bend as Up
+import ../smf/gsm.bend as Gs
 import ../amf/ngap.bend as N
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
@@ -243,6 +244,7 @@ def main() -> IO(Unit):
     +req_ies : List<&2, T.Tlv> = pfcp_ies(req)
     +cap_ies : List<&2, T.Tlv> = pfcp_ies(A.hex_of(A.entry(35n, msgs), "hex"))
     C.Check.report("UL NAS Transport: one session creating, one PFCP Session Establishment Request, one guard", Bool.and(Nat.is_eq(session_count(st1), 1n), Bool.and(sphase_is(st1, "creating"), Bool.and(U32.is_eq(pfcp_kind(req), 50), Nat.is_eq(A.timer_starts(K.Kernel.frames(o1)), 1n)))))
+    C.Check.report("UL NAS Transport: the Accept the creating session holds has QoS rules within sixteen packet filters", Gs.Gsm.bounded(S.State.sessions(st1)))
     C.Check.report("Session Establishment Request: the captured F-SEID, two PDRs, two FARs, one QER", Bool.and(B.bytes_eq(body(57, req_ies), body(57, cap_ies)), Bool.and(Nat.is_eq(count_kind(1, req_ies), 2n), Bool.and(Nat.is_eq(count_kind(3, req_ies), 2n), Nat.is_eq(count_kind(7, req_ies), 1n)))))
     C.Check.report("Session Establishment Request: the uplink PDR has the captured N3 F-TEID, the downlink one the captured UE address", Bool.and(B.bytes_eq(body(21, inside(2, inside(1, req_ies))), [1, 0, 0, 199, 196, 10, 33, 0, 20]), B.bytes_eq(body(93, inside(2, inside(1, List.drop(&2, T.Tlv, req_ies, 3n)))), [6, 10, 45, 0, 2])))
     C.Check.report("Session Establishment Request: the QER carries QFI 1 and the captured MBR", Bool.and(B.bytes_eq(body(124, inside(7, req_ies)), [1]), B.bytes_eq(body(26, inside(7, req_ies)), [0, 0, 15, 66, 64, 0, 0, 15, 66, 64])))

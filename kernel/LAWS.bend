@@ -1382,7 +1382,7 @@ law smf.establish.failure_releases:
   for +s: St.Session
   for +guard: St.Guard
   for +pti: U32
-  for +accept: B.Bytes()
+  for +accept: Sm.Sm
   for +timer: U32
   for +assoc: U32
   for +stream: U32
@@ -1455,11 +1455,17 @@ law smf.modification.rejected:
   {St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == St.State.sessions(st) : Tb.Table(St.Session)}
   & {Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == [Ng.DlNas{St.Ue.assoc(ue), St.Ue.stream(ue), Ng.Ngap.of_big(amf), St.Ue.ran_id(ue), N.Nas.Protected.msg(N.Nas.protect(ctx2, N.Ciphered{}, Gs.Gsm.dl_transport(psi, Gs.Gsm.modification_reject(psi, pti))))}] : List<&2, Ng.Act>}
 
-# GHSA-g97g-v8mh-wg24: a session holds the one default QoS rule, with one
-# packet filter, and modification (the only way to add filters) is rejected,
-# so no session ever holds more than sixteen packet filters.
+# GHSA-g97g-v8mh-wg24: the Accept every session holds while eUPF creates it,
+# its QoS rules read as the UE reads them, carries at most sixteen packet
+# filters, in the initial state and after every step; modification, the only
+# way to add filters, is rejected (smf.modification.rejected).
 law smf.packet_filters.capacity_reject:
-  {Nat.is_le(Q.RuleFilters.count(Gs.Gsm.rule_filters(Gs.Gsm.default_rule())), 16n) == True{} : Bool}
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +e: {Gs.Gsm.bounded(St.State.sessions(st)) == True{} : Bool}
+  {Gs.Gsm.bounded(St.State.sessions(St.State.initial())) == True{} : Bool}
+  & {Gs.Gsm.bounded(St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == True{} : Bool}
 
 # GHSA-f77j-h86j-2vcf: the ePCO of an Accept holds each container identifier at
 # most once, however many times the request repeats it.
