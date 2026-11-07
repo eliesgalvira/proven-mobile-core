@@ -26,7 +26,7 @@ import ./lib.bend as P
 import ./takeover.bend as PT
 import ./liveness.bend as PL
 
-# Proofs of the SMF's laws (ticket 19).
+# Proofs of the SMF's laws (tickets 19 and 34).
 
 def SClear.keep(+key: U32, +s: S.Session, +k: U32, +t: S.Session, +rest: Tb.Table(S.Session), b: Bool, e1: {Bool.not(S.SRow.conflicts(key, s, k, t)) == True{} : Bool}, ih: {S.Sessions.clear(key, s, rest) == True{} : Bool}) -> {S.Sessions.clear(key, s, Tb.Table.keep(S.Session, k, t, rest, b)) == True{} : Bool}:
   match b:
