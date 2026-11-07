@@ -33,7 +33,7 @@ Status values: `todo`, `in-progress`, `done`, `blocked`, `needs-human`. Tickets 
 | 22 | e2e | done | 20, 21 | 057ab6a, 9ac4f63: NixOS test `e2e/test.nix` as flake check `e2e`, replacing the Docker bench and `run.sh`; `E2E PASS` with 4/4 pings through eUPF; found and fixed swapped SCTP cmsg types in the edge (9ac4f63) |
 | 23 | acceptance | done | 01–22 | 1d2ad79: `scripts/test-kernel.sh --strict` (694 checks, none skipped), `acceptance.py --strict` (26 laws, 0 failures) and `scripts/check.sh` pass; `loop/acceptance-report.md` written; the audit strengthened `smf.establish.failure_releases` to all four failure paths, added `ngap.no_big_nat` (ticket 13) and renamed `aper.padding.zero`; re-checked 2026-11-02 on the e2e commits: `kernel/`, `tools/` and `scripts/` are unchanged since 1d2ad79, `acceptance.py --strict` gives 26 laws and 0 failures, and the edge's cargo tests ran in its Nix build |
 | 32 | takeover-after-auth | done | 18 | e5a8895, d944697: the SUPI stays in Authenticating until HRES* and RES* verify and enters the index in `Gmm.secure`, so takeover follows 5G-AKA; 5G-TMSI drawn free of live ones; `owner_only` widened to codes 14, 29, 46; `amf.takeover.authenticated` proven over every NGAP path; replay test with a second gNB |
-| 33 | liveness-laws | todo | 18 | |
+| 33 | liveness-laws | done | 18 | 3219d95, 168b4b0, 6582b9c: Releasing has a guard whose expiry forgets the UE and deletes its sessions at eUPF; ids skip live ones; the step returns actions naming their UE context; `amf.guard.expires`, `amf.sessions.owned` and `amf.release.forgets_ue` over every event replace the two vacuous laws |
 | 34 | laws-on-real-paths | todo | 19 | |
 | 35 | procedure-robustness | todo | 32, 33 | |
 | 36 | edge-robustness | todo | 21 | |
