@@ -117,11 +117,25 @@ def Cfg.smf_n4(c: Cfg) -> B.Bytes():
     case Cfg{plmn, region, set_id, pointer, tac, name, sst, dnn, pool, prefix, dns, smf_n4, upf_n3, upf_n4, suci_key, suci_key_id, nea, nia, subscribers}:
       smf_n4
 
+# The whole value, below a limit.
+def Cfg.below(r: B.Read(U32), +limit: U32) -> Bool:
+  match r:
+    case Fail{e}:
+      False{}
+    case Done{(v, rest)}:
+      Bool.and(List.is_empty(&2, U32, rest), U32.is_lt(v, limit))
+
+# An AMF Set ID of 10 bits in two octets and an AMF Pointer of 6 in one, as
+# the GUAMI and the 5G-GUTI pack them.
+def Cfg.fits(+c: Cfg) -> Bool:
+  Bool.and(Cfg.below(B.u16(Cfg.set_id(c)), 1024), Cfg.below(B.u8(Cfg.pointer(c)), 64))
+
 # What the kernel relies on beyond the tags being given: a PLMN of three
-# octets that decodes, which the serving network name is built from, and a DNS
-# server of four octets, which the Accept's ePCO carries.
+# octets that decodes, which the serving network name is built from, a DNS
+# server of four octets, which the Accept's ePCO carries, and the AMF Set ID
+# and Pointer in range.
 def Cfg.valid(+c: Cfg) -> Bool:
-  Bool.and(F.Len.is(Cfg.plmn(c), 3n), Bool.and(F.Result.ok(B.ReadValue(P.Plmn), P.Plmn.read(Cfg.plmn(c))), F.Len.is(Cfg.dns(c), 4n)))
+  Bool.and(F.Len.is(Cfg.plmn(c), 3n), Bool.and(F.Result.ok(B.ReadValue(P.Plmn), P.Plmn.read(Cfg.plmn(c))), Bool.and(F.Len.is(Cfg.dns(c), 4n), Cfg.fits(c))))
 
 # Every tag the milestone needs is given (0x0001 to 0x0012); subscribers may be absent.
 def Cfg.given_all(+tl: List<&2, T.Tlv>) -> Bool:

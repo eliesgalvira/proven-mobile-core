@@ -398,7 +398,9 @@ def Epco.dns(dns: B.Bytes(), e: {F.Len.is(dns, 4n) == True{} : Bool}) -> {Q.Epco
 def L.smf.epco.accept_valid(cfg, wanted, e):
   match wanted:
     case True{}:
-      Epco.dns(S.Cfg.dns(cfg), P.Bool.and_true_r(F.Result.ok(B.ReadValue(Pl.Plmn), Pl.Plmn.read(S.Cfg.plmn(cfg))), F.Len.is(S.Cfg.dns(cfg), 4n), P.Bool.and_true_r(F.Len.is(S.Cfg.plmn(cfg), 3n), Bool.and(F.Result.ok(B.ReadValue(Pl.Plmn), Pl.Plmn.read(S.Cfg.plmn(cfg))), F.Len.is(S.Cfg.dns(cfg), 4n)), e)))
+      +ok = F.Result.ok(B.ReadValue(Pl.Plmn), Pl.Plmn.read(S.Cfg.plmn(cfg)))
+      +rest = Bool.and(F.Len.is(S.Cfg.dns(cfg), 4n), S.Cfg.fits(cfg))
+      Epco.dns(S.Cfg.dns(cfg), P.Bool.and_true_l(F.Len.is(S.Cfg.dns(cfg), 4n), S.Cfg.fits(cfg), P.Bool.and_true_r(ok, rest, P.Bool.and_true_r(F.Len.is(S.Cfg.plmn(cfg), 3n), Bool.and(ok, rest), e))))
     case False{}:
       {==}
 
