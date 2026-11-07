@@ -235,7 +235,7 @@ def main() -> IO(Unit):
     C.Check.report("NG Setup Request before Config: NG Setup Failure", A.pdu_is(Fr.Pdu.read(reply_none), Fr.Pdu.unsuccessful(), 21))
     +o_bad : N.Step() = K.Kernel.step(st2, data_event(1, [1, 2, 3]), entropy())
     +a_bad : List<&2, F.Action> = K.Kernel.frames(o_bad)
-    C.Check.report("an undecodable PDU: Error Indication on stream 0 and one log line", Bool.and(A.pdu_is(Fr.Pdu.read(send_bytes(one_send(a_bad))), Fr.Pdu.initiating(), 7), Bool.and(send_on(one_send(a_bad), 1, 0), Bool.and(Nat.is_eq(count_logs(a_bad), 1n), Nat.is_eq(List.length(&2, F.Action, a_bad), 2n)))))
+    C.Check.report("an undecodable PDU: Error Indication on stream 0 and one log line", Bool.and(A.pdu_is(Fr.Pdu.read(send_bytes(one_send(a_bad))), Fr.Pdu.initiating(), 9), Bool.and(send_on(one_send(a_bad), 1, 0), Bool.and(Nat.is_eq(count_logs(a_bad), 1n), Nat.is_eq(List.length(&2, F.Action, a_bad), 2n)))))
     C.Check.report("an undecodable PDU: the association stays known", S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_bad))))
     +o_inc : N.Step() = K.Kernel.step(S.State.initial(), F.Evt.config_make([T.Tlv.make(1, [0, 241, 16])]), entropy())
     C.Check.report("an incomplete Config: not kept, one log line", Bool.and(Bool.not(configured(K.Kernel.state(o_inc))), Nat.is_eq(count_logs(K.Kernel.frames(o_inc)), 1n)))

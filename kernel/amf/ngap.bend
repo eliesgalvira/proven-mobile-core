@@ -19,7 +19,7 @@ def Proc.downlink_nas_transport() -> U32:
   4
 
 def Proc.error_indication() -> U32:
-  7
+  9
 
 def Proc.initial_context_setup() -> U32:
   14
