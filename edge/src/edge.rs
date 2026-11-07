@@ -65,6 +65,12 @@ impl Edge {
     }
 
     pub fn step(&mut self, event: &Event) -> Result<(), Error> {
+        self.step_to(event, SocketAddr::V4(self.upf))
+    }
+
+    /// Steps the kernel and sends its PFCP to `n4`: the UPF's N4 port, or the
+    /// source of the UPF datagram being answered (TS 29.244 §7.2).
+    fn step_to(&mut self, event: &Event, n4: SocketAddr) -> Result<(), Error> {
         let actions = self.link.step(&entropy()?, event).map_err(Error::Kernel)?;
         let now = Instant::now();
         for action in actions {
@@ -83,7 +89,7 @@ impl Edge {
                     }
                 }
                 Action::PfcpSend(bytes) => {
-                    if let Err(e) = self.udp.send_to(&bytes, self.upf) {
+                    if let Err(e) = self.udp.send_to(&bytes, n4) {
                         eprintln!("edge: N4 send: {e}");
                     }
                 }
@@ -131,7 +137,7 @@ impl Edge {
             Ok(Msg::Data(id, stream, bytes)) if self.assocs.contains_key(&id) => self.step(&Event::NgapData { assoc: id, stream, bytes }),
             Ok(Msg::Down(id)) if self.assocs.remove(&id).is_some() => self.step(&Event::NgapAssocDown(id)),
             Ok(Msg::Data(..)) | Ok(Msg::Down(_)) => Ok(()),
-            Ok(Msg::Pfcp(bytes, from)) if from.ip() == *self.upf.ip() => self.step(&Event::PfcpData(bytes)),
+            Ok(Msg::Pfcp(bytes, from)) if from.ip() == *self.upf.ip() => self.step_to(&Event::PfcpData(bytes), from),
             Ok(Msg::Pfcp(_, from)) => {
                 eprintln!("edge: N4 datagram from {from} dropped: not the UPF");
                 Ok(())

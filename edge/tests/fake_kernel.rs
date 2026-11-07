@@ -72,9 +72,11 @@ fn an_invalid_frame_from_the_kernel_is_an_error() {
 }
 
 #[test]
-fn the_loop_runs_timers_and_keeps_n4_to_the_upf() {
+fn the_loop_runs_timers_and_answers_the_upf_where_it_asked_from() {
     let upf = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     upf.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+    let upf_asking = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    upf_asking.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
     let upf_addr = match upf.local_addr().unwrap() {
         SocketAddr::V4(a) => a,
         _ => unreachable!(),
@@ -90,7 +92,7 @@ fn the_loop_runs_timers_and_keeps_n4_to_the_upf() {
     let (tx, rx) = mpsc::channel();
     let stranger = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(10, 0, 0, 9), 8805));
     tx.send(Msg::Pfcp(vec![0x20, 0x02], stranger)).unwrap();
-    tx.send(Msg::Pfcp(vec![0x20, 0x03], SocketAddr::V4(upf_addr))).unwrap();
+    tx.send(Msg::Pfcp(vec![0x20, 0x03], upf_asking.local_addr().unwrap())).unwrap();
     let started = Instant::now();
     let stop = thread::spawn(move || {
         thread::sleep(Duration::from_millis(200));
@@ -101,10 +103,10 @@ fn the_loop_runs_timers_and_keeps_n4_to_the_upf() {
     assert!(started.elapsed() < Duration::from_millis(450), "timer 1 was cancelled, so nothing waits 500 ms");
     stop.join().unwrap();
     let mut buf = [0u8; 16];
+    let (n, _) = upf_asking.recv_from(&mut buf).unwrap();
+    assert_eq!(&buf[..n], &[0x20, 0x03], "the UPF's datagram is answered at its source port");
     let (n, _) = upf.recv_from(&mut buf).unwrap();
-    assert_eq!(&buf[..n], &[0x20, 0x03], "the datagram from the UPF is answered first");
-    let (n, _) = upf.recv_from(&mut buf).unwrap();
-    assert_eq!(&buf[..n], &[0x20, 0x01], "then timer 2 fires");
+    assert_eq!(&buf[..n], &[0x20, 0x01], "timer 2's request goes to the UPF's N4 port");
     drop(edge);
     assert_eq!(kernel.join().unwrap(), vec![Event::Config(vec![]), Event::PfcpData(vec![0x20, 0x03]), Event::TimerFired(2)]);
 }
