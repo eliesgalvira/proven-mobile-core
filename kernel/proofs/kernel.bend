@@ -24,13 +24,6 @@ import ../plmn.bend as Pl
 
 # Proofs of the step function's laws (tickets 16 to 18).
 
-def Bool.or_false(a: Bool, e: {Bool.or(a, False{}) == True{} : Bool}) -> {a == True{} : Bool}:
-  match a:
-    case True{}:
-      {==}
-    case False{}:
-      Empty.absurd({False{} == True{} : Bool}, P.Refute.bool(e))
-
 # Guards stopped
 # --------------
 # A step stops the guard of each session row it removes (N.Gone); one that

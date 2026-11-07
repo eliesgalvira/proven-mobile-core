@@ -35,57 +35,10 @@ import ./kernel.bend as PK
 # Equalities
 # ----------
 
-def Some.inj(-A: Data, +x: A, +y: A, +e: {Some{x} == Some{y} : Maybe<&2, A>}) -> {x == y : A}:
-  Equal.cong(Maybe<&2, A>, A, m => P.Maybe.value(A, m, x), Some{x}, Some{y}, e)
-
-def U32.eq_true(+a: U32, +b: U32, +e: {a == b : U32}) -> {U32.is_eq(a, b) == True{} : Bool}:
-  %e : {U32.is_eq(a, _) == True{} : Bool}
-  P.U32.is_eq_refl(a)
-
-def U32.sym_false(+a: U32, +b: U32, +y: Bool, +ey: {U32.is_eq(b, a) == y : Bool}, +ex: {U32.is_eq(a, b) == False{} : Bool}) -> {False{} == y : Bool}:
-  match y:
-    case True{}:
-      t = U32.eq_true(a, b, Equal.sym(U32, b, a, P.U32.eq_of_is_eq(b, a, ey)))
-      Empty.absurd({False{} == True{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(a, b), True{}, Equal.sym(Bool, U32.is_eq(a, b), False{}, ex), t)))
-    case False{}:
-      {==}
-
-def U32.sym_case(+a: U32, +b: U32, +x: Bool, +ex: {U32.is_eq(a, b) == x : Bool}) -> {x == U32.is_eq(b, a) : Bool}:
-  match x:
-    case True{}:
-      Equal.sym(Bool, U32.is_eq(b, a), True{}, U32.eq_true(b, a, Equal.sym(U32, a, b, P.U32.eq_of_is_eq(a, b, ex))))
-    case False{}:
-      U32.sym_false(a, b, U32.is_eq(b, a), {==}, ex)
-
-def U32.sym(+a: U32, +b: U32) -> {U32.is_eq(a, b) == U32.is_eq(b, a) : Bool}:
-  U32.sym_case(a, b, U32.is_eq(a, b), {==})
-
-def Bytes.eq_true(+a: B.Bytes(), +b: B.Bytes(), +e: {a == b : B.Bytes()}) -> {B.bytes_eq(a, b) == True{} : Bool}:
-  %e : {B.bytes_eq(a, _) == True{} : Bool}
-  P.Bytes.eq_refl(a)
-
-def Bytes.sym_false(+a: B.Bytes(), +b: B.Bytes(), +y: Bool, +ey: {B.bytes_eq(b, a) == y : Bool}, +ex: {B.bytes_eq(a, b) == False{} : Bool}) -> {False{} == y : Bool}:
-  match y:
-    case True{}:
-      t = Bytes.eq_true(a, b, Equal.sym(B.Bytes(), b, a, P.Bytes.eq_of_bytes_eq(b, a, ey)))
-      Empty.absurd({False{} == True{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, B.bytes_eq(a, b), True{}, Equal.sym(Bool, B.bytes_eq(a, b), False{}, ex), t)))
-    case False{}:
-      {==}
-
-def Bytes.sym_case(+a: B.Bytes(), +b: B.Bytes(), +x: Bool, +ex: {B.bytes_eq(a, b) == x : Bool}) -> {x == B.bytes_eq(b, a) : Bool}:
-  match x:
-    case True{}:
-      Equal.sym(Bool, B.bytes_eq(b, a), True{}, Bytes.eq_true(b, a, Equal.sym(B.Bytes(), a, b, P.Bytes.eq_of_bytes_eq(a, b, ex))))
-    case False{}:
-      Bytes.sym_false(a, b, B.bytes_eq(b, a), {==}, ex)
-
-def Bytes.sym(+a: B.Bytes(), +b: B.Bytes()) -> {B.bytes_eq(a, b) == B.bytes_eq(b, a) : Bool}:
-  Bytes.sym_case(a, b, B.bytes_eq(a, b), {==})
-
 def Same.bytes_sym(+a: Maybe<&2, B.Bytes()>, +b: Maybe<&2, B.Bytes()>) -> {S.Maybe.same_bytes(a, b) == S.Maybe.same_bytes(b, a) : Bool}:
   match a b:
     case Some{x} Some{y}:
-      Bytes.sym(x, y)
+      P.Bytes.sym(x, y)
     case Some{x} None{}:
       {==}
     case None{} Some{y}:
@@ -96,7 +49,7 @@ def Same.bytes_sym(+a: Maybe<&2, B.Bytes()>, +b: Maybe<&2, B.Bytes()>) -> {S.May
 def Same.u32_sym(+a: Maybe<&2, U32>, +b: Maybe<&2, U32>) -> {S.Maybe.same_u32(a, b) == S.Maybe.same_u32(b, a) : Bool}:
   match a b:
     case Some{x} Some{y}:
-      U32.sym(x, y)
+      P.U32.sym(x, y)
     case Some{x} None{}:
       {==}
     case None{} Some{y}:
@@ -112,9 +65,9 @@ def Ue.conflicts_sym(+a: S.Ue, +b: S.Ue) -> {S.Ue.conflicts(a, b) == S.Ue.confli
       %e1 : {Bool.or(S.Maybe.same_bytes(pa, pb), Bool.or(S.Maybe.same_u32(ta, tb), Bool.and(U32.is_eq(aa, ab), B.bytes_eq(ra, rb)))) == Bool.or(_, Bool.or(S.Maybe.same_u32(tb, ta), Bool.and(U32.is_eq(ab, aa), B.bytes_eq(rb, ra)))) : Bool}
       e2 = Same.u32_sym(ta, tb)
       %e2 : {Bool.or(S.Maybe.same_bytes(pa, pb), Bool.or(S.Maybe.same_u32(ta, tb), Bool.and(U32.is_eq(aa, ab), B.bytes_eq(ra, rb)))) == Bool.or(S.Maybe.same_bytes(pa, pb), Bool.or(_, Bool.and(U32.is_eq(ab, aa), B.bytes_eq(rb, ra)))) : Bool}
-      e3 = U32.sym(aa, ab)
+      e3 = P.U32.sym(aa, ab)
       %e3 : {Bool.or(S.Maybe.same_bytes(pa, pb), Bool.or(S.Maybe.same_u32(ta, tb), Bool.and(U32.is_eq(aa, ab), B.bytes_eq(ra, rb)))) == Bool.or(S.Maybe.same_bytes(pa, pb), Bool.or(S.Maybe.same_u32(ta, tb), Bool.and(_, B.bytes_eq(rb, ra)))) : Bool}
-      e4 = Bytes.sym(ra, rb)
+      e4 = P.Bytes.sym(ra, rb)
       %e4 : {Bool.or(S.Maybe.same_bytes(pa, pb), Bool.or(S.Maybe.same_u32(ta, tb), Bool.and(U32.is_eq(aa, ab), B.bytes_eq(ra, rb)))) == Bool.or(S.Maybe.same_bytes(pa, pb), Bool.or(S.Maybe.same_u32(ta, tb), Bool.and(U32.is_eq(aa, ab), _))) : Bool}
       {==}
 
@@ -135,7 +88,7 @@ def Sift.row(+s: S.Sieve, +k: U32, +u: S.Ue, +k0: U32, +w: S.Ue, +more: Tb.Table
     case True{}:
       sk = Equal.sym(U32, k0, k, P.U32.eq_of_is_eq(k0, k, ehk))
       %sk : {Tb.Table.get(S.Ue, k, Tb.Table.keep(S.Ue, _, w, S.Ues.sift(s, more), S.Sieve.keeps(s, _, w))) == Some{u} : Maybe<&2, S.Ue>}
-      sw = Equal.sym(S.Ue, w, u, Some.inj(S.Ue, w, u, eu))
+      sw = Equal.sym(S.Ue, w, u, P.Some.inj(S.Ue, w, u, eu))
       %sw : {Tb.Table.get(S.Ue, k, Tb.Table.keep(S.Ue, k, _, S.Ues.sift(s, more), S.Sieve.keeps(s, k, _))) == Some{u} : Maybe<&2, S.Ue>}
       sek = Equal.sym(Bool, S.Sieve.keeps(s, k, u), True{}, ek)
       %sek : {Tb.Table.get(S.Ue, k, Tb.Table.keep(S.Ue, k, u, S.Ues.sift(s, more), _)) == Some{u} : Maybe<&2, S.Ue>}
@@ -290,7 +243,7 @@ def Tk.spared(+k: U32, +u: S.Ue, +tx: S.Tx, +ues: Tb.Table(S.Ue), +eu: {Tb.Table
     case S.Put{+key, +v}:
       nc = P.Bool.not_true(S.Row.conflicts(key, v, k, u), es)
       nk = P.Bool.or_false_l(U32.is_eq(k, key), S.Ue.conflicts(v, u), nc)
-      sk = Equal.trans(Bool, U32.is_eq(key, k), U32.is_eq(k, key), False{}, U32.sym(key, k), nk)
+      sk = Equal.trans(Bool, U32.is_eq(key, k), U32.is_eq(k, key), False{}, P.U32.sym(key, k), nk)
       ssk = Equal.sym(Bool, U32.is_eq(key, k), False{}, sk)
       %ssk : {Tb.Table.hit(S.Ue, v, Tb.Table.get(S.Ue, k, S.Ues.sift(S.Clear{key, v}, ues)), _) == Some{u} : Maybe<&2, S.Ue>}
       Sift.get(S.Clear{key, v}, k, u, ues, eu, es)
@@ -419,7 +372,7 @@ def Tk.keeps_clear(+k: U32, +u: S.Ue, +key: U32, +v: S.Ue, +nk: {U32.is_eq(k, ke
 def Tk.apart(+u: S.Ue, +v: S.Ue, +c: Bool, +ec: {c == False{} : Bool}, +h: {Bool.or(Bool.not(S.Ue.conflicts(v, u)), c) == True{} : Bool}) -> {S.Ue.conflicts(v, u) == False{} : Bool}:
   match c:
     case False{}:
-      P.Bool.not_true(S.Ue.conflicts(v, u), PK.Bool.or_false(Bool.not(S.Ue.conflicts(v, u)), h))
+      P.Bool.not_true(S.Ue.conflicts(v, u), P.Bool.or_true_l(Bool.not(S.Ue.conflicts(v, u)), False{}, {==}, h))
     case True{}:
       Empty.absurd({S.Ue.conflicts(v, u) == False{} : Bool}, P.Refute.true_false(ec))
 
@@ -435,7 +388,7 @@ def Tk.put_case(+k: U32, +u: S.Ue, +key: U32, +v: S.Ue, +ues: Tb.Table(S.Ue), +e
       Inr{(%sec : {Bool.or(_, S.Ues.secured(S.Ue.supi(u), S.Ues.sift(S.Clear{key, v}, ues))) == True{} : Bool}; {==})}
     case False{}:
       nc = Tk.apart(u, v, S.Ue.secures(v, S.Ue.supi(u)), ec, h)
-      sk = Equal.sym(Bool, U32.is_eq(key, k), False{}, Equal.trans(Bool, U32.is_eq(key, k), U32.is_eq(k, key), False{}, U32.sym(key, k), h1))
+      sk = Equal.sym(Bool, U32.is_eq(key, k), False{}, Equal.trans(Bool, U32.is_eq(key, k), U32.is_eq(k, key), False{}, P.U32.sym(key, k), h1))
       g = Sift.get(S.Clear{key, v}, k, u, ues, eu, Tk.keeps_clear(k, u, key, v, h1, nc))
       Inl{(%sk : {Tb.Table.hit(S.Ue, v, Tb.Table.get(S.Ue, k, S.Ues.sift(S.Clear{key, v}, ues)), _) == Some{u} : Maybe<&2, S.Ue>}; g)}
 
@@ -468,7 +421,7 @@ def Uniq.clear_row(+key0: U32, +w: S.Ue, +k: U32, +u: S.Ue, +k1: U32, +x: S.Ue, 
       r = P.Bool.not_true(S.Row.conflicts(key0, w, k1, x), P.Bool.and_true_l(Bool.not(S.Row.conflicts(key0, w, k1, x)), S.Ues.clear(key0, w, more), ec))
       ek = P.U32.eq_of_is_eq(k1, k, ehk)
       %ek : {S.Row.conflicts(key0, w, _, u) == False{} : Bool}
-      ex = Some.inj(S.Ue, x, u, eu)
+      ex = P.Some.inj(S.Ue, x, u, eu)
       %ex : {S.Row.conflicts(key0, w, k1, _) == False{} : Bool}
       r
     case False{}:
@@ -486,17 +439,17 @@ def Uniq.row(+key: U32, +k: U32, +v: S.Ue, +u: S.Ue, +k0: U32, +w: S.Ue, +more: 
   match a b:
     case True{} True{}:
       kk = Equal.trans(U32, k, k0, key, Equal.sym(U32, k0, k, P.U32.eq_of_is_eq(k0, k, eb)), P.U32.eq_of_is_eq(k0, key, ea))
-      Empty.absurd({S.Ue.conflicts(v, u) == False{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(k, key), True{}, Equal.sym(Bool, U32.is_eq(k, key), False{}, ne), U32.eq_true(k, key, kk))))
+      Empty.absurd({S.Ue.conflicts(v, u) == False{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(k, key), True{}, Equal.sym(Bool, U32.is_eq(k, key), False{}, ne), P.U32.eq_true(k, key, kk))))
     case True{} False{}:
       ec = P.Bool.and_true_l(S.Ues.clear(k0, w, more), S.Ues.unique(more), eun)
       r = P.Bool.or_false_r(U32.is_eq(k, k0), S.Ue.conflicts(w, u), Uniq.clear_get(k0, w, more, k, u, ec, eu))
-      ew = Some.inj(S.Ue, w, v, ev)
+      ew = P.Some.inj(S.Ue, w, v, ev)
       %ew : {S.Ue.conflicts(_, u) == False{} : Bool}
       r
     case False{} True{}:
       ec = P.Bool.and_true_l(S.Ues.clear(k0, w, more), S.Ues.unique(more), eun)
       r = P.Bool.or_false_r(U32.is_eq(key, k0), S.Ue.conflicts(w, v), Uniq.clear_get(k0, w, more, key, v, ec, ev))
-      ew = Some.inj(S.Ue, w, u, eu)
+      ew = P.Some.inj(S.Ue, w, u, eu)
       %ew : {S.Ue.conflicts(v, _) == False{} : Bool}
       Equal.trans(Bool, S.Ue.conflicts(v, w), S.Ue.conflicts(w, v), False{}, Ue.conflicts_sym(v, w), r)
     case False{} False{}:
@@ -520,7 +473,7 @@ def Own.assoc(+w: S.Ue, +ue: S.Ue, +assoc: U32, +ew: {w == ue : S.Ue}, +ea: {U32
 def Own.check(+w: S.Ue, +assoc: U32, +ran: B.Bytes(), +ue: S.Ue, +ok: Bool, +eok: {Bool.and(U32.is_eq(S.Ue.assoc(w), assoc), B.bytes_eq(S.Ue.ran_id(w), ran)) == ok : Bool}, +e: {N.Owner.check(w, ok) == Some{ue} : Maybe<&2, S.Ue>}) -> {Some{w} == Some{ue} : Maybe<&2, S.Ue>} & {U32.is_eq(S.Ue.assoc(ue), assoc) == True{} : Bool}:
   match ok:
     case True{}:
-      ew = Some.inj(S.Ue, w, ue, e)
+      ew = P.Some.inj(S.Ue, w, ue, e)
       ea = P.Bool.and_true_l(U32.is_eq(S.Ue.assoc(w), assoc), B.bytes_eq(S.Ue.ran_id(w), ran), eok)
       (e, Own.assoc(w, ue, assoc, ew, ea))
     case False{}:
@@ -543,7 +496,7 @@ def Own.ne(+ues: Tb.Table(S.Ue), +key: U32, +k: U32, +ue: S.Ue, +u: S.Ue, +assoc
       {==}
     case True{}:
       g = Own.at(ues, k, key, ue, Equal.sym(U32, k, key, P.U32.eq_of_is_eq(k, key, ex)), eg)
-      eue = Some.inj(S.Ue, ue, u, Equal.trans(Maybe<&2, S.Ue>, Some{ue}, Tb.Table.get(S.Ue, k, ues), Some{u}, Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, ues), Some{ue}, g), eu))
+      eue = P.Some.inj(S.Ue, ue, u, Equal.trans(Maybe<&2, S.Ue>, Some{ue}, Tb.Table.get(S.Ue, k, ues), Some{u}, Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, ues), Some{ue}, g), eu))
       t = Own.assoc(ue, u, assoc, eue, eb)
       Empty.absurd({True{} == False{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(S.Ue.assoc(u), assoc), True{}, Equal.sym(Bool, U32.is_eq(S.Ue.assoc(u), assoc), False{}, ea), t)))
 
@@ -592,7 +545,7 @@ def Tmsi.free(+ues: Tb.Table(S.Ue), +words: B.Bytes()) -> {Tk.free(ues, Gmm.Gmm.
 def Tmsi.row(+t: U32, +k: U32, +u: S.Ue, +k0: U32, +w: S.Ue, +more: Tb.Table(S.Ue), +hk: Bool, +ehk: {U32.is_eq(k0, k) == hk : Bool}, +ef: {Bool.or(S.Maybe.same_u32(Some{t}, S.Ue.tmsi(w)), S.Ues.has_tmsi(t, more)) == False{} : Bool}, +eu: {Tb.Table.hit(S.Ue, w, Tb.Table.get(S.Ue, k, more), hk) == Some{u} : Maybe<&2, S.Ue>}, ih: {S.Ues.has_tmsi(t, more) == False{} : Bool} -> {Tb.Table.get(S.Ue, k, more) == Some{u} : Maybe<&2, S.Ue>} -> {S.Maybe.same_u32(Some{t}, S.Ue.tmsi(u)) == False{} : Bool}) -> {S.Maybe.same_u32(Some{t}, S.Ue.tmsi(u)) == False{} : Bool}:
   match hk:
     case True{}:
-      ew = Some.inj(S.Ue, w, u, eu)
+      ew = P.Some.inj(S.Ue, w, u, eu)
       %ew : {S.Maybe.same_u32(Some{t}, S.Ue.tmsi(_)) == False{} : Bool}
       P.Bool.or_false_l(S.Maybe.same_u32(Some{t}, S.Ue.tmsi(w)), S.Ues.has_tmsi(t, more), ef)
     case False{}:
@@ -733,7 +686,7 @@ def Tk.h_tmsi(+ue: S.Ue, +p: S.Phase, +dl: B.Bytes(), +reg: B.Bytes(), +t: U32, 
 
 # A context the InitialUEMessage creates has no SUPI, no 5G-TMSI and another association.
 def Tk.fresh(+assoc: U32, +ran: B.Bytes(), +stream: U32, +nas: B.Bytes(), +u: S.Ue, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {S.Ue.conflicts(S.Ue{assoc, ran, stream, None{}, None{}, nas, 0, S.Created{}, []}, u) == False{} : Bool}:
-  e = Equal.sym(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), False{}, Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, U32.sym(assoc, S.Ue.assoc(u)), ea))
+  e = Equal.sym(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), False{}, Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(u)), U32.is_eq(S.Ue.assoc(u), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(u)), ea))
   %e : {Bool.or(S.Maybe.same_bytes(None{}, S.Ue.supi(u)), Bool.or(S.Maybe.same_u32(None{}, S.Ue.tmsi(u)), Bool.and(_, B.bytes_eq(ran, S.Ue.ran_id(u))))) == False{} : Bool}
   {==}
 

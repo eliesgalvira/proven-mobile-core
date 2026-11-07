@@ -199,7 +199,7 @@ def SUniq.clear_row(+key0: U32, +w: S.Session, +k: U32, +u: S.Session, +k1: U32,
       r = P.Bool.not_true(S.SRow.conflicts(key0, w, k1, x), P.Bool.and_true_l(Bool.not(S.SRow.conflicts(key0, w, k1, x)), S.Sessions.clear(key0, w, more), ec))
       ek = P.U32.eq_of_is_eq(k1, k, ehk)
       %ek : {S.SRow.conflicts(key0, w, _, u) == False{} : Bool}
-      ex = PT.Some.inj(S.Session, x, u, eu)
+      ex = P.Some.inj(S.Session, x, u, eu)
       %ex : {S.SRow.conflicts(key0, w, k1, _) == False{} : Bool}
       r
     case False{}:
@@ -217,19 +217,19 @@ def SUniq.row(+key: U32, +k: U32, +v: S.Session, +u: S.Session, +k0: U32, +w: S.
   match a b:
     case True{} True{}:
       kk = Equal.trans(U32, k, k0, key, Equal.sym(U32, k0, k, P.U32.eq_of_is_eq(k0, k, eb)), P.U32.eq_of_is_eq(k0, key, ea))
-      Empty.absurd({U32.is_eq(S.Session.teid(v), S.Session.teid(u)) == False{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(k, key), True{}, Equal.sym(Bool, U32.is_eq(k, key), False{}, ne), PT.U32.eq_true(k, key, kk))))
+      Empty.absurd({U32.is_eq(S.Session.teid(v), S.Session.teid(u)) == False{} : Bool}, P.Refute.bool(Equal.trans(Bool, False{}, U32.is_eq(k, key), True{}, Equal.sym(Bool, U32.is_eq(k, key), False{}, ne), P.U32.eq_true(k, key, kk))))
     case True{} False{}:
       ec = P.Bool.and_true_l(S.Sessions.clear(k0, w, more), S.Sessions.unique(more), eun)
       r = Teid.of_row(k0, w, k, u, SUniq.clear_get(k0, w, more, k, u, ec, eu))
-      ew = PT.Some.inj(S.Session, w, v, ev)
+      ew = P.Some.inj(S.Session, w, v, ev)
       %ew : {U32.is_eq(S.Session.teid(_), S.Session.teid(u)) == False{} : Bool}
       r
     case False{} True{}:
       ec = P.Bool.and_true_l(S.Sessions.clear(k0, w, more), S.Sessions.unique(more), eun)
       r = Teid.of_row(k0, w, key, v, SUniq.clear_get(k0, w, more, key, v, ec, ev))
-      ew = PT.Some.inj(S.Session, w, u, eu)
+      ew = P.Some.inj(S.Session, w, u, eu)
       %ew : {U32.is_eq(S.Session.teid(v), S.Session.teid(_)) == False{} : Bool}
-      Equal.trans(Bool, U32.is_eq(S.Session.teid(v), S.Session.teid(w)), U32.is_eq(S.Session.teid(w), S.Session.teid(v)), False{}, PT.U32.sym(S.Session.teid(v), S.Session.teid(w)), r)
+      Equal.trans(Bool, U32.is_eq(S.Session.teid(v), S.Session.teid(w)), U32.is_eq(S.Session.teid(w), S.Session.teid(v)), False{}, P.U32.sym(S.Session.teid(v), S.Session.teid(w)), r)
     case False{} False{}:
       ih(P.Bool.and_true_r(S.Sessions.clear(k0, w, more), S.Sessions.unique(more), eun), ev, eu)
 
@@ -242,7 +242,7 @@ def SUniq.apart(+ss: Tb.Table(S.Session), +key: U32, +k: U32, +v: S.Session, +u:
       SUniq.row(key, k, v, u, k0, w, more, U32.is_eq(k0, key), {==}, U32.is_eq(k0, k), {==}, eun, ev, eu, ne, e1 => e2 => e3 => SUniq.apart(more, key, k, v, u, e1, e2, e3, ne))
 
 def L.smf.teid.unique(ss, k1, s1, k2, s2, e, e1, e2, ne):
-  SUniq.apart(ss, k1, k2, s1, s2, e, e1, e2, Equal.trans(Bool, U32.is_eq(k2, k1), U32.is_eq(k1, k2), False{}, PT.U32.sym(k2, k1), ne))
+  SUniq.apart(ss, k1, k2, s1, s2, e, e1, e2, Equal.trans(Bool, U32.is_eq(k2, k1), U32.is_eq(k1, k2), False{}, P.U32.sym(k2, k1), ne))
 
 # Packet filters and the ePCO
 # ---------------------------
@@ -401,7 +401,7 @@ def Kw.tx_put_session(+st0: S.State, +ep: {Kw.pre(st0) == True{} : Bool}, +key: 
 def Kw.tx_revar(+st0: S.State, +ep: {Kw.pre(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Kw.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.revar_ok(st0, v) == True{} : Bool}) -> {Kw.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
   +y = Bool.not(S.Sessions.known(S.State.sessions(st0)))
   sk = Equal.sym(Bool, S.Sessions.known(S.State.sessions(st0)), True{}, ep)
-  Kw.revar(key, v, ss, e, PL.Lv.or_left(PL.Lv.var_ok(v), y, P.Bool.and_true_r(Gsm.Gsm.phase_bounded(S.SVar.phase(v)), Bool.or(PL.Lv.var_ok(v), y), h), (%sk : {Bool.not(_) == False{} : Bool}; {==})))
+  Kw.revar(key, v, ss, e, P.Bool.or_true_l(PL.Lv.var_ok(v), y, (%sk : {Bool.not(_) == False{} : Bool}; {==}), P.Bool.and_true_r(Gsm.Gsm.phase_bounded(S.SVar.phase(v)), Bool.or(PL.Lv.var_ok(v), y), h)))
 
 def Kw.tx_del_session(+st0: S.State, +ep: {Kw.pre(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {Kw.inv(st0, ues, ss) == True{} : Bool}) -> {Kw.inv(st0, ues, S.Sessions.del(key, ss)) == True{} : Bool}:
   Kw.sift(S.SExcept{key}, ss, e)
