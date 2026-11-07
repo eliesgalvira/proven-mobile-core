@@ -230,13 +230,17 @@ pub fn spawn_n4(udp: UdpSocket, tx: Sender<Msg>) {
 /// The whole edge for one configuration: kernel, Config, N2, N4, then the loop.
 pub fn run(config: &Config) -> Result<(), Error> {
     let tlvs = config.tlvs().map_err(|e| Error::Fatal(e.to_string()))?;
-    let (_process, link) = kernel::Process::spawn(&config.kernel.path, config.kernel.port).map_err(Error::Socket)?;
+    let (tx, rx) = std::sync::mpsc::channel();
+    let exited = tx.clone();
+    let (_process, link) = kernel::Process::spawn(&config.kernel.path, config.kernel.port, move || {
+        let _ = exited.send(Msg::Fatal("the kernel exited".to_string()));
+    })
+    .map_err(Error::Socket)?;
     let upf = SocketAddrV4::new(config.n4.upf, N4_PORT);
     let udp = UdpSocket::bind(SocketAddrV4::new(config.n4.smf, N4_PORT)).map_err(Error::Socket)?;
     let listener = sctp::Listener::bind(config.n2.address, N2_PORT).map_err(Error::Socket)?;
     let mut edge = Edge::new(link, udp.try_clone().map_err(Error::Socket)?, upf);
     edge.step(&Event::Config(tlvs))?;
-    let (tx, rx) = std::sync::mpsc::channel();
     spawn_n2(listener, tx.clone());
     spawn_n4(udp, tx);
     eprintln!("edge: N2 on {}:{N2_PORT}, N4 on {}:{N4_PORT} to {upf}", config.n2.address, config.n4.smf);

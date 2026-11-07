@@ -134,3 +134,18 @@ fn expired_timers_fire_between_queued_events() {
     let pfcp = |b| Event::PfcpData(vec![b]);
     assert_eq!(kernel.join().unwrap(), vec![Event::Config(vec![]), pfcp(1), Event::TimerFired(1), pfcp(2), pfcp(3)]);
 }
+
+#[test]
+fn the_loop_stops_when_the_kernel_exits_while_idle() {
+    let (port, kernel) = fake_kernel(Box::new(|_| Some(vec![])));
+    let (tx, rx) = mpsc::channel();
+    let exited = tx.clone();
+    let (process, link) = kernel::Process::spawn("true", port, move || drop(exited.send(Msg::Fatal("the kernel exited".to_string())))).unwrap();
+    let upf = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8805);
+    let mut edge = Edge::new(link, UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(), upf);
+    let (done, stopped) = mpsc::channel();
+    thread::spawn(move || drop(done.send(edge.serve(&rx).to_string())));
+    assert_eq!(stopped.recv_timeout(Duration::from_secs(5)).unwrap(), "the kernel exited");
+    drop((tx, process));
+    kernel.join().unwrap();
+}
