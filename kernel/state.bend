@@ -499,13 +499,16 @@ type SId is Data:
 # to send on success and the request, kept to send again), the gNB's resource
 # setup pending, the PFCP Session Modification with the gNB's tunnel pending
 # (the request kept the same way), the one repointing the downlink to a Path
-# Switch's target pending (likewise), or active. A guard counts its PFCP
-# request's retransmissions.
+# Switch's target pending (likewise), active, or the PFCP Session Deletion
+# pending (likewise): its address, TEID and SEID stay held until the UPF
+# answers or the retries run out, and it belongs to no UE any more. A guard
+# counts its PFCP request's retransmissions.
 type SPhase is Data:
   Creating{guard: Guard, pti: U32, accept: Sm.Sm, request: B.Bytes()}
   Setting{guard: Guard, pti: U32}
   Modifying{guard: Guard, request: B.Bytes()}
   Repointing{guard: Guard, request: B.Bytes()}
+  Deleting{guard: Guard, request: B.Bytes()}
   Active{}
 
 def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
@@ -518,8 +521,18 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
       Some{guard}
     case Repointing{guard, request}:
       Some{guard}
+    case Deleting{guard, request}:
+      Some{guard}
     case Active{}:
       None{}
+
+# A session belongs to its UE until it is being deleted.
+def SPhase.held(p: SPhase) -> Bool:
+  match p:
+    case Deleting{guard, request}:
+      False{}
+    case _:
+      True{}
 
 # The UPF knows a session exactly when it is past Creating.
 def SPhase.knows(p: SPhase, +known: Bool) -> Bool:
@@ -611,6 +624,15 @@ def Session.phase(s: Session) -> SPhase:
 def Session.known(s: Session) -> Bool:
   Nat.is_eq(List.length(&2, U32, Session.up_seid(s)), 8n)
 
+# The UE a session belongs to, which its actions are tagged with: none once it
+# is being deleted, as that UE may be gone (amf.sessions.owned).
+def Session.tag(+s: Session) -> Maybe<&2, U32>:
+  Tb.Table.hit(U32, Session.ue(s), None{}, SPhase.held(Session.phase(s)))
+
+# The session's UE holds a context, or the session is being deleted.
+def Session.owned(+s: Session, +ues: Tb.Table(Ue)) -> Bool:
+  Bool.or(Bool.not(Tb.Table.present(U32, Session.tag(s))), Tb.Table.has(Ue, Session.ue(s), ues))
+
 # The PFCP association with the UPF, which the SMF starts: asked for (the
 # Association Setup Request's sequence number and how often it was sent
 # again), paused after too many tries, up, or up with a Heartbeat Request
@@ -622,77 +644,34 @@ type Link is Data:
   Up{}
   Beating{seq: U32, resent: U32}
 
-# A Session Deletion Request the UPF has not answered (TS 29.244 §6.4): the
-# request, sent again unchanged, its sequence number, and its guard.
-type Deletion is Data:
-  Deletion{request: B.Bytes(), seq: U32, guard: Guard}
-
-def Deletion.seq(d: Deletion) -> U32:
-  match d:
-    case Deletion{request, seq, guard}:
-      seq
-
-def Deletions.drop(+key: U32, ds: Tb.Table(Deletion)) -> Tb.Table(Deletion):
-  match ds:
-    case Nil{}:
-      []
-    case (+k, d) <> more:
-      Tb.Table.keep(Deletion, k, d, Deletions.drop(key, more), Bool.not(U32.is_eq(k, key)))
-
-def Deletions.set(+key: U32, d: Maybe<&2, Deletion>, ds: Tb.Table(Deletion)) -> Tb.Table(Deletion):
-  match d:
-    case None{}:
-      Deletions.drop(key, ds)
-    case Some{x}:
-      (key, x) <> Deletions.drop(key, ds)
-
-# The pending deletion a Session Deletion Response answers, by its sequence number.
-def Deletions.by_seq(+seq: U32, ds: Tb.Table(Deletion)) -> Maybe<&2, U32>:
-  match ds:
-    case Nil{}:
-      None{}
-    case (k, +d) <> more:
-      Tb.Table.hit(U32, k, Deletions.by_seq(seq, more), U32.is_eq(Deletion.seq(d), seq))
-
-# N4: the PFCP recovery stamp chosen at Config, the association, and the
-# Session Deletion Requests pending, each keyed by its guard timer (§ Keys).
+# N4: the PFCP recovery stamp chosen at Config, and the association.
 type N4 is Data:
-  N4{recovery: B.Bytes(), link: Link, deletions: Tb.Table(Deletion)}
+  N4{recovery: B.Bytes(), link: Link}
 
-# Timer 0 is the N4 association's; every other guard timer is its row's key (§ Keys).
+# Timer 0 is the N4 association's; a context's or a session's guard is its key.
 def N4.timer() -> U32:
   0
 
 def N4.recovery(n: N4) -> B.Bytes():
   match n:
-    case N4{recovery, link, deletions}:
+    case N4{recovery, link}:
       recovery
 
 def N4.link(n: N4) -> Link:
   match n:
-    case N4{recovery, link, deletions}:
+    case N4{recovery, link}:
       link
-
-def N4.deletions(n: N4) -> Tb.Table(Deletion):
-  match n:
-    case N4{recovery, link, deletions}:
-      deletions
 
 def N4.with_link(n: N4, l: Link) -> N4:
   match n:
-    case N4{recovery, link, deletions}:
-      N4{recovery, l, deletions}
-
-def N4.with_deletion(n: N4, +key: U32, d: Maybe<&2, Deletion>) -> N4:
-  match n:
-    case N4{recovery, link, deletions}:
-      N4{recovery, link, Deletions.set(key, d, deletions)}
+    case N4{recovery, link}:
+      N4{recovery, l}
 
 type State is Data:
   State{config: Maybe<&2, Cfg>, subs: List<&2, Au.Subscriber>, assocs: Tb.Table(B.Bytes()), ues: Tb.Table(Ue), sessions: Tb.Table(Session), pfcp_seq: U32, next_ue: U32, n4: N4}
 
 def State.initial() -> State:
-  State{None{}, [], [], [], [], 1, 1, N4{[], Idle{}, []}}
+  State{None{}, [], [], [], [], 1, 1, N4{[], Idle{}}}
 
 def State.config(st: State) -> Maybe<&2, Cfg>:
   match st:
@@ -733,9 +712,6 @@ def State.n4(st: State) -> N4:
   match st:
     case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       n4
-
-def State.deletions(st: State) -> Tb.Table(Deletion):
-  N4.deletions(State.n4(st))
 
 # Associations
 # ------------
@@ -946,10 +922,12 @@ def Ues.rephase(+key: U32, +p: Phase, ues: Tb.Table(Ue)) -> Tb.Table(Ue):
 # Sessions
 # --------
 # The session indexes (UE IPv4, uplink TEID, the PDU session identity of a
-# UE) are the sessions themselves, searched, like the UE indexes.
+# UE) are the sessions themselves, searched, like the UE indexes. A session
+# being deleted keeps its address and TEID but no PDU session identity, which
+# its UE may give a new session.
 
 def Session.conflicts(+a: Session, +b: Session) -> Bool:
-  Bool.or(U32.is_eq(Session.ip(a), Session.ip(b)), Bool.or(U32.is_eq(Session.teid(a), Session.teid(b)), Bool.and(U32.is_eq(Session.ue(a), Session.ue(b)), U32.is_eq(Session.psi(a), Session.psi(b)))))
+  Bool.or(U32.is_eq(Session.ip(a), Session.ip(b)), Bool.or(U32.is_eq(Session.teid(a), Session.teid(b)), Bool.and(Maybe.same_u32(Session.tag(a), Session.tag(b)), U32.is_eq(Session.psi(a), Session.psi(b)))))
 
 def SRow.conflicts(key: U32, s: Session, k: U32, t: Session) -> Bool:
   Bool.or(U32.is_eq(k, key), Session.conflicts(s, t))
@@ -968,13 +946,13 @@ def Sessions.unique(sessions: Tb.Table(Session)) -> Bool:
     case (+key, +s) <> +more:
       Bool.and(Sessions.clear(key, s, more), Sessions.unique(more))
 
-# Every session belongs to a context of the table.
+# Every session belongs to a context of the table, but those being deleted.
 def Sessions.owned(sessions: Tb.Table(Session), +ues: Tb.Table(Ue)) -> Bool:
   match sessions:
     case Nil{}:
       True{}
-    case (k, s) <> more:
-      Bool.and(Tb.Table.has(Ue, Session.ue(s), ues), Sessions.owned(more, ues))
+    case (k, +s) <> more:
+      Bool.and(Session.owned(s, ues), Sessions.owned(more, ues))
 
 # The UPF knows every session past Creating and none being created.
 def Sessions.known(sessions: Tb.Table(Session)) -> Bool:
@@ -984,8 +962,17 @@ def Sessions.known(sessions: Tb.Table(Session)) -> Bool:
     case (k, +s) <> more:
       Bool.and(SPhase.knows(Session.phase(s), Session.known(s)), Sessions.known(more))
 
-# Which sessions to keep: those of other UEs, those of one UE, those whose UE
-# exists, the orphans, those clear of a session, the victims of one, all but a key.
+# No session under the key belongs to a UE: there is none, or it is being deleted.
+def Sessions.released(+key: U32, sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      True{}
+    case (+k, +s) <> more:
+      Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), Bool.not(Tb.Table.present(U32, Session.tag(s)))), Sessions.released(key, more))
+
+# Which sessions to keep: those not of a UE, those of one UE, those owned, the
+# orphans, those clear of a session, the victims of one, all but a key. A
+# session being deleted is of no UE and owned (Session.tag, Session.owned).
 type SSieve is Data:
   SOthers{ue: U32}
   SOf{ue: U32}
@@ -998,13 +985,13 @@ type SSieve is Data:
 def SSieve.keeps(s: SSieve, k: U32, t: Session) -> Bool:
   match s:
     case SOthers{ue}:
-      Bool.not(U32.is_eq(Session.ue(t), ue))
+      Bool.not(Maybe.same_u32(Session.tag(t), Some{ue}))
     case SOf{ue}:
-      U32.is_eq(Session.ue(t), ue)
+      Maybe.same_u32(Session.tag(t), Some{ue})
     case SOwned{ues}:
-      Tb.Table.has(Ue, Session.ue(t), ues)
+      Session.owned(t, ues)
     case SOrphan{ues}:
-      Bool.not(Tb.Table.has(Ue, Session.ue(t), ues))
+      Bool.not(Session.owned(t, ues))
     case SClear{key, u}:
       Bool.not(SRow.conflicts(key, u, k, t))
     case SVictims{key, u}:
@@ -1041,12 +1028,16 @@ def Session.revar_if(s: Session, v: SVar, hit: Bool) -> Session:
     case False{}:
       s
 
+# A session being deleted changes only to go on being deleted.
+def SVar.follows(v: SVar, s: Session) -> Bool:
+  Bool.or(Bool.not(SPhase.held(SVar.phase(v))), SPhase.held(Session.phase(s)))
+
 def Sessions.revar(+key: U32, +v: SVar, sessions: Tb.Table(Session)) -> Tb.Table(Session):
   match sessions:
     case Nil{}:
       []
-    case (+k, s) <> more:
-      (k, Session.revar_if(s, v, U32.is_eq(k, key))) <> Sessions.revar(key, v, more)
+    case (+k, +s) <> more:
+      (k, Session.revar_if(s, v, Bool.and(U32.is_eq(k, key), SVar.follows(v, s)))) <> Sessions.revar(key, v, more)
 
 # A session's UE IPv4 address or uplink TEID.
 type Field is Data:
@@ -1088,39 +1079,20 @@ def Sessions.by_psi(+ue: U32, +psi: U32, sessions: Tb.Table(Session)) -> Maybe<&
     case Nil{}:
       None{}
     case (key, +s) <> more:
-      Sessions.pick(key, s, Sessions.by_psi(ue, psi, more), Bool.and(U32.is_eq(Session.ue(s), ue), U32.is_eq(Session.psi(s), psi)))
+      Sessions.pick(key, s, Sessions.by_psi(ue, psi, more), Bool.and(Maybe.same_u32(Session.tag(s), Some{ue}), U32.is_eq(Session.psi(s), psi)))
 
 # Keys
 # ----
-# A context's guard timer is its key, its AMF-UE-NGAP-ID, a session's is its
-# key, its local SEID, and a pending Session Deletion Request's is its
-# session's SEID with the top bit set; timer 0 is the N4 association's.
-# AMF-UE-NGAP-IDs are odd, local SEIDs even, not zero and below 2^31, and
-# deletion keys even and from 2^31, so no two rows share a guard timer
-# (state.ids.free, smf.deletion.keyed).
+# A context's guard timer is its key, its AMF-UE-NGAP-ID, and a session's is
+# its key, its local SEID; timer 0 is the N4 association's. AMF-UE-NGAP-IDs
+# are odd and local SEIDs even and not zero, so no two rows share a guard
+# timer (state.ids.free).
 
 def Ids.odd(+k: U32) -> Bool:
   Bool.not(U32.is_eq(U32.and(1, k), 0))
 
-def Ids.top(+k: U32) -> Bool:
-  Bool.not(U32.is_eq(U32.and(2147483648, k), 0))
-
 def Ids.seid(+k: U32) -> Bool:
-  Bool.and(Bool.not(Ids.odd(k)), Bool.and(Bool.not(Ids.top(k)), Bool.not(U32.is_eq(k, 0))))
-
-def Ids.pending(+k: U32) -> Bool:
-  Bool.and(Bool.not(Ids.odd(k)), Ids.top(k))
-
-# The key of the deletion of the session keyed k.
-def Ids.deletion(+k: U32) -> U32:
-  U32.or(2147483648, U32.and(4294967294, k))
-
-def Deletions.keyed(ds: Tb.Table(Deletion)) -> Bool:
-  match ds:
-    case Nil{}:
-      True{}
-    case (+k, d) <> more:
-      Bool.and(Ids.pending(k), Deletions.keyed(more))
+  Bool.and(Bool.not(Ids.odd(k)), Bool.not(U32.is_eq(k, 0)))
 
 def Ues.keyed(ues: Tb.Table(Ue)) -> Bool:
   match ues:
@@ -1161,19 +1133,13 @@ def State.fresh(+st: State) -> Maybe<&2, U32>:
   +ues = State.ues(st)
   Ues.free_key(1n+List.length(&2, Sigma<&2, &2, U32, _ => Ue>, ues), State.next_ue(st), ues)
 
-def State.with_deletion(st: State, +key: U32, d: Maybe<&2, Deletion>) -> State:
-  match st:
-    case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-      State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, N4.with_deletion(n4, key, d)}
-
 # Transactions
 # ------------
 # A procedure answers with what to change, applied by one interpreter: a
 # context put (evicting the contexts it conflicts with, and their sessions) or
 # rephased in place,
 # a context and its sessions forgotten, a session put (evicting likewise),
-# changed in place or forgotten, the subscribers replaced, the N4 link moved, a
-# pending Session Deletion Request recorded, renewed or forgotten,
+# changed in place or forgotten, the subscribers replaced, the N4 link moved,
 # an AMF-UE-NGAP-ID given and PFCP sequence numbers consumed.
 
 type Tx is Data:
@@ -1186,7 +1152,6 @@ type Tx is Data:
   DelSession{key: U32}
   Subs{subs: List<&2, Au.Subscriber>}
   SetLink{link: Link}
-  Pend{key: U32, d: Maybe<&2, Deletion>}
   BumpUe{key: U32}
   BumpSeq{n: U32}
   Both{first: Tx, second: Tx}
@@ -1228,8 +1193,6 @@ def Tx.apply(tx: Tx, st: State) -> State:
       match st:
         case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, N4.with_link(n4, link)}
-    case Pend{key, d}:
-      State.with_deletion(st, Ids.deletion(key), d)
     case BumpUe{key}:
       match st:
         case State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:

@@ -160,7 +160,7 @@ def Gsm.transfer(cfg: S.Cfg, teid: U32) -> B.Bytes():
 def Ip.around(+entropy: B.Bytes(), +n: Nat) -> B.Bytes():
   List.append(&2, U32, List.drop(&2, U32, entropy, n), List.take(&2, U32, entropy, n))
 
-# What is drawn: an uplink TEID, or a local SEID made even and below 2^31 (S.Ids).
+# What is drawn: an uplink TEID, or a local SEID made even (S.Ids).
 type Draw is Data:
   Teid{}
   Seid{}
@@ -170,7 +170,7 @@ def Draw.word(d: Draw, +w: U32) -> U32:
     case Teid{}:
       w
     case Seid{}:
-      U32.and(2147483646, w)
+      U32.and(4294967294, w)
 
 def Draw.taken(d: Draw, +v: U32, sessions: Tb.Table(S.Session)) -> Bool:
   match d:
@@ -216,22 +216,11 @@ def Ip.alloc(+cfg: S.Cfg, sessions: Tb.Table(S.Session)) -> Maybe<&2, U32>:
 # Sessions in the state
 # ---------------------
 
-def Gsm.dels(victims: Tb.Table(S.Session)) -> S.Tx:
-  match victims:
-    case Nil{}:
-      S.Keep{}
-    case (k, t) <> more:
-      S.Both{S.DelSession{k}, Gsm.dels(more)}
-
-# Sessions forgotten, those the UPF knows deleted there, from sequence number seq.
-def Gsm.forget(+victims: Tb.Table(S.Session), seq: U32) -> N.GOut():
-  N.Out.join((Gsm.dels(victims), []), Up.N4.deletions(victims, seq))
-
-# The one write of a session: it takes its place, and a live session it
-# conflicts with goes. The address, TEID and SEID are drawn free, so that is
-# only one of the UE's under the same PDU session identity.
+# The one write of a session: a session it conflicts with is deleted first,
+# then it takes its place. The address, TEID and SEID are drawn free, so that
+# is only one of the UE's under the same PDU session identity.
 def Gsm.place(+st: S.State, +key: U32, +s: S.Session, seq: U32) -> N.GOut():
-  N.Out.join((S.PutSession{key, s}, []), Gsm.forget(S.Sessions.evicted(key, s, S.State.sessions(st)), seq))
+  N.Out.join(Up.N4.deletions(S.Sessions.evicted(key, s, S.State.sessions(st)), seq), (S.PutSession{key, s}, []))
 
 # The UE of a session, to answer it.
 def Gsm.to_ue_ctx(key: U32, ue: S.Ue, psi: U32, sm: B.Bytes(), ctx: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
@@ -248,9 +237,9 @@ def Gsm.to_ue_m(key: U32, psi: U32, sm: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut
     case Some{+ue}:
       Gsm.to_ue_ctx(key, ue, psi, sm, S.Phase.ctx(S.Ue.phase(ue)))
 
-# A session given up: its UE told with the 5GSM message given, the UPF told, the row gone.
+# A session given up: its UE told with the 5GSM message given, the session deleted at the UPF.
 def Gsm.give_up_m(+skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), Gsm.forget([(skey, s)], seq))
+  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), Up.N4.deletions([(skey, s)], seq))
 
 def Gsm.give_up(st: S.State, skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32) -> N.GOut():
   Gsm.give_up_m(skey, s, sm, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
@@ -414,12 +403,12 @@ def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm
       +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))
       (S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}}}, [N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.transfer(cf, S.Session.teid(s))}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
     case _ _:
-      Gsm.forget([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}}))], S.State.pfcp_seq(st))
+      Up.N4.deletions([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Session.phase(s)}))], S.State.pfcp_seq(st))
 
 def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, up_seid: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
-      Gsm.forget([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Active{}}))], S.State.pfcp_seq(st))
+      Up.N4.deletions([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Session.phase(s)}))], S.State.pfcp_seq(st))
     case Some{+ue}:
       Gsm.setup_ue(st, skey, s, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st))
 
@@ -459,7 +448,7 @@ def Gsm.repoint_done(+st: S.State, +skey: U32, +s: S.Session, ok: Bool) -> N.GOu
     case True{}:
       (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), S.Active{}}}, [N.TimerCancel{skey}])
     case False{}:
-      Gsm.forget([(skey, s)], S.State.pfcp_seq(st))
+      Up.N4.deletions([(skey, s)], S.State.pfcp_seq(st))
 
 def Gsm.repointing(p: S.SPhase) -> Bool:
   match p:
@@ -575,10 +564,26 @@ def Gsm.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
     case False{}:
       Gsm.pfcp_k6(st, msg, U32.is_eq(kind, Pf.Type.session_modification_response()))
 
+# A Session Deletion Response ends the deletion it answers, by its sequence
+# number: the row goes, and with it its guard.
+def Gsm.deleted_phase(+skey: U32, p: S.SPhase) -> N.GOut():
+  match p:
+    case S.Deleting{guard, request}:
+      (S.DelSession{skey}, [])
+    case _:
+      N.Out.warn("PFCP: Session Deletion Response for a session not being deleted")
+
+def Gsm.deleted(m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
+  match m:
+    case None{}:
+      N.Out.warn("PFCP: Session Deletion Response for no pending request")
+    case Some{(+skey, s)}:
+      Gsm.deleted_phase(skey, S.Session.phase(s))
+
 def Gsm.pfcp_k4(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      Up.N4.deletion_response(st, msg)
+      Gsm.deleted(S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
     case False{}:
       Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 
@@ -660,7 +665,7 @@ def Gsm.modify(st: S.State, +skey: U32, +s: S.Session, pti: U32, +seq: U32, tunn
       Gsm.drop(st, skey, s, seq)
     case Some{(gnb_teid, gnb_addr)}:
       +request = Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)
-      (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+      (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}])
 
 def Gsm.set_up_phase(st: S.State, skey: U32, s: S.Session, transfer: B.Bytes(), seq: U32, p: S.SPhase) -> N.GOut():
   match p:
@@ -750,12 +755,12 @@ def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err,
 def Gsm.resend_if(+skey: U32, +s: S.Session, p: S.SPhase, +request: B.Bytes(), fail: N.GOut(), more: Bool) -> N.GOut():
   match more:
     case True{}:
-      (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), p}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+      (S.Revar{skey, S.SVar{S.Session.up_seid(s), S.Session.seq(s), p}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}])
     case False{}:
       fail
 
 # No answer in time: before the Accept went out the UE is refused (#38);
-# after it, the session is released.
+# after it, the session is released; a deletion is given up.
 def Gsm.expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase) -> N.GOut():
   match p:
     case S.Creating{+guard, +pti, accept, +request}:
@@ -766,5 +771,7 @@ def Gsm.expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase) -> N.GOut
       Gsm.resend_if(skey, s, S.Modifying{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, Gsm.drop(st, skey, s, S.State.pfcp_seq(st)), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
     case S.Repointing{+guard, +request}:
       Gsm.resend_if(skey, s, S.Repointing{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, Gsm.repointed(st, skey, s, False{}), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
+    case S.Deleting{+guard, +request}:
+      Gsm.resend_if(skey, s, S.Deleting{S.Guard{U32.add(S.Guard.retries(guard), 1)}, request}, request, (S.DelSession{skey}, [N.Note{F.Warn{}, "PFCP: no Session Deletion Response; deletion given up"}]), U32.is_lt(S.Guard.retries(guard), Up.N4.n1()))
     case S.Active{}:
       (S.Keep{}, [])

@@ -90,14 +90,16 @@ def N4.deleted(+s: S.Session, +acts: List<&2, N.Act>) -> Type:
   Sigma<&2, &2, U32, seq => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> post) : List<&2, N.Act>}>>>
 
 # A Session Deletion Request for each session row the UPF knows, numbered
-# from seq and pending under its guard (TS 29.244 §6.4).
+# from seq: the row waits, being deleted, under its guard, until the UPF
+# answers or the retries run out (TS 29.244 §6.4); a row the UPF does not know
+# goes at once.
 def N4.delete_if(+key: U32, +s: S.Session, +seq: U32, later: U32 -> N.GOut(), known: Bool) -> N.GOut():
   match known:
     case True{}:
       +request = N4.delete(S.Session.up_seid(s), seq)
-      N.Out.join((S.Both{S.Pend{key, Some{S.Deletion{request, seq, S.Guard{0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{None{}, S.Ids.deletion(key), N4.t1_ms()}]), later(U32.add(seq, 1)))
+      N.Out.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), key, N4.t1_ms()}]), later(U32.add(seq, 1)))
     case False{}:
-      later(seq)
+      N.Out.join((S.DelSession{key}, []), later(seq))
 
 def N4.deletions(rows: Tb.Table(S.Session), seq: U32) -> N.GOut():
   match rows:
@@ -105,31 +107,6 @@ def N4.deletions(rows: Tb.Table(S.Session), seq: U32) -> N.GOut():
       (S.Keep{}, [])
     case (+key, +s) <> more:
       N4.delete_if(key, s, seq, q => N4.deletions(more, q), S.Session.known(s))
-
-# A pending deletion's guard fired: the request goes again unchanged, up to N1
-# times, or the deletion is given up.
-def N4.redelete(+key: U32, +request: B.Bytes(), +seq: U32, +guard: S.Guard, more: Bool) -> N.GOut():
-  match more:
-    case True{}:
-      (S.Pend{key, Some{S.Deletion{request, seq, S.Guard{U32.add(S.Guard.retries(guard), 1)}}}}, [N.Pfcp{None{}, request}, N.TimerStart{None{}, key, N4.t1_ms()}])
-    case False{}:
-      (S.Pend{key, None{}}, [N.Note{F.Warn{}, "PFCP: no Session Deletion Response; deletion given up"}])
-
-def N4.deletion_expired(+key: U32, d: S.Deletion) -> N.GOut():
-  match d:
-    case S.Deletion{+request, +seq, +guard}:
-      N4.redelete(key, request, seq, guard, U32.is_lt(S.Guard.retries(guard), N4.n1()))
-
-# A Session Deletion Response ends the deletion it answers.
-def N4.deletion_answered(m: Maybe<&2, U32>) -> N.GOut():
-  match m:
-    case None{}:
-      (S.Keep{}, [])
-    case Some{+key}:
-      (S.Pend{key, None{}}, [N.TimerCancel{key}])
-
-def N4.deletion_response(+st: S.State, msg: Pf.Msg) -> N.GOut():
-  N4.deletion_answered(S.Deletions.by_seq(Pf.Msg.seq(msg), S.State.deletions(st)))
 
 # Reading responses
 # -----------------
