@@ -639,10 +639,10 @@ def Lv.del_if(+st: S.State, +key: U32, +t: S.Session, +seq: U32, +more: Tb.Table
       +request = Up.N4.delete(S.Session.up_seid(t), seq)
       +v : S.SVar = S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}
       +x : N.Act = N.Pfcp{S.Session.tag(t), request}
-      +y : N.Act = N.TimerStart{S.Session.tag(t), key, Up.N4.t1_ms()}
+      +y : N.Act = N.TimerStart{None{}, key, Up.N4.t1_ms()}
       +ek = Lv.tagged_live(st, S.Session.tag(t), ht)
       +kv : {Lv.revar_ok(st, v) == True{} : Bool} = P.Bool.and_intro(True{}, Bool.or(Lv.var_ok(v), Bool.not(S.Sessions.known(S.State.sessions(st)))), {==}, P.Bool.or_l(Lv.var_ok(v), Bool.not(S.Sessions.known(S.State.sessions(st))), eb))
-      Lv.join(st, (S.Both{S.Revar{key, v}, S.BumpSeq{1}}, [x, y]), Up.N4.deletions(more, U32.add(seq, 1)), Lv.leaf(st, S.Both{S.Revar{key, v}, S.BumpSeq{1}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], ek, {==})), P.Bool.and_intro(Lv.revar_ok(st, v), True{}, kv, {==})), later(U32.add(seq, 1)))
+      Lv.join(st, (S.Both{S.Revar{key, v}, S.BumpSeq{1}}, [x, y]), Up.N4.deletions(more, U32.add(seq, 1)), Lv.leaf(st, S.Both{S.Revar{key, v}, S.BumpSeq{1}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], {==}, {==})), P.Bool.and_intro(Lv.revar_ok(st, v), True{}, kv, {==})), later(U32.add(seq, 1)))
     case False{}:
       Lv.join(st, (S.DelSession{key}, []), Up.N4.deletions(more, seq), {==}, later(seq))
 
@@ -2127,7 +2127,14 @@ def Lw.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st,
     case False{}:
       Lw.pfcp_k6(st, msg, U32.is_eq(kind, Pf.Type.session_modification_response()))
 
-def Lw.deleted_phase(+st: S.State, +skey: U32, +p: S.SPhase) -> {Lv.okf(st, Gsm.Gsm.deleted_phase(skey, p)) == True{} : Bool}:
+def Lw.deleted_notes(+st: S.State, +ok: Bool) -> {Lv.acts(st, Gsm.Gsm.deleted_notes(ok)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def Lw.deleted_phase(+st: S.State, +skey: U32, +msg: Pf.Msg, +p: S.SPhase) -> {Lv.okf(st, Gsm.Gsm.deleted_phase(skey, msg, p)) == True{} : Bool}:
   match p:
     case S.Creating{guard, pti, accept, request}:
       {==}
@@ -2138,21 +2145,21 @@ def Lw.deleted_phase(+st: S.State, +skey: U32, +p: S.SPhase) -> {Lv.okf(st, Gsm.
     case S.Repointing{guard, request}:
       {==}
     case S.Deleting{guard, request}:
-      {==}
+      P.Bool.and_intro(Lv.acts(st, Gsm.Gsm.deleted_notes(Up.N4.accepted(Up.N4.cause(msg)))), True{}, Lw.deleted_notes(st, Up.N4.accepted(Up.N4.cause(msg))), {==})
     case S.Active{}:
       {==}
 
-def Lw.deleted(+st: S.State, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> {Lv.okf(st, Gsm.Gsm.deleted(m)) == True{} : Bool}:
+def Lw.deleted(+st: S.State, +msg: Pf.Msg, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> {Lv.okf(st, Gsm.Gsm.deleted(msg, m)) == True{} : Bool}:
   match m:
     case None{}:
       {==}
     case Some{(+skey, +s)}:
-      Lw.deleted_phase(st, skey, S.Session.phase(s))
+      Lw.deleted_phase(st, skey, msg, S.Session.phase(s))
 
 def Lw.pfcp_k4(+st: S.State, +msg: Pf.Msg, +kind: U32, +ok: Bool) -> {Lv.okf(st, Gsm.Gsm.pfcp_k4(st, msg, kind, ok)) == True{} : Bool}:
   match ok:
     case True{}:
-      Lw.deleted(st, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
+      Lw.deleted(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
     case False{}:
       Lw.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 

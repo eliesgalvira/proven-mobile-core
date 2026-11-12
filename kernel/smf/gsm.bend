@@ -470,7 +470,7 @@ def Gsm.waits(+key: U32, +skey: U32, ss: Tb.Table(S.Session)) -> Bool:
     case Nil{}:
       False{}
     case (+k, +t) <> more:
-      Bool.or(Bool.and(Bool.and(U32.is_eq(S.Session.ue(t), key), Bool.not(U32.is_eq(k, skey))), Gsm.repointing(S.Session.phase(t))), Gsm.waits(key, skey, more))
+      Bool.or(Bool.and(Bool.and(S.Maybe.same_u32(S.Session.tag(t), Some{key}), Bool.not(U32.is_eq(k, skey))), Gsm.repointing(S.Session.phase(t))), Gsm.waits(key, skey, more))
 
 def Gsm.psi_if(psi: U32, more: List<&2, U32>, hit: Bool) -> List<&2, U32>:
   match hit:
@@ -485,7 +485,7 @@ def Gsm.active_psis(+key: U32, ss: Tb.Table(S.Session)) -> List<&2, U32>:
     case Nil{}:
       []
     case (k, +t) <> more:
-      Gsm.psi_if(S.Session.psi(t), Gsm.active_psis(key, more), Bool.and(U32.is_eq(S.Session.ue(t), key), Gsm.active(S.Session.phase(t))))
+      Gsm.psi_if(S.Session.psi(t), Gsm.active_psis(key, more), Bool.and(S.Maybe.same_u32(S.Session.tag(t), Some{key}), Gsm.active(S.Session.phase(t))))
 
 # No session switched: Failure naming every session released, then the UE released.
 def Gsm.switch_failed(+key: U32, +ue: S.Ue, psis: List<&2, U32>) -> N.GOut():
@@ -565,25 +565,33 @@ def Gsm.pfcp_k5(+st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
       Gsm.pfcp_k6(st, msg, U32.is_eq(kind, Pf.Type.session_modification_response()))
 
 # A Session Deletion Response ends the deletion it answers, by its sequence
-# number: the row goes, and with it its guard.
-def Gsm.deleted_phase(+skey: U32, p: S.SPhase) -> N.GOut():
+# number, whatever its cause: the row goes, and with it its guard; a cause
+# other than Request accepted is logged.
+def Gsm.deleted_notes(ok: Bool) -> List<&2, N.Act>:
+  match ok:
+    case True{}:
+      []
+    case False{}:
+      [N.Note{F.Warn{}, "PFCP: Session Deletion Response refused the deletion; session forgotten"}]
+
+def Gsm.deleted_phase(+skey: U32, +msg: Pf.Msg, p: S.SPhase) -> N.GOut():
   match p:
     case S.Deleting{guard, request}:
-      (S.DelSession{skey}, [])
+      (S.DelSession{skey}, Gsm.deleted_notes(Up.N4.accepted(Up.N4.cause(msg))))
     case _:
       N.Out.warn("PFCP: Session Deletion Response for a session not being deleted")
 
-def Gsm.deleted(m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
+def Gsm.deleted(+msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
   match m:
     case None{}:
       N.Out.warn("PFCP: Session Deletion Response for no pending request")
     case Some{(+skey, s)}:
-      Gsm.deleted_phase(skey, S.Session.phase(s))
+      Gsm.deleted_phase(skey, msg, S.Session.phase(s))
 
-def Gsm.pfcp_k4(st: S.State, msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
+def Gsm.pfcp_k4(st: S.State, +msg: Pf.Msg, +kind: U32, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      Gsm.deleted(S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
+      Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))
     case False{}:
       Gsm.pfcp_k5(st, msg, kind, U32.is_eq(kind, Pf.Type.session_establishment_response()))
 

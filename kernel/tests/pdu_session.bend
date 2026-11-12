@@ -70,6 +70,32 @@ def setup_items(bytes: B.Bytes()) -> G.PDUSessionResourceSetupListSUReq():
 def setup_failure(ran: B.Bytes()) -> B.Bytes():
   N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(58, Fr.Criticality.ignore(), G.PDUSessionResourceFailedToSetupListSURes.write([G.PDUSessionResourceFailedToSetupItemSURes{1, Ap.pack(G.PDUSessionResourceSetupUnsuccessfulTransfer.write(G.PDUSessionResourceSetupUnsuccessfulTransfer{N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()), None{}, None{}}, 0n, [])), None{}}], 0n, []))])
 
+# Warning log lines among the actions.
+def warns(actions: List<&2, F.Action>) -> Nat:
+  match actions:
+    case Nil{}:
+      0n
+    case F.Log{F.Warn{}, len, text} <> more:
+      1n+warns(more)
+    case a <> more:
+      warns(more)
+
+def oks_of(r: Result<&2, &2, B.Err, W.PDUSessionResourceSetupResponse.View>) -> G.PDUSessionResourceSetupListSURes():
+  match r:
+    case Done{W.PDUSessionResourceSetupResponse.View{amf, ran, Some{oks}, fails, diag, uli}}:
+      oks
+    case _:
+      []
+
+# A PDU Session Resource Setup Response naming the session set up twice: first
+# with a transfer that does not decode, then with the captured one.
+def setup_twice(ran: B.Bytes(), oks: G.PDUSessionResourceSetupListSURes()) -> B.Bytes():
+  match oks:
+    case G.PDUSessionResourceSetupItemSURes{+psi, transfer, x} <> more:
+      N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(75, Fr.Criticality.ignore(), G.PDUSessionResourceSetupListSURes.write([G.PDUSessionResourceSetupItemSURes{psi, [], None{}}, G.PDUSessionResourceSetupItemSURes{psi, transfer, None{}}], 0n, []))])
+    case _:
+      []
+
 # UL NAS Transport with an N1 SM message, the PDU session identity, request type initial, and more IEs.
 def ul_transport(+sm: B.Bytes(), more: B.Bytes()) -> B.Bytes():
   List.append(&2, U32, [126, 0, 103, 1, 0, U32.from_nat(List.length(&2, U32, sm))], List.append(&2, U32, sm, List.append(&2, U32, [18, 1, 129], more)))
@@ -132,6 +158,15 @@ def deleting(+ran: B.Bytes(), +uli: Maybe<&2, G.UserLocationInformation>, +st3: 
     +answer : B.Bytes() = Up.N4.msg(Pf.Type.session_deletion_response(), Some{[0, 0, 0, 0, 0, 0, 0, 0]}, Pc.pfcp_seq(deletion), [Up.N4.byte(Pf.Ie.cause(), 1)])
     +o_ok : N.Step() = step(K.Kernel.state(o_r1), Pc.pfcp_event(answer))
     C.Check.report("the Session Deletion Response: the row gone, its guard stopped, the new session kept", Bool.and(Pc.sphase_at(K.Kernel.state(o_ok), 466, "none"), Bool.and(Pc.cancels(K.Kernel.frames(o_ok), 466), Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_ok)), 1n), Nat.is_eq(List.length(&2, F.Action, K.Kernel.frames(step(K.Kernel.state(o_ok), F.TimerFired{466}))), 0n)))))
+    C.Check.report("a Session Deletion Response accepting the deletion logs no warning", Nat.is_eq(warns(K.Kernel.frames(o_ok)), 0n))
+    +o_dup : N.Step() = step(K.Kernel.state(o_ok), Pc.pfcp_event(answer))
+    C.Check.report("the same Session Deletion Response again, its row gone: the sessions as they were, nothing sent, no guard stopped, one warning", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_dup)), 1n), Bool.and(Pc.sphase_is(K.Kernel.state(o_dup), "creating"), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_dup))), 0n), Bool.and(Nat.is_eq(A.timer_cancels(K.Kernel.frames(o_dup)), 0n), Nat.is_eq(warns(K.Kernel.frames(o_dup)), 1n))))))
+    +refusal : B.Bytes() = Up.N4.msg(Pf.Type.session_deletion_response(), Some{[0, 0, 0, 0, 0, 0, 0, 0]}, Pc.pfcp_seq(deletion), [Up.N4.byte(Pf.Ie.cause(), 65)])
+    +o_err : N.Step() = step(K.Kernel.state(o_r1), Pc.pfcp_event(refusal))
+    C.Check.report("a Session Deletion Response with cause 65: the row gone all the same, its guard stopped, one warning", Bool.and(Pc.sphase_at(K.Kernel.state(o_err), 466, "none"), Bool.and(Pc.cancels(K.Kernel.frames(o_err), 466), Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_err)), 1n), Nat.is_eq(warns(K.Kernel.frames(o_err)), 1n)))))
+    +new_seq : U32 = Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_new)))
+    +o_other : N.Step() = step(st_n, Pc.pfcp_event(Up.N4.msg(Pf.Type.session_deletion_response(), Some{[0, 0, 0, 0, 0, 0, 0, 0]}, new_seq, [Up.N4.byte(Pf.Ie.cause(), 1)])))
+    C.Check.report("a Session Deletion Response with the sequence number of a session being created: both rows as they were, nothing sent, no guard stopped, one warning", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_other)), 2n), Bool.and(Pc.sphase_at(K.Kernel.state(o_other), 466, "deleting"), Bool.and(Pc.sphase_is(K.Kernel.state(o_other), "creating"), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_other))), 0n), Bool.and(Nat.is_eq(A.timer_cancels(K.Kernel.frames(o_other)), 0n), Nat.is_eq(warns(K.Kernel.frames(o_other)), 1n)))))))
     +o_last : N.Step() = expire(3n, st_d)
     C.Check.report("no Session Deletion Response after the third retransmission: the row gone, its guard stopped, nothing sent", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_last)), 0n), Bool.and(Pc.cancels(K.Kernel.frames(o_last), 466), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_last))), 0n), Nat.is_eq(List.length(&2, F.Action, K.Kernel.frames(step(K.Kernel.state(o_last), F.TimerFired{466}))), 0n)))))
 
@@ -191,6 +226,8 @@ def main() -> IO(Unit):
     C.Check.report("no Session Modification Response: three retransmissions of the same request, the session still being modified", Bool.and(again(expire(0n, st3), mod), Bool.and(again(expire(1n, st3), mod), Bool.and(again(expire(2n, st3), mod), Pc.sphase_is(K.Kernel.state(expire(2n, st3)), "modifying")))))
     +o_mod_late : N.Step() = expire(3n, st3)
     C.Check.report("no Session Modification Response after the third retransmission: PDU Session Release Command #26, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
+    +o_twice : N.Step() = step(st2, A.data(1, setup_twice(ran, oks_of(W.PDUSessionResourceSetupResponse.view(A.ies_of(Fr.Pdu.read(A.hex_of(A.entry(40n, msgs), "hex"))))))))
+    C.Check.report("the gNB names the session set up twice, first with a transfer that does not decode: the session is being deleted and stays so", Bool.and(Pc.sphase_is(K.Kernel.state(o_twice), "deleting"), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_twice))), 54)))
     +o_gnb : N.Step() = step(st2, A.data(1, setup_failure(ran)))
     C.Check.report("the gNB fails the setup: Session Deletion at the UPF, Establishment Reject #26, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_gnb), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_gnb))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_gnb))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1]))))
     +o_dnn : N.Step() = step(st_reg, A.data(1, A.uplink(ran, uli, A.ue_protect(2, ul_transport(A.hex_of(A.entry(32n, msgs), "hex"), [37, 4, 3, 102, 111, 111])))))

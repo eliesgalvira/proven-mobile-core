@@ -491,7 +491,7 @@ def Del.one(+skey: U32, +s: S.Session, +seq: U32, k: {S.Session.known(s) == True
   sk = Equal.sym(Bool, S.Session.known(s), True{}, k)
   %sk : Up.N4.deleted(s, N.Out.acts(Up.N4.delete_if(skey, s, seq, q => Up.N4.deletions([], q), _)))
   +request = Up.N4.delete(S.Session.up_seid(s), seq)
-  +y : N.Act = N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}
+  +y : N.Act = N.TimerStart{None{}, skey, Up.N4.t1_ms()}
   seh = Equal.sym(Bool, S.SPhase.held(S.Session.phase(s)), True{}, eh)
   (seq, ([], ([y], (%seh : {[N.Pfcp{Tb.Table.hit(U32, S.Session.ue(s), None{}, _), request}, y] == List.append(&2, N.Act, [], N.Pfcp{Some{S.Session.ue(s)}, request} <> [y]) : List<&2, N.Act>}; {==}))))
 
@@ -1000,29 +1000,30 @@ def Ans.has_del(+key: U32, +ss: Tb.Table(S.Session)) -> {Tb.Table.has(S.Session,
   se = Equal.sym(Maybe<&2, S.Session>, Tb.Table.get(S.Session, key, S.Sessions.del(key, ss)), None{}, SDel.get(key, ss))
   (%se : {Tb.Table.present(S.Session, _) == False{} : Bool}; {==})
 
-def Ans.stops(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +request: B.Bytes(), +seq: U32, +es: {S.Sessions.by_seq(seq, S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, +ep: {S.Session.phase(s) == S.Deleting{guard, request} : S.SPhase}) -> {N.Acts.stops(skey, K.Kernel.actions(N.Step.of(st, (S.DelSession{skey}, [])))) == True{} : Bool}:
+def Ans.stops(+st: S.State, +skey: U32, +s: S.Session, +guard: S.Guard, +request: B.Bytes(), +seq: U32, +acts: List<&2, N.Act>, +es: {S.Sessions.by_seq(seq, S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, +ep: {S.Session.phase(s) == S.Deleting{guard, request} : S.SPhase}) -> {N.Acts.stops(skey, K.Kernel.actions(N.Step.of(st, (S.DelSession{skey}, acts)))) == True{} : Bool}:
   match st:
     case S.State{config, subs, assocs, ues, +sessions, pfcp_seq, next_ue, n4}:
-      Ans.by_seq(seq, sessions, S.Sessions.del(skey, sessions))(skey, s, guard, es, De.guard(s, guard, request, ep), Ans.has_del(skey, sessions))
+      PL.Gs.stops_app(skey, acts, N.Gone.cancels(sessions, S.Sessions.del(skey, sessions)), Ans.by_seq(seq, sessions, S.Sessions.del(skey, sessions))(skey, s, guard, es, De.guard(s, guard, request, ep), Ans.has_del(skey, sessions)))
 
-def Step.answered(+st: S.State, +entropy: B.Bytes(), +len: U32, +bytes: B.Bytes(), +msg: Pf.Msg, +rest: B.Bytes(), +skey: U32, +s: S.Session, +guard: S.Guard, +request: B.Bytes(), em: {Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)}, ek: {Pf.Msg.kind(msg) == 55 : U32}, es: {S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, ep: {S.Session.phase(s) == S.Deleting{guard, request} : S.SPhase}) -> {K.Kernel.step(st, F.PfcpData{len, bytes}, entropy) == N.Step.of(st, (S.DelSession{skey}, [])) : N.Step()}:
-  +T : N.Step() = N.Step.of(st, (S.DelSession{skey}, []))
+def Step.answered(+st: S.State, +entropy: B.Bytes(), +len: U32, +bytes: B.Bytes(), +msg: Pf.Msg, +rest: B.Bytes(), +skey: U32, +s: S.Session, +guard: S.Guard, +request: B.Bytes(), em: {Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)}, ek: {Pf.Msg.kind(msg) == 55 : U32}, es: {S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, ep: {S.Session.phase(s) == S.Deleting{guard, request} : S.SPhase}) -> {K.Kernel.step(st, F.PfcpData{len, bytes}, entropy) == N.Step.of(st, (S.DelSession{skey}, Gsm.Gsm.deleted_notes(Up.N4.accepted(Up.N4.cause(msg))))) : N.Step()}:
+  +T : N.Step() = N.Step.of(st, (S.DelSession{skey}, Gsm.Gsm.deleted_notes(Up.N4.accepted(Up.N4.cause(msg)))))
   sem = Equal.sym(B.Read(Pf.Msg), Pf.Msg.read(bytes), Done{(msg, rest)}, em)
   %sem : {N.Step.of(st, Gsm.Gsm.pfcp_msg(st, _)) == T : N.Step()}
   sek = Equal.sym(U32, Pf.Msg.kind(msg), 55, ek)
   %sek : {N.Step.of(st, Gsm.Gsm.pfcp_k1(st, msg, _, U32.is_eq(_, 1))) == T : N.Step()}
   ses = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), Some{(skey, s)}, es)
-  %ses : {N.Step.of(st, Gsm.Gsm.deleted(_)) == T : N.Step()}
+  %ses : {N.Step.of(st, Gsm.Gsm.deleted(msg, _)) == T : N.Step()}
   sep = Equal.sym(S.SPhase, S.Session.phase(s), S.Deleting{guard, request}, ep)
-  %sep : {N.Step.of(st, Gsm.Gsm.deleted_phase(skey, _)) == T : N.Step()}
+  %sep : {N.Step.of(st, Gsm.Gsm.deleted_phase(skey, msg, _)) == T : N.Step()}
   {==}
 
 def L.smf.deletion.answered(st, entropy, len, bytes, msg, rest, skey, s, guard, request, em, ek, es, ep):
   +r = K.Kernel.step(st, F.PfcpData{len, bytes}, entropy)
-  +T : N.Step() = N.Step.of(st, (S.DelSession{skey}, []))
+  +notes = Gsm.Gsm.deleted_notes(Up.N4.accepted(Up.N4.cause(msg)))
+  +T : N.Step() = N.Step.of(st, (S.DelSession{skey}, notes))
   sr1 = Equal.sym(N.Step(), r, T, Step.answered(st, entropy, len, bytes, msg, rest, skey, s, guard, request, em, ek, es, ep))
   sr2 = Equal.sym(N.Step(), r, T, Step.answered(st, entropy, len, bytes, msg, rest, skey, s, guard, request, em, ek, es, ep))
-  ((%sr1 : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(_))) == None{} : Maybe<&2, S.Session>}; De.gone(st, skey, [])), (%sr2 : {N.Acts.stops(skey, K.Kernel.actions(_)) == True{} : Bool}; Ans.stops(st, skey, s, guard, request, Pf.Msg.seq(msg), es, ep)))
+  ((%sr1 : {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(_))) == None{} : Maybe<&2, S.Session>}; De.gone(st, skey, notes)), (%sr2 : {N.Acts.stops(skey, K.Kernel.actions(_)) == True{} : Bool}; Ans.stops(st, skey, s, guard, request, Pf.Msg.seq(msg), notes, es, ep)))
 
 # What a UL NAS Transport comes to
 # --------------------------------

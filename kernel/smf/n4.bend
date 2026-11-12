@@ -97,7 +97,7 @@ def N4.delete_if(+key: U32, +s: S.Session, +seq: U32, later: U32 -> N.GOut(), kn
   match known:
     case True{}:
       +request = N4.delete(S.Session.up_seid(s), seq)
-      N.Out.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), key, N4.t1_ms()}]), later(U32.add(seq, 1)))
+      N.Out.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{None{}, key, N4.t1_ms()}]), later(U32.add(seq, 1)))
     case False{}:
       N.Out.join((S.DelSession{key}, []), later(seq))
 

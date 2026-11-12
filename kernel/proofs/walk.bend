@@ -353,7 +353,7 @@ def Sx.delete_if(+key: U32, +s: S.Session, +seq: U32, +more: Tb.Table(S.Session)
   match known:
     case True{}:
       +request = Up.N4.delete(S.Session.up_seid(s), seq)
-      Sx.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, h1)
+      Sx.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{None{}, key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, h1)
     case False{}:
       Sx.join((S.DelSession{key}, []), Up.N4.deletions(more, seq), {==}, h0)
 

@@ -66,7 +66,7 @@ def Fl.del_if(+key: U32, +t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +
   match b:
     case True{}:
       +request = Up.N4.delete(S.Session.up_seid(t), seq)
-      Fl.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(t), request}, N.TimerStart{S.Session.tag(t), key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
+      Fl.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(t), request}, N.TimerStart{None{}, key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
     case False{}:
       Fl.join((S.DelSession{key}, []), Up.N4.deletions(more, seq), {==}, later(seq))
 
