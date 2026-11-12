@@ -31,3 +31,5 @@ What the 2026-11-07 merge review left after the pre-merge fixes:
 ## Verify
 
 `scripts/check.nu` and `nix build .#checks.x86_64-linux.e2e`.
+
+On 2026-11-12 items 1, 3, 9, 10 and the rest of item 5 moved to ticket 40, not started.
