@@ -2231,14 +2231,21 @@ def Lw.set_up(+st: S.State, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma
     case Some{(+skey, +s)}:
       Lw.set_up_phase(st, skey, s, transfer, seq, S.Session.phase(s), Lv.owns(skey, s, S.State.sessions(st), em), Lv.knows(skey, s, S.State.sessions(st), em))
 
+def Lw.set_up_last(+st: S.State, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +em: {Lv.found(m, S.State.sessions(st)) == True{} : Bool}, +again: Bool) -> {Lv.okf(st, Gsm.Gsm.set_up_last(st, transfer, seq, m, again)) == True{} : Bool}:
+  match again:
+    case True{}:
+      {==}
+    case False{}:
+      Lw.set_up(st, transfer, seq, m, em)
+
 def Lw.set_ups(+st: S.State, +key: U32, +items: G.PDUSessionResourceSetupListSURes(), +seq: U32) -> {Lv.okf(st, Gsm.Gsm.set_ups(st, key, items, seq)) == True{} : Bool}:
   match items:
     case Nil{}:
       {==}
     case G.PDUSessionResourceSetupItemSURes{+psi, +transfer, x} <> +more:
-      +a = Gsm.Gsm.set_up(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)))
+      +a = Gsm.Gsm.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more))
       +b = Gsm.Gsm.set_ups(st, key, more, U32.add(seq, 1))
-      Lv.join(st, N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(a, b), {==}, Lv.join(st, a, b, Lw.set_up(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Lv.by_psi(key, psi, S.State.sessions(st))), Lw.set_ups(st, key, more, U32.add(seq, 1))))
+      Lv.join(st, N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(a, b), {==}, Lv.join(st, a, b, Lw.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Lv.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more)), Lw.set_ups(st, key, more, U32.add(seq, 1))))
 
 def Lw.failed_phase(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.failed_phase(st, skey, s, seq, p)) == True{} : Bool}:
   match p:

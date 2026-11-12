@@ -862,14 +862,21 @@ def Ws.failed(+st: S.State, +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.S
     case Some{(+skey, +s)}:
       Ws.failed_phase(st, skey, s, seq, S.Session.phase(s), k, u, Tk.ne_via(k, key, S.Session.ue(s), hm, h1))
 
+def Ws.set_up_last(+st: S.State, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +key: U32, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}, +hm: {Tk.of_ue(key, m) == True{} : Bool}, +again: Bool) -> {Tk.sp(k, u, Gsm.Gsm.set_up_last(st, transfer, seq, m, again)) == True{} : Bool}:
+  match again:
+    case True{}:
+      {==}
+    case False{}:
+      Ws.set_up(st, transfer, seq, m, key, k, u, h1, hm)
+
 def Ws.set_ups(+st: S.State, +key: U32, +items: G.PDUSessionResourceSetupListSURes(), +seq: U32, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.set_ups(st, key, items, seq)) == True{} : Bool}:
   match items:
     case Nil{}:
       {==}
-    case G.PDUSessionResourceSetupItemSURes{+psi, +transfer, x} <> more:
-      +a = Gsm.Gsm.set_up(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)))
+    case G.PDUSessionResourceSetupItemSURes{+psi, +transfer, x} <> +more:
+      +a = Gsm.Gsm.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more))
       +b = Gsm.Gsm.set_ups(st, key, more, U32.add(seq, 1))
-      Tk.sp_join(k, u, N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(a, b), {==}, Tk.sp_join(k, u, a, b, Ws.set_up(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), key, k, u, h1, Psi.by_psi(key, psi, S.State.sessions(st))), Ws.set_ups(st, key, more, U32.add(seq, 1), k, u, h1)))
+      Tk.sp_join(k, u, N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(a, b), {==}, Tk.sp_join(k, u, a, b, Ws.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), key, k, u, h1, Psi.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more)), Ws.set_ups(st, key, more, U32.add(seq, 1), k, u, h1)))
 
 def Ws.faileds(+st: S.State, +key: U32, +items: G.PDUSessionResourceFailedToSetupListSURes(), +seq: U32, +k: U32, +u: S.Ue, +h1: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.faileds(st, key, items, seq)) == True{} : Bool}:
   match items:

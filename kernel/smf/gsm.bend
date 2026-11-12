@@ -689,12 +689,29 @@ def Gsm.set_up(st: S.State, transfer: B.Bytes(), seq: U32, m: Maybe<&2, Sigma<&2
     case Some{(skey, +s)}:
       Gsm.set_up_phase(st, skey, s, transfer, seq, S.Session.phase(s))
 
+# The setup list names the PDU session again later.
+def Gsm.named(+psi: U32, items: G.PDUSessionResourceSetupListSURes()) -> Bool:
+  match items:
+    case Nil{}:
+      False{}
+    case G.PDUSessionResourceSetupItemSURes{p, transfer, x} <> more:
+      Bool.or(U32.is_eq(p, psi), Gsm.named(psi, more))
+
+# Only a session's last naming in the list counts, so no item undoes what an
+# earlier one did to the same session.
+def Gsm.set_up_last(st: S.State, transfer: B.Bytes(), seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, again: Bool) -> N.GOut():
+  match again:
+    case True{}:
+      N.Out.warn("NGAP: PDU session named again later in the setup list; this naming ignored")
+    case False{}:
+      Gsm.set_up(st, transfer, seq, m)
+
 def Gsm.set_ups(+st: S.State, +key: U32, items: G.PDUSessionResourceSetupListSURes(), +seq: U32) -> N.GOut():
   match items:
     case Nil{}:
       (S.Keep{}, [])
-    case G.PDUSessionResourceSetupItemSURes{psi, transfer, x} <> more:
-      N.Out.join(N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(Gsm.set_up(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st))), Gsm.set_ups(st, key, more, U32.add(seq, 1))))
+    case G.PDUSessionResourceSetupItemSURes{+psi, transfer, x} <> +more:
+      N.Out.join(N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(Gsm.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.named(psi, more)), Gsm.set_ups(st, key, more, U32.add(seq, 1))))
 
 def Gsm.failed_phase(st: S.State, skey: U32, s: S.Session, seq: U32, p: S.SPhase) -> N.GOut():
   match p:
