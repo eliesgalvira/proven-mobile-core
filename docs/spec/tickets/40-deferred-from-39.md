@@ -17,7 +17,7 @@ What ticket 39 left open on 2026-11-12:
    - PDU Session Release Command to the UE for sessions dropped in a Path Switch or at Handover Notify.
 4. **N4 states** (ticket 39 item 3): `Asking` and `Beating` become one `Waiting` state. That shape was written and proven, but it hit Bend's C backend limit "an arity over 247", so it needs a reproduction and an upstream draft first. Probes are on branch `ticket/39-arity`.
 5. **Proofs** (the rest of ticket 39 item 5): one lemma for the five `Owner.*` proofs and `Step.gnb_failed`; `Walk.pdu` made input-dependent, so `Req.*` in `kernel/proofs/ng_setup.bend` goes.
-6. **Proof deduplication** (the Session Deletion review): one `Bool.or_mono` in `kernel/proofs/lib.bend` for `Rl.or_mono`, `Cf.or_mono` and `Hp.or_mono`; one keep lemma for the six `*_keep` copies; `Session.conflicts_sym`, as `Ue.conflicts_sym`; `Sessions.released` stated through `Tb.Table.get`; `Gsm.setup_gone` in place of `Lw.setup_gone`.
+6. **Proof deduplication** (the Session Deletion review): one `Bool.or_mono` in `kernel/proofs/lib.bend` for `Rl.or_mono`, `Cf.or_mono` and `Hp.or_mono`; one keep lemma for the six `*_keep` copies; `Session.conflicts_sym`, as `Ue.conflicts_sym`; `Sessions.deleting` stated through `Tb.Table.get`; `Gsm.setup_gone` in place of `Lw.setup_gone`.
 
 ## Verify
 
