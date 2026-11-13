@@ -1580,10 +1580,11 @@ law smf.establish.reject_leaves_state:
 # GHSA-855g-699w-9w28: whichever later step fails, the session belongs to no
 # UE any more. While it is being created the UPF does not know it
 # (smf.sessions.known) and no entry remains, so no address, TEID or SEID is
-# held for it; past Creating a PFCP Session Deletion Request for it goes out
-# and its entry, if any, is being deleted: it holds its address, TEID and SEID
-# only until the UPF answers or the retries run out (smf.deletion.retransmitted,
-# smf.deletion.answered). The failures: the UPF refuses the Session
+# held for it; past Creating a PFCP Session Deletion Request for it goes out,
+# its guard started right after it, and its entry, if any, is being deleted
+# under that guard, which has not fired yet: it holds its address, TEID and
+# SEID only until the UPF answers or the retries run out
+# (smf.deletion.retransmitted, smf.deletion.answered). The failures: the UPF refuses the Session
 # Establishment; the guard, timer the session's key, expires while it is being
 # set up, or while it is being created or modified once its PFCP request has
 # gone N1 times again (smf.request.retransmitted); the UPF refuses the Session
@@ -1624,13 +1625,13 @@ law smf.establish.failure_releases:
   ({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 51 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Creating{guard, pti, accept, request} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})
   & (({Tb.Table.get(St.Ue, skey, St.State.ues(st)) == None{} : Maybe<&2, St.Ue>} -> {Tb.Table.get(St.Session, skey, St.State.sessions(st)) == Some{s} : Maybe<&2, St.Session>}
-    -> ({St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase} -> {St.Sessions.released(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))))
+    -> ({St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase} -> {St.Sessions.deleting(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))))
     & (({St.Session.phase(s) == St.Creating{guard, pti, accept, request} : St.SPhase} -> {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == None{} : Maybe<&2, St.Session>})
-    & ({St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {St.Sessions.released(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))))))
+    & ({St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {St.Sessions.deleting(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))))))
   & (({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 53 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
-    -> {St.Sessions.released(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy))))
+    -> {St.Sessions.deleting(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy))))
   & ({St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool} -> {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
-    -> {St.Sessions.released(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
+    -> {St.Sessions.deleting(skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
 
 # TS 29.244 §6.4: a Session Establishment or Modification Request still
 # unanswered when the session's guard fires, before it has gone N1 times

@@ -85,9 +85,10 @@ def N4.modify(up_seid: B.Bytes(), gnb_teid: U32, gnb_addr: B.Bytes(), seq: U32) 
 def N4.delete(up_seid: B.Bytes(), seq: U32) -> B.Bytes():
   N4.msg(Pf.Type.session_deletion_request(), Some{up_seid}, seq, [])
 
-# A Session Deletion Request for the session is among the actions, at some sequence number.
-def N4.deleted(+s: S.Session, +acts: List<&2, N.Act>) -> Type:
-  Sigma<&2, &2, U32, seq => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> post) : List<&2, N.Act>}>>>
+# A Session Deletion Request for the session is among the actions, at some
+# sequence number, and right after it its guard, timer key, starts for T1.
+def N4.deleted(+key: U32, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
+  Sigma<&2, &2, U32, seq => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> N.TimerStart{None{}, key, N4.t1_ms()} <> post) : List<&2, N.Act>}>>>
 
 # A Session Deletion Request for each session row the UPF knows, numbered
 # from seq: the row waits, being deleted, under its guard, until the UPF

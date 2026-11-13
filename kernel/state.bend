@@ -962,13 +962,22 @@ def Sessions.known(sessions: Tb.Table(Session)) -> Bool:
     case (k, +s) <> more:
       Bool.and(SPhase.knows(Session.phase(s), Session.known(s)), Sessions.known(more))
 
-# No session under the key belongs to a UE: there is none, or it is being deleted.
-def Sessions.released(+key: U32, sessions: Tb.Table(Session)) -> Bool:
+# Being deleted under a guard that has not fired yet.
+def SPhase.fresh(p: SPhase) -> Bool:
+  match p:
+    case Deleting{guard, request}:
+      U32.is_eq(Guard.retries(guard), 0)
+    case _:
+      False{}
+
+# Every session under the key is being deleted, its guard not fired yet: there
+# is none, or its Session Deletion Request has just gone.
+def Sessions.deleting(+key: U32, sessions: Tb.Table(Session)) -> Bool:
   match sessions:
     case Nil{}:
       True{}
     case (+k, +s) <> more:
-      Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), Bool.not(Tb.Table.present(U32, Session.tag(s)))), Sessions.released(key, more))
+      Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), SPhase.fresh(Session.phase(s))), Sessions.deleting(key, more))
 
 # Which sessions to keep: those not of a UE, those of one UE, those owned, the
 # orphans, those clear of a session, the victims of one, all but a key. A
