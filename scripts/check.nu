@@ -27,7 +27,7 @@ def main [] {
   ^timeout 1500 bend kernel/PROOF.bend --verdict
 
   step "4. kernel tests"
-  ^nu scripts/test-kernel.nu
+  ^nu scripts/test-kernel.nu --strict
 
   step "5. cargo test (edge)"
   do { cd edge; ^timeout 1500 cargo test --quiet }
