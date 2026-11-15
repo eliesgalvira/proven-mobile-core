@@ -652,6 +652,10 @@ type N4 is Data:
 def N4.timer() -> U32:
   0
 
+# T1, how long a PFCP request waits for its answer before it goes again.
+def N4.t1_ms() -> U32:
+  3000
+
 def N4.recovery(n: N4) -> B.Bytes():
   match n:
     case N4{recovery, link}:
@@ -1213,9 +1217,11 @@ def Tx.apply(tx: Tx, st: State) -> State:
     case Both{first, second}:
       Tx.apply(second, Tx.apply(first, st))
 
-# The transactions that leave every session row in place.
+# The transactions that leave every session row in place and start no deletion.
 def Tx.keeps_sessions(tx: Tx) -> Bool:
   match tx:
+    case Revar{key, v}:
+      SPhase.held(SVar.phase(v))
     case Put{key, ue}:
       False{}
     case Del{key}:

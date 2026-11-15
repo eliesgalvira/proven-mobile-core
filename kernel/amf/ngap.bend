@@ -565,20 +565,61 @@ def Gone.cancels(before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> Li
     case (+k, +s) <> more:
       List.append(&2, Act, Gone.row(k, s, Tb.Table.has(S.Session, k, after)), Gone.cancels(more, after))
 
-# A transaction that keeps the session table removes no row: nothing to compare.
-def Gone.when(keeps: Bool, before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> List<&2, Act>:
+# The Session Deletion Request of every row a step leaves being deleted that
+# was not, tagged as the row was, and right after it the row's guard, timer
+# its key, started for T1: whatever starts a deletion, the UPF is asked and
+# the guard runs until it fires or the UPF answers (TS 29.244 §6.4).
+def Arm.phase(+k: U32, tag: Maybe<&2, U32>, p: S.SPhase) -> List<&2, Act>:
+  match p:
+    case S.Deleting{guard, request}:
+      [Pfcp{tag, request}, TimerStart{None{}, k, S.N4.t1_ms()}]
+    case _:
+      []
+
+def Arm.row(+k: U32, tag: Maybe<&2, U32>, after: Maybe<&2, S.Session>) -> List<&2, Act>:
+  match after:
+    case None{}:
+      []
+    case Some{+t}:
+      Arm.phase(k, tag, S.Session.phase(t))
+
+def Arm.held(+k: U32, +s: S.Session, after: Maybe<&2, S.Session>, held: Bool) -> List<&2, Act>:
+  match held:
+    case True{}:
+      Arm.row(k, S.Session.tag(s), after)
+    case False{}:
+      []
+
+def Arm.key(+k: U32, before: Maybe<&2, S.Session>, after: Maybe<&2, S.Session>) -> List<&2, Act>:
+  match before:
+    case None{}:
+      Arm.row(k, None{}, after)
+    case Some{+s}:
+      Arm.held(k, s, after, S.SPhase.held(S.Session.phase(s)))
+
+def Arm.rows(rows: Tb.Table(S.Session), +before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> List<&2, Act>:
+  match rows:
+    case Nil{}:
+      []
+    case (+k, s) <> more:
+      List.append(&2, Act, Arm.key(k, Tb.Table.get(S.Session, k, before), Tb.Table.get(S.Session, k, after)), Arm.rows(more, before, after))
+
+# What a step adds for the session rows it changes, after every other action:
+# the guards of the rows gone stopped, then the deletions it starts. A
+# transaction that keeps the session table and starts no deletion adds nothing.
+def Step.rows(keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> List<&2, Act>:
   match keeps:
     case True{}:
       []
     case False{}:
-      Gone.cancels(before, after)
+      List.append(&2, Act, Gone.cancels(before, after), Arm.rows(after, before, after))
 
 # The step a procedure's outcome makes from st.
 def Step.of(+st: S.State, o: GOut()) -> Step():
   match o:
     case (+tx, acts):
       +st2 = S.Tx.apply(tx, st)
-      (st2, List.append(&2, Act, acts, Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2))))
+      (st2, List.append(&2, Act, acts, Step.rows(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2))))
 
 # The UE under an AMF-UE-NGAP-ID, if the association owns it under that RAN-UE-NGAP-ID.
 def Owner.check(ue: S.Ue, ok: Bool) -> Maybe<&2, S.Ue>:

@@ -12,9 +12,6 @@ import ../amf/ngap.bend as N
 # starts: T1 = 3 s, N1 = 3, a 10 s pause, then again; heartbeats every 30 s
 # once up, on timer 0 (S.N4.timer).
 
-def N4.t1_ms() -> U32:
-  3000
-
 def N4.pause_ms() -> U32:
   10000
 
@@ -88,17 +85,16 @@ def N4.delete(up_seid: B.Bytes(), seq: U32) -> B.Bytes():
 # A Session Deletion Request for the session is among the actions, at some
 # sequence number, and right after it its guard, timer key, starts for T1.
 def N4.deleted(+key: U32, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
-  Sigma<&2, &2, U32, seq => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> N.TimerStart{None{}, key, N4.t1_ms()} <> post) : List<&2, N.Act>}>>>
+  Sigma<&2, &2, U32, seq => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.Pfcp{Some{S.Session.ue(s)}, N4.delete(S.Session.up_seid(s), seq)} <> N.TimerStart{None{}, key, S.N4.t1_ms()} <> post) : List<&2, N.Act>}>>>
 
-# A Session Deletion Request for each session row the UPF knows, numbered
-# from seq: the row waits, being deleted, under its guard, until the UPF
-# answers or the retries run out (TS 29.244 §6.4); a row the UPF does not know
-# goes at once.
+# Each session row the UPF knows left being deleted under a Session Deletion
+# Request numbered from seq, which the step sends with the row's guard
+# (N.Step.rows): the row waits until the UPF answers or the retries run out
+# (TS 29.244 §6.4); a row the UPF does not know goes at once.
 def N4.delete_if(+key: U32, +s: S.Session, +seq: U32, later: U32 -> N.GOut(), known: Bool) -> N.GOut():
   match known:
     case True{}:
-      +request = N4.delete(S.Session.up_seid(s), seq)
-      N.Out.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{None{}, key, N4.t1_ms()}]), later(U32.add(seq, 1)))
+      N.Out.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, N4.delete(S.Session.up_seid(s), seq)}}}, S.BumpSeq{1}}, []), later(U32.add(seq, 1)))
     case False{}:
       N.Out.join((S.DelSession{key}, []), later(seq))
 
@@ -165,7 +161,7 @@ def N4.asked(+st: S.State, cfg: Maybe<&2, S.Cfg>, +seq: U32, resent: U32, tx: S.
     case None{}:
       (S.Keep{}, [])
     case Some{c}:
-      (S.Both{tx, S.SetLink{S.Asking{seq, resent}}}, [N.Pfcp{None{}, N4.assoc_setup(c, S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
+      (S.Both{tx, S.SetLink{S.Asking{seq, resent}}}, [N.Pfcp{None{}, N4.assoc_setup(c, S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), S.N4.t1_ms()}])
 
 def N4.pause() -> N.GOut():
   (S.SetLink{S.Paused{}}, [N.TimerStart{None{}, S.N4.timer(), N4.pause_ms()}, N.Note{F.Warn{}, "PFCP: no association with the UPF; trying again later"}])
@@ -182,7 +178,7 @@ def N4.ask_again(+st: S.State, +seq: U32, +resent: U32, more: Bool) -> N.GOut():
       N4.pause()
 
 def N4.beat(+st: S.State, +seq: U32, resent: U32) -> N.GOut():
-  (S.SetLink{S.Beating{seq, resent}}, [N.Pfcp{None{}, N4.heartbeat(Pf.Type.heartbeat_request(), S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
+  (S.SetLink{S.Beating{seq, resent}}, [N.Pfcp{None{}, N4.heartbeat(Pf.Type.heartbeat_request(), S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), S.N4.t1_ms()}])
 
 def N4.beat_again(+st: S.State, +seq: U32, +resent: U32, more: Bool) -> N.GOut():
   match more:

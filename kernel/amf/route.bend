@@ -25,7 +25,7 @@ def Route.drop(st: S.State, +assoc: U32) -> N.Step():
       +o = Up.N4.deletions(S.Sessions.sift(S.SOrphan{left}, sessions), pfcp_seq)
       +st1 = S.Tx.apply(N.Out.tx(o), S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4})
       +kept = S.Sessions.sift(S.SOwned{left}, S.State.sessions(st1))
-      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, kept, S.State.pfcp_seq(st1), next_ue, S.State.n4(st1)}, List.append(&2, N.Act, N.Out.acts(o), N.Gone.cancels(sessions, kept)))
+      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, kept, S.State.pfcp_seq(st1), next_ue, S.State.n4(st1)}, List.append(&2, N.Act, N.Out.acts(o), N.Step.rows(False{}, sessions, kept)))
 
 # An association going down: first the N2 handovers it takes part in end
 # (Ho.Ho.down), then its UEs go.

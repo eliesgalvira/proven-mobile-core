@@ -66,7 +66,7 @@ def Fl.del_if(+key: U32, +t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +
   match b:
     case True{}:
       +request = Up.N4.delete(S.Session.up_seid(t), seq)
-      Fl.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(t), request}, N.TimerStart{None{}, key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
+      Fl.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, []), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
     case False{}:
       Fl.join((S.DelSession{key}, []), Up.N4.deletions(more, seq), {==}, later(seq))
 
@@ -98,7 +98,7 @@ def Fl.cancels(+before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> {N.
     case (+k, +s) <> +more:
       Fl.app(N.Gone.row(k, s, Tb.Table.has(S.Session, k, after)), N.Gone.cancels(more, after), Fl.row(k, s, Tb.Table.has(S.Session, k, after)), Fl.cancels(more, after))
 
-def Fl.gone(+keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> {N.Ngap.any_switch_failure(N.Gone.when(keeps, before, after)) == False{} : Bool}:
+def Fl.gone(+keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Table(S.Session)) -> {N.Ngap.any_switch_failure(N.Step.rows(keeps, before, after)) == False{} : Bool}:
   match keeps:
     case True{}:
       {==}
@@ -170,7 +170,7 @@ def Fl.final(+st: S.State, +o: N.GOut(), +h: Fl.Cls(o), +ef: {N.Ngap.any_switch_
           (%se : {S.Tx.apply(_, st) == st : S.State}; {==})
         case Inr{e}:
           +st2 = S.Tx.apply(tx, st)
-          +gone = N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2))
+          +gone = N.Step.rows(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2))
           nf = Fl.app(acts, gone, e, Fl.gone(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2)))
           Empty.absurd({st2 == st : S.State}, P.Refute.true_false(Equal.trans(Bool, True{}, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), False{}, Equal.sym(Bool, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), True{}, ef), nf)))
 

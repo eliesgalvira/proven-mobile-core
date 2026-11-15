@@ -643,7 +643,7 @@ def Hp.get_other(+key: U32, +p: S.Phase, +k: U32, +ues: Tb.Table(S.Ue), +ne: {U3
     case (+k0, +w) <> +more:
       Hp.other_row(key, p, k, k0, w, more, U32.is_eq(k0, k), {==}, ne, Hp.get_other(key, p, k, more, ne))
 
-def Hp.g_rephase(+st: S.State, +k: U32, +key: U32, +p: S.Phase, +acts: List<&2, N.Act>, +b: Bool, +eb: {U32.is_eq(key, k) == b : Bool}, +e: {Bool.or(Bool.not(U32.is_eq(key, k)), N.Acts.starts(k, acts)) == True{} : Bool}) -> ({Tb.Table.get(S.Ue, k, S.State.ues(S.Tx.apply(S.Rephase{key, p}, st))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} -> Empty) -> {N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Rephase{key, p}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Rephase{key, p}, st))))) == True{} : Bool}:
+def Hp.g_rephase(+st: S.State, +k: U32, +key: U32, +p: S.Phase, +acts: List<&2, N.Act>, +b: Bool, +eb: {U32.is_eq(key, k) == b : Bool}, +e: {Bool.or(Bool.not(U32.is_eq(key, k)), N.Acts.starts(k, acts)) == True{} : Bool}) -> ({Tb.Table.get(S.Ue, k, S.State.ues(S.Tx.apply(S.Rephase{key, p}, st))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} -> Empty) -> {N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Rephase{key, p}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Rephase{key, p}, st))))) == True{} : Bool}:
   match b:
     case True{}:
       es : {Bool.or(Bool.not(True{}), N.Acts.starts(k, acts)) == True{} : Bool} = (%eb : {Bool.or(Bool.not(_), N.Acts.starts(k, acts)) == True{} : Bool}; e)
@@ -651,34 +651,34 @@ def Hp.g_rephase(+st: S.State, +k: U32, +key: U32, +p: S.Phase, +acts: List<&2, 
     case False{}:
       ua = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(S.Rephase{key, p}, st)), PT.Tk.ues(S.Rephase{key, p}, S.State.ues(st)), PT.Tk.ues_apply(S.Rephase{key, p}, st))
       same : {Tb.Table.get(S.Ue, k, S.State.ues(S.Tx.apply(S.Rephase{key, p}, st))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} = (%ua : {Tb.Table.get(S.Ue, k, _) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>}; Hp.get_other(key, p, k, S.State.ues(st), eb))
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Rephase{key, p}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Rephase{key, p}, st))))) == True{} : Bool}, ne(same))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Rephase{key, p}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Rephase{key, p}, st))))) == True{} : Bool}, ne(same))
 
-def Hp.g_tx(+st: S.State, +k: U32, +tx: S.Tx, +acts: List<&2, N.Act>, +e: {Bool.and(Hp.still(tx), Hp.starts_if(k, tx, acts)) == True{} : Bool}) -> ({Tb.Table.get(S.Ue, k, S.State.ues(S.Tx.apply(tx, st))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} -> Empty) -> {N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))))) == True{} : Bool}:
+def Hp.g_tx(+st: S.State, +k: U32, +tx: S.Tx, +acts: List<&2, N.Act>, +e: {Bool.and(Hp.still(tx), Hp.starts_if(k, tx, acts)) == True{} : Bool}) -> ({Tb.Table.get(S.Ue, k, S.State.ues(S.Tx.apply(tx, st))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} -> Empty) -> {N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))))) == True{} : Bool}:
   match tx:
     case S.Keep{}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Keep{}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Keep{}, st))))) == True{} : Bool}, ne({==}))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Keep{}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Keep{}, st))))) == True{} : Bool}, ne({==}))
     case S.Rephase{+key, +p}:
       Hp.g_rephase(st, k, key, p, acts, U32.is_eq(key, k), {==}, e)
     case S.Put{key, ue}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Put{key, ue}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Put{key, ue}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Put{key, ue}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Put{key, ue}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.Del{key}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Del{key}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Del{key}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Del{key}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Del{key}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.PutSession{key, s}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.PutSession{key, s}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.PutSession{key, s}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.PutSession{key, s}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.PutSession{key, s}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.Revar{key, v}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Revar{key, v}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Revar{key, v}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Revar{key, v}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Revar{key, v}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.DelSession{key}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.DelSession{key}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.DelSession{key}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.DelSession{key}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.DelSession{key}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.Subs{subs}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Subs{subs}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Subs{subs}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Subs{subs}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Subs{subs}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.SetLink{link}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.SetLink{link}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.SetLink{link}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.SetLink{link}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.SetLink{link}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpUe{bk}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.BumpUe{bk}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.BumpUe{bk}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.BumpUe{bk}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.BumpUe{bk}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpSeq{n}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.BumpSeq{n}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.BumpSeq{n}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.BumpSeq{n}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.BumpSeq{n}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.Both{a, b}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Both{a, b}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Both{a, b}, st))))) == True{} : Bool}, P.Refute.bool(e))
+      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Step.rows(S.Tx.keeps_sessions(S.Both{a, b}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Both{a, b}, st))))) == True{} : Bool}, P.Refute.bool(e))
 
 def Hp.g_step(+st: S.State, +k: U32, +o: N.GOut(), +e: {Hp.fine(k, o) == True{} : Bool}) -> ({Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, o)))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} -> Empty) -> {N.Acts.starts(k, K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool}:
   match o:

@@ -452,17 +452,17 @@ def Del.app_l.eq(+xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +pre: List<&2, N.Ac
 
 def Del.app_r(+key: U32, +s: S.Session, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, d: Up.N4.deleted(key, s, ys)) -> Up.N4.deleted(key, s, List.append(&2, N.Act, xs, ys)):
   (+seq, (+pre, (+post, e))) = d
-  (seq, (List.append(&2, N.Act, xs, pre), (post, Del.app_r.eq(xs, ys, pre, N.Pfcp{Some{S.Session.ue(s)}, Up.N4.delete(S.Session.up_seid(s), seq)}, N.TimerStart{None{}, key, Up.N4.t1_ms()} <> post, e))))
+  (seq, (List.append(&2, N.Act, xs, pre), (post, Del.app_r.eq(xs, ys, pre, N.Pfcp{Some{S.Session.ue(s)}, Up.N4.delete(S.Session.up_seid(s), seq)}, N.TimerStart{None{}, key, S.N4.t1_ms()} <> post, e))))
 
 def Del.app_l(+key: U32, +s: S.Session, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, d: Up.N4.deleted(key, s, xs)) -> Up.N4.deleted(key, s, List.append(&2, N.Act, xs, ys)):
   (+seq, (+pre, (+post, e))) = d
-  (seq, (pre, (List.append(&2, N.Act, post, ys), Del.app_l.eq(xs, ys, pre, N.Pfcp{Some{S.Session.ue(s)}, Up.N4.delete(S.Session.up_seid(s), seq)}, N.TimerStart{None{}, key, Up.N4.t1_ms()} <> post, e))))
+  (seq, (pre, (List.append(&2, N.Act, post, ys), Del.app_l.eq(xs, ys, pre, N.Pfcp{Some{S.Session.ue(s)}, Up.N4.delete(S.Session.up_seid(s), seq)}, N.TimerStart{None{}, key, S.N4.t1_ms()} <> post, e))))
 
 def Rel.step(+st: S.State, +o: N.GOut(), +skey: U32, +s: S.Session, h: Rel.Spec(o, skey, s)) -> Rel.Law(N.Step.of(st, o), skey, s):
   match o:
     case (+tx, +acts):
       (g, (n, d)) = h
-      (g(st), (kf => n(kf, st), k => eh => Del.app_l(skey, s, acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), d(k, eh))))
+      (g(st), (kf => n(kf, st), k => eh => Del.app_l(skey, s, acts, N.Step.rows(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), d(k, eh))))
 
 def Rel.by(+r: N.Step(), +st: S.State, +o: N.GOut(), +skey: U32, +s: S.Session, eq: {r == N.Step.of(st, o) : N.Step()}, h: Rel.Spec(o, skey, s)) -> Rel.Law(r, skey, s):
   se = Equal.sym(N.Step(), r, N.Step.of(st, o), eq)
@@ -477,7 +477,7 @@ def Del.one(+skey: U32, +s: S.Session, +seq: U32, k: {S.Session.known(s) == True
   sk = Equal.sym(Bool, S.Session.known(s), True{}, k)
   %sk : Up.N4.deleted(skey, s, N.Out.acts(Up.N4.delete_if(skey, s, seq, q => Up.N4.deletions([], q), _)))
   +request = Up.N4.delete(S.Session.up_seid(s), seq)
-  +y : N.Act = N.TimerStart{None{}, skey, Up.N4.t1_ms()}
+  +y : N.Act = N.TimerStart{None{}, skey, S.N4.t1_ms()}
   seh = Equal.sym(Bool, S.SPhase.held(S.Session.phase(s)), True{}, eh)
   (seq, ([], ([], (%seh : {[N.Pfcp{Tb.Table.hit(U32, S.Session.ue(s), None{}, _), request}, y] == List.append(&2, N.Act, [], N.Pfcp{Some{S.Session.ue(s)}, request} <> y <> []) : List<&2, N.Act>}; {==}))))
 
@@ -721,7 +721,7 @@ def Ql.del_if(+key: U32, +t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +
   match b:
     case True{}:
       +request = Up.N4.delete(S.Session.up_seid(t), seq)
-      Ql.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(t), request}, N.TimerStart{None{}, key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
+      Ql.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, []), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
     case False{}:
       Ql.join((S.DelSession{key}, []), Up.N4.deletions(more, seq), {==}, later(seq))
 
@@ -961,7 +961,7 @@ def L.smf.establish.failure_releases(st, entropy, len, bytes, msg, rest, skey, s
 # session's row takes the guard's new count.
 
 def Re.Sent(+r: N.Step(), +skey: U32, +s: S.Session, +v: S.SVar, +request: B.Bytes(), +m: Maybe<&2, U32>) -> Type:
-  {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(r))) == Some{S.Session.with_var(s, v)} : Maybe<&2, S.Session>} & {K.Kernel.actions(r) == [N.Pfcp{m, request}, N.TimerStart{m, skey, Up.N4.t1_ms()}] : List<&2, N.Act>}
+  {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(r))) == Some{S.Session.with_var(s, v)} : Maybe<&2, S.Session>} & {K.Kernel.actions(r) == [N.Pfcp{m, request}, N.TimerStart{m, skey, S.N4.t1_ms()}] : List<&2, N.Act>}
 
 def Re.get_row(+key: U32, +v: S.SVar, +t: S.Session, +more: Tb.Table(S.Session), +s: S.Session, +b: Bool, +ef: {S.SVar.follows(v, s) == True{} : Bool}, +e: {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, key, more), b) == Some{s} : Maybe<&2, S.Session>}, ih: {Tb.Table.get(S.Session, key, more) == Some{s} : Maybe<&2, S.Session>} -> {Tb.Table.get(S.Session, key, S.Sessions.revar(key, v, more)) == Some{S.Session.with_var(s, v)} : Maybe<&2, S.Session>}) -> {Tb.Table.hit(S.Session, S.Session.revar_if(t, v, Bool.and(b, S.SVar.follows(v, t))), Tb.Table.get(S.Session, key, S.Sessions.revar(key, v, more)), b) == Some{S.Session.with_var(s, v)} : Maybe<&2, S.Session>}:
   match b:
@@ -981,7 +981,7 @@ def Re.get(+key: U32, +v: S.SVar, ss: Tb.Table(S.Session), +s: S.Session, +ef: {
     case (+k0, +t) <> +more:
       Re.get_row(key, v, t, more, s, U32.is_eq(k0, key), ef, e, ih => Re.get(key, v, more, s, ef, ih))
 
-def Re.out(+st: S.State, +skey: U32, +s: S.Session, +v: S.SVar, +request: B.Bytes(), +eg: {Tb.Table.get(S.Session, skey, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +ef: {S.SVar.follows(v, s) == True{} : Bool}) -> Re.Sent(N.Step.of(st, (S.Revar{skey, v}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}])), skey, s, v, request, S.Session.tag(s)):
+def Re.out(+st: S.State, +skey: U32, +s: S.Session, +v: S.SVar, +request: B.Bytes(), +eg: {Tb.Table.get(S.Session, skey, S.State.sessions(st)) == Some{s} : Maybe<&2, S.Session>}, +ef: {S.SVar.follows(v, s) == True{} : Bool}) -> Re.Sent(N.Step.of(st, (S.Revar{skey, v}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, S.N4.t1_ms()}])), skey, s, v, request, S.Session.tag(s)):
   match st:
     case S.State{config, subs, assocs, ues, +sessions, pfcp_seq, next_ue, n4}:
       (Re.get(skey, v, sessions, s, ef, eg), {==})
@@ -1001,7 +1001,7 @@ def Re.fired(+st: S.State, +entropy: B.Bytes(), +skey: U32, +s: S.Session, +p: S
   %sex : Re.Sent(N.Step.of(st, _), skey, s, v, request, m)
   ser = Equal.sym(Bool, U32.is_lt(retries, Up.N4.n1()), True{}, er)
   %ser : Re.Sent(N.Step.of(st, Gsm.Gsm.resend_if(skey, s, q, request, fail, _)), skey, s, v, request, m)
-  %em : Re.Sent(N.Step.of(st, (S.Revar{skey, v}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}])), skey, s, v, request, _)
+  %em : Re.Sent(N.Step.of(st, (S.Revar{skey, v}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, S.N4.t1_ms()}])), skey, s, v, request, _)
   Re.out(st, skey, s, v, request, eg, ef)
 
 def L.smf.request.retransmitted(st, entropy, skey, s, guard, pti, accept, request, et, eg, er):
@@ -1394,7 +1394,7 @@ def Hd.del_ne(+st: S.State, +k: U32, +acts: List<&2, N.Act>, +skey: U32, +s0: S.
 def Hd.resent(+st: S.State, +k: U32, +t: S.Session, +p: S.SPhase, +request: B.Bytes(), +note: N.Act, +more: Bool, +skey: U32, +s0: S.Session, +ne: {U32.is_eq(skey, k) == False{} : Bool}, +e0: {Tb.Table.get(S.Session, skey, S.State.sessions(st)) == Some{s0} : Maybe<&2, S.Session>}) -> Hd.Q(skey, s0, N.Step.of(st, Gsm.Gsm.resend_if(k, t, p, request, (S.DelSession{k}, [note]), more))):
   match more:
     case True{}:
-      Hd.revar_ne(st, k, S.SVar{S.Session.up_seid(t), S.Session.seq(t), p}, [N.Pfcp{S.Session.tag(t), request}, N.TimerStart{S.Session.tag(t), k, Up.N4.t1_ms()}], skey, s0, ne, e0)
+      Hd.revar_ne(st, k, S.SVar{S.Session.up_seid(t), S.Session.seq(t), p}, [N.Pfcp{S.Session.tag(t), request}, N.TimerStart{S.Session.tag(t), k, S.N4.t1_ms()}], skey, s0, ne, e0)
     case False{}:
       Hd.del_ne(st, k, [note], skey, s0, ne, e0)
 
