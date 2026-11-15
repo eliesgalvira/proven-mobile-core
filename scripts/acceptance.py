@@ -6,9 +6,15 @@ must be stated as `law <name>:` in LAWS.bend and proven as `def L.<name>(` in
 PROOF.bend or kernel/proofs/*.bend. Without --strict, only laws whose ticket is `done` in
 loop/progress.md are required. A law is tied to the ticket in docs/spec/tickets/
 that names it.
+
+With --base REF, every law stated in REF's kernel/LAWS.bend must be stated
+there now with the same text, or be listed in loop/law-changes.md with why its
+new statement is not weaker. A listed law whose text did not change fails too,
+so the list holds only what the next merge into main must review.
 """
 import glob
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -44,9 +50,26 @@ def done_tickets():
     return done
 
 
+def statements(text):
+    laws = {}
+    for m in re.finditer(r"^law\s+(\S+):\n((?:[ \t].*\n?)*)", text, re.M):
+        laws[m.group(1)] = " ".join(m.group(2).split())
+    return laws
+
+
+def changed_laws(base, laws):
+    old = statements(subprocess.run(["git", "show", f"{base}:kernel/LAWS.bend"], cwd=ROOT, check=True, capture_output=True, text=True).stdout)
+    changed = {name for name, text in old.items() if laws.get(name) != text}
+    listed = set(re.findall(r"^- `([^`]+)`", (ROOT / "loop/law-changes.md").read_text(), re.M))
+    return [f"{name}: statement differs from {base}; keep the old one or list it in loop/law-changes.md" for name in sorted(changed - listed)] + [
+        f"{name}: listed in loop/law-changes.md but its statement is as in {base}; delete the entry" for name in sorted(listed - changed)]
+
+
 def main():
-    strict = "--strict" in sys.argv[1:]
-    stated = set(re.findall(r"^law\s+(\S+):", (ROOT / "kernel/LAWS.bend").read_text(), re.M))
+    args = sys.argv[1:]
+    strict = "--strict" in args
+    laws = statements((ROOT / "kernel/LAWS.bend").read_text())
+    stated = set(laws)
     proof_files = [ROOT / "kernel/PROOF.bend", *glob.glob(str(ROOT / "kernel/proofs/*.bend"))]
     proven = set()
     for path in proof_files:
@@ -67,6 +90,8 @@ def main():
             failures.append(f"{law}: not stated in kernel/LAWS.bend (ticket {ticket})")
         elif law not in proven:
             failures.append(f"{law}: open, no proof in kernel/PROOF.bend (ticket {ticket})")
+    if "--base" in args:
+        failures.extend(changed_laws(args[args.index("--base") + 1], laws))
     for failure in failures:
         print("FAIL", failure)
     mode = "strict" if strict else "done tickets only"
