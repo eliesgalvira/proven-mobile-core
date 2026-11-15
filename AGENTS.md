@@ -45,7 +45,7 @@ The milestone specs are `docs/spec/milestone-1.md` and `docs/spec/milestone-2.md
 3. **Pick.** Take the first ticket that is `in-progress` (resume it) or `todo` with every dependency `done`. Mark it `in-progress`, commit, push.
 4. **Build.** Read the ticket and the spec overview. Work test-first with the `tdd` skill. The seams a ticket lists count as agreed with the user. Order: laws into `kernel/LAWS.bend`, then tests, then code and proofs.
 5. **Commit and push often.** Commit after each green step, and push at least every 30 minutes and at the end of each ticket. Elies can stop the session at any moment and must lose nothing.
-6. **Done.** When the ticket's Verify command and `scripts/check.nu` both pass, mark it `done` in `loop/progress.md` with the commit hash and one line on what was built. Commit and push.
+6. **Done.** When the ticket's Verify command and `scripts/check.nu` both pass, mark it `done` in `loop/progress.md` with the commit hash and one line on what was built. Commit and push. A Verify command chaining `scripts/test-kernel.nu --strict`, `scripts/acceptance.py --strict` and `scripts/check.nu` is `scripts/check.nu --strict` alone.
 7. **Blocked.** Never wait for a human. When something blocks a ticket (a law you can't prove after real effort, a missing tool, a Bend bug, a contradiction in the spec):
    - add an entry to `loop/blockers.md`: the ticket, what you tried, the smallest reproduction, and what would unblock it;
    - mark the ticket `blocked`, or `needs-human` if only a human can act;
