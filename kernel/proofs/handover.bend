@@ -415,17 +415,17 @@ def So.parts(+ues: Tb.Table(S.Ue), +e: {Bool.and(S.Ues.unique(ues), S.Ues.single
 def So.part2(+ues: Tb.Table(S.Ue), +e: {Bool.and(S.Ues.unique(ues), S.Ues.single(ues)) == True{} : Bool}) -> {S.Ues.single(ues) == True{} : Bool}:
   P.Bool.and_true_r(S.Ues.unique(ues), S.Ues.single(ues), e)
 
-def So.tx_put(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
+def So.tx_put(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homedw(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
   +hs = P.Bool.and_true_l(S.Ue.single(ue), PL.Lv.home(st0, ue), P.Bool.and_true_r(S.Phase.guarded(S.Ue.phase(ue)), Bool.and(S.Ue.single(ue), PL.Lv.home(st0, ue)), P.Bool.and_true_r(PL.Lv.keyed(st0, key), Bool.and(S.Phase.guarded(S.Ue.phase(ue)), Bool.and(S.Ue.single(ue), PL.Lv.home(st0, ue))), h)))
   P.Bool.and_intro(S.Ues.unique(S.Ues.put(key, ue, ues)), S.Ues.single(S.Ues.put(key, ue, ues)), PL.Un.tx_put(st0, ep, key, ue, ues, ss, So.parts(ues, e), h), P.Bool.and_intro(S.Ue.single(ue), S.Ues.single(S.Ues.sift(S.Clear{key, ue}, ues)), hs, So.sift(S.Clear{key, ue}, ues, So.part2(ues, e))))
 
-def So.tx_rephase(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homed(st0, S.Rephase{key, p}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
+def So.tx_rephase(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homedw(st0, S.Rephase{key, p}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
   P.Bool.and_intro(S.Ues.unique(S.Ues.rephase(key, p, ues)), S.Ues.single(S.Ues.rephase(key, p, ues)), PL.Un.tx_rephase(st0, ep, key, p, ues, ss, So.parts(ues, e), h), So.rephase(key, p, ues, So.parts(ues, e), So.part2(ues, e), P.Bool.and_true_r(S.Phase.guarded(p), S.Ue.fits(p, Tb.Table.get(S.Ue, key, ues)), h)))
 
 def So.tx_del(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}) -> {So.inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}:
   P.Bool.and_intro(S.Ues.unique(S.Ues.del(key, ues)), S.Ues.single(S.Ues.del(key, ues)), PL.Un.tx_del(st0, ep, key, ues, ss, So.parts(ues, e)), So.sift(S.Except{key}, ues, So.part2(ues, e)))
 
-def So.tx_put_session(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {So.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
+def So.tx_put_session(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homedw(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {So.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
   e
 
 def So.tx_revar(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.revar_ok(st0, v) == True{} : Bool}) -> {So.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
