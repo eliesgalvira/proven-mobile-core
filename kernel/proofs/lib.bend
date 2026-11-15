@@ -828,6 +828,13 @@ def Bool.or_r(+a: Bool, +b: Bool, +e: {b == True{} : Bool}) -> {Bool.or(a, b) ==
     case False{}:
       e
 
+def Bool.or_false(+a: Bool, +b: Bool, +ea: {a == False{} : Bool}, +eb: {b == False{} : Bool}) -> {Bool.or(a, b) == False{} : Bool}:
+  match a:
+    case True{}:
+      Empty.absurd({Bool.or(True{}, b) == False{} : Bool}, Refute.true_false(ea))
+    case False{}:
+      eb
+
 def Bool.or_true_l(a: Bool, +b: Bool, eb: {b == False{} : Bool}, e: {Bool.or(a, b) == True{} : Bool}) -> {a == True{} : Bool}:
   match a:
     case True{}:

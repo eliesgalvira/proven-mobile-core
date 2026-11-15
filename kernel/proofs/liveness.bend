@@ -204,8 +204,29 @@ def Lv.tag(+st: S.State, m: Maybe<&2, U32>) -> Bool:
     case Some{x}:
       Lv.live(st, x)
 
-def Lv.act(+st: S.State, +a: N.Act) -> Bool:
+# An action of any step: no answer to NG Setup, built from live keys only.
+def Lv.actw(+st: S.State, +a: N.Act) -> Bool:
   Bool.and(Bool.not(N.Ngap.is_ng_setup_response(a)), Lv.tag(st, N.Act.ue(a)))
+
+def Lv.actsw(+st: S.State, as: List<&2, N.Act>) -> Bool:
+  match as:
+    case Nil{}:
+      True{}
+    case +a <> more:
+      Bool.and(Lv.actw(st, a), Lv.actsw(st, more))
+
+# An action of a UE procedure stops only a context's guard: a session's guard
+# stops only when the UPF settles the session (Lv.okw) or its row goes
+# (N.Gone.cancels).
+def Lv.reach(+st: S.State, +a: N.Act) -> Bool:
+  match a:
+    case N.TimerCancel{+t}:
+      Tb.Table.has(S.Ue, t, S.State.ues(st))
+    case _:
+      Lv.tag(st, N.Act.ue(a))
+
+def Lv.act(+st: S.State, +a: N.Act) -> Bool:
+  Bool.and(Bool.not(N.Ngap.is_ng_setup_response(a)), Lv.reach(st, a))
 
 def Lv.acts(+st: S.State, as: List<&2, N.Act>) -> Bool:
   match as:
@@ -213,6 +234,27 @@ def Lv.acts(+st: S.State, as: List<&2, N.Act>) -> Bool:
       True{}
     case +a <> more:
       Bool.and(Lv.act(st, a), Lv.acts(st, more))
+
+# A deletion a transaction starts has a guard that has not fired, its request
+# among the actions, which start its guard; a session it puts is not being
+# deleted.
+def Lv.arms_p(+k: U32, p: S.SPhase, +acts: List<&2, N.Act>) -> Bool:
+  match p:
+    case S.Deleting{guard, +request}:
+      Bool.and(U32.is_eq(S.Guard.retries(guard), 0), Bool.and(N.Acts.sends(request, acts), N.Acts.starts(k, acts)))
+    case _:
+      True{}
+
+def Lv.arms(tx: S.Tx, +acts: List<&2, N.Act>) -> Bool:
+  match tx:
+    case S.Revar{+key, v}:
+      Lv.arms_p(key, S.SVar.phase(v), acts)
+    case S.PutSession{key, +s}:
+      S.SPhase.held(S.Session.phase(s))
+    case S.Both{a, b}:
+      Bool.and(Lv.arms(a, acts), Lv.arms(b, acts))
+    case _:
+      True{}
 
 # A session's variable part agrees with the UPF.
 def Lv.var_ok(+v: S.SVar) -> Bool:
@@ -337,15 +379,17 @@ def Lv.idle_fits(+p: S.Phase, +m: Maybe<&2, S.Ue>, +e: {S.Phase.idle(p) == True{
     case Some{+w}:
       Lv.idle_owned(p, S.Ue.assoc(w), e)
 
-# An outcome puts no session (okf), or only sessions of contexts (ok).
+# An outcome puts no session (okf), or only sessions of contexts (ok); what it
+# starts deleting it asks the UPF to delete under a guard it starts (Lv.arms).
+# Every outcome, those that settle a session included, is okw.
 def Lv.okf(+st: S.State, +o: N.GOut()) -> Bool:
-  Bool.and(Lv.acts(st, N.Out.acts(o)), Lv.free(st, N.Out.tx(o)))
+  Bool.and(Lv.acts(st, N.Out.acts(o)), Bool.and(Lv.arms(N.Out.tx(o), N.Out.acts(o)), Lv.free(st, N.Out.tx(o))))
 
 def Lv.ok(+st: S.State, +o: N.GOut()) -> Bool:
-  Bool.and(Lv.acts(st, N.Out.acts(o)), Lv.homed(st, N.Out.tx(o), S.State.ues(st)))
+  Bool.and(Lv.acts(st, N.Out.acts(o)), Bool.and(Lv.arms(N.Out.tx(o), N.Out.acts(o)), Lv.homed(st, N.Out.tx(o), S.State.ues(st))))
 
 def Lv.okw(+st: S.State, +o: N.GOut()) -> Bool:
-  Bool.and(Lv.acts(st, N.Out.acts(o)), Lv.homedw(st, N.Out.tx(o), S.State.ues(st)))
+  Bool.and(Lv.actsw(st, N.Out.acts(o)), Lv.homedw(st, N.Out.tx(o), S.State.ues(st)))
 
 # Composing outcomes
 # ------------------
@@ -380,7 +424,8 @@ def Lv.free_homed(+st: S.State, +tx: S.Tx, +ues: Tb.Table(S.Ue), +e: {Lv.free(st
 def Lv.ok_of(+st: S.State, +o: N.GOut(), +h: {Lv.okf(st, o) == True{} : Bool}) -> {Lv.ok(st, o) == True{} : Bool}:
   match o:
     case (+tx, +acts):
-      P.Bool.and_intro(Lv.acts(st, acts), Lv.homed(st, tx, S.State.ues(st)), P.Bool.and_true_l(Lv.acts(st, acts), Lv.free(st, tx), h), Lv.free_homed(st, tx, S.State.ues(st), P.Bool.and_true_r(Lv.acts(st, acts), Lv.free(st, tx), h)))
+      +hr = P.Bool.and_true_r(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.free(st, tx)), h)
+      P.Bool.and_intro(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.homed(st, tx, S.State.ues(st))), P.Bool.and_true_l(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.free(st, tx)), h), P.Bool.and_intro(Lv.arms(tx, acts), Lv.homed(st, tx, S.State.ues(st)), P.Bool.and_true_l(Lv.arms(tx, acts), Lv.free(st, tx), hr), Lv.free_homed(st, tx, S.State.ues(st), P.Bool.and_true_r(Lv.arms(tx, acts), Lv.free(st, tx), hr))))
 
 # What every outcome but a deletion's own guard or answer keeps holds of those too.
 def Lv.weak(+st: S.State, +tx: S.Tx, +ues: Tb.Table(S.Ue), +h: {Lv.homed(st, tx, ues) == True{} : Bool}) -> {Lv.homedw(st, tx, ues) == True{} : Bool}:
@@ -413,7 +458,8 @@ def Lv.weak(+st: S.State, +tx: S.Tx, +ues: Tb.Table(S.Ue), +h: {Lv.homed(st, tx,
 def Lv.ok_w(+st: S.State, +o: N.GOut(), +h: {Lv.ok(st, o) == True{} : Bool}) -> {Lv.okw(st, o) == True{} : Bool}:
   match o:
     case (+tx, +acts):
-      P.Bool.and_intro(Lv.acts(st, acts), Lv.homedw(st, tx, S.State.ues(st)), P.Bool.and_true_l(Lv.acts(st, acts), Lv.homed(st, tx, S.State.ues(st)), h), Lv.weak(st, tx, S.State.ues(st), P.Bool.and_true_r(Lv.acts(st, acts), Lv.homed(st, tx, S.State.ues(st)), h)))
+      +hr = P.Bool.and_true_r(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.homed(st, tx, S.State.ues(st))), h)
+      P.Bool.and_intro(Lv.actsw(st, acts), Lv.homedw(st, tx, S.State.ues(st)), Lv.acts_w(st, acts, P.Bool.and_true_l(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.homed(st, tx, S.State.ues(st))), h)), Lv.weak(st, tx, S.State.ues(st), P.Bool.and_true_r(Lv.arms(tx, acts), Lv.homed(st, tx, S.State.ues(st)), hr)))
 
 def Lv.okf_w(+st: S.State, +o: N.GOut(), +h: {Lv.okf(st, o) == True{} : Bool}) -> {Lv.okw(st, o) == True{} : Bool}:
   Lv.ok_w(st, o, Lv.ok_of(st, o, h))
@@ -428,39 +474,217 @@ def Lv.append(+st: S.State, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +hx: {Lv
     case +a <> +more:
       Lv.cons(st, a, List.append(&2, N.Act, more, ys), P.Bool.and_true_l(Lv.act(st, a), Lv.acts(st, more), hx), Lv.append(st, more, ys, P.Bool.and_true_r(Lv.act(st, a), Lv.acts(st, more), hx), hy))
 
-def Lv.leaf(+st: S.State, +tx: S.Tx, +as: List<&2, N.Act>, +ha: {Lv.acts(st, as) == True{} : Bool}, +hf: {Lv.free(st, tx) == True{} : Bool}) -> {Lv.okf(st, (tx, as)) == True{} : Bool}:
-  P.Bool.and_intro(Lv.acts(st, as), Lv.free(st, tx), ha, hf)
+def Lv.appendw(+st: S.State, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +hx: {Lv.actsw(st, xs) == True{} : Bool}, +hy: {Lv.actsw(st, ys) == True{} : Bool}) -> {Lv.actsw(st, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      hy
+    case +a <> +more:
+      P.Bool.and_intro(Lv.actw(st, a), Lv.actsw(st, List.append(&2, N.Act, more, ys)), P.Bool.and_true_l(Lv.actw(st, a), Lv.actsw(st, more), hx), Lv.appendw(st, more, ys, P.Bool.and_true_r(Lv.actw(st, a), Lv.actsw(st, more), hx), hy))
+
+def Lv.act_w(+st: S.State, +a: N.Act, +h: {Lv.act(st, a) == True{} : Bool}) -> {Lv.actw(st, a) == True{} : Bool}:
+  match a:
+    case N.TimerCancel{t}:
+      {==}
+    case N.DlNas{assoc, stream, key, ran_id, nas}:
+      h
+    case N.Ics{assoc, stream, key, ran_id, cfg, caps, k_gnb, nas}:
+      h
+    case N.PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
+      h
+    case N.Release{assoc, stream, key, ran_id, cause}:
+      h
+    case N.SwitchAck{assoc, stream, key, ran_id, caps, nh, switched, released, sst}:
+      h
+    case N.SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
+      h
+    case N.UeSend{assoc, stream, key, bytes}:
+      h
+    case N.ErrInd{assoc, cause}:
+      h
+    case N.Setup{assoc, answer}:
+      h
+    case N.Pfcp{ue, bytes}:
+      h
+    case N.Note{level, text}:
+      h
+    case N.TimerStart{ue, timer, ms}:
+      h
+
+def Lv.acts_w(+st: S.State, +as: List<&2, N.Act>, +h: {Lv.acts(st, as) == True{} : Bool}) -> {Lv.actsw(st, as) == True{} : Bool}:
+  match as:
+    case Nil{}:
+      {==}
+    case +a <> +more:
+      P.Bool.and_intro(Lv.actw(st, a), Lv.actsw(st, more), Lv.act_w(st, a, P.Bool.and_true_l(Lv.act(st, a), Lv.acts(st, more), h)), Lv.acts_w(st, more, P.Bool.and_true_r(Lv.act(st, a), Lv.acts(st, more), h)))
+
+# What an outcome's actions say of the deletions it starts stays said with
+# more actions on either side.
+def Lv.or_mono(+x: Bool, +y: Bool, +z: Bool, +h: {Bool.or(x, y) == True{} : Bool}, f: {y == True{} : Bool} -> {z == True{} : Bool}) -> {Bool.or(x, z) == True{} : Bool}:
+  match x:
+    case True{}:
+      {==}
+    case False{}:
+      f(h)
+
+def Lv.starts_l(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.starts(k, xs) == True{} : Bool}) -> {N.Acts.starts(k, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, [], ys)) == True{} : Bool}, P.Refute.bool(h))
+    case +a <> +more:
+      Lv.or_mono(N.Act.starts(k, a), N.Acts.starts(k, more), N.Acts.starts(k, List.append(&2, N.Act, more, ys)), h, hm => Lv.starts_l(k, more, ys, hm))
+
+def Lv.starts_r(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.starts(k, ys) == True{} : Bool}) -> {N.Acts.starts(k, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case +a <> +more:
+      P.Bool.or_r(N.Act.starts(k, a), N.Acts.starts(k, List.append(&2, N.Act, more, ys)), Lv.starts_r(k, more, ys, h))
+
+def Lv.sends_l(+r: B.Bytes(), +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.sends(r, xs) == True{} : Bool}) -> {N.Acts.sends(r, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      Empty.absurd({N.Acts.sends(r, List.append(&2, N.Act, [], ys)) == True{} : Bool}, P.Refute.bool(h))
+    case +a <> +more:
+      Lv.or_mono(N.Act.sends(r, a), N.Acts.sends(r, more), N.Acts.sends(r, List.append(&2, N.Act, more, ys)), h, hm => Lv.sends_l(r, more, ys, hm))
+
+def Lv.sends_r(+r: B.Bytes(), +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.sends(r, ys) == True{} : Bool}) -> {N.Acts.sends(r, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case +a <> +more:
+      P.Bool.or_r(N.Act.sends(r, a), N.Acts.sends(r, List.append(&2, N.Act, more, ys)), Lv.sends_r(r, more, ys, h))
+
+def Lv.arms_pl(+k: U32, +p: S.SPhase, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {Lv.arms_p(k, p, xs) == True{} : Bool}) -> {Lv.arms_p(k, p, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match p:
+    case S.Deleting{+guard, +request}:
+      +z = U32.is_eq(S.Guard.retries(guard), 0)
+      +hr = P.Bool.and_true_r(z, Bool.and(N.Acts.sends(request, xs), N.Acts.starts(k, xs)), h)
+      P.Bool.and_intro(z, Bool.and(N.Acts.sends(request, List.append(&2, N.Act, xs, ys)), N.Acts.starts(k, List.append(&2, N.Act, xs, ys))), P.Bool.and_true_l(z, Bool.and(N.Acts.sends(request, xs), N.Acts.starts(k, xs)), h), P.Bool.and_intro(N.Acts.sends(request, List.append(&2, N.Act, xs, ys)), N.Acts.starts(k, List.append(&2, N.Act, xs, ys)), Lv.sends_l(request, xs, ys, P.Bool.and_true_l(N.Acts.sends(request, xs), N.Acts.starts(k, xs), hr)), Lv.starts_l(k, xs, ys, P.Bool.and_true_r(N.Acts.sends(request, xs), N.Acts.starts(k, xs), hr))))
+    case S.Creating{guard, pti, accept, request}:
+      {==}
+    case S.Setting{guard, pti}:
+      {==}
+    case S.Modifying{guard, request}:
+      {==}
+    case S.Repointing{guard, request}:
+      {==}
+    case S.Active{}:
+      {==}
+
+def Lv.arms_pr(+k: U32, +p: S.SPhase, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {Lv.arms_p(k, p, ys) == True{} : Bool}) -> {Lv.arms_p(k, p, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match p:
+    case S.Deleting{+guard, +request}:
+      +z = U32.is_eq(S.Guard.retries(guard), 0)
+      +hr = P.Bool.and_true_r(z, Bool.and(N.Acts.sends(request, ys), N.Acts.starts(k, ys)), h)
+      P.Bool.and_intro(z, Bool.and(N.Acts.sends(request, List.append(&2, N.Act, xs, ys)), N.Acts.starts(k, List.append(&2, N.Act, xs, ys))), P.Bool.and_true_l(z, Bool.and(N.Acts.sends(request, ys), N.Acts.starts(k, ys)), h), P.Bool.and_intro(N.Acts.sends(request, List.append(&2, N.Act, xs, ys)), N.Acts.starts(k, List.append(&2, N.Act, xs, ys)), Lv.sends_r(request, xs, ys, P.Bool.and_true_l(N.Acts.sends(request, ys), N.Acts.starts(k, ys), hr)), Lv.starts_r(k, xs, ys, P.Bool.and_true_r(N.Acts.sends(request, ys), N.Acts.starts(k, ys), hr))))
+    case S.Creating{guard, pti, accept, request}:
+      {==}
+    case S.Setting{guard, pti}:
+      {==}
+    case S.Modifying{guard, request}:
+      {==}
+    case S.Repointing{guard, request}:
+      {==}
+    case S.Active{}:
+      {==}
+
+def Lv.arms_l(+tx: S.Tx, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {Lv.arms(tx, xs) == True{} : Bool}) -> {Lv.arms(tx, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match tx:
+    case S.Revar{+key, +v}:
+      Lv.arms_pl(key, S.SVar.phase(v), xs, ys, h)
+    case S.PutSession{key, s}:
+      h
+    case S.Both{+a, +b}:
+      P.Bool.and_intro(Lv.arms(a, List.append(&2, N.Act, xs, ys)), Lv.arms(b, List.append(&2, N.Act, xs, ys)), Lv.arms_l(a, xs, ys, P.Bool.and_true_l(Lv.arms(a, xs), Lv.arms(b, xs), h)), Lv.arms_l(b, xs, ys, P.Bool.and_true_r(Lv.arms(a, xs), Lv.arms(b, xs), h)))
+    case S.Keep{}:
+      {==}
+    case S.Put{key, ue}:
+      {==}
+    case S.Rephase{key, phase}:
+      {==}
+    case S.Del{key}:
+      {==}
+    case S.DelSession{key}:
+      {==}
+    case S.Subs{subs}:
+      {==}
+    case S.SetLink{link}:
+      {==}
+    case S.BumpUe{bk}:
+      {==}
+    case S.BumpSeq{n}:
+      {==}
+
+def Lv.arms_r(+tx: S.Tx, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {Lv.arms(tx, ys) == True{} : Bool}) -> {Lv.arms(tx, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
+  match tx:
+    case S.Revar{+key, +v}:
+      Lv.arms_pr(key, S.SVar.phase(v), xs, ys, h)
+    case S.PutSession{key, s}:
+      h
+    case S.Both{+a, +b}:
+      P.Bool.and_intro(Lv.arms(a, List.append(&2, N.Act, xs, ys)), Lv.arms(b, List.append(&2, N.Act, xs, ys)), Lv.arms_r(a, xs, ys, P.Bool.and_true_l(Lv.arms(a, ys), Lv.arms(b, ys), h)), Lv.arms_r(b, xs, ys, P.Bool.and_true_r(Lv.arms(a, ys), Lv.arms(b, ys), h)))
+    case S.Keep{}:
+      {==}
+    case S.Put{key, ue}:
+      {==}
+    case S.Rephase{key, phase}:
+      {==}
+    case S.Del{key}:
+      {==}
+    case S.DelSession{key}:
+      {==}
+    case S.Subs{subs}:
+      {==}
+    case S.SetLink{link}:
+      {==}
+    case S.BumpUe{bk}:
+      {==}
+    case S.BumpSeq{n}:
+      {==}
+
+def Lv.leaf(+st: S.State, +tx: S.Tx, +as: List<&2, N.Act>, +ha: {Lv.acts(st, as) == True{} : Bool}, +hf: {Bool.and(Lv.arms(tx, as), Lv.free(st, tx)) == True{} : Bool}) -> {Lv.okf(st, (tx, as)) == True{} : Bool}:
+  P.Bool.and_intro(Lv.acts(st, as), Bool.and(Lv.arms(tx, as), Lv.free(st, tx)), ha, hf)
 
 def Lv.prepend(+st: S.State, +a: N.Act, +o: N.GOut(), +ha: {Lv.act(st, a) == True{} : Bool}, +h: {Lv.okf(st, o) == True{} : Bool}) -> {Lv.okf(st, N.Out.prepend(a, o)) == True{} : Bool}:
   match o:
     case (+tx, +acts):
-      Lv.leaf(st, tx, a <> acts, Lv.cons(st, a, acts, ha, P.Bool.and_true_l(Lv.acts(st, acts), Lv.free(st, tx), h)), P.Bool.and_true_r(Lv.acts(st, acts), Lv.free(st, tx), h))
+      +hr = P.Bool.and_true_r(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.free(st, tx)), h)
+      Lv.leaf(st, tx, a <> acts, Lv.cons(st, a, acts, ha, P.Bool.and_true_l(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.free(st, tx)), h)), P.Bool.and_intro(Lv.arms(tx, a <> acts), Lv.free(st, tx), Lv.arms_r(tx, [a], acts, P.Bool.and_true_l(Lv.arms(tx, acts), Lv.free(st, tx), hr)), P.Bool.and_true_r(Lv.arms(tx, acts), Lv.free(st, tx), hr)))
 
 def Lv.also(+st: S.State, +o: N.GOut(), +more: List<&2, N.Act>, +h: {Lv.okf(st, o) == True{} : Bool}, +hm: {Lv.acts(st, more) == True{} : Bool}) -> {Lv.okf(st, N.Out.also(o, more)) == True{} : Bool}:
   match o:
     case (+tx, +acts):
-      Lv.leaf(st, tx, List.append(&2, N.Act, acts, more), Lv.append(st, acts, more, P.Bool.and_true_l(Lv.acts(st, acts), Lv.free(st, tx), h), hm), P.Bool.and_true_r(Lv.acts(st, acts), Lv.free(st, tx), h))
+      +hr = P.Bool.and_true_r(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.free(st, tx)), h)
+      Lv.leaf(st, tx, List.append(&2, N.Act, acts, more), Lv.append(st, acts, more, P.Bool.and_true_l(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), Lv.free(st, tx)), h), hm), P.Bool.and_intro(Lv.arms(tx, List.append(&2, N.Act, acts, more)), Lv.free(st, tx), Lv.arms_l(tx, acts, more, P.Bool.and_true_l(Lv.arms(tx, acts), Lv.free(st, tx), hr)), P.Bool.and_true_r(Lv.arms(tx, acts), Lv.free(st, tx), hr)))
+
+# Two outcomes in order: each one's predicate f of its transaction, the second's
+# under the contexts the first leaves (next), holds of both.
+def Lv.both(+st: S.State, -f: S.Tx -> Bool, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, +fb: Bool, +ha: {Bool.and(Lv.acts(st, aa), Bool.and(Lv.arms(ta, aa), f(ta))) == True{} : Bool}, +hb: {Bool.and(Lv.acts(st, ab), Bool.and(Lv.arms(tb, ab), fb)) == True{} : Bool}) -> {Bool.and(Lv.acts(st, List.append(&2, N.Act, aa, ab)), Bool.and(Lv.arms(S.Both{ta, tb}, List.append(&2, N.Act, aa, ab)), Bool.and(f(ta), fb))) == True{} : Bool}:
+  +ra = P.Bool.and_true_r(Lv.acts(st, aa), Bool.and(Lv.arms(ta, aa), f(ta)), ha)
+  +rb = P.Bool.and_true_r(Lv.acts(st, ab), Bool.and(Lv.arms(tb, ab), fb), hb)
+  +xs = List.append(&2, N.Act, aa, ab)
+  P.Bool.and_intro(Lv.acts(st, xs), Bool.and(Lv.arms(S.Both{ta, tb}, xs), Bool.and(f(ta), fb)), Lv.append(st, aa, ab, P.Bool.and_true_l(Lv.acts(st, aa), Bool.and(Lv.arms(ta, aa), f(ta)), ha), P.Bool.and_true_l(Lv.acts(st, ab), Bool.and(Lv.arms(tb, ab), fb), hb)), P.Bool.and_intro(Lv.arms(S.Both{ta, tb}, xs), Bool.and(f(ta), fb), P.Bool.and_intro(Lv.arms(ta, xs), Lv.arms(tb, xs), Lv.arms_l(ta, aa, ab, P.Bool.and_true_l(Lv.arms(ta, aa), f(ta), ra)), Lv.arms_r(tb, aa, ab, P.Bool.and_true_l(Lv.arms(tb, ab), fb, rb))), P.Bool.and_intro(f(ta), fb, P.Bool.and_true_r(Lv.arms(ta, aa), f(ta), ra), P.Bool.and_true_r(Lv.arms(tb, ab), fb, rb))))
 
 def Lv.join(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Lv.okf(st, a) == True{} : Bool}, +hb: {Lv.okf(st, b) == True{} : Bool}) -> {Lv.okf(st, N.Out.join(a, b)) == True{} : Bool}:
   match a:
     case (+ta, +aa):
       match b:
         case (+tb, +ab):
-          Lv.leaf(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab), Lv.append(st, aa, ab, P.Bool.and_true_l(Lv.acts(st, aa), Lv.free(st, ta), ha), P.Bool.and_true_l(Lv.acts(st, ab), Lv.free(st, tb), hb)), P.Bool.and_intro(Lv.free(st, ta), Lv.free(st, tb), P.Bool.and_true_r(Lv.acts(st, aa), Lv.free(st, ta), ha), P.Bool.and_true_r(Lv.acts(st, ab), Lv.free(st, tb), hb)))
+          Lv.both(st, x => Lv.free(st, x), ta, aa, tb, ab, Lv.free(st, tb), ha, hb)
 
-def Lv.ojoin(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ues: Tb.Table(S.Ue), +ha: {Bool.and(Lv.acts(st, N.Out.acts(a)), Lv.homed(st, N.Out.tx(a), ues)) == True{} : Bool}, +hb: {Bool.and(Lv.acts(st, N.Out.acts(b)), Lv.homed(st, N.Out.tx(b), PT.Tk.ues(N.Out.tx(a), ues))) == True{} : Bool}) -> {Bool.and(Lv.acts(st, N.Out.acts(N.Out.join(a, b))), Lv.homed(st, N.Out.tx(N.Out.join(a, b)), ues)) == True{} : Bool}:
+def Lv.ojoin(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ues: Tb.Table(S.Ue), +ha: {Bool.and(Lv.acts(st, N.Out.acts(a)), Bool.and(Lv.arms(N.Out.tx(a), N.Out.acts(a)), Lv.homed(st, N.Out.tx(a), ues))) == True{} : Bool}, +hb: {Bool.and(Lv.acts(st, N.Out.acts(b)), Bool.and(Lv.arms(N.Out.tx(b), N.Out.acts(b)), Lv.homed(st, N.Out.tx(b), PT.Tk.ues(N.Out.tx(a), ues)))) == True{} : Bool}) -> {Bool.and(Lv.acts(st, N.Out.acts(N.Out.join(a, b))), Bool.and(Lv.arms(N.Out.tx(N.Out.join(a, b)), N.Out.acts(N.Out.join(a, b))), Lv.homed(st, N.Out.tx(N.Out.join(a, b)), ues))) == True{} : Bool}:
   match a:
     case (+ta, +aa):
       match b:
         case (+tb, +ab):
-          P.Bool.and_intro(Lv.acts(st, List.append(&2, N.Act, aa, ab)), Lv.homed(st, S.Both{ta, tb}, ues), Lv.append(st, aa, ab, P.Bool.and_true_l(Lv.acts(st, aa), Lv.homed(st, ta, ues), ha), P.Bool.and_true_l(Lv.acts(st, ab), Lv.homed(st, tb, PT.Tk.ues(ta, ues)), hb)), P.Bool.and_intro(Lv.homed(st, ta, ues), Lv.homed(st, tb, PT.Tk.ues(ta, ues)), P.Bool.and_true_r(Lv.acts(st, aa), Lv.homed(st, ta, ues), ha), P.Bool.and_true_r(Lv.acts(st, ab), Lv.homed(st, tb, PT.Tk.ues(ta, ues)), hb)))
+          Lv.both(st, x => Lv.homed(st, x, ues), ta, aa, tb, ab, Lv.homed(st, tb, PT.Tk.ues(ta, ues)), ha, hb)
 
-def Lv.cancel(+st: S.State, +key: U32, +g: Maybe<&2, S.Guard>) -> {Lv.acts(st, N.Guard.cancel(key, g)) == True{} : Bool}:
+def Lv.cancel(+st: S.State, +key: U32, +g: Maybe<&2, S.Guard>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.acts(st, N.Guard.cancel(key, g)) == True{} : Bool}:
   match g:
     case None{}:
       {==}
     case Some{guard}:
-      {==}
+      P.Bool.and_intro(Lv.act(st, N.TimerCancel{key}), True{}, eh, {==})
 
 # Guards
 # ------
