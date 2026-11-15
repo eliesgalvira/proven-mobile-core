@@ -1,5 +1,7 @@
 # Loop progress
 
+The project began on 2026-10-30 with a feasibility study of Open5GS and Bend 2.
+
 ## Summary (2026-11-07)
 
 - **Milestone 1: tickets 01–23 done**, and the hardening tickets 32–38 the owner's review of 2026-11-03 asked for.
