@@ -95,10 +95,12 @@ Both directories may still be arriving on `main` while the loop runs. A test who
 
 `scripts/check.nu` is the gate. It runs, in order:
 1. the `@unsafe` and foreign-import scan;
-2. `bend kernel/PROOF.bend`;
-3. `bend kernel/PROOF.bend --verdict`;
+2. `scripts/acceptance.py --base origin/main`, which checks that every law named in the advisory log exists in `LAWS.bend` and isn't open, and that every law stated on `main` is stated the same way or listed in `loop/law-changes.md`;
+3. `bend kernel/PROOF.bend --verdict`, which runs the everyday checker first;
 4. every `kernel/tests/*.bend`, each of which must print a line starting `PASS`;
-5. `cargo test` in `edge/`, once it exists;
-6. `scripts/acceptance.py`, which checks that every law named in the advisory log exists in `LAWS.bend` and isn't open.
+5. `cargo test` in `edge/`;
+6. the NGAP generator's check and the pycrate oracle.
+
+`scripts/check.nu --strict` also requires every law the advisory log names, whatever its ticket's status.
 
 A ticket is done only when `scripts/check.nu` passes and the ticket's own verification command does.

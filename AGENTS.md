@@ -45,14 +45,14 @@ The milestone specs are `docs/spec/milestone-1.md` and `docs/spec/milestone-2.md
 3. **Pick.** Take the first ticket that is `in-progress` (resume it) or `todo` with every dependency `done`. Mark it `in-progress`, commit, push.
 4. **Build.** Read the ticket and the spec overview. Work test-first with the `tdd` skill. The seams a ticket lists count as agreed with the user. Order: laws into `kernel/LAWS.bend`, then tests, then code and proofs.
 5. **Commit and push often.** Commit after each green step, and push at least every 30 minutes and at the end of each ticket. Elies can stop the session at any moment and must lose nothing.
-6. **Done.** When the ticket's Verify command and `scripts/check.nu` both pass, mark it `done` in `loop/progress.md` with the commit hash and one line on what was built. Commit and push. A Verify command chaining `scripts/test-kernel.nu --strict`, `scripts/acceptance.py --strict` and `scripts/check.nu` is `scripts/check.nu --strict` alone.
+6. **Done.** When the ticket's Verify command and `scripts/check.nu` both pass, mark it `done` in `loop/progress.md` with the commit hash and one line on what was built. Commit and push.
 7. **Blocked.** Never wait for a human. When something blocks a ticket (a law you can't prove after real effort, a missing tool, a Bend bug, a contradiction in the spec):
    - add an entry to `loop/blockers.md`: the ticket, what you tried, the smallest reproduction, and what would unblock it;
    - mark the ticket `blocked`, or `needs-human` if only a human can act;
    - push, and take the next eligible ticket.
 8. **Bend problems.** Write a draft as § Bend 2 problems says. Don't file anything anywhere and don't open GitHub issues.
 9. **Silent spec.** Where the spec doesn't decide something, choose what the best expert would, add one line with the reason to `loop/decisions.md`, and continue.
-10. **Never weaken the target.** Don't weaken or delete a law, delete a test vector, or edit `docs/spec/`, `docs/security/` or `test-vectors/` to make something pass. Never use `@unsafe` or foreign imports outside `kernel/main.bend`. A law whose statement must change goes in `loop/law-changes.md` with why the new one is not weaker; the gate fails on any other change since `main`.
+10. **Never weaken the target.** Don't weaken or delete a law, delete a test vector, or edit `docs/spec/`, `docs/security/` or `test-vectors/` to make something pass. Never use `@unsafe` or foreign imports outside `kernel/main.bend`. A law whose statement must change goes in `loop/law-changes.md` with why the new one is not weaker; the gate fails on any other law restated since `main`.
 11. **Long commands.** Give every command a timeout. Run anything longer than 5 minutes in the background and poll it. Split heavy checks per file: `scripts/test-kernel.nu name…` runs only the named tests.
 12. **Finish.** When no eligible ticket remains, run `scripts/check.nu`, write a summary at the top of `loop/progress.md` (what's done, blocked and needs-human, and what to do next), push, and stop.
 

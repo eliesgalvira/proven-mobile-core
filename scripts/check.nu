@@ -23,7 +23,7 @@ def main [--strict] {
     error make {msg: "unsafe or foreign code outside kernel/main.bend"}
   }
 
-  step "acceptance list, and no law restated since main unlisted"
+  step "acceptance list, and laws restated since main"
   ^python3 -I scripts/acceptance.py --base origin/main ...(if $strict { [--strict] } else { [] })
 
   step "bend kernel/PROOF.bend --verdict"
