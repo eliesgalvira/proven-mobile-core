@@ -1694,6 +1694,27 @@ law smf.deletion.answered:
   for +ep: {St.Session.phase(s) == St.Deleting{guard, request} : St.SPhase}
   {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>} & {Ng.Acts.stops(skey, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy))) == True{} : Bool}
 
+# A session being deleted stays as it is until its guard fires or the UPF
+# answers its Session Deletion Request (smf.deletion.retransmitted,
+# smf.deletion.answered): no other step changes or forgets its row, so no
+# other session is given its address, TEID or SEID while the UPF may still
+# hold them. It holds in every state where no two sessions share a key or an
+# identity (smf.ip_pool.unique).
+law smf.deletion.held:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +skey: U32
+  for +s: St.Session
+  for +guard: St.Guard
+  for +request: B.Bytes()
+  for +eu: {St.Sessions.unique(St.State.sessions(st)) == True{} : Bool}
+  for +es: {Tb.Table.get(St.Session, skey, St.State.sessions(st)) == Some{s} : Maybe<&2, St.Session>}
+  for +ep: {St.Session.phase(s) == St.Deleting{guard, request} : St.SPhase}
+  for et: {ev == F.TimerFired{skey} : F.Evt} -> Empty
+  for ea: @len:U32 -> @bytes:B.Bytes() -> @msg:Pf.Msg -> @rest:B.Bytes() -> {ev == F.PfcpData{len, bytes} : F.Evt} -> {Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 55 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> Empty
+  {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == Some{s} : Maybe<&2, St.Session>}
+
 # The UPF knows every session past Creating, by the UP SEID it answered with,
 # and none being created, in the initial state and after every step.
 law smf.sessions.known:
