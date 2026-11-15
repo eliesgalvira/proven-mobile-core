@@ -52,8 +52,8 @@ The milestone specs are `docs/spec/milestone-1.md` and `docs/spec/milestone-2.md
    - push, and take the next eligible ticket.
 8. **Bend problems.** Write a draft as § Bend 2 problems says. Don't file anything anywhere and don't open GitHub issues.
 9. **Silent spec.** Where the spec doesn't decide something, choose what the best expert would, add one line with the reason to `loop/decisions.md`, and continue.
-10. **Never weaken the target.** Don't weaken or delete a law, delete a test vector, or edit `docs/spec/`, `docs/security/` or `test-vectors/` to make something pass. Never use `@unsafe` or foreign imports outside `kernel/main.bend`.
-11. **Long commands.** Give every command a timeout. Run anything longer than 5 minutes in the background and poll it. Split heavy checks per file.
+10. **Never weaken the target.** Don't weaken or delete a law, delete a test vector, or edit `docs/spec/`, `docs/security/` or `test-vectors/` to make something pass. Never use `@unsafe` or foreign imports outside `kernel/main.bend`. A law whose statement must change goes in `loop/law-changes.md` with why the new one is not weaker; the gate fails on any other law restated since `main`.
+11. **Long commands.** Give every command a timeout. Run anything longer than 5 minutes in the background and poll it. Split heavy checks per file: `scripts/test-kernel.nu name…` runs only the named tests.
 12. **Finish.** When no eligible ticket remains, run `scripts/check.nu`, write a summary at the top of `loop/progress.md` (what's done, blocked and needs-human, and what to do next), push, and stop.
 
 ## Erasure
