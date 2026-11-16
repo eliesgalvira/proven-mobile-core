@@ -55,8 +55,9 @@ def active(+msgs: List<&2, V.Vec>) -> S.State:
   after(K.Kernel.state(o5), Pc.pfcp_event(Pc.with_seq(hex(msgs, 42n), Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o5))))))
 
 # The state with a copy of its first session after it, under PDU session
-# identity psi, its key, address and TEID moved on by psi, so free when no
-# other copy has the same psi.
+# identity psi, its key, address and TEID moved on by psi, so free when psi
+# is not 0, no other copy has the same psi and the state's only session is
+# the first one.
 def also_session(+psi: U32, ss: Tb.Table(S.Session)) -> Tb.Table(S.Session):
   match ss:
     case (+k, S.Session{S.SId{+ue, +p, +ip, +teid}, +var}) <> more:
