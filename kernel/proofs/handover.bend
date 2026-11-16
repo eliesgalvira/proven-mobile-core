@@ -160,11 +160,6 @@ def Hp.status(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UplinkRANSt
 # Small facts
 # -----------
 
-def Hp.phase_with(+u: S.Ue, +p: S.Phase) -> {S.Ue.phase(S.Ue.with_phase(u, p)) == p : S.Phase}:
-  match u:
-    case S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
-      {==}
-
 def Hp.assoc_moved(+u: S.Ue, +a: U32, +r: B.Bytes(), +s: U32, +p: S.Phase) -> {S.Ue.assoc(S.Ue.moved(u, a, r, s, p)) == a : U32}:
   match u:
     case S.Ue{assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
@@ -265,7 +260,7 @@ def Hp.rephased_none(+st: S.State, +k: U32, +u: S.Ue, +q: S.Phase, +acts: List<&
   %sr : {S.Ue.pending(Tb.Table.get(S.Ue, k, _)) == None{} : Maybe<&2, U32>}
   sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.rephase(k, q, S.State.ues(st))), Some{S.Ue.with_phase(u, q)}, PT.Rephase.self(k, q, u, S.State.ues(st), eg))
   %sg : {S.Ue.pending(_) == None{} : Maybe<&2, U32>}
-  sp = Equal.sym(S.Phase, S.Ue.phase(S.Ue.with_phase(u, q)), q, Hp.phase_with(u, q))
+  sp = Equal.sym(S.Phase, S.Ue.phase(S.Ue.with_phase(u, q)), q, PL.Lv.p_phase(u, q))
   %sp : {S.Phase.pending(_) == None{} : Maybe<&2, U32>}
   en
 
