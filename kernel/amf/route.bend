@@ -49,12 +49,19 @@ def Route.setup(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupReq
       +s = Route.reset(st, assoc)
       (S.State.ready(N.Step.state(s), assoc, N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v)), List.append(&2, N.Act, N.Step.acts(s), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}]))
 
+def Route.d9(st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
+  match ok:
+    case True{}:
+      Gsm.Gsm.release_response_of_view(st, assoc, V.PDUSessionResourceReleaseResponse.view(ies))
+    case False{}:
+      Ho.Ho.route(st, assoc, stream, kind, code, ies)
+
 def Route.d8(st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
       Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))
     case False{}:
-      Ho.Ho.route(st, assoc, stream, kind, code, ies)
+      Route.d9(st, assoc, stream, kind, code, ies, N.Ngap.is_pdu_session_resource_release_response(kind, code))
 
 def Route.d7(st: S.State, +assoc: U32, stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():
   match ok:

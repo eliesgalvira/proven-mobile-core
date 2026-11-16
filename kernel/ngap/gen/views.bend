@@ -1719,6 +1719,166 @@ def NGSetupResponse.v_prelude(r: Result<&2, &2, B.Err, List<&2, Fr.Ie>>) -> Resu
 def NGSetupResponse.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, NGSetupResponse.View>:
   NGSetupResponse.v_prelude(Fr.View.prelude(NGSetupResponse.known(), ies))
 
+# PDUSessionResourceReleaseCommand
+type PDUSessionResourceReleaseCommand.View is Data:
+  PDUSessionResourceReleaseCommand.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, pdusessionresourcetoreleaselistrelcmd: G.PDUSessionResourceToReleaseListRelCmd()}
+
+def PDUSessionResourceReleaseCommand.known() -> List<&2, U32>:
+  [10, 85, 38, 79]
+
+def PDUSessionResourceReleaseCommand.d_pdusessionresourcetoreleaselistrelcmd(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, r: Result<&2, &2, B.Err, G.PDUSessionResourceToReleaseListRelCmd()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{pdusessionresourcetoreleaselistrelcmd}:
+      Done{PDUSessionResourceReleaseCommand.View{amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, pdusessionresourcetoreleaselistrelcmd}}
+
+def PDUSessionResourceReleaseCommand.v_pdusessionresourcetoreleaselistrelcmd(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match m:
+    case None{}:
+      Fail{B.Invalid{79}}
+    case Some{bs}:
+      PDUSessionResourceReleaseCommand.d_pdusessionresourcetoreleaselistrelcmd(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, Fr.View.exact(G.PDUSessionResourceToReleaseListRelCmd(), G.PDUSessionResourceToReleaseListRelCmd.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseCommand.d_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.NAS_PDU()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{nas_pdu}:
+      PDUSessionResourceReleaseCommand.v_pdusessionresourcetoreleaselistrelcmd(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{nas_pdu}, Fr.Ies.lookup(79, ies))
+
+def PDUSessionResourceReleaseCommand.v_nas_pdu(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match m:
+    case None{}:
+      PDUSessionResourceReleaseCommand.v_pdusessionresourcetoreleaselistrelcmd(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(79, ies))
+    case Some{bs}:
+      PDUSessionResourceReleaseCommand.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseCommand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{ran_ue_ngap_id}:
+      PDUSessionResourceReleaseCommand.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(38, ies))
+
+def PDUSessionResourceReleaseCommand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match m:
+    case None{}:
+      Fail{B.Invalid{85}}
+    case Some{bs}:
+      PDUSessionResourceReleaseCommand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseCommand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{amf_ue_ngap_id}:
+      PDUSessionResourceReleaseCommand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies))
+
+def PDUSessionResourceReleaseCommand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match m:
+    case None{}:
+      Fail{B.Invalid{10}}
+    case Some{bs}:
+      PDUSessionResourceReleaseCommand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseCommand.v_prelude(r: Result<&2, &2, B.Err, List<&2, Fr.Ie>>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{+ies}:
+      PDUSessionResourceReleaseCommand.v_amf_ue_ngap_id(ies, Fr.Ies.lookup(10, ies))
+
+def PDUSessionResourceReleaseCommand.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseCommand.View>:
+  PDUSessionResourceReleaseCommand.v_prelude(Fr.View.prelude(PDUSessionResourceReleaseCommand.known(), ies))
+
+# PDUSessionResourceReleaseResponse
+type PDUSessionResourceReleaseResponse.View is Data:
+  PDUSessionResourceReleaseResponse.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcereleasedlistrelres: G.PDUSessionResourceReleasedListRelRes(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, criticalitydiagnostics: Maybe<&2, G.CriticalityDiagnostics>}
+
+def PDUSessionResourceReleaseResponse.known() -> List<&2, U32>:
+  [10, 85, 70, 121, 19]
+
+def PDUSessionResourceReleaseResponse.d_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcereleasedlistrelres: G.PDUSessionResourceReleasedListRelRes(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, r: Result<&2, &2, B.Err, G.CriticalityDiagnostics>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{criticalitydiagnostics}:
+      Done{PDUSessionResourceReleaseResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcereleasedlistrelres, userlocationinformation, Some{criticalitydiagnostics}}}
+
+def PDUSessionResourceReleaseResponse.v_criticalitydiagnostics(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcereleasedlistrelres: G.PDUSessionResourceReleasedListRelRes(), userlocationinformation: Maybe<&2, G.UserLocationInformation>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match m:
+    case None{}:
+      Done{PDUSessionResourceReleaseResponse.View{amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcereleasedlistrelres, userlocationinformation, None{}}}
+    case Some{bs}:
+      PDUSessionResourceReleaseResponse.d_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcereleasedlistrelres, userlocationinformation, Fr.View.exact(G.CriticalityDiagnostics, G.CriticalityDiagnostics.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseResponse.d_userlocationinformation(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcereleasedlistrelres: G.PDUSessionResourceReleasedListRelRes(), r: Result<&2, &2, B.Err, G.UserLocationInformation>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{userlocationinformation}:
+      PDUSessionResourceReleaseResponse.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcereleasedlistrelres, Some{userlocationinformation}, Fr.Ies.lookup(19, ies))
+
+def PDUSessionResourceReleaseResponse.v_userlocationinformation(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), pdusessionresourcereleasedlistrelres: G.PDUSessionResourceReleasedListRelRes(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match m:
+    case None{}:
+      PDUSessionResourceReleaseResponse.v_criticalitydiagnostics(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcereleasedlistrelres, None{}, Fr.Ies.lookup(19, ies))
+    case Some{bs}:
+      PDUSessionResourceReleaseResponse.d_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcereleasedlistrelres, Fr.View.exact(G.UserLocationInformation, G.UserLocationInformation.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseResponse.d_pdusessionresourcereleasedlistrelres(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.PDUSessionResourceReleasedListRelRes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{pdusessionresourcereleasedlistrelres}:
+      PDUSessionResourceReleaseResponse.v_userlocationinformation(ies, amf_ue_ngap_id, ran_ue_ngap_id, pdusessionresourcereleasedlistrelres, Fr.Ies.lookup(121, ies))
+
+def PDUSessionResourceReleaseResponse.v_pdusessionresourcereleasedlistrelres(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match m:
+    case None{}:
+      Fail{B.Invalid{70}}
+    case Some{bs}:
+      PDUSessionResourceReleaseResponse.d_pdusessionresourcereleasedlistrelres(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.PDUSessionResourceReleasedListRelRes(), G.PDUSessionResourceReleasedListRelRes.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseResponse.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{ran_ue_ngap_id}:
+      PDUSessionResourceReleaseResponse.v_pdusessionresourcereleasedlistrelres(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(70, ies))
+
+def PDUSessionResourceReleaseResponse.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match m:
+    case None{}:
+      Fail{B.Invalid{85}}
+    case Some{bs}:
+      PDUSessionResourceReleaseResponse.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseResponse.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{amf_ue_ngap_id}:
+      PDUSessionResourceReleaseResponse.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies))
+
+def PDUSessionResourceReleaseResponse.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match m:
+    case None{}:
+      Fail{B.Invalid{10}}
+    case Some{bs}:
+      PDUSessionResourceReleaseResponse.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})))
+
+def PDUSessionResourceReleaseResponse.v_prelude(r: Result<&2, &2, B.Err, List<&2, Fr.Ie>>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{+ies}:
+      PDUSessionResourceReleaseResponse.v_amf_ue_ngap_id(ies, Fr.Ies.lookup(10, ies))
+
+def PDUSessionResourceReleaseResponse.view(ies: List<&2, Fr.Ie>) -> Result<&2, &2, B.Err, PDUSessionResourceReleaseResponse.View>:
+  PDUSessionResourceReleaseResponse.v_prelude(Fr.View.prelude(PDUSessionResourceReleaseResponse.known(), ies))
+
 # PDUSessionResourceSetupRequest
 type PDUSessionResourceSetupRequest.View is Data:
   PDUSessionResourceSetupRequest.View{amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), nas_pdu: Maybe<&2, G.NAS_PDU()>, pdusessionresourcesetuplistsureq: G.PDUSessionResourceSetupListSUReq(), ueaggregatemaximumbitrate: Maybe<&2, G.UEAggregateMaximumBitRate>}
@@ -2701,6 +2861,8 @@ def View.check(kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> Maybe<&2, Bool>:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, NGSetupRequest.View, NGSetupRequest.view(ies)))}
     case 0n 25n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, PathSwitchRequest.View, PathSwitchRequest.view(ies)))}
+    case 0n 28n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceReleaseCommand.View, PDUSessionResourceReleaseCommand.view(ies)))}
     case 0n 29n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceSetupRequest.View, PDUSessionResourceSetupRequest.view(ies)))}
     case 0n 41n:
@@ -2723,6 +2885,8 @@ def View.check(kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> Maybe<&2, Bool>:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, NGSetupResponse.View, NGSetupResponse.view(ies)))}
     case 1n 25n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, PathSwitchRequestAcknowledge.View, PathSwitchRequestAcknowledge.view(ies)))}
+    case 1n 28n:
+      Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceReleaseResponse.View, PDUSessionResourceReleaseResponse.view(ies)))}
     case 1n 29n:
       Some{Bool.not(Result.is_fail(&2, &2, B.Err, PDUSessionResourceSetupResponse.View, PDUSessionResourceSetupResponse.view(ies)))}
     case 1n 41n:

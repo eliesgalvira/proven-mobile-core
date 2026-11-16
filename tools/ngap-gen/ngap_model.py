@@ -25,12 +25,14 @@ MESSAGES = [
     "HandoverFailure", "HandoverCommand", "HandoverPreparationFailure",
     "HandoverNotify", "HandoverCancel", "HandoverCancelAcknowledge",
     "UplinkRANStatusTransfer", "DownlinkRANStatusTransfer",
+    "PDUSessionResourceReleaseCommand", "PDUSessionResourceReleaseResponse",
 ]
 TRANSFERS = ["PDUSessionResourceSetupRequestTransfer", "PDUSessionResourceSetupResponseTransfer",
              "PathSwitchRequestTransfer", "PathSwitchRequestAcknowledgeTransfer",
              "PathSwitchRequestUnsuccessfulTransfer", "PathSwitchRequestSetupFailedTransfer",
              "HandoverRequiredTransfer", "HandoverCommandTransfer",
-             "HandoverRequestAcknowledgeTransfer", "HandoverResourceAllocationUnsuccessfulTransfer"]
+             "HandoverRequestAcknowledgeTransfer", "HandoverResourceAllocationUnsuccessfulTransfer",
+             "PDUSessionResourceReleaseCommandTransfer", "PDUSessionResourceReleaseResponseTransfer"]
 # Sent by the gNB, so decoded by the AMF. ErrorIndication goes both ways.
 INBOUND = {"NGSetupRequest", "InitialUEMessage", "UplinkNASTransport", "InitialContextSetupResponse",
            "InitialContextSetupFailure", "UEContextReleaseRequest", "UEContextReleaseComplete",
@@ -38,7 +40,8 @@ INBOUND = {"NGSetupRequest", "InitialUEMessage", "UplinkNASTransport", "InitialC
            "PathSwitchRequest", "HandoverRequired", "HandoverRequestAcknowledge", "HandoverFailure",
            "HandoverNotify", "HandoverCancel", "UplinkRANStatusTransfer",
            "PathSwitchRequestTransfer", "PathSwitchRequestSetupFailedTransfer", "HandoverRequiredTransfer",
-           "HandoverRequestAcknowledgeTransfer", "HandoverResourceAllocationUnsuccessfulTransfer"}
+           "HandoverRequestAcknowledgeTransfer", "HandoverResourceAllocationUnsuccessfulTransfer",
+           "PDUSessionResourceReleaseResponse", "PDUSessionResourceReleaseResponseTransfer"}
 # Optional IEs the milestones need beyond the tiers: the PDU session setup
 # results (75, 58) the SMF receives and the aggregate bit rates (110, 130) it
 # sends; the handover session lists that carry a transfer: the sessions a

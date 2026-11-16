@@ -31,6 +31,7 @@ import ./amf/gmm.bend as Gm
 import ./smf/gsm.bend as Gs
 import ./ausf.bend as Au
 import ./smf/n4.bend as Up
+import ./smf/switch.bend as Sw
 import ./amf/path_switch.bend as Ps
 import ./amf/handover.bend as Ho
 
@@ -1507,8 +1508,9 @@ law smf.guard.stopped:
 # An AMF-UE-NGAP-ID of 2^32 or more, which Ng.Ngap.ue_key gives no key for,
 # names no UE context, never the one its low 32 bits would fold onto: a UE
 # Context Release Request or Complete, an Initial Context Setup Response, a
-# PDU Session Resource Setup Response or an Uplink NAS Transport carrying one
-# changes no state, and the only actions are Error Indication and a log line.
+# PDU Session Resource Setup Response, an Uplink NAS Transport or a PDU
+# Session Resource Release Response carrying one changes no state, and the
+# only actions are Error Indication and a log line.
 law amf.ue_key.unknown:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1531,6 +1533,7 @@ law amf.ue_key.unknown:
   for +fails: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>
   for +nas: B.Bytes()
   for +loc: G.UserLocationInformation
+  for +items: G.PDUSessionResourceReleasedListRelRes()
   for +eid: {Ng.Ngap.ue_key(amf) == None{} : Maybe<&2, U32>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
@@ -1539,6 +1542,7 @@ law amf.ue_key.unknown:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 14, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.InitialContextSetupResponse.view(ies) == Done{GV.InitialContextSetupResponse.View{amf, ran, diag}} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, fails, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, loc}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 28, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.PDUSessionResourceReleaseResponse.view(ies) == Done{GV.PDUSessionResourceReleaseResponse.View{amf, ran, items, uli, diag}} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
 
 # smf (ticket 19)
 # ---------------
@@ -1611,7 +1615,14 @@ law smf.establish.reject_leaves_state:
 # set up, or while it is being created or modified once its PFCP request has
 # gone N1 times again (smf.request.retransmitted); the UPF refuses the Session
 # Modification; or the gNB lists the session among those that failed to set
-# up, whatever else its response names.
+# up, whatever else its response names. When the guard fires while the
+# session is being set up, or its Session Modification is refused or goes
+# unanswered, all after the Accept went out in the PDU Session Resource Setup
+# Request, the first action also tells the UE's gNB to release the session,
+# the PDU Session Release Command inside, when the UE holds a NAS context
+# (TS 23.502 §4.3.4.2). A setup response naming the session set up with a
+# tunnel that does not read drops it the same way (Gs.Gsm.modify), which this
+# law does not state: there the session's actions follow the earlier items'.
 law smf.establish.failure_releases:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1643,17 +1654,58 @@ law smf.establish.failure_releases:
   for +diag: Maybe<&2, G.CriticalityDiagnostics>
   for +uli: Maybe<&2, G.UserLocationInformation>
   for +ue: St.Ue
+  for +ctx: N.Nas.Ctx
   for +ek: {St.Sessions.known(St.State.sessions(st)) == True{} : Bool}
   ({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 51 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Creating{guard, pti, accept, request} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
     -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == None{} : Maybe<&2, St.Session>})
   & (({Tb.Table.get(St.Ue, skey, St.State.ues(st)) == None{} : Maybe<&2, St.Ue>} -> {Tb.Table.get(St.Session, skey, St.State.sessions(st)) == Some{s} : Maybe<&2, St.Session>}
-    -> ({St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase} -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))))
+    -> ({St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase} -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))) & ({Tb.Table.get(St.Ue, St.Session.ue(s), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>} -> Gs.Gsm.tells_gnb(ue, ctx, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))))
     & (({St.Session.phase(s) == St.Creating{guard, pti, accept, request} : St.SPhase} -> {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == None{} : Maybe<&2, St.Session>})
-    & ({St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))))))
+    & ({St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {U32.is_lt(St.Guard.retries(guard), Up.N4.n1()) == False{} : Bool} -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy))) & ({Tb.Table.get(St.Ue, St.Session.ue(s), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>} -> Gs.Gsm.tells_gnb(ue, ctx, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.TimerFired{skey}, entropy)))))))
   & (({Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 53 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Modifying{guard, request} : St.SPhase} -> {Up.N4.accepted(Up.N4.cause(msg)) == False{} : Bool}
-    -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy))))
+    -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy))) & ({Tb.Table.get(St.Ue, St.Session.ue(s), St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>} -> Gs.Gsm.tells_gnb(ue, ctx, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.PfcpData{len, bytes}, entropy)))))
   & ({St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool} -> {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
     -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
+
+# What the release messages are, so that the laws naming them
+# (smf.establish.failure_releases, amf.path_switch.stored_capabilities,
+# amf.handover.notify_releases) keep their meaning: the PDU Session Resource
+# Release Command to a UE's gNB (Gs.Gsm.n2_release), and the PDU Session
+# Release Commands in DL NAS Transport for the sessions a handover releases
+# (Gs.Gsm.releases). Each holds PDU Session Release Command #26 sealed under
+# the downlink COUNT of the context given, and leaves the context with the
+# next COUNT: none for no session, the first session's under the context's
+# COUNT and the rest's from the next, the context they leave last.
+law smf.releases.sent:
+  for +key: U32
+  for +assoc: U32
+  for +stream: U32
+  for +ran: B.Bytes()
+  for +p: U32
+  for +more: List<&2, U32>
+  for +ctx: N.Nas.Ctx
+  for +keys: N.Nas.Keys
+  for +dl: N.Nas.Count
+  for +ul: Maybe<&2, N.Nas.Count>
+  for +ue: St.Ue
+  {Gs.Gsm.releases(key, assoc, stream, ran, [], ctx) == (ctx, []) : Sigma<&2, &2, N.Nas.Ctx, _ => List<&2, Ng.Act>>}
+  & {Gs.Gsm.releases(key, assoc, stream, ran, p <> more, N.Ctx{keys, dl, ul}) == (Gs.Gsm.Told.ctx(Gs.Gsm.releases(key, assoc, stream, ran, more, N.Ctx{keys, N.Nas.Count.next(dl), ul})), Ng.DlNas{assoc, stream, key, ran, N.Nas.seal(keys, N.Ciphered{}, N.Nas.downlink(), dl, Gs.Gsm.dl_transport(p, Gs.Gsm.release_command(p)))} <> Gs.Gsm.Told.acts(Gs.Gsm.releases(key, assoc, stream, ran, more, N.Ctx{keys, N.Nas.Count.next(dl), ul}))) : Sigma<&2, &2, N.Nas.Ctx, _ => List<&2, Ng.Act>>}
+  & {Gs.Gsm.n2_release(key, ue, N.Ctx{keys, dl, ul}, p) == (St.Rephase{key, St.Phase.with_ctx(St.Ue.phase(ue), N.Ctx{keys, N.Nas.Count.next(dl), ul})}, [Ng.UeSend{St.Ue.assoc(ue), St.Ue.stream(ue), key, Ng.Ngap.pdu_release(key, St.Ue.ran_id(ue), p, N.Nas.seal(keys, N.Ciphered{}, N.Nas.downlink(), dl, Gs.Gsm.dl_transport(p, Gs.Gsm.release_command(p))), Ng.Ngap.misc(G.CauseMisc.unspecified()))}]) : Ng.GOut()}
+
+# TS 38.413 §8.2.2.2: the gNB's PDU Session Resource Release Response answers
+# a Command whose sessions the step that sent it already deleted at the UPF.
+# Whatever it names and whoever sends it, it changes no state.
+law smf.release_response.keeps_state:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 28, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : St.State}
 
 # TS 29.244 §6.4: a Session Establishment or Modification Request still
 # unanswered when the session's guard fires, before it has gone N1 times
@@ -1745,7 +1797,7 @@ law smf.deletion.held:
   {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == Some{s} : Maybe<&2, St.Session>} & {Ng.Acts.touches(skey, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == False{} : Bool}
 
 # Whatever starts deleting a session (its release, its UE's, an eviction, an
-# association going down, a failure: Up.N4.deletions) leaves it being deleted
+# association going down or its NG Setup, a failure: Up.N4.deletions) leaves it being deleted
 # under a guard that has not fired, sends its Session Deletion Request and
 # leaves its guard running for T1: with smf.deletion.held,
 # smf.deletion.retransmitted and smf.deletion.answered, the row goes within
@@ -1945,7 +1997,8 @@ law amf.path_switch.moves_owner:
 # carries are only compared with the stored ones. Two requests that differ in
 # nothing else leave the same state, and the acknowledgement, built from the
 # context the state holds, carries the capabilities of the Registration
-# Request stored for it.
+# Request stored for it. After it, the UE is sent PDU Session Release Command
+# for each session released (Gs.Gsm.releases), its NAS context moving on.
 law amf.path_switch.stored_capabilities:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1986,7 +2039,7 @@ law amf.path_switch.stored_capabilities:
   for +ei2: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value2), 1n)}) == Done{(ies2, c2)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev2: {GV.PathSwitchRequest.view(ies2) == Done{GV.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
   {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : St.State}
-  & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{ctx, nh, None{}}}, [Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)}, Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}]) : Ng.GOut()}
+  & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{Gs.Gsm.Told.ctx(Gs.Gsm.releases(key, St.Ue.assoc(ue), St.Ue.stream(ue), St.Ue.ran_id(ue), released, ctx)), nh, None{}}}, Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)} <> List.append(&2, Ng.Act, Gs.Gsm.Told.acts(Gs.Gsm.releases(key, St.Ue.assoc(ue), St.Ue.stream(ue), St.Ue.ran_id(ue), released, ctx)), [Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}])) : Ng.GOut()}
 
 # amf (ticket 28)
 # ---------------
@@ -2156,6 +2209,51 @@ law amf.handover.guarded:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
   & ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{t} : Maybe<&2, U32>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) == None{} : Maybe<&2, U32>})
   & ({Tb.Table.get(St.Session, k, St.State.sessions(st)) == None{} : Maybe<&2, St.Session>} -> {Ng.Acts.stops(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))) == None{} : Maybe<&2, U32>})
+
+# TS 23.502 §4.9.1.3.3: Handover Notify from the target of the handover
+# pending, under the RAN-UE-NGAP-ID it acknowledged with and still free on it,
+# moves the UE to the target, and the step is exactly this: the UE's PDU
+# sessions handed to Sw.Sw.sessions, which repoints those the target admitted
+# with an IPv4 tunnel and deletes the others at the UPF; the context put on
+# the target; the source told to release the UE; PDU Session Release Command
+# to the UE for each session not admitted, in DL NAS Transport through the
+# target (§4.3.4.2, Gs.Gsm.releases), the context holding the NAS context
+# they leave; the guard stopped; a log line; and the guards of the session
+# rows gone stopped (N.Step.of).
+law amf.handover.notify_releases:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +k: U32
+  for +ue: St.Ue
+  for +ctx: N.Nas.Ctx
+  for +nh: St.Nh
+  for +source: U32
+  for +s: U32
+  for +ts: List<&2, St.Tunnel>
+  for +sp: B.Digits()
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.HandoverNotify.view(ies) == Done{GV.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eg: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eph: {St.Ue.phase(ue) == St.Handover{ctx, nh, source, St.Acked{assoc, ran, s, ts}} : St.Phase}
+  for +es: {St.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}
+  for +eo: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
+  for +ef: {St.Ues.ran_free(k, assoc, ran, St.State.ues(st)) == True{} : Bool}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
+  {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Some{St.Ue.moved(ue, assoc, ran, s, St.Registered{Gs.Gsm.Told.ctx(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), nh, Some{St.Side{St.Ue.assoc(ue), Some{St.Ue.ran_id(ue)}}}})} : Maybe<&2, St.Ue>}
+  & {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == Ng.Step.of(st, Ng.Out.also(Ng.Out.join(Sw.Sw.sessions(ts, St.Sessions.of_ue(k, St.State.sessions(st)), St.State.pfcp_seq(st)), (St.Put{k, St.Ue.moved(ue, assoc, ran, s, St.Registered{Gs.Gsm.Told.ctx(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), nh, Some{St.Side{St.Ue.assoc(ue), Some{St.Ue.ran_id(ue)}}}})}, [])), Ng.Release{St.Ue.assoc(ue), St.Ue.stream(ue), k, St.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())} <> List.append(&2, Ng.Act, Gs.Gsm.Told.acts(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), [Ng.TimerCancel{k}, Ng.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]))) : Ng.Step()}
 
 # TS 38.413 §8.3.3: the side an N2 handover released, the source after
 # Handover Notify or the target after a cancel or the guard firing, answers

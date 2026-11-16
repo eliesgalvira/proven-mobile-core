@@ -222,35 +222,64 @@ def Ip.alloc(+cfg: S.Cfg, sessions: Tb.Table(S.Session)) -> Maybe<&2, U32>:
 def Gsm.place(+st: S.State, +key: U32, +s: S.Session, seq: U32) -> N.GOut():
   N.Out.join(Up.N4.deletions(S.Sessions.evicted(key, s, S.State.sessions(st)), seq), (S.PutSession{key, s}, []))
 
+# What a UE is told of a session given up: before the Accept went out, the
+# 5GSM message given, in DL NAS Transport; after it, the gNB is told to
+# release the session's resources, PDU Session Release Command inside
+# (TS 23.502 §4.3.4.2).
+type Tell is Data:
+  Reply{sm: B.Bytes()}
+  Release{}
+
+# PDU Session Release Command, #26, protected for the UE.
+def Gsm.release_nas(ctx: Sec.Nas.Ctx, +psi: U32) -> Sec.Nas.Protected:
+  Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.dl_transport(psi, Gsm.release_command(psi)))
+
+# PDU Session Resource Release Command, the NAS message inside.
+def Gsm.n2_release(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32) -> N.GOut():
+  +p : Sec.Nas.Protected = Gsm.release_nas(ctx, psi)
+  (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, N.Ngap.pdu_release(key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p), N.Ngap.misc(G.CauseMisc.unspecified()))}])
+
+# The first action tells the UE's gNB to release the session, the PDU Session
+# Release Command inside, protected under ctx.
+def Gsm.tells_gnb(+ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
+  Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, N.Out.acts(Gsm.n2_release(S.Session.ue(s), ue, ctx, S.Session.psi(s))), post) : List<&2, N.Act>}>
+
+def Gsm.tell(key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, psi: U32, t: Tell) -> N.GOut():
+  match t:
+    case Reply{sm}:
+      Gsm.dl(key, ue, ctx, psi, sm)
+    case Release{}:
+      Gsm.n2_release(key, ue, ctx, psi)
+
 # The UE of a session, to answer it.
-def Gsm.to_ue_ctx(key: U32, ue: S.Ue, psi: U32, sm: B.Bytes(), ctx: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
+def Gsm.to_ue_ctx(key: U32, ue: S.Ue, psi: U32, t: Tell, ctx: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
   match ctx:
     case None{}:
       (S.Keep{}, [])
     case Some{c}:
-      Gsm.dl(key, ue, c, psi, sm)
+      Gsm.tell(key, ue, c, psi, t)
 
-def Gsm.to_ue_m(key: U32, psi: U32, sm: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
+def Gsm.to_ue_m(key: U32, psi: U32, t: Tell, m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
       (S.Keep{}, [])
     case Some{+ue}:
-      Gsm.to_ue_ctx(key, ue, psi, sm, S.Phase.ctx(S.Ue.phase(ue)))
+      Gsm.to_ue_ctx(key, ue, psi, t, S.Phase.ctx(S.Ue.phase(ue)))
 
-# A session given up: its UE told with the 5GSM message given, the session deleted at the UPF.
-def Gsm.give_up_m(+skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m), Up.N4.deletions([(skey, s)], seq))
+# A session given up: its UE told, the session deleted at the UPF.
+def Gsm.give_up_m(+skey: U32, +s: S.Session, t: Tell, seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
+  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), t, m), Up.N4.deletions([(skey, s)], seq))
 
-def Gsm.give_up(st: S.State, skey: U32, +s: S.Session, sm: B.Bytes(), seq: U32) -> N.GOut():
-  Gsm.give_up_m(skey, s, sm, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
+def Gsm.give_up(st: S.State, skey: U32, +s: S.Session, t: Tell, seq: U32) -> N.GOut():
+  Gsm.give_up_m(skey, s, t, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
 
 # Before the Accept went out, the UE is refused the session.
 def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32) -> N.GOut():
-  Gsm.give_up(st, skey, s, Gsm.reject(S.Session.psi(s), pti, cause), seq)
+  Gsm.give_up(st, skey, s, Reply{Gsm.reject(S.Session.psi(s), pti, cause)}, seq)
 
 # After it, the session is released (TS 24.501 §6.3.3).
 def Gsm.drop(st: S.State, skey: U32, +s: S.Session, seq: U32) -> N.GOut():
-  Gsm.give_up(st, skey, s, Gsm.release_command(S.Session.psi(s)), seq)
+  Gsm.give_up(st, skey, s, Release{}, seq)
 
 # Establishment
 # -------------
@@ -439,14 +468,41 @@ def Gsm.established(st: S.State, msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ 
     case Some{(skey, +s)}:
       Gsm.established_phase(st, skey, s, msg, S.Session.phase(s))
 
+# Sessions a handover released: PDU Session Release Command (#26) to the UE
+# for each, in DL NAS Transport through its new gNB, which never set them up
+# (TS 23.502 §4.3.4.2), protected in turn; with the NAS context they leave.
+def Gsm.releases_then(+a: N.Act, r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
+  match r:
+    case (c, acts):
+      (c, a <> acts)
+
+def Gsm.releases(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), psis: List<&2, U32>, ctx: Sec.Nas.Ctx) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
+  match psis:
+    case Nil{}:
+      (ctx, [])
+    case +p <> more:
+      +q : Sec.Nas.Protected = Gsm.release_nas(ctx, p)
+      Gsm.releases_then(N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
+
+def Gsm.Told.ctx(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sec.Nas.Ctx:
+  match r:
+    case (c, acts):
+      c
+
+def Gsm.Told.acts(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> List<&2, N.Act>:
+  match r:
+    case (c, acts):
+      acts
+
 # Path Switch (TS 23.502 §4.9.1.2.2)
 # -----------------------------------
 # A session repointed to the target gNB is switched once the UPF accepts it,
 # and released otherwise: deleted at the UPF and named to the target as
-# released, with no PDU Session Release Command to the UE. Once no session of
-# the UE waits, the AMF answers the target: Path Switch Request Acknowledge
-# with the next {NH, NCC} when some session was switched, Path Switch Request
-# Failure and the UE's release otherwise (TS 38.413 §8.4.4.2).
+# released. Once no session of the UE waits, the AMF answers the target: Path
+# Switch Request Acknowledge with the next {NH, NCC} when some session was
+# switched, then PDU Session Release Command to the UE for each session
+# released; Path Switch Request Failure and the UE's release otherwise (TS
+# 38.413 §8.4.4.2).
 
 def Gsm.repoint_done(+st: S.State, +skey: U32, +s: S.Session, ok: Bool) -> N.GOut():
   match ok:
@@ -500,7 +556,8 @@ def Gsm.switch_failed(+key: U32, +ue: S.Ue, psis: List<&2, U32>) -> N.GOut():
 def Gsm.switch_end(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match switched cfg:
     case (p <> more) Some{c}:
-      (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}])
+      +r = Gsm.releases(key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx)
+      (S.Rephase{key, S.Registered{Gsm.Told.ctx(r), nh, None{}}}, N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)} <> List.append(&2, N.Act, Gsm.Told.acts(r), [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}]))
     case _ _:
       Gsm.switch_failed(key, ue, List.append(&2, U32, released, switched))
 
@@ -776,6 +833,51 @@ def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err,
       (S.Keep{}, N.Ngap.bad_view(assoc))
     case Done{v}:
       Gsm.setup_response(st, assoc, v)
+
+# The gNB's release
+# -----------------
+# PDU Session Resource Release Response (TS 38.413 §8.2.2.2): the sessions a
+# Release Command named were deleted at the UPF when it went, so the answer
+# changes nothing. One naming a live session of the UE answers no Command of
+# ours: a logical error in a response, handled locally (§10.4), by a warning.
+
+def Gsm.unasked(+key: U32, items: G.PDUSessionResourceReleasedListRelRes(), +ss: Tb.Table(S.Session)) -> Bool:
+  match items:
+    case Nil{}:
+      False{}
+    case G.PDUSessionResourceReleasedItemRelRes{+psi, transfer, x} <> more:
+      Bool.or(Tb.Table.present(Sigma<&2, &2, U32, _ => S.Session>, S.Sessions.by_psi(key, psi, ss)), Gsm.unasked(key, more, ss))
+
+def Gsm.release_noted(unasked: Bool) -> List<&2, N.Act>:
+  match unasked:
+    case True{}:
+      [N.Note{F.Warn{}, "NGAP: PDU Session Resource Release Response naming a PDU session not being released"}]
+    case False{}:
+      [N.Note{F.Info{}, "NGAP: PDU Session Resource Release Response"}]
+
+def Gsm.release_answer_ue(+st: S.State, +assoc: U32, +key: U32, items: G.PDUSessionResourceReleasedListRelRes(), m: Maybe<&2, S.Ue>) -> List<&2, N.Act>:
+  match m:
+    case None{}:
+      N.Ngap.unknown_ue(assoc)
+    case Some{ue}:
+      Gsm.release_noted(Gsm.unasked(key, items, S.State.sessions(st)))
+
+def Gsm.release_answer_key(+st: S.State, +assoc: U32, ran: B.Bytes(), items: G.PDUSessionResourceReleasedListRelRes(), m: Maybe<&2, U32>) -> List<&2, N.Act>:
+  match m:
+    case None{}:
+      N.Ngap.unknown_ue(assoc)
+    case Some{+key}:
+      Gsm.release_answer_ue(st, assoc, key, items, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+
+def Gsm.release_answer(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.PDUSessionResourceReleaseResponse.View>) -> List<&2, N.Act>:
+  match r:
+    case Fail{e}:
+      N.Ngap.bad_view(assoc)
+    case Done{V.PDUSessionResourceReleaseResponse.View{amf, ran, items, uli, diagnostics}}:
+      Gsm.release_answer_key(st, assoc, ran, items, N.Ngap.ue_key(amf))
+
+def Gsm.release_response_of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.PDUSessionResourceReleaseResponse.View>) -> N.GOut():
+  (S.Keep{}, Gsm.release_answer(st, assoc, r))
 
 # Guard timers
 # ------------

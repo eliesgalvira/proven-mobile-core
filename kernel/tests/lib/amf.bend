@@ -126,6 +126,13 @@ def first_bytes(ss: List<&2, F.Action>) -> B.Bytes():
     case _:
       []
 
+def first_assoc(ss: List<&2, F.Action>) -> U32:
+  match ss:
+    case F.NgapSend{assoc, stream, len, bytes} <> more:
+      assoc
+    case _:
+      999
+
 def first_stream(ss: List<&2, F.Action>) -> U32:
   match ss:
     case F.NgapSend{assoc, stream, len, bytes} <> more:
@@ -179,6 +186,10 @@ def same_ie(+id: U32, +a: B.Bytes(), +b: B.Bytes()) -> Bool:
 # UEContextReleaseRequest and Complete for our UE 1 with the captured RAN id.
 def release_request(ran: B.Bytes()) -> B.Bytes():
   N.Ngap.pdu(Fr.Pdu.initiating(), 42, Fr.Criticality.ignore(), [N.Ngap.ie(10, Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(15, Fr.Criticality.ignore(), G.Cause.write(N.Ngap.radio_cause(G.CauseRadioNetwork.user_inactivity()), 0n, []))])
+
+# PDU Session Resource Release Response naming one PDU session, its transfer empty.
+def pdu_release_response(amf: B.Bytes(), ran: B.Bytes(), psi: U32) -> B.Bytes():
+  N.Ngap.pdu(Fr.Pdu.successful(), 28, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write(amf, 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(70, Fr.Criticality.ignore(), G.PDUSessionResourceReleasedListRelRes.write([G.PDUSessionResourceReleasedItemRelRes{psi, Ap.pack(G.PDUSessionResourceReleaseResponseTransfer.write(G.PDUSessionResourceReleaseResponseTransfer{None{}}, 0n, [])), None{}}], 0n, []))])
 
 def uli_of(r: Result<&2, &2, B.Err, W.InitialUEMessage.View>) -> Maybe<&2, G.UserLocationInformation>:
   match r:

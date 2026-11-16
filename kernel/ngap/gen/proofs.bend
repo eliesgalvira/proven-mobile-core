@@ -28223,6 +28223,1104 @@ def DownlinkRANStatusTransfer.sx(+rem: Nat, bits: Ap.Bits(), +v: G.DownlinkRANSt
 def GL.ngap.DownlinkRANStatusTransfer.suffix(rem, bits, v, rem2, bits2, e):
   DownlinkRANStatusTransfer.sx(rem, bits, v, rem2, bits2, e)
 
+def PDUSessionResourceReleaseCommandTransfer.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommandTransfer, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceReleaseCommandTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleaseCommandTransfer.after(v, rem) : Nat}
+
+def PDUSessionResourceReleaseCommandTransfer.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceReleaseCommandTransfer.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionResourceReleaseCommandTransfer.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseCommandTransfer.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceReleaseCommandTransfer.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceReleaseCommandTransfer.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceReleaseCommandTransfer.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionResourceReleaseCommandTransfer.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceReleaseCommandTransfer.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceReleaseCommandTransfer.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceReleaseCommandTransfer.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceReleaseCommandTransfer.rt(+cause: G.Cause, +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceReleaseCommandTransfer.valid(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionResourceReleaseCommandTransfer.read(Ap.Cur{rem, G.PDUSessionResourceReleaseCommandTransfer.write(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleaseCommandTransfer.after(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}:
+  ok0 = P.Bool.and_true_l(G.Cause.valid(cause), G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(iE_Extensions), ok)
+  +okr0 = P.Bool.and_true_r(G.Cause.valid(cause), G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(iE_Extensions), ok)
+  e0 = Equal.sym(Ap.Rd(G.Cause), G.Cause.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.Cause.write(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), rest))}), Done{(cause, Ap.Cur{G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), rest)})}, GL.ngap.Cause.roundtrip(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), rest), ok0))
+  %e0 : {G.PDUSessionResourceReleaseCommandTransfer.r_cause(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleaseCommandTransfer.after(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}
+  e1 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest})}, PDUSessionResourceReleaseCommandTransfer.o_rt_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), rest, okr0))
+  %e1 : {G.PDUSessionResourceReleaseCommandTransfer.r_iE_Extensions(cause, _) == Done{(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleaseCommandTransfer.after(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}
+  {==}
+
+def GL.ngap.PDUSessionResourceReleaseCommandTransfer.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}:
+      PDUSessionResourceReleaseCommandTransfer.rt(cause, iE_Extensions, rem, rest, ok)
+
+def PDUSessionResourceReleaseCommandTransfer.dv_iE_Extensions(+p_iE_Extensions: Bool, +cause: G.Cause, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceReleaseCommandTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseCommandTransfer.r_iE_Extensions(cause, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}, ok0: {G.Cause.valid(cause) == True{} : Bool}) -> {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceReleaseCommandTransfer, y => PA.Rd.value(G.PDUSessionResourceReleaseCommandTransfer, y, v), Done{(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionResourceReleaseCommandTransfer.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.Cause.valid(cause), G.PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(iE_Extensions), ok0, PDUSessionResourceReleaseCommandTransfer.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er))
+
+def PDUSessionResourceReleaseCommandTransfer.dv_cause(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.Cause), +er: {G.Cause.read(c) == r : Ap.Rd(G.Cause)}, +v: G.PDUSessionResourceReleaseCommandTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseCommandTransfer.r_cause(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}) -> {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+cause, +c3)}:
+      PDUSessionResourceReleaseCommandTransfer.dv_iE_Extensions(p_iE_Extensions, cause, c3, G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, GL.ngap.Cause.decode_valid(c, cause, c3, er))
+
+def PDUSessionResourceReleaseCommandTransfer.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionResourceReleaseCommandTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseCommandTransfer.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}) -> {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceReleaseCommandTransfer.dv_cause(p_iE_Extensions, c3, G.Cause.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionResourceReleaseCommandTransfer.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceReleaseCommandTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseCommandTransfer.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}) -> {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, {G.PDUSessionResourceReleaseCommandTransfer.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          PDUSessionResourceReleaseCommandTransfer.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.PDUSessionResourceReleaseCommandTransfer.decode_valid(c, v, c2, e):
+  PDUSessionResourceReleaseCommandTransfer.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceReleaseCommandTransfer.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +cause: G.Cause, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommandTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: ({bi == G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceReleaseCommandTransfer, y => PA.Rd.value(G.PDUSessionResourceReleaseCommandTransfer, y, v), Done{(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer), Ap.Cur, y => PA.Rd.cur(G.PDUSessionResourceReleaseCommandTransfer, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionResourceReleaseCommandTransfer.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))), b3)))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(iE_Extensions, G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}; (%pr : {r3 == G.PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionResourceReleaseCommandTransfer.sx_iE_Extensions(+p_iE_Extensions: Bool, +cause: G.Cause, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceReleaseCommandTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.r_iE_Extensions(cause, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.Cause.after(cause, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceReleaseCommandTransfer.sx_iE_Extensions.go(p_iE_Extensions, cause, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceReleaseCommandTransfer.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionResourceReleaseCommandTransfer.sx_cause.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +cause: G.Cause, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommandTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.r_iE_Extensions(cause, G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.Cause.write(cause, ri, b3) : Ap.Bits()} & {r3 == G.Cause.after(cause, ri) : Nat}) -> PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceReleaseCommandTransfer.sx_iE_Extensions(p_iE_Extensions, cause, rem, bits, r3, b3, G.PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.Cause.write(cause, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.Cause.after(cause, _) : Nat}; s2))
+
+def PDUSessionResourceReleaseCommandTransfer.sx_cause(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.Cause), +er: {G.Cause.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.Cause)}, +v: G.PDUSessionResourceReleaseCommandTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.r_cause(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+cause, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceReleaseCommandTransfer.sx_cause.go(p_iE_Extensions, rem, bits, ri, bi, cause, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.Cause.suffix(ri, bi, cause, r3, b3, er))
+
+def PDUSessionResourceReleaseCommandTransfer.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommandTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.r_cause(p_iE_Extensions, G.Cause.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionResourceReleaseCommandTransfer.sx_cause(p_iE_Extensions, rem, bits, r1, b1, G.Cause.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def PDUSessionResourceReleaseCommandTransfer.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionResourceReleaseCommandTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionResourceReleaseCommandTransfer.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionResourceReleaseCommandTransfer.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommandTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommandTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)}) -> PDUSessionResourceReleaseCommandTransfer.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, PDUSessionResourceReleaseCommandTransfer.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommandTransfer, PDUSessionResourceReleaseCommandTransfer.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceReleaseCommandTransfer.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.PDUSessionResourceReleaseCommandTransfer.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceReleaseCommandTransfer.sx(rem, bits, v, rem2, bits2, e)
+
+def GL.ngap.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.roundtrip(v, rem, rest, ok):
+  L.aper.open.roundtrip(v, rem, rest, ok)
+
+def GL.ngap.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.decode_valid(c, v, c2, e):
+  L.aper.open.decode_valid(c, v, c2, e)
+
+def GL.ngap.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.suffix(rem, bits, v, rem2, bits2, e):
+  PC.Open.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceToReleaseItemRelCmd.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceToReleaseItemRelCmd.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToReleaseItemRelCmd.after(v, rem) : Nat}
+
+def PDUSessionResourceToReleaseItemRelCmd.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceToReleaseItemRelCmd.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionResourceToReleaseItemRelCmd.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseItemRelCmd.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceToReleaseItemRelCmd.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceToReleaseItemRelCmd.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceToReleaseItemRelCmd.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionResourceToReleaseItemRelCmd.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceToReleaseItemRelCmd.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceToReleaseItemRelCmd.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceToReleaseItemRelCmd.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceToReleaseItemRelCmd.rt(+pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseCommandTransfer: G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceToReleaseItemRelCmd.valid(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionResourceToReleaseItemRelCmd.read(Ap.Cur{rem, G.PDUSessionResourceToReleaseItemRelCmd.write(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd.after(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}:
+  ok0 = P.Bool.and_true_l(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(iE_Extensions)), ok)
+  +okr0 = P.Bool.and_true_r(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(iE_Extensions)), ok)
+  ok1 = P.Bool.and_true_l(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(iE_Extensions), okr0)
+  +okr1 = P.Bool.and_true_r(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(iE_Extensions), okr0)
+  e0 = Equal.sym(Ap.Rd(G.PDUSessionID()), G.PDUSessionID.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)))}), Done{(pDUSessionID, Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))})}, GL.ngap.PDUSessionID.roundtrip(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)), ok0))
+  %e0 : {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionID(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd.after(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}
+  e1 = Equal.sym(Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer()), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))}), Done{(pDUSessionResourceReleaseCommandTransfer, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)})}, GL.ngap.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.roundtrip(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest), ok1))
+  %e1 : {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionResourceReleaseCommandTransfer(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), pDUSessionID, _) == Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd.after(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest})}, PDUSessionResourceToReleaseItemRelCmd.o_rt_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest, okr1))
+  %e2 : {G.PDUSessionResourceToReleaseItemRelCmd.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseCommandTransfer, _) == Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd.after(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}
+  {==}
+
+def GL.ngap.PDUSessionResourceToReleaseItemRelCmd.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}:
+      PDUSessionResourceToReleaseItemRelCmd.rt(pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions, rem, rest, ok)
+
+def PDUSessionResourceToReleaseItemRelCmd.dv_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseCommandTransfer: G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceToReleaseItemRelCmd, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseCommandTransfer, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}, ok1: {G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer) == True{} : Bool}) -> {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd), G.PDUSessionResourceToReleaseItemRelCmd, y => PA.Rd.value(G.PDUSessionResourceToReleaseItemRelCmd, y, v), Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionResourceToReleaseItemRelCmd.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(iE_Extensions)), ok0, P.Bool.and_intro(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer), G.PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(iE_Extensions), ok1, PDUSessionResourceToReleaseItemRelCmd.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))
+
+def PDUSessionResourceToReleaseItemRelCmd.dv_pDUSessionResourceReleaseCommandTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +c: Ap.Cur, r: Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer()), +er: {G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(c) == r : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer())}, +v: G.PDUSessionResourceToReleaseItemRelCmd, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionResourceReleaseCommandTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}) -> {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionResourceReleaseCommandTransfer, +c3)}:
+      PDUSessionResourceToReleaseItemRelCmd.dv_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceReleaseCommandTransfer, c3, G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, GL.ngap.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.decode_valid(c, pDUSessionResourceReleaseCommandTransfer, c3, er))
+
+def PDUSessionResourceToReleaseItemRelCmd.dv_pDUSessionID(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(c) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceToReleaseItemRelCmd, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}) -> {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionID, +c3)}:
+      PDUSessionResourceToReleaseItemRelCmd.dv_pDUSessionResourceReleaseCommandTransfer(p_iE_Extensions, pDUSessionID, c3, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(c3), {==}, v, c2, e, GL.ngap.PDUSessionID.decode_valid(c, pDUSessionID, c3, er))
+
+def PDUSessionResourceToReleaseItemRelCmd.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionResourceToReleaseItemRelCmd, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}) -> {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceToReleaseItemRelCmd.dv_pDUSessionID(p_iE_Extensions, c3, G.PDUSessionID.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionResourceToReleaseItemRelCmd.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceToReleaseItemRelCmd, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}) -> {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, {G.PDUSessionResourceToReleaseItemRelCmd.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          PDUSessionResourceToReleaseItemRelCmd.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.PDUSessionResourceToReleaseItemRelCmd.decode_valid(c, v, c2, e):
+  PDUSessionResourceToReleaseItemRelCmd.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseCommandTransfer: G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd), G.PDUSessionResourceToReleaseItemRelCmd, y => PA.Rd.value(G.PDUSessionResourceToReleaseItemRelCmd, y, v), Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd), Ap.Cur, y => PA.Rd.cur(G.PDUSessionResourceToReleaseItemRelCmd, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionResourceToReleaseItemRelCmd.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}; (%pr : {r3 == G.PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseCommandTransfer: G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseCommandTransfer, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceToReleaseItemRelCmd.sx_iE_Extensions.go(p_iE_Extensions, pDUSessionID, pDUSessionResourceReleaseCommandTransfer, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceToReleaseItemRelCmd.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionResourceReleaseCommandTransfer.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionResourceReleaseCommandTransfer: G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseCommandTransfer, G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: {bi == G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, ri) : Nat}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceToReleaseItemRelCmd.sx_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceReleaseCommandTransfer, rem, bits, r3, b3, G.PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, _) : Nat}; s2))
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionResourceReleaseCommandTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer()), +er: {G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer())}, +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionResourceReleaseCommandTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionResourceReleaseCommandTransfer, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionResourceReleaseCommandTransfer.go(p_iE_Extensions, pDUSessionID, rem, bits, ri, bi, pDUSessionResourceReleaseCommandTransfer, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.suffix(ri, bi, pDUSessionResourceReleaseCommandTransfer, r3, b3, er))
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionID.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionID: G.PDUSessionID(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionResourceReleaseCommandTransfer(p_iE_Extensions, pDUSessionID, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.PDUSessionID.write(pDUSessionID, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionID.after(pDUSessionID, ri) : Nat}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionResourceReleaseCommandTransfer(p_iE_Extensions, pDUSessionID, rem, bits, r3, b3, G.PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionID.after(pDUSessionID, _) : Nat}; s2))
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionID(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionID, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionID.go(p_iE_Extensions, rem, bits, ri, bi, pDUSessionID, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionID.suffix(ri, bi, pDUSessionID, r3, b3, er))
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionID(p_iE_Extensions, G.PDUSessionID.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionResourceToReleaseItemRelCmd.sx_pDUSessionID(p_iE_Extensions, rem, bits, r1, b1, G.PDUSessionID.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def PDUSessionResourceToReleaseItemRelCmd.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionResourceToReleaseItemRelCmd.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionResourceToReleaseItemRelCmd.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceToReleaseItemRelCmd, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseItemRelCmd.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}) -> PDUSessionResourceToReleaseItemRelCmd.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceToReleaseItemRelCmd, PDUSessionResourceToReleaseItemRelCmd.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceToReleaseItemRelCmd.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.PDUSessionResourceToReleaseItemRelCmd.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceToReleaseItemRelCmd.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceToReleaseListRelCmd.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceToReleaseListRelCmd(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceToReleaseListRelCmd.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToReleaseListRelCmd.after(v, rem) : Nat}
+
+def PDUSessionResourceToReleaseListRelCmd.items_rt(xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem: Nat, +rest: Ap.Bits(), +av: {G.PDUSessionResourceToReleaseListRelCmd.all_valid(xs) == True{} : Bool}) -> {Done{(xs, Ap.Cur{G.PDUSessionResourceToReleaseListRelCmd.items_after(xs, rem), rest})} == G.PDUSessionResourceToReleaseListRelCmd.items(List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs), Ap.Cur{rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, rem, rest)}) : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +more:
+      ir = Equal.sym(Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd), G.PDUSessionResourceToReleaseItemRelCmd.read(Ap.Cur{rem, G.PDUSessionResourceToReleaseItemRelCmd.write(x, rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(more, G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem), rest))}), Done{(x, Ap.Cur{G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem), G.PDUSessionResourceToReleaseListRelCmd.items_write(more, G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem), rest)})}, GL.ngap.PDUSessionResourceToReleaseItemRelCmd.roundtrip(x, rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(more, G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem), rest), P.Bool.and_true_l(G.PDUSessionResourceToReleaseItemRelCmd.valid(x), G.PDUSessionResourceToReleaseListRelCmd.all_valid(more), av)))
+      %ir : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceToReleaseListRelCmd.items_after(x <> more, rem), rest})} == G.PDUSessionResourceToReleaseListRelCmd.next(_, c2 => G.PDUSessionResourceToReleaseListRelCmd.items(List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, more), c2)) : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}
+      ih = PDUSessionResourceToReleaseListRelCmd.items_rt(more, G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem), rest, P.Bool.and_true_r(G.PDUSessionResourceToReleaseItemRelCmd.valid(x), G.PDUSessionResourceToReleaseListRelCmd.all_valid(more), av))
+      %ih : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceToReleaseListRelCmd.items_after(x <> more, rem), rest})} == G.PDUSessionResourceToReleaseListRelCmd.cons(x, _) : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}
+      {==}
+
+def PDUSessionResourceToReleaseListRelCmd.rt(+xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceToReleaseListRelCmd.valid(xs) == True{} : Bool}) -> {G.PDUSessionResourceToReleaseListRelCmd.read(Ap.Cur{rem, G.PDUSessionResourceToReleaseListRelCmd.write(xs, rem, rest)}) == Done{(xs, Ap.Cur{G.PDUSessionResourceToReleaseListRelCmd.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}:
+  sr = Equal.sym(Ap.Rd(Nat), Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, Ap.Size.write(True{}, 8n, 1n, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs), rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))}), Done{(List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)})}, L.aper.size.roundtrip(True{}, 8n, 1n, 255n, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs), rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest), P.Bool.and_true_l(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs)), G.PDUSessionResourceToReleaseListRelCmd.all_valid(xs), ok), {==}))
+  %sr : {G.PDUSessionResourceToReleaseListRelCmd.count(_) == Done{(xs, Ap.Cur{G.PDUSessionResourceToReleaseListRelCmd.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}
+  Equal.sym(Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), Done{(xs, Ap.Cur{G.PDUSessionResourceToReleaseListRelCmd.items_after(xs, Ap.Size.after(True{}, 8n, rem)), rest})}, G.PDUSessionResourceToReleaseListRelCmd.items(List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)}), PDUSessionResourceToReleaseListRelCmd.items_rt(xs, Ap.Size.after(True{}, 8n, rem), rest, P.Bool.and_true_r(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs)), G.PDUSessionResourceToReleaseListRelCmd.all_valid(xs), ok)))
+
+def GL.ngap.PDUSessionResourceToReleaseListRelCmd.roundtrip(v, rem, rest, ok):
+  PDUSessionResourceToReleaseListRelCmd.rt(v, rem, rest, ok)
+
+def PDUSessionResourceToReleaseListRelCmd.Spec(xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, n: Nat) -> Type:
+  {G.PDUSessionResourceToReleaseListRelCmd.all_valid(xs) == True{} : Bool} & {List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs) == n : Nat}
+
+def PDUSessionResourceToReleaseListRelCmd.spec.finish(+p: Nat, +x: G.PDUSessionResourceToReleaseItemRelCmd, +xs2: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, vi: {G.PDUSessionResourceToReleaseItemRelCmd.valid(x) == True{} : Bool}, s: PDUSessionResourceToReleaseListRelCmd.Spec(xs2, p)) -> PDUSessionResourceToReleaseListRelCmd.Spec(x <> xs2, 1n+p):
+  (av, len) = s
+  (P.Bool.and_intro(G.PDUSessionResourceToReleaseItemRelCmd.valid(x), G.PDUSessionResourceToReleaseListRelCmd.all_valid(xs2), vi, av), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs2), p, len))
+
+def PDUSessionResourceToReleaseListRelCmd.spec.cons(+p: Nat, +x: G.PDUSessionResourceToReleaseItemRelCmd, +c3: Ap.Cur, rl: Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), +erl: {G.PDUSessionResourceToReleaseListRelCmd.items(p, c3) == rl : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceToReleaseItemRelCmd> -> @c5: Ap.Cur -> {G.PDUSessionResourceToReleaseListRelCmd.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)} -> PDUSessionResourceToReleaseListRelCmd.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseListRelCmd.cons(x, rl) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}, vi: {G.PDUSessionResourceToReleaseItemRelCmd.valid(x) == True{} : Bool}) -> PDUSessionResourceToReleaseListRelCmd.Spec(xs, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, PDUSessionResourceToReleaseListRelCmd.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+xs2, +c5)}:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y => PA.Rd.value(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y, xs), Done{(x <> xs2, c5)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceToReleaseListRelCmd.Spec(_, 1n+p)
+      PDUSessionResourceToReleaseListRelCmd.spec.finish(p, x, xs2, vi, ih(c3, xs2, c5, erl))
+
+def PDUSessionResourceToReleaseListRelCmd.spec.step(+p: Nat, +c: Ap.Cur, ri: Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd), +eri: {G.PDUSessionResourceToReleaseItemRelCmd.read(c) == ri : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceToReleaseItemRelCmd> -> @c5: Ap.Cur -> {G.PDUSessionResourceToReleaseListRelCmd.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)} -> PDUSessionResourceToReleaseListRelCmd.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseListRelCmd.next(ri, c4 => G.PDUSessionResourceToReleaseListRelCmd.items(p, c4)) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}) -> PDUSessionResourceToReleaseListRelCmd.Spec(xs, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, PDUSessionResourceToReleaseListRelCmd.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+x, +c3)}:
+      PDUSessionResourceToReleaseListRelCmd.spec.cons(p, x, c3, G.PDUSessionResourceToReleaseListRelCmd.items(p, c3), {==}, ih, xs, c2, e, GL.ngap.PDUSessionResourceToReleaseItemRelCmd.decode_valid(c, x, c3, eri))
+
+def PDUSessionResourceToReleaseListRelCmd.spec(n: Nat, +c: Ap.Cur, +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseListRelCmd.items(n, c) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}) -> PDUSessionResourceToReleaseListRelCmd.Spec(xs, n):
+  match n:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y => PA.Rd.value(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y, xs), Done{([], c)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceToReleaseListRelCmd.Spec(_, 0n)
+      ({==}, {==})
+    case 1n++p:
+      PDUSessionResourceToReleaseListRelCmd.spec.step(p, c, G.PDUSessionResourceToReleaseItemRelCmd.read(c), {==}, c4 => xs2 => c5 => e2 => PDUSessionResourceToReleaseListRelCmd.spec(p, c4, xs2, c5, e2), xs, c2, e)
+
+def PDUSessionResourceToReleaseListRelCmd.dv.finish(+n: Nat, +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, sv: {Ap.Size.valid(1n, 255n, n) == True{} : Bool}, s: PDUSessionResourceToReleaseListRelCmd.Spec(xs, n)) -> {G.PDUSessionResourceToReleaseListRelCmd.valid(xs) == True{} : Bool}:
+  (av, len) = s
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs), n, len)
+  P.Bool.and_intro(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs)), G.PDUSessionResourceToReleaseListRelCmd.all_valid(xs), (%slen : {Ap.Size.valid(1n, 255n, _) == True{} : Bool}; sv), av)
+
+def PDUSessionResourceToReleaseListRelCmd.dv(+c0: Ap.Cur, rn: Ap.Rd(Nat), +ern: {Ap.Size.read(True{}, 8n, 1n, 255n, c0) == rn : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +c2: Ap.Cur, +e: {G.PDUSessionResourceToReleaseListRelCmd.count(rn) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}) -> {G.PDUSessionResourceToReleaseListRelCmd.valid(xs) == True{} : Bool}:
+  match rn:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, {G.PDUSessionResourceToReleaseListRelCmd.valid(xs) == True{} : Bool}, err, xs, c2, e)
+    case Done{(+n, +c)}:
+      PDUSessionResourceToReleaseListRelCmd.dv.finish(n, xs, L.aper.size.decode_valid(True{}, 8n, 1n, 255n, c0, n, c, ern), PDUSessionResourceToReleaseListRelCmd.spec(n, c, xs, c2, e))
+
+def GL.ngap.PDUSessionResourceToReleaseListRelCmd.decode_valid(c, v, c2, e):
+  PDUSessionResourceToReleaseListRelCmd.dv(c, Ap.Size.read(True{}, 8n, 1n, 255n, c), {==}, v, c2, e)
+
+def PDUSessionResourceToReleaseListRelCmd.Sxi(+bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem: Nat, rem2: Nat, +bits2: Ap.Bits(), k: Nat) -> Type:
+  ({bits == G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceToReleaseListRelCmd.items_after(xs, rem) : Nat}) & {List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs) == k : Nat}
+
+def PDUSessionResourceToReleaseListRelCmd.sx.finish(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceToReleaseItemRelCmd, +r3: Nat, +b3: Ap.Bits(), +xs2: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +r5: Nat, +b5: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), si: {bits == G.PDUSessionResourceToReleaseItemRelCmd.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem) : Nat}, s: PDUSessionResourceToReleaseListRelCmd.Sxi(b3, xs2, r3, r5, b5, p), eb: {b5 == bits2 : Ap.Bits()}, er: {r5 == rem2 : Nat}) -> PDUSessionResourceToReleaseListRelCmd.Sxi(bits, x <> xs2, rem, rem2, bits2, 1n+p):
+  (i1, +i2) = si
+  (cn, len) = s
+  (h1, h2) = cn
+  (((%i2 : {bits == G.PDUSessionResourceToReleaseItemRelCmd.write(x, rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(xs2, _, bits2)) : Ap.Bits()}; (%eb : {bits == G.PDUSessionResourceToReleaseItemRelCmd.write(x, rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(xs2, r3, _)) : Ap.Bits()}; (%h1 : {bits == G.PDUSessionResourceToReleaseItemRelCmd.write(x, rem, _) : Ap.Bits()}; i1))), (%er : {_ == G.PDUSessionResourceToReleaseListRelCmd.items_after(xs2, G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem)) : Nat}; (%i2 : {r5 == G.PDUSessionResourceToReleaseListRelCmd.items_after(xs2, _) : Nat}; h2))), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs2), p, len))
+
+def PDUSessionResourceToReleaseListRelCmd.sx.cons(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceToReleaseItemRelCmd, +r3: Nat, +b3: Ap.Bits(), rl: Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), +erl: {G.PDUSessionResourceToReleaseListRelCmd.items(p, Ap.Cur{r3, b3}) == rl : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceToReleaseItemRelCmd> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceToReleaseListRelCmd.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)} -> PDUSessionResourceToReleaseListRelCmd.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseListRelCmd.cons(x, rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}, si: {bits == G.PDUSessionResourceToReleaseItemRelCmd.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceToReleaseItemRelCmd.after(x, rem) : Nat}) -> PDUSessionResourceToReleaseListRelCmd.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, PDUSessionResourceToReleaseListRelCmd.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+xs2, c5)}:
+      match c5:
+        case Ap.Cur{+r5, +b5}:
+          ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y => PA.Rd.value(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y, xs), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y, Ap.Cur{rem2, bits2}), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          %ev : PDUSessionResourceToReleaseListRelCmd.Sxi(bits, _, rem, rem2, bits2, 1n+p)
+          PDUSessionResourceToReleaseListRelCmd.sx.finish(p, rem, bits, x, r3, b3, xs2, r5, b5, rem2, bits2, si, ih(b3, r3, xs2, r5, b5, erl), Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec), Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec))
+
+def PDUSessionResourceToReleaseListRelCmd.sx.step(+p: Nat, +rem: Nat, +bits: Ap.Bits(), ri: Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd), +eri: {G.PDUSessionResourceToReleaseItemRelCmd.read(Ap.Cur{rem, bits}) == ri : Ap.Rd(G.PDUSessionResourceToReleaseItemRelCmd)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceToReleaseItemRelCmd> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceToReleaseListRelCmd.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)} -> PDUSessionResourceToReleaseListRelCmd.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseListRelCmd.next(ri, c4 => G.PDUSessionResourceToReleaseListRelCmd.items(p, c4)) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}) -> PDUSessionResourceToReleaseListRelCmd.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, PDUSessionResourceToReleaseListRelCmd.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+x, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceToReleaseListRelCmd.sx.cons(p, rem, bits, x, r3, b3, G.PDUSessionResourceToReleaseListRelCmd.items(p, Ap.Cur{r3, b3}), {==}, ih, xs, rem2, bits2, e, GL.ngap.PDUSessionResourceToReleaseItemRelCmd.suffix(rem, bits, x, r3, b3, eri))
+
+def PDUSessionResourceToReleaseListRelCmd.sx.items(k: Nat, +rem: Nat, +bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseListRelCmd.items(k, Ap.Cur{rem, bits}) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}) -> PDUSessionResourceToReleaseListRelCmd.Sxi(bits, xs, rem, rem2, bits2, k):
+  match k:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y => PA.Rd.value(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y, xs), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, y, Ap.Cur{rem2, bits2}), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      %ev : PDUSessionResourceToReleaseListRelCmd.Sxi(bits, _, rem, rem2, bits2, 0n)
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec), Equal.sym(Nat, rem, rem2, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec))), {==})
+    case 1n++p:
+      PDUSessionResourceToReleaseListRelCmd.sx.step(p, rem, bits, G.PDUSessionResourceToReleaseItemRelCmd.read(Ap.Cur{rem, bits}), {==}, b4 => r4 => xs2 => r5 => b5 => e2 => PDUSessionResourceToReleaseListRelCmd.sx.items(p, r4, b4, xs2, r5, b5, e2), xs, rem2, bits2, e)
+
+def PDUSessionResourceToReleaseListRelCmd.sx.go(+rem: Nat, +bits: Ap.Bits(), +k: Nat, +r1: Nat, +b1: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem2: Nat, +bits2: Ap.Bits(), ss: PC.Canon(bits, Ap.Size.write(True{}, 8n, 1n, k, rem, b1), r1, Ap.Size.after(True{}, 8n, rem)), s: PDUSessionResourceToReleaseListRelCmd.Sxi(b1, xs, r1, rem2, bits2, k)) -> PDUSessionResourceToReleaseListRelCmd.Sx(bits, xs, rem, rem2, bits2):
+  (s1, +s2) = ss
+  (cn, len) = s
+  (h1, h2) = cn
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceToReleaseItemRelCmd, xs), k, len)
+  ((%slen : {bits == Ap.Size.write(True{}, 8n, 1n, _, rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, Ap.Size.after(True{}, 8n, rem), bits2)) : Ap.Bits()}; (%s2 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, G.PDUSessionResourceToReleaseListRelCmd.items_write(xs, _, bits2)) : Ap.Bits()}; (%h1 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, _) : Ap.Bits()}; s1))), (%s2 : {rem2 == G.PDUSessionResourceToReleaseListRelCmd.items_after(xs, _) : Nat}; h2))
+
+def PDUSessionResourceToReleaseListRelCmd.sx.count(+rem: Nat, +bits: Ap.Bits(), rl: Ap.Rd(Nat), +erl: {Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}) == rl : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceToReleaseListRelCmd.count(rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>)}) -> PDUSessionResourceToReleaseListRelCmd.Sx(bits, xs, rem, rem2, bits2):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceToReleaseItemRelCmd>, PDUSessionResourceToReleaseListRelCmd.Sx(bits, xs, rem, rem2, bits2), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+k, c1)}:
+      match c1:
+        case Ap.Cur{+r1, +b1}:
+          PDUSessionResourceToReleaseListRelCmd.sx.go(rem, bits, k, r1, b1, xs, rem2, bits2, PC.Size.sx(True{}, 8n, 1n, 255n, rem, bits, k, r1, b1, erl), PDUSessionResourceToReleaseListRelCmd.sx.items(k, r1, b1, xs, rem2, bits2, e))
+
+def GL.ngap.PDUSessionResourceToReleaseListRelCmd.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceToReleaseListRelCmd.sx.count(rem, bits, Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}), {==}, v, rem2, bits2, e)
+
+def PDUSessionResourceReleaseCommand.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommand(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceReleaseCommand.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleaseCommand.after(v, rem) : Nat}
+
+def GL.ngap.PDUSessionResourceReleaseCommand.roundtrip(v, rem, rest, ok):
+  L.ngap.ies.roundtrip(v, Ap.Bit.after(rem), rest, ok)
+
+def PDUSessionResourceReleaseCommand.dv(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceReleaseCommand(), +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseCommand.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseCommand())}) -> {G.PDUSessionResourceReleaseCommand.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommand(), {G.PDUSessionResourceReleaseCommand.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommand(), {G.PDUSessionResourceReleaseCommand.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          L.ngap.ies.decode_valid(c, v, c2, e)
+
+def GL.ngap.PDUSessionResourceReleaseCommand.decode_valid(c, v, c2, e):
+  PDUSessionResourceReleaseCommand.dv(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceReleaseCommand.sx.go(+rem: Nat, +rest: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommand(), +rem2: Nat, +bits2: Ap.Bits(), s: PC.Canon(rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), rem2, 0n)) -> PDUSessionResourceReleaseCommand.Sx(False{} <> rest, v, rem, rem2, bits2):
+  (s1, s2) = s
+  (Equal.cong(Ap.Bits(), Ap.Bits(), l => False{} <> l, rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), s1), s2)
+
+def PDUSessionResourceReleaseCommand.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseCommand(), +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseCommand.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseCommand())}) -> PDUSessionResourceReleaseCommand.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseCommand(), PDUSessionResourceReleaseCommand.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseCommand(), PDUSessionResourceReleaseCommand.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceReleaseCommand.sx.go(rem, rest, v, rem2, bits2, PF.Ies.sx(Ap.Bit.after(rem), rest, v, rem2, bits2, e))
+
+def GL.ngap.PDUSessionResourceReleaseCommand.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceReleaseCommand.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceReleaseResponseTransfer.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseResponseTransfer, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceReleaseResponseTransfer.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleaseResponseTransfer.after(v, rem) : Nat}
+
+def PDUSessionResourceReleaseResponseTransfer.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceReleaseResponseTransfer.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionResourceReleaseResponseTransfer.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseResponseTransfer.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceReleaseResponseTransfer.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceReleaseResponseTransfer.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceReleaseResponseTransfer.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionResourceReleaseResponseTransfer.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceReleaseResponseTransfer.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceReleaseResponseTransfer.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceReleaseResponseTransfer.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceReleaseResponseTransfer.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceReleaseResponseTransfer.rt(+iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceReleaseResponseTransfer.valid(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionResourceReleaseResponseTransfer.read(Ap.Cur{rem, G.PDUSessionResourceReleaseResponseTransfer.write(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleaseResponseTransfer.after(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}:
+  e0 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(iE_Extensions, Ap.Bits.after(1n, Ap.Bit.after(rem)), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(iE_Extensions, Ap.Bits.after(1n, Ap.Bit.after(rem))), rest})}, PDUSessionResourceReleaseResponseTransfer.o_rt_iE_Extensions(iE_Extensions, Ap.Bits.after(1n, Ap.Bit.after(rem)), rest, ok))
+  %e0 : {G.PDUSessionResourceReleaseResponseTransfer.r_iE_Extensions(_) == Done{(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleaseResponseTransfer.after(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}
+  {==}
+
+def GL.ngap.PDUSessionResourceReleaseResponseTransfer.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}:
+      PDUSessionResourceReleaseResponseTransfer.rt(iE_Extensions, rem, rest, ok)
+
+def PDUSessionResourceReleaseResponseTransfer.dv_iE_Extensions(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceReleaseResponseTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseResponseTransfer.r_iE_Extensions(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}) -> {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleaseResponseTransfer, y => PA.Rd.value(G.PDUSessionResourceReleaseResponseTransfer, y, v), Done{(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionResourceReleaseResponseTransfer.valid(_) == True{} : Bool}
+      PDUSessionResourceReleaseResponseTransfer.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)
+
+def PDUSessionResourceReleaseResponseTransfer.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionResourceReleaseResponseTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseResponseTransfer.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}) -> {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          PDUSessionResourceReleaseResponseTransfer.dv_iE_Extensions(p_iE_Extensions, c3, G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionResourceReleaseResponseTransfer.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceReleaseResponseTransfer, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseResponseTransfer.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}) -> {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, {G.PDUSessionResourceReleaseResponseTransfer.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          PDUSessionResourceReleaseResponseTransfer.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.PDUSessionResourceReleaseResponseTransfer.decode_valid(c, v, c2, e):
+  PDUSessionResourceReleaseResponseTransfer.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceReleaseResponseTransfer.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceReleaseResponseTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: ({bi == G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleaseResponseTransfer, y => PA.Rd.value(G.PDUSessionResourceReleaseResponseTransfer, y, v), Done{(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer), Ap.Cur, y => PA.Rd.cur(G.PDUSessionResourceReleaseResponseTransfer, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionResourceReleaseResponseTransfer.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(iE_Extensions, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(iE_Extensions, Ap.Bits.after(1n, Ap.Bit.after(rem)), b3))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(iE_Extensions, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(iE_Extensions, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}; (%pr : {r3 == G.PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionResourceReleaseResponseTransfer.sx_iE_Extensions(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceReleaseResponseTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseResponseTransfer.r_iE_Extensions(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceReleaseResponseTransfer.sx_iE_Extensions.go(p_iE_Extensions, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceReleaseResponseTransfer.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionResourceReleaseResponseTransfer.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionResourceReleaseResponseTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseResponseTransfer.r_iE_Extensions(G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionResourceReleaseResponseTransfer.sx_iE_Extensions(p_iE_Extensions, rem, bits, r1, b1, G.PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def PDUSessionResourceReleaseResponseTransfer.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionResourceReleaseResponseTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseResponseTransfer.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionResourceReleaseResponseTransfer.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionResourceReleaseResponseTransfer.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseResponseTransfer, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseResponseTransfer.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseResponseTransfer)}) -> PDUSessionResourceReleaseResponseTransfer.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, PDUSessionResourceReleaseResponseTransfer.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponseTransfer, PDUSessionResourceReleaseResponseTransfer.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceReleaseResponseTransfer.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.PDUSessionResourceReleaseResponseTransfer.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceReleaseResponseTransfer.sx(rem, bits, v, rem2, bits2, e)
+
+def GL.ngap.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.roundtrip(v, rem, rest, ok):
+  L.aper.open.roundtrip(v, rem, rest, ok)
+
+def GL.ngap.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.decode_valid(c, v, c2, e):
+  L.aper.open.decode_valid(c, v, c2, e)
+
+def GL.ngap.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.suffix(rem, bits, v, rem2, bits2, e):
+  PC.Open.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceReleasedItemRelRes.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceReleasedItemRelRes, +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceReleasedItemRelRes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedItemRelRes.after(v, rem) : Nat}
+
+def PDUSessionResourceReleasedItemRelRes.o_rt_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +r: Nat, +inner: Ap.Bits(), ok: {G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(m) == True{} : Bool}) -> {G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, m), Ap.Cur{r, G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(m, r, inner)}) == Done{(m, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(m, r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+x}:
+      e1 = Equal.sym(Ap.Rd(List<&2, Fr.Ie>), Fr.Exts.read(Ap.Cur{r, Fr.Exts.write(x, r, inner)}), Done{(x, Ap.Cur{Fr.Exts.after(r), inner})}, L.ngap.exts.roundtrip(x, r, inner, ok))
+      %e1 : {G.PDUSessionResourceReleasedItemRelRes.s_iE_Extensions(_) == Done{(Some{x}, Ap.Cur{Fr.Exts.after(r), inner})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}
+      {==}
+
+def PDUSessionResourceReleasedItemRelRes.o_dv_iE_Extensions.some(+c: Ap.Cur, r: Ap.Rd(List<&2, Fr.Ie>), +er: {Fr.Exts.read(c) == r : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedItemRelRes.s_iE_Extensions(r) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(m) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, {G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(m) == True{} : Bool}, err, m, c2, e)
+    case Done{(+x, +c3)}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, c3)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(_) == True{} : Bool}
+      L.ngap.exts.decode_valid(c, x, c3, er)
+
+def PDUSessionResourceReleasedItemRelRes.o_dv_iE_Extensions(p: Bool, +c: Ap.Cur, +m: Maybe<&2, List<&2, Fr.Ie>>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p, c) == Done{(m, c2)} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> {G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(m) == True{} : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, c)}, Done{(m, c2)}, e)
+      %ev : {G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(_) == True{} : Bool}
+      {==}
+    case True{}:
+      PDUSessionResourceReleasedItemRelRes.o_dv_iE_Extensions.some(c, Fr.Exts.read(c), {==}, m, c2, e)
+
+def PDUSessionResourceReleasedItemRelRes.o_sx_iE_Extensions.go(+r: Nat, +b: Ap.Bits(), +x: List<&2, Fr.Ie>, +r4: Nat, +b4: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {Done{(Some{x}, Ap.Cur{r4, b4})} == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, s: {b == Fr.Exts.write(x, r, b4) : Ap.Bits()} & {r4 == Fr.Exts.after(r) : Nat}) -> ({b == G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  (s1, s2) = s
+  ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(Some{x}, Ap.Cur{r4, b4})}, Done{(m, Ap.Cur{r3, b3})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  er = Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r4, b4}, Ap.Cur{r3, b3}, ec)
+  %ev : ({b == G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(_, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+  (((%eb : {b == Fr.Exts.write(x, r, _) : Ap.Bits()}; s1), (%er : {_ == Fr.Exts.after(r) : Nat}; s2)), {==})
+
+def PDUSessionResourceReleasedItemRelRes.o_sx_iE_Extensions.some(+r: Nat, +b: Ap.Bits(), rd: Ap.Rd(List<&2, Fr.Ie>), +erd: {Fr.Exts.read(Ap.Cur{r, b}) == rd : Ap.Rd(List<&2, Fr.Ie>)}, +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.s_iE_Extensions(rd) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match rd:
+    case Fail{err}:
+      PA.Rd.absurd(Maybe<&2, List<&2, Fr.Ie>>, ({b == G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(m, r) : Nat}) & {True{} == Fr.Present(List<&2, Fr.Ie>, m) : Bool}, err, m, Ap.Cur{r3, b3}, e)
+    case Done{(+x, c4)}:
+      match c4:
+        case Ap.Cur{+r4, +b4}:
+          PDUSessionResourceReleasedItemRelRes.o_sx_iE_Extensions.go(r, b, x, r4, b4, m, r3, b3, e, PF.Exts.sx(r, b, x, r4, b4, erd))
+
+def PDUSessionResourceReleasedItemRelRes.o_sx_iE_Extensions(p: Bool, +r: Nat, +b: Ap.Bits(), +m: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p, Ap.Cur{r, b}) == Done{(m, Ap.Cur{r3, b3})} : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}) -> ({b == G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(m, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(m, r) : Nat}) & {p == Fr.Present(List<&2, Fr.Ie>, m) : Bool}:
+  match p:
+    case False{}:
+      ev = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Maybe<&2, List<&2, Fr.Ie>>, y => PA.Rd.value(Maybe<&2, List<&2, Fr.Ie>>, y, m), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      +ec = Equal.cong(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), Ap.Cur, y => PA.Rd.cur(Maybe<&2, List<&2, Fr.Ie>>, y, Ap.Cur{r3, b3}), Done{(None{}, Ap.Cur{r, b})}, Done{(m, Ap.Cur{r3, b3})}, e)
+      %ev : ({b == G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(_, r, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(_, r) : Nat}) & {False{} == Fr.Present(List<&2, Fr.Ie>, _) : Bool}
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec), Equal.sym(Nat, r, r3, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r, b}, Ap.Cur{r3, b3}, ec))), {==})
+    case True{}:
+      PDUSessionResourceReleasedItemRelRes.o_sx_iE_Extensions.some(r, b, Fr.Exts.read(Ap.Cur{r, b}), {==}, m, r3, b3, e)
+
+def PDUSessionResourceReleasedItemRelRes.rt(+pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseResponseTransfer: G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceReleasedItemRelRes.valid(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}) == True{} : Bool}) -> {G.PDUSessionResourceReleasedItemRelRes.read(Ap.Cur{rem, G.PDUSessionResourceReleasedItemRelRes.write(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, rem, rest)}) == Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes.after(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}:
+  ok0 = P.Bool.and_true_l(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(iE_Extensions)), ok)
+  +okr0 = P.Bool.and_true_r(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(iE_Extensions)), ok)
+  ok1 = P.Bool.and_true_l(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(iE_Extensions), okr0)
+  +okr1 = P.Bool.and_true_r(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(iE_Extensions), okr0)
+  e0 = Equal.sym(Ap.Rd(G.PDUSessionID()), G.PDUSessionID.read(Ap.Cur{Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)))}), Done{(pDUSessionID, Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))})}, GL.ngap.PDUSessionID.roundtrip(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)), ok0))
+  %e0 : {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionID(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), _) == Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes.after(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}
+  e1 = Equal.sym(Ap.Rd(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer()), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(Ap.Cur{G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest))}), Done{(pDUSessionResourceReleaseResponseTransfer, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)})}, GL.ngap.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.roundtrip(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest), ok1))
+  %e1 : {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionResourceReleaseResponseTransfer(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), pDUSessionID, _) == Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes.after(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}
+  e2 = Equal.sym(Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(Fr.Present(List<&2, Fr.Ie>, iE_Extensions), Ap.Cur{G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest)}), Done{(iE_Extensions, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))), rest})}, PDUSessionResourceReleasedItemRelRes.o_rt_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), rest, okr1))
+  %e2 : {G.PDUSessionResourceReleasedItemRelRes.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseResponseTransfer, _) == Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes.after(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, rem), rest})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}
+  {==}
+
+def GL.ngap.PDUSessionResourceReleasedItemRelRes.roundtrip(v, rem, rest, ok):
+  match v:
+    case G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}:
+      PDUSessionResourceReleasedItemRelRes.rt(pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions, rem, rest, ok)
+
+def PDUSessionResourceReleasedItemRelRes.dv_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseResponseTransfer: G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), +c: Ap.Cur, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p_iE_Extensions, c) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceReleasedItemRelRes, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedItemRelRes.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseResponseTransfer, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}, ok1: {G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer) == True{} : Bool}) -> {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+iE_Extensions, +c3)}:
+      ev = Equal.cong(Ap.Rd(G.PDUSessionResourceReleasedItemRelRes), G.PDUSessionResourceReleasedItemRelRes, y => PA.Rd.value(G.PDUSessionResourceReleasedItemRelRes, y, v), Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, c3)}, Done{(v, c2)}, e)
+      %ev : {G.PDUSessionResourceReleasedItemRelRes.valid(_) == True{} : Bool}
+      P.Bool.and_intro(G.PDUSessionID.valid(pDUSessionID), Bool.and(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(iE_Extensions)), ok0, P.Bool.and_intro(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer), G.PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(iE_Extensions), ok1, PDUSessionResourceReleasedItemRelRes.o_dv_iE_Extensions(p_iE_Extensions, c, iE_Extensions, c3, er)))
+
+def PDUSessionResourceReleasedItemRelRes.dv_pDUSessionResourceReleaseResponseTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +c: Ap.Cur, r: Ap.Rd(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer()), +er: {G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(c) == r : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer())}, +v: G.PDUSessionResourceReleasedItemRelRes, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionResourceReleaseResponseTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, ok0: {G.PDUSessionID.valid(pDUSessionID) == True{} : Bool}) -> {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionResourceReleaseResponseTransfer, +c3)}:
+      PDUSessionResourceReleasedItemRelRes.dv_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceReleaseResponseTransfer, c3, G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p_iE_Extensions, c3), {==}, v, c2, e, ok0, GL.ngap.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.decode_valid(c, pDUSessionResourceReleaseResponseTransfer, c3, er))
+
+def PDUSessionResourceReleasedItemRelRes.dv_pDUSessionID(+p_iE_Extensions: Bool, +c: Ap.Cur, r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(c) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceReleasedItemRelRes, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}) -> {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(+pDUSessionID, +c3)}:
+      PDUSessionResourceReleasedItemRelRes.dv_pDUSessionResourceReleaseResponseTransfer(p_iE_Extensions, pDUSessionID, c3, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(c3), {==}, v, c2, e, GL.ngap.PDUSessionID.decode_valid(c, pDUSessionID, c3, er))
+
+def PDUSessionResourceReleasedItemRelRes.dv_bm(r: Ap.Rd(Ap.Bits()), +v: G.PDUSessionResourceReleasedItemRelRes, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedItemRelRes.r_bm(r) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}) -> {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}:
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(bm, +c3)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceReleasedItemRelRes.dv_pDUSessionID(p_iE_Extensions, c3, G.PDUSessionID.read(c3), {==}, v, c2, e)
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, B.Short{}, v, c2, e)
+
+def PDUSessionResourceReleasedItemRelRes.dv_ext(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceReleasedItemRelRes, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedItemRelRes.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}) -> {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, +c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, {G.PDUSessionResourceReleasedItemRelRes.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          PDUSessionResourceReleasedItemRelRes.dv_bm(Ap.Bits.read(1n, c), v, c2, e)
+
+def GL.ngap.PDUSessionResourceReleasedItemRelRes.decode_valid(c, v, c2, e):
+  PDUSessionResourceReleasedItemRelRes.dv_ext(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceReleasedItemRelRes.sx_iE_Extensions.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseResponseTransfer: G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>, +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, Ap.Cur{r3, b3})} == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, +pr: {ri == G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}, s: ({bi == G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(iE_Extensions, ri) : Nat}) & {p_iE_Extensions == Fr.Present(List<&2, Fr.Ie>, iE_Extensions) : Bool}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  (s12, s3) = s
+  (s1, s2) = s12
+  ev = Equal.cong(Ap.Rd(G.PDUSessionResourceReleasedItemRelRes), G.PDUSessionResourceReleasedItemRelRes, y => PA.Rd.value(G.PDUSessionResourceReleasedItemRelRes, y, v), Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  +ec = Equal.cong(Ap.Rd(G.PDUSessionResourceReleasedItemRelRes), Ap.Cur, y => PA.Rd.cur(G.PDUSessionResourceReleasedItemRelRes, y, Ap.Cur{rem2, bits2}), Done{(G.PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, Ap.Cur{r3, b3})}, Done{(v, Ap.Cur{rem2, bits2})}, e)
+  eb = Equal.cong(Ap.Cur, Ap.Bits(), x => PA.Cur.bits(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  er = Equal.cong(Ap.Cur, Nat, x => PA.Cur.rem(x), Ap.Cur{r3, b3}, Ap.Cur{rem2, bits2}, ec)
+  %ev : PDUSessionResourceReleasedItemRelRes.Sx(bits, _, rem, rem2, bits2)
+  ((%eb : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), _))))) : Ap.Bits()}; (%s3 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([_], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))), b3))))) : Ap.Bits()}; (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), G.PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, _, b3))))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), _)))) : Ap.Bits()}; pre)))), (%er : {_ == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(iE_Extensions, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))))) : Nat}; (%pr : {r3 == G.PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(iE_Extensions, _) : Nat}; s2)))
+
+def PDUSessionResourceReleasedItemRelRes.sx_iE_Extensions(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +pDUSessionResourceReleaseResponseTransfer: G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>), +er: {G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{ri, bi}) == r : Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)}, +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseResponseTransfer, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))), bi)))) : Ap.Bits()}, pr: {ri == G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)))) : Nat}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+iE_Extensions, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceReleasedItemRelRes.sx_iE_Extensions.go(p_iE_Extensions, pDUSessionID, pDUSessionResourceReleaseResponseTransfer, rem, bits, ri, bi, iE_Extensions, r3, b3, v, rem2, bits2, e, pre, pr, PDUSessionResourceReleasedItemRelRes.o_sx_iE_Extensions(p_iE_Extensions, ri, bi, iE_Extensions, r3, b3, er))
+
+def PDUSessionResourceReleasedItemRelRes.sx_pDUSessionResourceReleaseResponseTransfer.go(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionResourceReleaseResponseTransfer: G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseResponseTransfer, G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, +pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}, s: {bi == G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, ri) : Nat}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceReleasedItemRelRes.sx_iE_Extensions(p_iE_Extensions, pDUSessionID, pDUSessionResourceReleaseResponseTransfer, rem, bits, r3, b3, G.PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p_iE_Extensions, Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, _, b3)))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), _))) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, _) : Nat}; s2))
+
+def PDUSessionResourceReleasedItemRelRes.sx_pDUSessionResourceReleaseResponseTransfer(+p_iE_Extensions: Bool, +pDUSessionID: G.PDUSessionID(), +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer()), +er: {G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer())}, +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionResourceReleaseResponseTransfer(p_iE_Extensions, pDUSessionID, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem)), bi))) : Ap.Bits()}, pr: {ri == G.PDUSessionID.after(pDUSessionID, Ap.Bits.after(1n, Ap.Bit.after(rem))) : Nat}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionResourceReleaseResponseTransfer, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceReleasedItemRelRes.sx_pDUSessionResourceReleaseResponseTransfer.go(p_iE_Extensions, pDUSessionID, rem, bits, ri, bi, pDUSessionResourceReleaseResponseTransfer, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.suffix(ri, bi, pDUSessionResourceReleaseResponseTransfer, r3, b3, er))
+
+def PDUSessionResourceReleasedItemRelRes.sx_pDUSessionID.go(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), +pDUSessionID: G.PDUSessionID(), +r3: Nat, +b3: Ap.Bits(), +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionResourceReleaseResponseTransfer(p_iE_Extensions, pDUSessionID, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(Ap.Cur{r3, b3})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, +pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}, s: {bi == G.PDUSessionID.write(pDUSessionID, ri, b3) : Ap.Bits()} & {r3 == G.PDUSessionID.after(pDUSessionID, ri) : Nat}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  (s1, s2) = s
+  PDUSessionResourceReleasedItemRelRes.sx_pDUSessionResourceReleaseResponseTransfer(p_iE_Extensions, pDUSessionID, rem, bits, r3, b3, G.PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(Ap.Cur{r3, b3}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), G.PDUSessionID.write(pDUSessionID, _, b3))) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), _)) : Ap.Bits()}; pre)), (%pr : {r3 == G.PDUSessionID.after(pDUSessionID, _) : Nat}; s2))
+
+def PDUSessionResourceReleasedItemRelRes.sx_pDUSessionID(+p_iE_Extensions: Bool, +rem: Nat, +bits: Ap.Bits(), +ri: Nat, +bi: Ap.Bits(), r: Ap.Rd(G.PDUSessionID()), +er: {G.PDUSessionID.read(Ap.Cur{ri, bi}) == r : Ap.Rd(G.PDUSessionID())}, +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionID(p_iE_Extensions, r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], Ap.Bit.after(rem), bi)) : Ap.Bits()}, pr: {ri == Ap.Bits.after(1n, Ap.Bit.after(rem)) : Nat}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(+pDUSessionID, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceReleasedItemRelRes.sx_pDUSessionID.go(p_iE_Extensions, rem, bits, ri, bi, pDUSessionID, r3, b3, v, rem2, bits2, e, pre, pr, GL.ngap.PDUSessionID.suffix(ri, bi, pDUSessionID, r3, b3, er))
+
+def PDUSessionResourceReleasedItemRelRes.sx_bm.go(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), +p_iE_Extensions: Bool, +r1: Nat, +b1: Ap.Bits(), +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.r_pDUSessionID(p_iE_Extensions, G.PDUSessionID.read(Ap.Cur{r1, b1})) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, +pr: {r0 == Ap.Bit.after(rem) : Nat}, s: PC.Canon(b0, Ap.Bits.write([p_iE_Extensions], r0, b1), r1, Ap.Bits.after(1n, r0)) & {List.length(&2, Bool, [p_iE_Extensions]) == 1n : Nat}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  (cn, len) = s
+  (s1, s2) = cn
+  PDUSessionResourceReleasedItemRelRes.sx_pDUSessionID(p_iE_Extensions, rem, bits, r1, b1, G.PDUSessionID.read(Ap.Cur{r1, b1}), {==}, v, rem2, bits2, e, (%pr : {bits == Ap.Bit.write(False{}, rem, Ap.Bits.write([p_iE_Extensions], _, b1)) : Ap.Bits()}; (%s1 : {bits == Ap.Bit.write(False{}, rem, _) : Ap.Bits()}; pre)), (%pr : {r1 == Ap.Bits.after(1n, _) : Nat}; s2))
+
+def PDUSessionResourceReleasedItemRelRes.sx_bm(+rem: Nat, +bits: Ap.Bits(), +r0: Nat, +b0: Ap.Bits(), r: Ap.Rd(Ap.Bits()), +er: {Ap.Bits.read(1n, Ap.Cur{r0, b0}) == r : Ap.Rd(Ap.Bits())}, +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.r_bm(r) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, pre: {bits == Ap.Bit.write(False{}, rem, b0) : Ap.Bits()}, pr: {r0 == Ap.Bit.after(rem) : Nat}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  match r:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2), err, v, Ap.Cur{rem2, bits2}, e)
+    case Done{(bm, c1)}:
+      match bm:
+        case +p_iE_Extensions <> Nil{}:
+          match c1:
+            case Ap.Cur{+r1, +b1}:
+              PDUSessionResourceReleasedItemRelRes.sx_bm.go(rem, bits, r0, b0, p_iE_Extensions, r1, b1, v, rem2, bits2, e, pre, pr, PC.Bits.sx(1n, r0, b0, [p_iE_Extensions], r1, b1, er))
+        case Nil{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+        case q0 <> q1 <> more:
+          PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+
+def PDUSessionResourceReleasedItemRelRes.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceReleasedItemRelRes, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedItemRelRes.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}) -> PDUSessionResourceReleasedItemRelRes.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleasedItemRelRes, PDUSessionResourceReleasedItemRelRes.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceReleasedItemRelRes.sx_bm(rem, False{} <> rest, Ap.Bit.after(rem), rest, Ap.Bits.read(1n, Ap.Cur{Ap.Bit.after(rem), rest}), {==}, v, rem2, bits2, e, {==}, {==})
+
+def GL.ngap.PDUSessionResourceReleasedItemRelRes.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceReleasedItemRelRes.sx(rem, bits, v, rem2, bits2, e)
+
+def PDUSessionResourceReleasedListRelRes.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceReleasedListRelRes(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceReleasedListRelRes.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedListRelRes.after(v, rem) : Nat}
+
+def PDUSessionResourceReleasedListRelRes.items_rt(xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem: Nat, +rest: Ap.Bits(), +av: {G.PDUSessionResourceReleasedListRelRes.all_valid(xs) == True{} : Bool}) -> {Done{(xs, Ap.Cur{G.PDUSessionResourceReleasedListRelRes.items_after(xs, rem), rest})} == G.PDUSessionResourceReleasedListRelRes.items(List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs), Ap.Cur{rem, G.PDUSessionResourceReleasedListRelRes.items_write(xs, rem, rest)}) : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}:
+  match xs:
+    case Nil{}:
+      {==}
+    case +x <> +more:
+      ir = Equal.sym(Ap.Rd(G.PDUSessionResourceReleasedItemRelRes), G.PDUSessionResourceReleasedItemRelRes.read(Ap.Cur{rem, G.PDUSessionResourceReleasedItemRelRes.write(x, rem, G.PDUSessionResourceReleasedListRelRes.items_write(more, G.PDUSessionResourceReleasedItemRelRes.after(x, rem), rest))}), Done{(x, Ap.Cur{G.PDUSessionResourceReleasedItemRelRes.after(x, rem), G.PDUSessionResourceReleasedListRelRes.items_write(more, G.PDUSessionResourceReleasedItemRelRes.after(x, rem), rest)})}, GL.ngap.PDUSessionResourceReleasedItemRelRes.roundtrip(x, rem, G.PDUSessionResourceReleasedListRelRes.items_write(more, G.PDUSessionResourceReleasedItemRelRes.after(x, rem), rest), P.Bool.and_true_l(G.PDUSessionResourceReleasedItemRelRes.valid(x), G.PDUSessionResourceReleasedListRelRes.all_valid(more), av)))
+      %ir : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceReleasedListRelRes.items_after(x <> more, rem), rest})} == G.PDUSessionResourceReleasedListRelRes.next(_, c2 => G.PDUSessionResourceReleasedListRelRes.items(List.length(&2, G.PDUSessionResourceReleasedItemRelRes, more), c2)) : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}
+      ih = PDUSessionResourceReleasedListRelRes.items_rt(more, G.PDUSessionResourceReleasedItemRelRes.after(x, rem), rest, P.Bool.and_true_r(G.PDUSessionResourceReleasedItemRelRes.valid(x), G.PDUSessionResourceReleasedListRelRes.all_valid(more), av))
+      %ih : {Done{(x <> more, Ap.Cur{G.PDUSessionResourceReleasedListRelRes.items_after(x <> more, rem), rest})} == G.PDUSessionResourceReleasedListRelRes.cons(x, _) : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}
+      {==}
+
+def PDUSessionResourceReleasedListRelRes.rt(+xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem: Nat, +rest: Ap.Bits(), +ok: {G.PDUSessionResourceReleasedListRelRes.valid(xs) == True{} : Bool}) -> {G.PDUSessionResourceReleasedListRelRes.read(Ap.Cur{rem, G.PDUSessionResourceReleasedListRelRes.write(xs, rem, rest)}) == Done{(xs, Ap.Cur{G.PDUSessionResourceReleasedListRelRes.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}:
+  sr = Equal.sym(Ap.Rd(Nat), Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, Ap.Size.write(True{}, 8n, 1n, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs), rem, G.PDUSessionResourceReleasedListRelRes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))}), Done{(List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceReleasedListRelRes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)})}, L.aper.size.roundtrip(True{}, 8n, 1n, 255n, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs), rem, G.PDUSessionResourceReleasedListRelRes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest), P.Bool.and_true_l(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs)), G.PDUSessionResourceReleasedListRelRes.all_valid(xs), ok), {==}))
+  %sr : {G.PDUSessionResourceReleasedListRelRes.count(_) == Done{(xs, Ap.Cur{G.PDUSessionResourceReleasedListRelRes.after(xs, rem), rest})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}
+  Equal.sym(Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), Done{(xs, Ap.Cur{G.PDUSessionResourceReleasedListRelRes.items_after(xs, Ap.Size.after(True{}, 8n, rem)), rest})}, G.PDUSessionResourceReleasedListRelRes.items(List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs), Ap.Cur{Ap.Size.after(True{}, 8n, rem), G.PDUSessionResourceReleasedListRelRes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest)}), PDUSessionResourceReleasedListRelRes.items_rt(xs, Ap.Size.after(True{}, 8n, rem), rest, P.Bool.and_true_r(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs)), G.PDUSessionResourceReleasedListRelRes.all_valid(xs), ok)))
+
+def GL.ngap.PDUSessionResourceReleasedListRelRes.roundtrip(v, rem, rest, ok):
+  PDUSessionResourceReleasedListRelRes.rt(v, rem, rest, ok)
+
+def PDUSessionResourceReleasedListRelRes.Spec(xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, n: Nat) -> Type:
+  {G.PDUSessionResourceReleasedListRelRes.all_valid(xs) == True{} : Bool} & {List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs) == n : Nat}
+
+def PDUSessionResourceReleasedListRelRes.spec.finish(+p: Nat, +x: G.PDUSessionResourceReleasedItemRelRes, +xs2: List<&2, G.PDUSessionResourceReleasedItemRelRes>, vi: {G.PDUSessionResourceReleasedItemRelRes.valid(x) == True{} : Bool}, s: PDUSessionResourceReleasedListRelRes.Spec(xs2, p)) -> PDUSessionResourceReleasedListRelRes.Spec(x <> xs2, 1n+p):
+  (av, len) = s
+  (P.Bool.and_intro(G.PDUSessionResourceReleasedItemRelRes.valid(x), G.PDUSessionResourceReleasedListRelRes.all_valid(xs2), vi, av), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs2), p, len))
+
+def PDUSessionResourceReleasedListRelRes.spec.cons(+p: Nat, +x: G.PDUSessionResourceReleasedItemRelRes, +c3: Ap.Cur, rl: Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), +erl: {G.PDUSessionResourceReleasedListRelRes.items(p, c3) == rl : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceReleasedItemRelRes> -> @c5: Ap.Cur -> {G.PDUSessionResourceReleasedListRelRes.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)} -> PDUSessionResourceReleasedListRelRes.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedListRelRes.cons(x, rl) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}, vi: {G.PDUSessionResourceReleasedItemRelRes.valid(x) == True{} : Bool}) -> PDUSessionResourceReleasedListRelRes.Spec(xs, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceReleasedItemRelRes>, PDUSessionResourceReleasedListRelRes.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+xs2, +c5)}:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), List<&2, G.PDUSessionResourceReleasedItemRelRes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceReleasedItemRelRes>, y, xs), Done{(x <> xs2, c5)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceReleasedListRelRes.Spec(_, 1n+p)
+      PDUSessionResourceReleasedListRelRes.spec.finish(p, x, xs2, vi, ih(c3, xs2, c5, erl))
+
+def PDUSessionResourceReleasedListRelRes.spec.step(+p: Nat, +c: Ap.Cur, ri: Ap.Rd(G.PDUSessionResourceReleasedItemRelRes), +eri: {G.PDUSessionResourceReleasedItemRelRes.read(c) == ri : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, ih: @c4: Ap.Cur -> @xs2: List<&2, G.PDUSessionResourceReleasedItemRelRes> -> @c5: Ap.Cur -> {G.PDUSessionResourceReleasedListRelRes.items(p, c4) == Done{(xs2, c5)} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)} -> PDUSessionResourceReleasedListRelRes.Spec(xs2, p), +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedListRelRes.next(ri, c4 => G.PDUSessionResourceReleasedListRelRes.items(p, c4)) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}) -> PDUSessionResourceReleasedListRelRes.Spec(xs, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceReleasedItemRelRes>, PDUSessionResourceReleasedListRelRes.Spec(xs, 1n+p), err, xs, c2, e)
+    case Done{(+x, +c3)}:
+      PDUSessionResourceReleasedListRelRes.spec.cons(p, x, c3, G.PDUSessionResourceReleasedListRelRes.items(p, c3), {==}, ih, xs, c2, e, GL.ngap.PDUSessionResourceReleasedItemRelRes.decode_valid(c, x, c3, eri))
+
+def PDUSessionResourceReleasedListRelRes.spec(n: Nat, +c: Ap.Cur, +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedListRelRes.items(n, c) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}) -> PDUSessionResourceReleasedListRelRes.Spec(xs, n):
+  match n:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), List<&2, G.PDUSessionResourceReleasedItemRelRes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceReleasedItemRelRes>, y, xs), Done{([], c)}, Done{(xs, c2)}, e)
+      %ev : PDUSessionResourceReleasedListRelRes.Spec(_, 0n)
+      ({==}, {==})
+    case 1n++p:
+      PDUSessionResourceReleasedListRelRes.spec.step(p, c, G.PDUSessionResourceReleasedItemRelRes.read(c), {==}, c4 => xs2 => c5 => e2 => PDUSessionResourceReleasedListRelRes.spec(p, c4, xs2, c5, e2), xs, c2, e)
+
+def PDUSessionResourceReleasedListRelRes.dv.finish(+n: Nat, +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, sv: {Ap.Size.valid(1n, 255n, n) == True{} : Bool}, s: PDUSessionResourceReleasedListRelRes.Spec(xs, n)) -> {G.PDUSessionResourceReleasedListRelRes.valid(xs) == True{} : Bool}:
+  (av, len) = s
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs), n, len)
+  P.Bool.and_intro(Ap.Size.valid(1n, 255n, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs)), G.PDUSessionResourceReleasedListRelRes.all_valid(xs), (%slen : {Ap.Size.valid(1n, 255n, _) == True{} : Bool}; sv), av)
+
+def PDUSessionResourceReleasedListRelRes.dv(+c0: Ap.Cur, rn: Ap.Rd(Nat), +ern: {Ap.Size.read(True{}, 8n, 1n, 255n, c0) == rn : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +c2: Ap.Cur, +e: {G.PDUSessionResourceReleasedListRelRes.count(rn) == Done{(xs, c2)} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}) -> {G.PDUSessionResourceReleasedListRelRes.valid(xs) == True{} : Bool}:
+  match rn:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceReleasedItemRelRes>, {G.PDUSessionResourceReleasedListRelRes.valid(xs) == True{} : Bool}, err, xs, c2, e)
+    case Done{(+n, +c)}:
+      PDUSessionResourceReleasedListRelRes.dv.finish(n, xs, L.aper.size.decode_valid(True{}, 8n, 1n, 255n, c0, n, c, ern), PDUSessionResourceReleasedListRelRes.spec(n, c, xs, c2, e))
+
+def GL.ngap.PDUSessionResourceReleasedListRelRes.decode_valid(c, v, c2, e):
+  PDUSessionResourceReleasedListRelRes.dv(c, Ap.Size.read(True{}, 8n, 1n, 255n, c), {==}, v, c2, e)
+
+def PDUSessionResourceReleasedListRelRes.Sxi(+bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem: Nat, rem2: Nat, +bits2: Ap.Bits(), k: Nat) -> Type:
+  ({bits == G.PDUSessionResourceReleasedListRelRes.items_write(xs, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleasedListRelRes.items_after(xs, rem) : Nat}) & {List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs) == k : Nat}
+
+def PDUSessionResourceReleasedListRelRes.sx.finish(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceReleasedItemRelRes, +r3: Nat, +b3: Ap.Bits(), +xs2: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +r5: Nat, +b5: Ap.Bits(), +rem2: Nat, +bits2: Ap.Bits(), si: {bits == G.PDUSessionResourceReleasedItemRelRes.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.after(x, rem) : Nat}, s: PDUSessionResourceReleasedListRelRes.Sxi(b3, xs2, r3, r5, b5, p), eb: {b5 == bits2 : Ap.Bits()}, er: {r5 == rem2 : Nat}) -> PDUSessionResourceReleasedListRelRes.Sxi(bits, x <> xs2, rem, rem2, bits2, 1n+p):
+  (i1, +i2) = si
+  (cn, len) = s
+  (h1, h2) = cn
+  (((%i2 : {bits == G.PDUSessionResourceReleasedItemRelRes.write(x, rem, G.PDUSessionResourceReleasedListRelRes.items_write(xs2, _, bits2)) : Ap.Bits()}; (%eb : {bits == G.PDUSessionResourceReleasedItemRelRes.write(x, rem, G.PDUSessionResourceReleasedListRelRes.items_write(xs2, r3, _)) : Ap.Bits()}; (%h1 : {bits == G.PDUSessionResourceReleasedItemRelRes.write(x, rem, _) : Ap.Bits()}; i1))), (%er : {_ == G.PDUSessionResourceReleasedListRelRes.items_after(xs2, G.PDUSessionResourceReleasedItemRelRes.after(x, rem)) : Nat}; (%i2 : {r5 == G.PDUSessionResourceReleasedListRelRes.items_after(xs2, _) : Nat}; h2))), Equal.cong(Nat, Nat, m => 1n+m, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs2), p, len))
+
+def PDUSessionResourceReleasedListRelRes.sx.cons(+p: Nat, +rem: Nat, +bits: Ap.Bits(), +x: G.PDUSessionResourceReleasedItemRelRes, +r3: Nat, +b3: Ap.Bits(), rl: Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), +erl: {G.PDUSessionResourceReleasedListRelRes.items(p, Ap.Cur{r3, b3}) == rl : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceReleasedItemRelRes> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceReleasedListRelRes.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)} -> PDUSessionResourceReleasedListRelRes.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedListRelRes.cons(x, rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}, si: {bits == G.PDUSessionResourceReleasedItemRelRes.write(x, rem, b3) : Ap.Bits()} & {r3 == G.PDUSessionResourceReleasedItemRelRes.after(x, rem) : Nat}) -> PDUSessionResourceReleasedListRelRes.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceReleasedItemRelRes>, PDUSessionResourceReleasedListRelRes.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+xs2, c5)}:
+      match c5:
+        case Ap.Cur{+r5, +b5}:
+          ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), List<&2, G.PDUSessionResourceReleasedItemRelRes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceReleasedItemRelRes>, y, xs), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceReleasedItemRelRes>, y, Ap.Cur{rem2, bits2}), Done{(x <> xs2, Ap.Cur{r5, b5})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+          %ev : PDUSessionResourceReleasedListRelRes.Sxi(bits, _, rem, rem2, bits2, 1n+p)
+          PDUSessionResourceReleasedListRelRes.sx.finish(p, rem, bits, x, r3, b3, xs2, r5, b5, rem2, bits2, si, ih(b3, r3, xs2, r5, b5, erl), Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec), Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{r5, b5}, Ap.Cur{rem2, bits2}, ec))
+
+def PDUSessionResourceReleasedListRelRes.sx.step(+p: Nat, +rem: Nat, +bits: Ap.Bits(), ri: Ap.Rd(G.PDUSessionResourceReleasedItemRelRes), +eri: {G.PDUSessionResourceReleasedItemRelRes.read(Ap.Cur{rem, bits}) == ri : Ap.Rd(G.PDUSessionResourceReleasedItemRelRes)}, ih: @b4: Ap.Bits() -> @r4: Nat -> @xs2: List<&2, G.PDUSessionResourceReleasedItemRelRes> -> @r5: Nat -> @b5: Ap.Bits() -> {G.PDUSessionResourceReleasedListRelRes.items(p, Ap.Cur{r4, b4}) == Done{(xs2, Ap.Cur{r5, b5})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)} -> PDUSessionResourceReleasedListRelRes.Sxi(b4, xs2, r4, r5, b5, p), +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedListRelRes.next(ri, c4 => G.PDUSessionResourceReleasedListRelRes.items(p, c4)) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}) -> PDUSessionResourceReleasedListRelRes.Sxi(bits, xs, rem, rem2, bits2, 1n+p):
+  match ri:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceReleasedItemRelRes>, PDUSessionResourceReleasedListRelRes.Sxi(bits, xs, rem, rem2, bits2, 1n+p), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+x, c3)}:
+      match c3:
+        case Ap.Cur{+r3, +b3}:
+          PDUSessionResourceReleasedListRelRes.sx.cons(p, rem, bits, x, r3, b3, G.PDUSessionResourceReleasedListRelRes.items(p, Ap.Cur{r3, b3}), {==}, ih, xs, rem2, bits2, e, GL.ngap.PDUSessionResourceReleasedItemRelRes.suffix(rem, bits, x, r3, b3, eri))
+
+def PDUSessionResourceReleasedListRelRes.sx.items(k: Nat, +rem: Nat, +bits: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedListRelRes.items(k, Ap.Cur{rem, bits}) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}) -> PDUSessionResourceReleasedListRelRes.Sxi(bits, xs, rem, rem2, bits2, k):
+  match k:
+    case 0n:
+      ev = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), List<&2, G.PDUSessionResourceReleasedItemRelRes>, y => PA.Rd.value(List<&2, G.PDUSessionResourceReleasedItemRelRes>, y, xs), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      +ec = Equal.cong(Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>), Ap.Cur, y => PA.Rd.cur(List<&2, G.PDUSessionResourceReleasedItemRelRes>, y, Ap.Cur{rem2, bits2}), Done{([], Ap.Cur{rem, bits})}, Done{(xs, Ap.Cur{rem2, bits2})}, e)
+      %ev : PDUSessionResourceReleasedListRelRes.Sxi(bits, _, rem, rem2, bits2, 0n)
+      ((Equal.cong(Ap.Cur, Ap.Bits(), y => PA.Cur.bits(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec), Equal.sym(Nat, rem, rem2, Equal.cong(Ap.Cur, Nat, y => PA.Cur.rem(y), Ap.Cur{rem, bits}, Ap.Cur{rem2, bits2}, ec))), {==})
+    case 1n++p:
+      PDUSessionResourceReleasedListRelRes.sx.step(p, rem, bits, G.PDUSessionResourceReleasedItemRelRes.read(Ap.Cur{rem, bits}), {==}, b4 => r4 => xs2 => r5 => b5 => e2 => PDUSessionResourceReleasedListRelRes.sx.items(p, r4, b4, xs2, r5, b5, e2), xs, rem2, bits2, e)
+
+def PDUSessionResourceReleasedListRelRes.sx.go(+rem: Nat, +bits: Ap.Bits(), +k: Nat, +r1: Nat, +b1: Ap.Bits(), +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem2: Nat, +bits2: Ap.Bits(), ss: PC.Canon(bits, Ap.Size.write(True{}, 8n, 1n, k, rem, b1), r1, Ap.Size.after(True{}, 8n, rem)), s: PDUSessionResourceReleasedListRelRes.Sxi(b1, xs, r1, rem2, bits2, k)) -> PDUSessionResourceReleasedListRelRes.Sx(bits, xs, rem, rem2, bits2):
+  (s1, +s2) = ss
+  (cn, len) = s
+  (h1, h2) = cn
+  slen = Equal.sym(Nat, List.length(&2, G.PDUSessionResourceReleasedItemRelRes, xs), k, len)
+  ((%slen : {bits == Ap.Size.write(True{}, 8n, 1n, _, rem, G.PDUSessionResourceReleasedListRelRes.items_write(xs, Ap.Size.after(True{}, 8n, rem), bits2)) : Ap.Bits()}; (%s2 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, G.PDUSessionResourceReleasedListRelRes.items_write(xs, _, bits2)) : Ap.Bits()}; (%h1 : {bits == Ap.Size.write(True{}, 8n, 1n, k, rem, _) : Ap.Bits()}; s1))), (%s2 : {rem2 == G.PDUSessionResourceReleasedListRelRes.items_after(xs, _) : Nat}; h2))
+
+def PDUSessionResourceReleasedListRelRes.sx.count(+rem: Nat, +bits: Ap.Bits(), rl: Ap.Rd(Nat), +erl: {Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}) == rl : Ap.Rd(Nat)}, +xs: List<&2, G.PDUSessionResourceReleasedItemRelRes>, +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleasedListRelRes.count(rl) == Done{(xs, Ap.Cur{rem2, bits2})} : Ap.Rd(List<&2, G.PDUSessionResourceReleasedItemRelRes>)}) -> PDUSessionResourceReleasedListRelRes.Sx(bits, xs, rem, rem2, bits2):
+  match rl:
+    case Fail{err}:
+      PA.Rd.absurd(List<&2, G.PDUSessionResourceReleasedItemRelRes>, PDUSessionResourceReleasedListRelRes.Sx(bits, xs, rem, rem2, bits2), err, xs, Ap.Cur{rem2, bits2}, e)
+    case Done{(+k, c1)}:
+      match c1:
+        case Ap.Cur{+r1, +b1}:
+          PDUSessionResourceReleasedListRelRes.sx.go(rem, bits, k, r1, b1, xs, rem2, bits2, PC.Size.sx(True{}, 8n, 1n, 255n, rem, bits, k, r1, b1, erl), PDUSessionResourceReleasedListRelRes.sx.items(k, r1, b1, xs, rem2, bits2, e))
+
+def GL.ngap.PDUSessionResourceReleasedListRelRes.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceReleasedListRelRes.sx.count(rem, bits, Ap.Size.read(True{}, 8n, 1n, 255n, Ap.Cur{rem, bits}), {==}, v, rem2, bits2, e)
+
+def PDUSessionResourceReleaseResponse.Sx(+bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseResponse(), +rem: Nat, rem2: Nat, bits2: Ap.Bits()) -> Type:
+  {bits == G.PDUSessionResourceReleaseResponse.write(v, rem, bits2) : Ap.Bits()} & {rem2 == G.PDUSessionResourceReleaseResponse.after(v, rem) : Nat}
+
+def GL.ngap.PDUSessionResourceReleaseResponse.roundtrip(v, rem, rest, ok):
+  L.ngap.ies.roundtrip(v, Ap.Bit.after(rem), rest, ok)
+
+def PDUSessionResourceReleaseResponse.dv(rb: Ap.Rd(Bool), +v: G.PDUSessionResourceReleaseResponse(), +c2: Ap.Cur, +e: {G.PDUSessionResourceReleaseResponse.r_ext(rb) == Done{(v, c2)} : Ap.Rd(G.PDUSessionResourceReleaseResponse())}) -> {G.PDUSessionResourceReleaseResponse.valid(v) == True{} : Bool}:
+  match rb:
+    case Fail{err}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponse(), {G.PDUSessionResourceReleaseResponse.valid(v) == True{} : Bool}, err, v, c2, e)
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponse(), {G.PDUSessionResourceReleaseResponse.valid(v) == True{} : Bool}, B.Unsupported{1}, v, c2, e)
+        case False{}:
+          L.ngap.ies.decode_valid(c, v, c2, e)
+
+def GL.ngap.PDUSessionResourceReleaseResponse.decode_valid(c, v, c2, e):
+  PDUSessionResourceReleaseResponse.dv(Ap.Bit.read(c), v, c2, e)
+
+def PDUSessionResourceReleaseResponse.sx.go(+rem: Nat, +rest: Ap.Bits(), +v: G.PDUSessionResourceReleaseResponse(), +rem2: Nat, +bits2: Ap.Bits(), s: PC.Canon(rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), rem2, 0n)) -> PDUSessionResourceReleaseResponse.Sx(False{} <> rest, v, rem, rem2, bits2):
+  (s1, s2) = s
+  (Equal.cong(Ap.Bits(), Ap.Bits(), l => False{} <> l, rest, Fr.Ies.write(v, Ap.Bit.after(rem), bits2), s1), s2)
+
+def PDUSessionResourceReleaseResponse.sx(+rem: Nat, bits: Ap.Bits(), +v: G.PDUSessionResourceReleaseResponse(), +rem2: Nat, +bits2: Ap.Bits(), +e: {G.PDUSessionResourceReleaseResponse.read(Ap.Cur{rem, bits}) == Done{(v, Ap.Cur{rem2, bits2})} : Ap.Rd(G.PDUSessionResourceReleaseResponse())}) -> PDUSessionResourceReleaseResponse.Sx(bits, v, rem, rem2, bits2):
+  match bits:
+    case Nil{}:
+      PA.Rd.absurd(G.PDUSessionResourceReleaseResponse(), PDUSessionResourceReleaseResponse.Sx([], v, rem, rem2, bits2), B.Short{}, v, Ap.Cur{rem2, bits2}, e)
+    case b <> +rest:
+      match b:
+        case True{}:
+          PA.Rd.absurd(G.PDUSessionResourceReleaseResponse(), PDUSessionResourceReleaseResponse.Sx(True{} <> rest, v, rem, rem2, bits2), B.Unsupported{1}, v, Ap.Cur{rem2, bits2}, e)
+        case False{}:
+          PDUSessionResourceReleaseResponse.sx.go(rem, rest, v, rem2, bits2, PF.Ies.sx(Ap.Bit.after(rem), rest, v, rem2, bits2, e))
+
+def GL.ngap.PDUSessionResourceReleaseResponse.suffix(rem, bits, v, rem2, bits2, e):
+  PDUSessionResourceReleaseResponse.sx(rem, bits, v, rem2, bits2, e)
+
 def DownlinkNASTransport.mand.v_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +oldamf: Maybe<&2, G.AMFName()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(38, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.DownlinkNASTransport.View, +e: {GV.DownlinkNASTransport.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, oldamf, m) == Done{v} : Result<&2, &2, B.Err, GV.DownlinkNASTransport.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(38, ies) == 1n : Nat}:
   match m:
     case None{}:
@@ -29348,6 +30446,114 @@ def NGSetupResponse.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&
 
 def GL.ngap.NGSetupResponse.mandatory(ies, v, e):
   NGSetupResponse.mand(ies, Fr.View.prelude(GV.NGSetupResponse.known(), ies), {==}, v, e)
+
+def PDUSessionResourceReleaseCommand.mand.v_pdusessionresourcetoreleaselistrelcmd(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +nas_pdu: Maybe<&2, G.NAS_PDU()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(79, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.v_pdusessionresourcetoreleaselistrelcmd(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(79, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseCommand.View, {Fr.Ies.occurrences(79, ies) == 1n : Nat}, B.Invalid{79}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(79, ies, bs, nd, em)
+
+def PDUSessionResourceReleaseCommand.mand.d_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.NAS_PDU()>, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(79, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseCommand.View, {Fr.Ies.occurrences(79, ies) == 1n : Nat}, err, v, e)
+    case Done{+nas_pdu}:
+      PDUSessionResourceReleaseCommand.mand.v_pdusessionresourcetoreleaselistrelcmd(ies, amf_ue_ngap_id, ran_ue_ngap_id, Some{nas_pdu}, Fr.Ies.lookup(79, ies), {==}, v, e, nd)
+
+def PDUSessionResourceReleaseCommand.mand.v_nas_pdu(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(38, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(79, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PDUSessionResourceReleaseCommand.mand.v_pdusessionresourcetoreleaselistrelcmd(ies, amf_ue_ngap_id, ran_ue_ngap_id, None{}, Fr.Ies.lookup(79, ies), {==}, v, e, nd)
+    case Some{+bs}:
+      PDUSessionResourceReleaseCommand.mand.d_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.View.exact(G.NAS_PDU(), G.NAS_PDU.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd)
+
+def PDUSessionResourceReleaseCommand.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(79, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseCommand.View, {Fr.Ies.occurrences(79, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      PDUSessionResourceReleaseCommand.mand.v_nas_pdu(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(38, ies), {==}, v, e, nd)
+
+def PDUSessionResourceReleaseCommand.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseCommand.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), PDUSessionResourceReleaseCommand.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceReleaseCommand.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseCommand.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      PDUSessionResourceReleaseCommand.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def PDUSessionResourceReleaseCommand.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseCommand.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), PDUSessionResourceReleaseCommand.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceReleaseCommand.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PDUSessionResourceReleaseCommand.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PDUSessionResourceReleaseCommand.View, +e: {GV.PDUSessionResourceReleaseCommand.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseCommand.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseCommand.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(79, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PDUSessionResourceReleaseCommand.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(79, _) == 1n : Nat})
+      PDUSessionResourceReleaseCommand.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.PDUSessionResourceReleaseCommand.known(), ies, ies2, erp))
+
+def GL.ngap.PDUSessionResourceReleaseCommand.mandatory(ies, v, e):
+  PDUSessionResourceReleaseCommand.mand(ies, Fr.View.prelude(GV.PDUSessionResourceReleaseCommand.known(), ies), {==}, v, e)
+
+def PDUSessionResourceReleaseResponse.mand.v_pdusessionresourcereleasedlistrelres(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(70, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceReleaseResponse.View, +e: {GV.PDUSessionResourceReleaseResponse.v_pdusessionresourcereleasedlistrelres(ies, amf_ue_ngap_id, ran_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(70, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseResponse.View, {Fr.Ies.occurrences(70, ies) == 1n : Nat}, B.Invalid{70}, v, e)
+    case Some{+bs}:
+      PF.Ies.lookup_count(70, ies, bs, nd, em)
+
+def PDUSessionResourceReleaseResponse.mand.d_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), r: Result<&2, &2, B.Err, G.RAN_UE_NGAP_ID()>, +v: GV.PDUSessionResourceReleaseResponse.View, +e: {GV.PDUSessionResourceReleaseResponse.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(70, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseResponse.View, {Fr.Ies.occurrences(70, ies) == 1n : Nat}, err, v, e)
+    case Done{+ran_ue_ngap_id}:
+      PDUSessionResourceReleaseResponse.mand.v_pdusessionresourcereleasedlistrelres(ies, amf_ue_ngap_id, ran_ue_ngap_id, Fr.Ies.lookup(70, ies), {==}, v, e, nd)
+
+def PDUSessionResourceReleaseResponse.mand.v_ran_ue_ngap_id(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(85, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceReleaseResponse.View, +e: {GV.PDUSessionResourceReleaseResponse.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}:
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseResponse.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}, B.Invalid{85}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(85, ies, bs, nd, em), PDUSessionResourceReleaseResponse.mand.d_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.View.exact(G.RAN_UE_NGAP_ID(), G.RAN_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceReleaseResponse.mand.d_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, r: Result<&2, &2, B.Err, G.AMF_UE_NGAP_ID()>, +v: GV.PDUSessionResourceReleaseResponse.View, +e: {GV.PDUSessionResourceReleaseResponse.d_amf_ue_ngap_id(ies, r) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}:
+  match r:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseResponse.View, {Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}, err, v, e)
+    case Done{+amf_ue_ngap_id}:
+      PDUSessionResourceReleaseResponse.mand.v_ran_ue_ngap_id(ies, amf_ue_ngap_id, Fr.Ies.lookup(85, ies), {==}, v, e, nd)
+
+def PDUSessionResourceReleaseResponse.mand.v_amf_ue_ngap_id(+ies: List<&2, Fr.Ie>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(10, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceReleaseResponse.View, +e: {GV.PDUSessionResourceReleaseResponse.v_amf_ue_ngap_id(ies, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}):
+  match m:
+    case None{}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseResponse.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}), B.Invalid{10}, v, e)
+    case Some{+bs}:
+      (PF.Ies.lookup_count(10, ies, bs, nd, em), PDUSessionResourceReleaseResponse.mand.d_amf_ue_ngap_id(ies, Fr.View.exact(G.AMF_UE_NGAP_ID(), G.AMF_UE_NGAP_ID.read(Ap.Cur{0n, Ap.unpack(bs)})), v, e, nd))
+
+def PDUSessionResourceReleaseResponse.mand(+ies: List<&2, Fr.Ie>, rp: Result<&2, &2, B.Err, List<&2, Fr.Ie>>, +erp: {Fr.View.prelude(GV.PDUSessionResourceReleaseResponse.known(), ies) == rp : Result<&2, &2, B.Err, List<&2, Fr.Ie>>}, +v: GV.PDUSessionResourceReleaseResponse.View, +e: {GV.PDUSessionResourceReleaseResponse.v_prelude(rp) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>}) -> {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}):
+  match rp:
+    case Fail{err}:
+      PF.View.absurd(GV.PDUSessionResourceReleaseResponse.View, {Fr.Ies.occurrences(10, ies) == 1n : Nat} & ({Fr.Ies.occurrences(85, ies) == 1n : Nat} & {Fr.Ies.occurrences(70, ies) == 1n : Nat}), err, v, e)
+    case Done{+ies2}:
+      seq = Equal.sym(List<&2, Fr.Ie>, ies, ies2, PF.Prelude.same(GV.PDUSessionResourceReleaseResponse.known(), ies, ies2, erp))
+      %seq : {Fr.Ies.occurrences(10, _) == 1n : Nat} & ({Fr.Ies.occurrences(85, _) == 1n : Nat} & {Fr.Ies.occurrences(70, _) == 1n : Nat})
+      PDUSessionResourceReleaseResponse.mand.v_amf_ue_ngap_id(ies2, Fr.Ies.lookup(10, ies2), {==}, v, e, PF.Prelude.nd(GV.PDUSessionResourceReleaseResponse.known(), ies, ies2, erp))
+
+def GL.ngap.PDUSessionResourceReleaseResponse.mandatory(ies, v, e):
+  PDUSessionResourceReleaseResponse.mand(ies, Fr.View.prelude(GV.PDUSessionResourceReleaseResponse.known(), ies), {==}, v, e)
 
 def PDUSessionResourceSetupRequest.mand.v_pdusessionresourcesetuplistsureq(+ies: List<&2, Fr.Ie>, +amf_ue_ngap_id: G.AMF_UE_NGAP_ID(), +ran_ue_ngap_id: G.RAN_UE_NGAP_ID(), +nas_pdu: Maybe<&2, G.NAS_PDU()>, m: Maybe<&2, B.Bytes()>, +em: {Fr.Ies.lookup(74, ies) == m : Maybe<&2, B.Bytes()>}, +v: GV.PDUSessionResourceSetupRequest.View, +e: {GV.PDUSessionResourceSetupRequest.v_pdusessionresourcesetuplistsureq(ies, amf_ue_ngap_id, ran_ue_ngap_id, nas_pdu, m) == Done{v} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupRequest.View>}, +nd: {Fr.Ies.no_dups(ies) == True{} : Bool}) -> {Fr.Ies.occurrences(74, ies) == 1n : Nat}:
   match m:

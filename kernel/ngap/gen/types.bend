@@ -41,6 +41,9 @@ def Proc.NGSetup() -> U32:
 def Proc.PathSwitchRequest() -> U32:
   25
 
+def Proc.PDUSessionResourceRelease() -> U32:
+  28
+
 def Proc.PDUSessionResourceSetup() -> U32:
   29
 
@@ -128,6 +131,9 @@ def Id.PDUSessionResourceReleasedListPSAck() -> U32:
 def Id.PDUSessionResourceReleasedListPSFail() -> U32:
   69
 
+def Id.PDUSessionResourceReleasedListRelRes() -> U32:
+  70
+
 def Id.PDUSessionResourceSetupListHOReq() -> U32:
   73
 
@@ -142,6 +148,9 @@ def Id.PDUSessionResourceToBeSwitchedDLList() -> U32:
 
 def Id.PDUSessionResourceSwitchedList() -> U32:
   77
+
+def Id.PDUSessionResourceToReleaseListRelCmd() -> U32:
+  79
 
 def Id.PLMNSupportList() -> U32:
   80
@@ -16579,6 +16588,623 @@ def DownlinkRANStatusTransfer.after(+v: DownlinkRANStatusTransfer(), +rem: Nat) 
 def DownlinkRANStatusTransfer.valid(+v: DownlinkRANStatusTransfer()) -> Bool:
   Fr.Ies.valid(v)
 
+# PDUSessionResourceReleaseCommandTransfer ::= SEQUENCE { cause Cause, iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type PDUSessionResourceReleaseCommandTransfer is Data:
+  PDUSessionResourceReleaseCommandTransfer{cause: Cause, iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionResourceReleaseCommandTransfer.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceReleaseCommandTransfer.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionResourceReleaseCommandTransfer.valid(x: PDUSessionResourceReleaseCommandTransfer) -> Bool:
+  match x:
+    case PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}:
+      Bool.and(Cause.valid(cause), PDUSessionResourceReleaseCommandTransfer.v_iE_Extensions(iE_Extensions))
+
+def PDUSessionResourceReleaseCommandTransfer.r_iE_Extensions(cause: Cause, r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionResourceReleaseCommandTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}, c)}
+
+def PDUSessionResourceReleaseCommandTransfer.r_cause(p_iE_Extensions: Bool, r: Ap.Rd(Cause)) -> Ap.Rd(PDUSessionResourceReleaseCommandTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(cause, c)}:
+      PDUSessionResourceReleaseCommandTransfer.r_iE_Extensions(cause, PDUSessionResourceReleaseCommandTransfer.o_iE_Extensions(p_iE_Extensions, c))
+
+def PDUSessionResourceReleaseCommandTransfer.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionResourceReleaseCommandTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceReleaseCommandTransfer.r_cause(p_iE_Extensions, Cause.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionResourceReleaseCommandTransfer.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceReleaseCommandTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          PDUSessionResourceReleaseCommandTransfer.r_bm(Ap.Bits.read(1n, c))
+
+def PDUSessionResourceReleaseCommandTransfer.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleaseCommandTransfer):
+  PDUSessionResourceReleaseCommandTransfer.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceReleaseCommandTransfer.write(x: PDUSessionResourceReleaseCommandTransfer, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionResourceReleaseCommandTransfer{+cause, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = Cause.after(cause, r0)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), Cause.write(cause, r0, PDUSessionResourceReleaseCommandTransfer.w_iE_Extensions(iE_Extensions, r1, rest))))
+
+def PDUSessionResourceReleaseCommandTransfer.after(x: PDUSessionResourceReleaseCommandTransfer, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionResourceReleaseCommandTransfer{cause, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = Cause.after(cause, r0)
+      +r2 = PDUSessionResourceReleaseCommandTransfer.a_iE_Extensions(iE_Extensions, r1)
+      r2
+
+# PDUSessionResourceToReleaseItemRelCmd-pDUSessionResourceReleaseCommandTransfer ::= Open
+def PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer() -> Data:
+  B.Bytes()
+
+def PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer()):
+  Ap.Open.read(c)
+
+def PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(+v: PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Open.write(v, rem, rest)
+
+def PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(+v: PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), +rem: Nat) -> Nat:
+  Ap.Open.after(rem)
+
+def PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(+v: PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer()) -> Bool:
+  Ap.Open.valid(v)
+
+# PDUSessionResourceToReleaseItemRelCmd ::= SEQUENCE { pDUSessionID PDUSessionID, pDUSessionResourceReleaseCommandTransfer OCTET STRING (CONTAINING PDUSessionResourceReleaseCommandTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type PDUSessionResourceToReleaseItemRelCmd is Data:
+  PDUSessionResourceToReleaseItemRelCmd{pDUSessionID: PDUSessionID(), pDUSessionResourceReleaseCommandTransfer: PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionResourceToReleaseItemRelCmd.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceToReleaseItemRelCmd.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionResourceToReleaseItemRelCmd.valid(x: PDUSessionResourceToReleaseItemRelCmd) -> Bool:
+  match x:
+    case PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}:
+      Bool.and(PDUSessionID.valid(pDUSessionID), Bool.and(PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.valid(pDUSessionResourceReleaseCommandTransfer), PDUSessionResourceToReleaseItemRelCmd.v_iE_Extensions(iE_Extensions)))
+
+def PDUSessionResourceToReleaseItemRelCmd.r_iE_Extensions(pDUSessionID: PDUSessionID(), pDUSessionResourceReleaseCommandTransfer: PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionResourceToReleaseItemRelCmd):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}, c)}
+
+def PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionResourceReleaseCommandTransfer(p_iE_Extensions: Bool, pDUSessionID: PDUSessionID(), r: Ap.Rd(PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer())) -> Ap.Rd(PDUSessionResourceToReleaseItemRelCmd):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionResourceReleaseCommandTransfer, c)}:
+      PDUSessionResourceToReleaseItemRelCmd.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseCommandTransfer, PDUSessionResourceToReleaseItemRelCmd.o_iE_Extensions(p_iE_Extensions, c))
+
+def PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionID(p_iE_Extensions: Bool, r: Ap.Rd(PDUSessionID())) -> Ap.Rd(PDUSessionResourceToReleaseItemRelCmd):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionID, c)}:
+      PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionResourceReleaseCommandTransfer(p_iE_Extensions, pDUSessionID, PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.read(c))
+
+def PDUSessionResourceToReleaseItemRelCmd.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionResourceToReleaseItemRelCmd):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceToReleaseItemRelCmd.r_pDUSessionID(p_iE_Extensions, PDUSessionID.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionResourceToReleaseItemRelCmd.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceToReleaseItemRelCmd):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          PDUSessionResourceToReleaseItemRelCmd.r_bm(Ap.Bits.read(1n, c))
+
+def PDUSessionResourceToReleaseItemRelCmd.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceToReleaseItemRelCmd):
+  PDUSessionResourceToReleaseItemRelCmd.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceToReleaseItemRelCmd.write(x: PDUSessionResourceToReleaseItemRelCmd, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionResourceToReleaseItemRelCmd{+pDUSessionID, +pDUSessionResourceReleaseCommandTransfer, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, r1)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), PDUSessionID.write(pDUSessionID, r0, PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.write(pDUSessionResourceReleaseCommandTransfer, r1, PDUSessionResourceToReleaseItemRelCmd.w_iE_Extensions(iE_Extensions, r2, rest)))))
+
+def PDUSessionResourceToReleaseItemRelCmd.after(x: PDUSessionResourceToReleaseItemRelCmd, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionResourceToReleaseItemRelCmd{pDUSessionID, pDUSessionResourceReleaseCommandTransfer, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceToReleaseItemRelCmd_pDUSessionResourceReleaseCommandTransfer.after(pDUSessionResourceReleaseCommandTransfer, r1)
+      +r3 = PDUSessionResourceToReleaseItemRelCmd.a_iE_Extensions(iE_Extensions, r2)
+      r3
+
+# PDUSessionResourceToReleaseListRelCmd ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceToReleaseItemRelCmd
+def PDUSessionResourceToReleaseListRelCmd() -> Data:
+  List<&2, PDUSessionResourceToReleaseItemRelCmd>
+
+def PDUSessionResourceToReleaseListRelCmd.all_valid(xs: PDUSessionResourceToReleaseListRelCmd()) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case x <> more:
+      Bool.and(PDUSessionResourceToReleaseItemRelCmd.valid(x), PDUSessionResourceToReleaseListRelCmd.all_valid(more))
+
+def PDUSessionResourceToReleaseListRelCmd.valid(+xs: PDUSessionResourceToReleaseListRelCmd()) -> Bool:
+  Bool.and(Ap.Size.valid(1n, 255n, List.length(&2, PDUSessionResourceToReleaseItemRelCmd, xs)), PDUSessionResourceToReleaseListRelCmd.all_valid(xs))
+
+def PDUSessionResourceToReleaseListRelCmd.cons(x: PDUSessionResourceToReleaseItemRelCmd, r: Ap.Rd(PDUSessionResourceToReleaseListRelCmd())) -> Ap.Rd(PDUSessionResourceToReleaseListRelCmd()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(xs, c)}:
+      Done{(x <> xs, c)}
+
+def PDUSessionResourceToReleaseListRelCmd.next(r: Ap.Rd(PDUSessionResourceToReleaseItemRelCmd), more: Ap.Cur -> Ap.Rd(PDUSessionResourceToReleaseListRelCmd())) -> Ap.Rd(PDUSessionResourceToReleaseListRelCmd()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(x, c)}:
+      PDUSessionResourceToReleaseListRelCmd.cons(x, more(c))
+
+def PDUSessionResourceToReleaseListRelCmd.items(n: Nat, c: Ap.Cur) -> Ap.Rd(PDUSessionResourceToReleaseListRelCmd()):
+  match n:
+    case 0n:
+      Done{([], c)}
+    case 1n+p:
+      PDUSessionResourceToReleaseListRelCmd.next(PDUSessionResourceToReleaseItemRelCmd.read(c), c2 => PDUSessionResourceToReleaseListRelCmd.items(p, c2))
+
+def PDUSessionResourceToReleaseListRelCmd.count(r: Ap.Rd(Nat)) -> Ap.Rd(PDUSessionResourceToReleaseListRelCmd()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(n, c)}:
+      PDUSessionResourceToReleaseListRelCmd.items(n, c)
+
+def PDUSessionResourceToReleaseListRelCmd.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceToReleaseListRelCmd()):
+  PDUSessionResourceToReleaseListRelCmd.count(Ap.Size.read(True{}, 8n, 1n, 255n, c))
+
+def PDUSessionResourceToReleaseListRelCmd.items_write(xs: PDUSessionResourceToReleaseListRelCmd(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match xs:
+    case Nil{}:
+      rest
+    case +x <> more:
+      PDUSessionResourceToReleaseItemRelCmd.write(x, rem, PDUSessionResourceToReleaseListRelCmd.items_write(more, PDUSessionResourceToReleaseItemRelCmd.after(x, rem), rest))
+
+def PDUSessionResourceToReleaseListRelCmd.write(+xs: PDUSessionResourceToReleaseListRelCmd(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Size.write(True{}, 8n, 1n, List.length(&2, PDUSessionResourceToReleaseItemRelCmd, xs), rem, PDUSessionResourceToReleaseListRelCmd.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))
+
+def PDUSessionResourceToReleaseListRelCmd.items_after(xs: PDUSessionResourceToReleaseListRelCmd(), +rem: Nat) -> Nat:
+  match xs:
+    case Nil{}:
+      rem
+    case x <> more:
+      PDUSessionResourceToReleaseListRelCmd.items_after(more, PDUSessionResourceToReleaseItemRelCmd.after(x, rem))
+
+def PDUSessionResourceToReleaseListRelCmd.after(+xs: PDUSessionResourceToReleaseListRelCmd(), +rem: Nat) -> Nat:
+  PDUSessionResourceToReleaseListRelCmd.items_after(xs, Ap.Size.after(True{}, 8n, rem))
+
+# PDUSessionResourceReleaseCommand: a protocol IE container (TS 38.413 §9.2).
+def PDUSessionResourceReleaseCommand() -> Data:
+  List<&2, Fr.Ie>
+
+def PDUSessionResourceReleaseCommand.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceReleaseCommand()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          Fr.Ies.read(c)
+
+def PDUSessionResourceReleaseCommand.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleaseCommand()):
+  PDUSessionResourceReleaseCommand.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceReleaseCommand.write(+v: PDUSessionResourceReleaseCommand(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Bit.write(False{}, rem, Fr.Ies.write(v, Ap.Bit.after(rem), rest))
+
+def PDUSessionResourceReleaseCommand.after(+v: PDUSessionResourceReleaseCommand(), +rem: Nat) -> Nat:
+  0n
+
+def PDUSessionResourceReleaseCommand.valid(+v: PDUSessionResourceReleaseCommand()) -> Bool:
+  Fr.Ies.valid(v)
+
+# PDUSessionResourceReleaseResponseTransfer ::= SEQUENCE { iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 1 known rows> OPTIONAL, ... }
+type PDUSessionResourceReleaseResponseTransfer is Data:
+  PDUSessionResourceReleaseResponseTransfer{iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionResourceReleaseResponseTransfer.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceReleaseResponseTransfer.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionResourceReleaseResponseTransfer.valid(x: PDUSessionResourceReleaseResponseTransfer) -> Bool:
+  match x:
+    case PDUSessionResourceReleaseResponseTransfer{iE_Extensions}:
+      PDUSessionResourceReleaseResponseTransfer.v_iE_Extensions(iE_Extensions)
+
+def PDUSessionResourceReleaseResponseTransfer.r_iE_Extensions(r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionResourceReleaseResponseTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionResourceReleaseResponseTransfer{iE_Extensions}, c)}
+
+def PDUSessionResourceReleaseResponseTransfer.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionResourceReleaseResponseTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceReleaseResponseTransfer.r_iE_Extensions(PDUSessionResourceReleaseResponseTransfer.o_iE_Extensions(p_iE_Extensions, c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionResourceReleaseResponseTransfer.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceReleaseResponseTransfer):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          PDUSessionResourceReleaseResponseTransfer.r_bm(Ap.Bits.read(1n, c))
+
+def PDUSessionResourceReleaseResponseTransfer.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleaseResponseTransfer):
+  PDUSessionResourceReleaseResponseTransfer.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceReleaseResponseTransfer.write(x: PDUSessionResourceReleaseResponseTransfer, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionResourceReleaseResponseTransfer{+iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), PDUSessionResourceReleaseResponseTransfer.w_iE_Extensions(iE_Extensions, r0, rest)))
+
+def PDUSessionResourceReleaseResponseTransfer.after(x: PDUSessionResourceReleaseResponseTransfer, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionResourceReleaseResponseTransfer{iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionResourceReleaseResponseTransfer.a_iE_Extensions(iE_Extensions, r0)
+      r1
+
+# PDUSessionResourceReleasedItemRelRes-pDUSessionResourceReleaseResponseTransfer ::= Open
+def PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer() -> Data:
+  B.Bytes()
+
+def PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer()):
+  Ap.Open.read(c)
+
+def PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(+v: PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Open.write(v, rem, rest)
+
+def PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(+v: PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), +rem: Nat) -> Nat:
+  Ap.Open.after(rem)
+
+def PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(+v: PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer()) -> Bool:
+  Ap.Open.valid(v)
+
+# PDUSessionResourceReleasedItemRelRes ::= SEQUENCE { pDUSessionID PDUSessionID, pDUSessionResourceReleaseResponseTransfer OCTET STRING (CONTAINING PDUSessionResourceReleaseResponseTransfer), iE-Extensions <ProtocolExtensionContainer (SIZE(1..65535)): 0 known rows> OPTIONAL, ... }
+type PDUSessionResourceReleasedItemRelRes is Data:
+  PDUSessionResourceReleasedItemRelRes{pDUSessionID: PDUSessionID(), pDUSessionResourceReleaseResponseTransfer: PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), iE_Extensions: Maybe<&2, List<&2, Fr.Ie>>}
+
+def PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>) -> Bool:
+  match m:
+    case None{}:
+      True{}
+    case Some{v}:
+      Fr.Exts.valid(v)
+
+def PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match m:
+    case None{}:
+      rest
+    case Some{v}:
+      Fr.Exts.write(v, rem, rest)
+
+def PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(m: Maybe<&2, List<&2, Fr.Ie>>, +rem: Nat) -> Nat:
+  match m:
+    case None{}:
+      rem
+    case Some{v}:
+      Fr.Exts.after(rem)
+
+def PDUSessionResourceReleasedItemRelRes.s_iE_Extensions(r: Ap.Rd(List<&2, Fr.Ie>)) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(v, c)}:
+      Done{(Some{v}, c)}
+
+def PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p: Bool, c: Ap.Cur) -> Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>):
+  match p:
+    case False{}:
+      Done{(None{}, c)}
+    case True{}:
+      PDUSessionResourceReleasedItemRelRes.s_iE_Extensions(Fr.Exts.read(c))
+
+def PDUSessionResourceReleasedItemRelRes.valid(x: PDUSessionResourceReleasedItemRelRes) -> Bool:
+  match x:
+    case PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}:
+      Bool.and(PDUSessionID.valid(pDUSessionID), Bool.and(PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.valid(pDUSessionResourceReleaseResponseTransfer), PDUSessionResourceReleasedItemRelRes.v_iE_Extensions(iE_Extensions)))
+
+def PDUSessionResourceReleasedItemRelRes.r_iE_Extensions(pDUSessionID: PDUSessionID(), pDUSessionResourceReleaseResponseTransfer: PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer(), r: Ap.Rd(Maybe<&2, List<&2, Fr.Ie>>)) -> Ap.Rd(PDUSessionResourceReleasedItemRelRes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(iE_Extensions, c)}:
+      Done{(PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}, c)}
+
+def PDUSessionResourceReleasedItemRelRes.r_pDUSessionResourceReleaseResponseTransfer(p_iE_Extensions: Bool, pDUSessionID: PDUSessionID(), r: Ap.Rd(PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer())) -> Ap.Rd(PDUSessionResourceReleasedItemRelRes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionResourceReleaseResponseTransfer, c)}:
+      PDUSessionResourceReleasedItemRelRes.r_iE_Extensions(pDUSessionID, pDUSessionResourceReleaseResponseTransfer, PDUSessionResourceReleasedItemRelRes.o_iE_Extensions(p_iE_Extensions, c))
+
+def PDUSessionResourceReleasedItemRelRes.r_pDUSessionID(p_iE_Extensions: Bool, r: Ap.Rd(PDUSessionID())) -> Ap.Rd(PDUSessionResourceReleasedItemRelRes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(pDUSessionID, c)}:
+      PDUSessionResourceReleasedItemRelRes.r_pDUSessionResourceReleaseResponseTransfer(p_iE_Extensions, pDUSessionID, PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.read(c))
+
+def PDUSessionResourceReleasedItemRelRes.r_bm(r: Ap.Rd(Ap.Bits())) -> Ap.Rd(PDUSessionResourceReleasedItemRelRes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(bm, c)}:
+      match bm:
+        case p_iE_Extensions <> Nil{}:
+          PDUSessionResourceReleasedItemRelRes.r_pDUSessionID(p_iE_Extensions, PDUSessionID.read(c))
+        case _:
+          Fail{B.Short{}}
+
+def PDUSessionResourceReleasedItemRelRes.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceReleasedItemRelRes):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          PDUSessionResourceReleasedItemRelRes.r_bm(Ap.Bits.read(1n, c))
+
+def PDUSessionResourceReleasedItemRelRes.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleasedItemRelRes):
+  PDUSessionResourceReleasedItemRelRes.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceReleasedItemRelRes.write(x: PDUSessionResourceReleasedItemRelRes, +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match x:
+    case PDUSessionResourceReleasedItemRelRes{+pDUSessionID, +pDUSessionResourceReleaseResponseTransfer, +iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, r1)
+      Ap.Bit.write(False{}, rem, Ap.Bits.write([Fr.Present(List<&2, Fr.Ie>, iE_Extensions)], Ap.Bit.after(rem), PDUSessionID.write(pDUSessionID, r0, PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.write(pDUSessionResourceReleaseResponseTransfer, r1, PDUSessionResourceReleasedItemRelRes.w_iE_Extensions(iE_Extensions, r2, rest)))))
+
+def PDUSessionResourceReleasedItemRelRes.after(x: PDUSessionResourceReleasedItemRelRes, +rem: Nat) -> Nat:
+  match x:
+    case PDUSessionResourceReleasedItemRelRes{pDUSessionID, pDUSessionResourceReleaseResponseTransfer, iE_Extensions}:
+      +r0 = Ap.Bits.after(1n, Ap.Bit.after(rem))
+      +r1 = PDUSessionID.after(pDUSessionID, r0)
+      +r2 = PDUSessionResourceReleasedItemRelRes_pDUSessionResourceReleaseResponseTransfer.after(pDUSessionResourceReleaseResponseTransfer, r1)
+      +r3 = PDUSessionResourceReleasedItemRelRes.a_iE_Extensions(iE_Extensions, r2)
+      r3
+
+# PDUSessionResourceReleasedListRelRes ::= SEQUENCE (SIZE(1..256)) OF PDUSessionResourceReleasedItemRelRes
+def PDUSessionResourceReleasedListRelRes() -> Data:
+  List<&2, PDUSessionResourceReleasedItemRelRes>
+
+def PDUSessionResourceReleasedListRelRes.all_valid(xs: PDUSessionResourceReleasedListRelRes()) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case x <> more:
+      Bool.and(PDUSessionResourceReleasedItemRelRes.valid(x), PDUSessionResourceReleasedListRelRes.all_valid(more))
+
+def PDUSessionResourceReleasedListRelRes.valid(+xs: PDUSessionResourceReleasedListRelRes()) -> Bool:
+  Bool.and(Ap.Size.valid(1n, 255n, List.length(&2, PDUSessionResourceReleasedItemRelRes, xs)), PDUSessionResourceReleasedListRelRes.all_valid(xs))
+
+def PDUSessionResourceReleasedListRelRes.cons(x: PDUSessionResourceReleasedItemRelRes, r: Ap.Rd(PDUSessionResourceReleasedListRelRes())) -> Ap.Rd(PDUSessionResourceReleasedListRelRes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(xs, c)}:
+      Done{(x <> xs, c)}
+
+def PDUSessionResourceReleasedListRelRes.next(r: Ap.Rd(PDUSessionResourceReleasedItemRelRes), more: Ap.Cur -> Ap.Rd(PDUSessionResourceReleasedListRelRes())) -> Ap.Rd(PDUSessionResourceReleasedListRelRes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(x, c)}:
+      PDUSessionResourceReleasedListRelRes.cons(x, more(c))
+
+def PDUSessionResourceReleasedListRelRes.items(n: Nat, c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleasedListRelRes()):
+  match n:
+    case 0n:
+      Done{([], c)}
+    case 1n+p:
+      PDUSessionResourceReleasedListRelRes.next(PDUSessionResourceReleasedItemRelRes.read(c), c2 => PDUSessionResourceReleasedListRelRes.items(p, c2))
+
+def PDUSessionResourceReleasedListRelRes.count(r: Ap.Rd(Nat)) -> Ap.Rd(PDUSessionResourceReleasedListRelRes()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(n, c)}:
+      PDUSessionResourceReleasedListRelRes.items(n, c)
+
+def PDUSessionResourceReleasedListRelRes.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleasedListRelRes()):
+  PDUSessionResourceReleasedListRelRes.count(Ap.Size.read(True{}, 8n, 1n, 255n, c))
+
+def PDUSessionResourceReleasedListRelRes.items_write(xs: PDUSessionResourceReleasedListRelRes(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  match xs:
+    case Nil{}:
+      rest
+    case +x <> more:
+      PDUSessionResourceReleasedItemRelRes.write(x, rem, PDUSessionResourceReleasedListRelRes.items_write(more, PDUSessionResourceReleasedItemRelRes.after(x, rem), rest))
+
+def PDUSessionResourceReleasedListRelRes.write(+xs: PDUSessionResourceReleasedListRelRes(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Size.write(True{}, 8n, 1n, List.length(&2, PDUSessionResourceReleasedItemRelRes, xs), rem, PDUSessionResourceReleasedListRelRes.items_write(xs, Ap.Size.after(True{}, 8n, rem), rest))
+
+def PDUSessionResourceReleasedListRelRes.items_after(xs: PDUSessionResourceReleasedListRelRes(), +rem: Nat) -> Nat:
+  match xs:
+    case Nil{}:
+      rem
+    case x <> more:
+      PDUSessionResourceReleasedListRelRes.items_after(more, PDUSessionResourceReleasedItemRelRes.after(x, rem))
+
+def PDUSessionResourceReleasedListRelRes.after(+xs: PDUSessionResourceReleasedListRelRes(), +rem: Nat) -> Nat:
+  PDUSessionResourceReleasedListRelRes.items_after(xs, Ap.Size.after(True{}, 8n, rem))
+
+# PDUSessionResourceReleaseResponse: a protocol IE container (TS 38.413 §9.2).
+def PDUSessionResourceReleaseResponse() -> Data:
+  List<&2, Fr.Ie>
+
+def PDUSessionResourceReleaseResponse.r_ext(r: Ap.Rd(Bool)) -> Ap.Rd(PDUSessionResourceReleaseResponse()):
+  match r:
+    case Fail{e}:
+      Fail{e}
+    case Done{(ext, c)}:
+      match ext:
+        case True{}:
+          Fail{B.Unsupported{1}}
+        case False{}:
+          Fr.Ies.read(c)
+
+def PDUSessionResourceReleaseResponse.read(c: Ap.Cur) -> Ap.Rd(PDUSessionResourceReleaseResponse()):
+  PDUSessionResourceReleaseResponse.r_ext(Ap.Bit.read(c))
+
+def PDUSessionResourceReleaseResponse.write(+v: PDUSessionResourceReleaseResponse(), +rem: Nat, +rest: Ap.Bits()) -> Ap.Bits():
+  Ap.Bit.write(False{}, rem, Fr.Ies.write(v, Ap.Bit.after(rem), rest))
+
+def PDUSessionResourceReleaseResponse.after(+v: PDUSessionResourceReleaseResponse(), +rem: Nat) -> Nat:
+  0n
+
+def PDUSessionResourceReleaseResponse.valid(+v: PDUSessionResourceReleaseResponse()) -> Bool:
+  Fr.Ies.valid(v)
+
 def Ie.roundtrips.end(-A: Data, valid: A -> Bool, write: A -> Ap.Bits(), +bs: B.Bytes(), r: Result<&2, &2, B.Err, A>) -> Bool:
   match r:
     case Fail{e}:
@@ -16882,6 +17508,34 @@ def NGSetupResponse.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
     case _:
       None{}
 
+def PDUSessionResourceReleaseCommand.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
+  match id:
+    case 10n:
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
+    case 85n:
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
+    case 38n:
+      Some{Ie.roundtrips(NAS_PDU(), NAS_PDU.read, v => NAS_PDU.valid(v), v => NAS_PDU.write(v, 0n, []), value)}
+    case 79n:
+      Some{Ie.roundtrips(PDUSessionResourceToReleaseListRelCmd(), PDUSessionResourceToReleaseListRelCmd.read, v => PDUSessionResourceToReleaseListRelCmd.valid(v), v => PDUSessionResourceToReleaseListRelCmd.write(v, 0n, []), value)}
+    case _:
+      None{}
+
+def PDUSessionResourceReleaseResponse.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
+  match id:
+    case 10n:
+      Some{Ie.roundtrips(AMF_UE_NGAP_ID(), AMF_UE_NGAP_ID.read, v => AMF_UE_NGAP_ID.valid(v), v => AMF_UE_NGAP_ID.write(v, 0n, []), value)}
+    case 85n:
+      Some{Ie.roundtrips(RAN_UE_NGAP_ID(), RAN_UE_NGAP_ID.read, v => RAN_UE_NGAP_ID.valid(v), v => RAN_UE_NGAP_ID.write(v, 0n, []), value)}
+    case 70n:
+      Some{Ie.roundtrips(PDUSessionResourceReleasedListRelRes(), PDUSessionResourceReleasedListRelRes.read, v => PDUSessionResourceReleasedListRelRes.valid(v), v => PDUSessionResourceReleasedListRelRes.write(v, 0n, []), value)}
+    case 121n:
+      Some{Ie.roundtrips(UserLocationInformation, UserLocationInformation.read, v => UserLocationInformation.valid(v), v => UserLocationInformation.write(v, 0n, []), value)}
+    case 19n:
+      Some{Ie.roundtrips(CriticalityDiagnostics, CriticalityDiagnostics.read, v => CriticalityDiagnostics.valid(v), v => CriticalityDiagnostics.write(v, 0n, []), value)}
+    case _:
+      None{}
+
 def PDUSessionResourceSetupRequest.ie_check(id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool>:
   match id:
     case 10n:
@@ -17071,6 +17725,8 @@ def Ie.check(kind: Nat, code: Nat, id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool
       NGSetupRequest.ie_check(id, value)
     case 0n 25n:
       PathSwitchRequest.ie_check(id, value)
+    case 0n 28n:
+      PDUSessionResourceReleaseCommand.ie_check(id, value)
     case 0n 29n:
       PDUSessionResourceSetupRequest.ie_check(id, value)
     case 0n 41n:
@@ -17093,6 +17749,8 @@ def Ie.check(kind: Nat, code: Nat, id: Nat, +value: B.Bytes()) -> Maybe<&2, Bool
       NGSetupResponse.ie_check(id, value)
     case 1n 25n:
       PathSwitchRequestAcknowledge.ie_check(id, value)
+    case 1n 28n:
+      PDUSessionResourceReleaseResponse.ie_check(id, value)
     case 1n 29n:
       PDUSessionResourceSetupResponse.ie_check(id, value)
     case 1n 41n:

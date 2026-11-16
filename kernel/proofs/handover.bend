@@ -394,7 +394,7 @@ def So.down(+st: S.State, +assoc: U32, +e: {Bool.and(S.Ues.unique(S.State.ues(st
       P.Bool.and_intro(S.Ues.unique(S.Ues.sift(S.Others{assoc}, ues)), S.Ues.single(S.Ues.sift(S.Others{assoc}, ues)), PK.Unique.sift(S.Others{assoc}, ues, So.parts(ues, e)), So.sift(S.Others{assoc}, ues, So.part2(ues, e)))
 
 def So.step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {Bool.and(S.Ues.unique(S.State.ues(st)), S.Ues.single(S.State.ues(st))) == True{} : Bool}) -> {Bool.and(S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ues.single(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))))) == True{} : Bool}:
-  PL.Inv.step(ues => ss => Bool.and(S.Ues.unique(ues), S.Ues.single(ues)), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => So.down(s, a, e1), a => s => e1 => So.down(s, a, e1))
+  PL.Inv.step(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, ~(st0 => a => s => e1 => So.down(s, a, e1)), st, ev, entropy, {==}, e)
 
 # amf.handover.single_owner
 # -------------------------
@@ -459,10 +459,12 @@ def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +c
   +ues = S.State.ues(st)
   +g = Tb.Table.get(S.Ue, k, ues)
   +rows = S.Sessions.of_ue(k, S.State.sessions(st))
-  +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
+  +told = Gsm.Gsm.releases(k, assoc, s, r, Sw.Sw.released(ts, rows), ctx)
+  +ph : S.Phase = S.Registered{Gsm.Gsm.Told.ctx(told), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}
+  +v = S.Ue.moved(ue, assoc, r, s, ph)
   +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
   +b : N.GOut() = (S.Put{k, v}, [])
-  +more : List<&2, N.Act> = [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
+  +more : List<&2, N.Act> = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())} <> List.append(&2, N.Act, Gsm.Gsm.Told.acts(told), [N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}])
   +o = N.Out.also(N.Out.join(a, b), more)
   e12 = Equal.trans(S.Tx, N.Out.tx(o), N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), S.Put{k, v}}, PL.Lv.tx_also(N.Out.join(a, b), more), PW.Out.tx_join(a, b))
   sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), ues), PT.Tk.render(st, o))
@@ -471,7 +473,7 @@ def Hp.complete_moved(+st: S.State, +assoc: U32, +k: U32, +t: U32, +ue: S.Ue, +c
   %se : {Bool.or(S.Ue.same_owner(g, Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues))), S.Ue.on(Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues)), t)) == True{} : Bool}
   sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.put(k, v, PT.Tk.ues(N.Out.tx(a), ues))), Some{v}, PPs.Mv.get_put(k, v, PT.Tk.ues(N.Out.tx(a), ues)))
   %sg : {Bool.or(S.Ue.same_owner(g, _), S.Ue.on(_, t)) == True{} : Bool}
-  sa = Equal.sym(U32, S.Ue.assoc(v), assoc, Hp.assoc_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}))
+  sa = Equal.sym(U32, S.Ue.assoc(v), assoc, Hp.assoc_moved(ue, assoc, r, s, ph))
   %sa : {Bool.or(S.Ue.same_owner(g, Some{v}), U32.is_eq(_, t)) == True{} : Bool}
   P.Bool.or_r(S.Ue.same_owner(g, Some{v}), U32.is_eq(assoc, t), eat)
 
@@ -532,7 +534,7 @@ def Hp.timed(+ues: Tb.Table(S.Ue)) -> {S.Ues.timed(ues) == True{} : Bool}:
 
 # The guard timers stay unique (state.ids.free), every step.
 def Hp.timed_step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {Bool.and(S.Ids.free(S.State.ues(st), S.State.sessions(st)), S.Sessions.owned(S.State.sessions(st), S.State.ues(st))) == True{} : Bool}) -> {Bool.and(S.Ues.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ids.free(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy))))) == True{} : Bool}:
-  P.Bool.and_intro(S.Ues.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ids.free(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), Hp.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), PL.Inv.step(ues => ss => S.Ids.free(ues, ss), st, ev, entropy, P.Bool.and_true_l(S.Ids.free(S.State.ues(st), S.State.sessions(st)), S.Sessions.owned(S.State.sessions(st), S.State.ues(st)), e), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => PL.Id.down(s, a, e1), a => s => e1 => PL.Id.down(s, a, e1)))
+  P.Bool.and_intro(S.Ues.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ids.free(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), Hp.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), PL.Inv.step(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, ~(st0 => a => s => e1 => PL.Id.down(s, a, e1)), st, ev, entropy, e, P.Bool.and_true_l(S.Ids.free(S.State.ues(st), S.State.sessions(st)), S.Sessions.owned(S.State.sessions(st), S.State.ues(st)), e)))
 
 def Hp.g_guard(+p: S.Phase, +t: U32, +e: {S.Phase.pending(p) == Some{t} : Maybe<&2, U32>}) -> {Tb.Table.present(S.Guard, S.Phase.guard(p)) == True{} : Bool}:
   match p:
@@ -1437,3 +1439,63 @@ def L.amf.handover.released_side_completes(st, entropy, assoc, stream, len, byte
   sea = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), assoc), False{}, ea)
   ser = Equal.sym(Bool, S.Phase.released(S.Ue.phase(ue), assoc, ran), True{}, er)
   PW.Rt.ue(V.UEContextReleaseComplete.View, x => {x == done : N.Step()}, st, entropy, assoc, stream, len, bytes, 1, 41, crit, value, ies, c, i => V.UEContextReleaseComplete.view(i), r => Gmm.Gmm.release_complete_of_view(st, assoc, r), m => Gmm.Gmm.release_complete_key(st, assoc, ran, m), V.UEContextReleaseComplete.View{amf, ran, uli, rel, diag}, amf, Some{k}, ep, ei, {==}, eup, {==}, ev, {==}, eid, (%seu : {N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.of(_, assoc, ran), S.Ue.released(_, assoc, ran))) == done : N.Step()}; (%sea : {N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, N.Owner.check(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran))), S.Phase.released(S.Ue.phase(ue), assoc, ran))) == done : N.Step()}; (%ser : {N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, None{}, _)) == done : N.Step()}; {==}))))
+
+# Handover Notify completing
+# --------------------------
+# A Handover Notify that completes its handover is that handover's outcome,
+# which puts the UE on the target with the NAS context the release commands
+# to it leave.
+
+def Hn.aimed(+ue: S.Ue, +assoc: U32, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +ran: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +sp: B.Digits(), +eph: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, S.Acked{assoc, ran, s, ts}} : S.Phase}, +es: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}, +eo: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}) -> {Ho.Ho.aimed(ue, assoc) == True{} : Bool}:
+  seph = Equal.sym(S.Phase, S.Ue.phase(ue), S.Handover{ctx, nh, source, S.Acked{assoc, ran, s, ts}}, eph)
+  %seph : {Bool.and(S.Maybe.same_u32(S.Phase.pending(_), Some{assoc}), Bool.and(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc)))) == True{} : Bool}
+  ses = Equal.sym(Maybe<&2, B.Digits()>, S.Ue.supi(ue), Some{sp}, es)
+  %ses : {Bool.and(U32.is_eq(assoc, assoc), Bool.and(Tb.Table.present(B.Digits(), _), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc)))) == True{} : Bool}
+  seo = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), assoc), False{}, eo)
+  %seo : {Bool.and(U32.is_eq(assoc, assoc), Bool.not(_)) == True{} : Bool}
+  ser = Equal.sym(Bool, U32.is_eq(assoc, assoc), True{}, P.U32.is_eq_refl(assoc))
+  %ser : {Bool.and(_, True{}) == True{} : Bool}
+  {==}
+
+def Hn.found(+st: S.State, +assoc: U32, +amf: B.Bytes(), +ran: B.Bytes(), +uli: G.UserLocationInformation, +k: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +s: U32, +ts: List<&2, S.Tunnel>, +sp: B.Digits(), +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +eph: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, S.Acked{assoc, ran, s, ts}} : S.Phase}, +es: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}, +eo: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}, +ef: {S.Ues.ran_free(k, assoc, ran, S.State.ues(st)) == True{} : Bool}) -> {N.Step.of(st, Ho.Ho.notify_of_view(st, assoc, Done{V.HandoverNotify.View{amf, ran, uli}})) == N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{})) : N.Step()}:
+  +T : N.Step() = N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{}))
+  +none : N.GOut() = (S.Keep{}, N.Ngap.unknown_ue(assoc))
+  seid = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), Some{k}, eid)
+  %seid : {N.Step.of(st, N.Ue.found(N.Ue.keyed(_, k2 => Ho.Ho.pending(Tb.Table.get(S.Ue, k2, S.State.ues(st)), assoc)), none, +key => +u => Ho.Ho.notify_phase(st, assoc, key, u, ran, S.Ue.phase(u)))) == T : N.Step()}
+  seg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{ue}, eg)
+  %seg : {N.Step.of(st, N.Ue.found(N.Ue.with_key(k, Ho.Ho.pending(_, assoc)), none, +key => +u => Ho.Ho.notify_phase(st, assoc, key, u, ran, S.Ue.phase(u)))) == T : N.Step()}
+  sea = Equal.sym(Bool, Ho.Ho.aimed(ue, assoc), True{}, Hn.aimed(ue, assoc, ctx, nh, source, ran, s, ts, sp, eph, es, eo))
+  %sea : {N.Step.of(st, N.Ue.found(N.Ue.with_key(k, N.Owner.check(ue, _)), none, +key => +u => Ho.Ho.notify_phase(st, assoc, key, u, ran, S.Ue.phase(u)))) == T : N.Step()}
+  seph = Equal.sym(S.Phase, S.Ue.phase(ue), S.Handover{ctx, nh, source, S.Acked{assoc, ran, s, ts}}, eph)
+  %seph : {N.Step.of(st, Ho.Ho.notify_phase(st, assoc, k, ue, ran, _)) == T : N.Step()}
+  sb = Equal.sym(Bool, B.bytes_eq(ran, ran), True{}, P.Bytes.eq_refl(ran))
+  %sb : {N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, Bool.and(_, S.Ues.ran_free(k, assoc, ran, S.State.ues(st))))) == T : N.Step()}
+  sef = Equal.sym(Bool, S.Ues.ran_free(k, assoc, ran, S.State.ues(st)), True{}, ef)
+  %sef : {N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, Bool.and(True{}, _))) == T : N.Step()}
+  {==}
+
+def Hn.of(+st: S.State, +assoc: U32, +k: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>) -> {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, r, s, ts, True{}))))) == Some{S.Ue.moved(ue, assoc, r, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, r, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>}:
+  +ues = S.State.ues(st)
+  +rows = S.Sessions.of_ue(k, S.State.sessions(st))
+  +told = Gsm.Gsm.releases(k, assoc, s, r, Sw.Sw.released(ts, rows), ctx)
+  +v = S.Ue.moved(ue, assoc, r, s, S.Registered{Gsm.Gsm.Told.ctx(told), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
+  +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
+  +b : N.GOut() = (S.Put{k, v}, [])
+  +x : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), k, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}
+  +l : List<&2, N.Act> = [N.TimerCancel{k}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
+  +o = N.Out.also(N.Out.join(a, b), x <> List.append(&2, N.Act, Gsm.Gsm.Told.acts(told), l))
+  e12 = Equal.trans(S.Tx, N.Out.tx(o), N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), S.Put{k, v}}, PL.Lv.tx_also(N.Out.join(a, b), x <> List.append(&2, N.Act, Gsm.Gsm.Told.acts(told), l)), PW.Out.tx_join(a, b))
+  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), ues), PT.Tk.render(st, o))
+  se = Equal.sym(S.Tx, N.Out.tx(o), S.Both{N.Out.tx(a), S.Put{k, v}}, e12)
+  g : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, o)))) == Some{v} : Maybe<&2, S.Ue>} = (%sr : {Tb.Table.get(S.Ue, k, _) == Some{v} : Maybe<&2, S.Ue>}; (%se : {Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues)) == Some{v} : Maybe<&2, S.Ue>}; PPs.Mv.get_put(k, v, PT.Tk.ues(N.Out.tx(a), ues))))
+  g
+
+def Hn.at(+st: S.State, +assoc: U32, +k: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ran: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +x: N.Step(), +e: {x == N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{})) : N.Step()}) -> {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(x))) == Some{S.Ue.moved(ue, assoc, ran, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>}:
+  se = Equal.sym(N.Step(), x, N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{})), e)
+  %se : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(_))) == Some{S.Ue.moved(ue, assoc, ran, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>}
+  Hn.of(st, assoc, k, ue, ctx, nh, ran, s, ts)
+
+def L.amf.handover.notify_releases(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, k, ue, ctx, nh, source, s, ts, sp, ep, ei, ev, eid, eg, eph, es, eo, ef, eup):
+  +T = N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{}))
+  +e = PW.Rt.view(V.HandoverNotify.View, x => {x == T : N.Step()}, st, entropy, assoc, stream, len, bytes, 0, 11, crit, value, ies, c, i => V.HandoverNotify.view(i), r => Ho.Ho.notify_of_view(st, assoc, r), Done{V.HandoverNotify.View{amf, ran, uli}}, ep, ei, {==}, eup, {==}, ev, Hn.found(st, assoc, amf, ran, uli, k, ue, ctx, nh, source, s, ts, sp, eid, eg, eph, es, eo, ef))
+  (Hn.at(st, assoc, k, ue, ctx, nh, ran, s, ts, K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), e), e)

@@ -17,6 +17,7 @@ import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
 import ./lib/amf.bend as A
 import ./lib/pfcp.bend as P
+import ./lib/handover.bend as H
 
 # Drives step with Config, NgapAssocUp and the captured NG Setup Request: the
 # answer is the captured NG Setup Response, byte for byte. Then the failure
@@ -165,23 +166,6 @@ def in_handover(+assoc: U32, ran: B.Bytes(), t: U32) -> S.Ue:
   +ctx : Sec.Nas.Ctx = Sec.Ctx{Sec.Keys{A.key32(), A.key32(), Sec.Nea0{}, Sec.Nia2{}, 1}, Sec.Count{0, 0}, None{}}
   S.Ue{assoc, ran, 1, Some{[48, 48, 49]}, None{}, [], 0, S.Handover{ctx, S.Nh{A.key32(), A.key32(), 1}, assoc, S.Asked{t}}, []}
 
-def sent_if(bytes: B.Bytes(), more: B.Bytes(), hit: Bool) -> B.Bytes():
-  match hit:
-    case True{}:
-      List.append(&2, U32, bytes, more)
-    case False{}:
-      more
-
-# The NGAP PDUs a step sends on an association, end to end.
-def sent_to(+assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
-  match actions:
-    case Nil{}:
-      []
-    case F.NgapSend{a, stream, len, bytes} <> more:
-      sent_if(bytes, sent_to(assoc, more), U32.is_eq(a, assoc))
-    case a <> more:
-      sent_to(assoc, more)
-
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
@@ -243,4 +227,4 @@ def main() -> IO(Unit):
     +o_hs : N.Step() = K.Kernel.step(st_ho, data_event(1, request), A.entropy())
     +o_hd : N.Step() = K.Kernel.step(st_ho, F.NgapAssocDown{1}, A.entropy())
     C.Check.report("NG Setup during a handover to the association and one from it, as the association going down: the UE handed to it registered with its owner, the other gone", Bool.and(B.bytes_eq(ue_keys(K.Kernel.state(o_hs)), [1]), Bool.and(A.phase_is(K.Kernel.state(o_hs), "registered"), Bool.and(B.bytes_eq(ue_keys(K.Kernel.state(o_hd)), [1]), A.phase_is(K.Kernel.state(o_hd), "registered")))))
-    C.Check.report("NG Setup during those handovers, as the association going down: Handover Preparation Failure and UE Context Release Command to the other association, the pending guard stopped", Bool.and(Bool.not(B.bytes_eq(sent_to(2, K.Kernel.frames(o_hs)), [])), Bool.and(B.bytes_eq(sent_to(2, K.Kernel.frames(o_hs)), sent_to(2, K.Kernel.frames(o_hd))), Bool.and(P.cancels(K.Kernel.frames(o_hs), 1), P.cancels(K.Kernel.frames(o_hd), 1)))))
+    C.Check.report("NG Setup during those handovers, as the association going down: Handover Preparation Failure and UE Context Release Command to the other association, the pending guard stopped", Bool.and(Bool.not(B.bytes_eq(H.sent(True{}, 2, K.Kernel.frames(o_hs)), [])), Bool.and(B.bytes_eq(H.sent(True{}, 2, K.Kernel.frames(o_hs)), H.sent(True{}, 2, K.Kernel.frames(o_hd))), Bool.and(P.cancels(K.Kernel.frames(o_hs), 1), P.cancels(K.Kernel.frames(o_hd), 1)))))

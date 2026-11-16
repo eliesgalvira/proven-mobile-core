@@ -4,6 +4,7 @@ import ../../aper.bend as Ap
 import ../../tlv.bend as T
 import ../../ngap/frame.bend as Fr
 import ../../frame.bend as F
+import ../../table.bend as Tb
 import ../../state.bend as S
 import ../../step.bend as K
 import ../../amf/ngap.bend as N
@@ -53,6 +54,33 @@ def active(+msgs: List<&2, V.Vec>) -> S.State:
   +o5 : N.Step() = step(st4, on(1, hex(msgs, 40n)))
   after(K.Kernel.state(o5), Pc.pfcp_event(Pc.with_seq(hex(msgs, 42n), Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o5))))))
 
+# The state with a copy of its first session after it, under PDU session
+# identity psi, its key, address and TEID moved on by psi, so free when no
+# other copy has the same psi.
+def also_session(+psi: U32, ss: Tb.Table(S.Session)) -> Tb.Table(S.Session):
+  match ss:
+    case (+k, S.Session{S.SId{+ue, +p, +ip, +teid}, +var}) <> more:
+      (k, S.Session{S.SId{ue, p, ip, teid}, var}) <> (U32.add(k, U32.add(psi, psi)), S.Session{S.SId{ue, psi, U32.add(ip, psi), U32.add(teid, psi)}, var}) <> more
+    case _:
+      ss
+
+def with_session(+st: S.State, +psi: U32) -> S.State:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      S.State{config, subs, assocs, ues, also_session(psi, sessions), pfcp_seq, next_ue, n4}
+
+# The sequence number a protected NAS message carries.
+def nas_sqn(+bytes: B.Bytes()) -> U32:
+  N.Ngap.head0(List.drop(&2, U32, A.nas_of(bytes), 6n))
+
+# The NAS plaintext of a DL NAS Transport protected under NEA0.
+def dl_plain(+bytes: B.Bytes()) -> B.Bytes():
+  List.drop(&2, U32, A.nas_of(bytes), 7n)
+
+# PDU Session Release Command #26 for psi, in DL NAS Transport.
+def release_plain(+psi: U32) -> B.Bytes():
+  [126, 0, 104, 1, 0, 5, 46, psi, 0, 211, 26, 18, psi]
+
 # An NGAP PDU with one IE's value replaced.
 def swap_if(+i: U32, crit: U32, v: B.Bytes(), value: B.Bytes(), hit: Bool) -> Fr.Ie:
   match hit:
@@ -78,22 +106,27 @@ def with_of(+id: U32, +bits: Ap.Bits(), +pdu: B.Bytes(), r: Result<&2, &2, B.Err
 def with_ie(+id: U32, +bits: Ap.Bits(), +pdu: B.Bytes()) -> B.Bytes():
   with_of(id, bits, pdu, Fr.Pdu.read(pdu))
 
-def sent_pick(bytes: B.Bytes(), later: B.Bytes(), hit: Bool) -> B.Bytes():
-  match hit:
-    case True{}:
+def sent_pick(+bytes: B.Bytes(), later: B.Bytes(), hit: Bool, all: Bool) -> B.Bytes():
+  match hit all:
+    case True{} True{}:
+      List.append(&2, U32, bytes, later)
+    case True{} False{}:
       bytes
-    case False{}:
+    case False{} _:
       later
 
-# The first NGAP PDU a step sends on an association.
-def sent_on(+assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
+# The NGAP PDUs a step sends on an association: all of them end to end, or the first.
+def sent(+all: Bool, +assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
   match actions:
     case Nil{}:
       []
     case F.NgapSend{a, stream, len, bytes} <> more:
-      sent_pick(bytes, sent_on(assoc, more), U32.is_eq(a, assoc))
+      sent_pick(bytes, sent(all, assoc, more), U32.is_eq(a, assoc), all)
     case x <> more:
-      sent_on(assoc, more)
+      sent(all, assoc, more)
+
+def sent_on(+assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
+  sent(False{}, assoc, actions)
 
 def is_pdu(+bytes: B.Bytes(), +kind: U32, +code: U32) -> Bool:
   A.pdu_is(Fr.Pdu.read(bytes), kind, code)
