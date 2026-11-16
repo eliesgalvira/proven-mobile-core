@@ -2972,13 +2972,13 @@ def Lw.assoc_for(+st: S.State, +link: S.Link, +msg: Pf.Msg) -> {Lv.okf(st, Up.N4
   match link:
     case S.Idle{}:
       {==}
-    case S.Asking{+seq, resent}:
+    case S.Waiting{S.Setup{}, request, +seq, resent}:
       Lw.assoc_seq(st, msg, U32.is_eq(seq, Pf.Msg.seq(msg)))
+    case S.Waiting{S.Heartbeat{}, request, seq, resent}:
+      {==}
     case S.Paused{}:
       {==}
     case S.Up{}:
-      {==}
-    case S.Beating{seq, resent}:
       {==}
 
 def Lw.alive_seq(+st: S.State, +ok: Bool) -> {Lv.okf(st, Up.N4.alive_seq(ok)) == True{} : Bool}:
@@ -2992,14 +2992,14 @@ def Lw.alive_for(+st: S.State, +link: S.Link, +seq: U32) -> {Lv.okf(st, Up.N4.al
   match link:
     case S.Idle{}:
       {==}
-    case S.Asking{s, resent}:
+    case S.Waiting{S.Setup{}, request, s, resent}:
       {==}
+    case S.Waiting{S.Heartbeat{}, request, +s, resent}:
+      Lw.alive_seq(st, U32.is_eq(s, seq))
     case S.Paused{}:
       {==}
     case S.Up{}:
       {==}
-    case S.Beating{+s, resent}:
-      Lw.alive_seq(st, U32.is_eq(s, seq))
 
 def Lw.pfcp_k6(+st: S.State, +msg: Pf.Msg, +ok: Bool) -> {Lv.fine(st, Gsm.Gsm.pfcp_k6(st, msg, ok)) == True{} : Bool}:
   match ok:
@@ -3220,43 +3220,40 @@ def Lw.gsm_expired(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase, +es: {
 # Timers
 # ------
 
-def Lw.asked(+st: S.State, +cfg: Maybe<&2, S.Cfg>, +seq: U32, +resent: U32, +tx: S.Tx, +ht: {Lv.free(st, tx) == True{} : Bool}, ha: @as:List<&2, N.Act> -> {Lv.arms(tx, as) == True{} : Bool}) -> {Lv.okf(st, Up.N4.asked(st, cfg, seq, resent, tx)) == True{} : Bool}:
+def Lw.asked(+st: S.State, +cfg: Maybe<&2, S.Cfg>) -> {Lv.okf(st, Up.N4.asked(st, cfg)) == True{} : Bool}:
   match cfg:
     case None{}:
       {==}
-    case Some{+c}:
-      +as : List<&2, N.Act> = [N.Pfcp{None{}, Up.N4.assoc_setup(c, S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), Up.N4.t1_ms()}]
-      P.Bool.and_intro(Bool.and(Lv.arms(tx, as), True{}), Bool.and(Lv.free(st, tx), True{}), P.Bool.and_intro(Lv.arms(tx, as), True{}, ha(as), {==}), P.Bool.and_intro(Lv.free(st, tx), True{}, ht, {==}))
+    case Some{c}:
+      {==}
 
 def Lw.n4_start(+st: S.State) -> {Lv.okf(st, Up.N4.start(st)) == True{} : Bool}:
-  Lw.asked(st, S.State.config(st), S.State.pfcp_seq(st), 0, S.BumpSeq{1}, {==}, as => {==})
+  Lw.asked(st, S.State.config(st))
 
-def Lw.ask_again(+st: S.State, +seq: U32, +resent: U32, +more: Bool) -> {Lv.okf(st, Up.N4.ask_again(st, seq, resent, more)) == True{} : Bool}:
-  match more:
-    case True{}:
-      Lw.asked(st, S.State.config(st), seq, U32.add(resent, 1), S.Keep{}, {==}, as => {==})
-    case False{}:
+def Lw.gave_up(+st: S.State, +req: S.Req) -> {Lv.okf(st, Up.N4.gave_up(st, req)) == True{} : Bool}:
+  match req:
+    case S.Setup{}:
       {==}
-
-def Lw.beat_again(+st: S.State, +seq: U32, +resent: U32, +more: Bool) -> {Lv.okf(st, Up.N4.beat_again(st, seq, resent, more)) == True{} : Bool}:
-  match more:
-    case True{}:
-      {==}
-    case False{}:
+    case S.Heartbeat{}:
       Lv.also(st, Up.N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with the UPF lost"}], Lw.n4_start(st), {==})
+
+def Lw.again(+st: S.State, +req: S.Req, +request: B.Bytes(), +seq: U32, +resent: U32, +more: Bool) -> {Lv.okf(st, Up.N4.again(st, req, request, seq, resent, more)) == True{} : Bool}:
+  match more:
+    case True{}:
+      {==}
+    case False{}:
+      Lw.gave_up(st, req)
 
 def Lw.n4_expired(+st: S.State, +link: S.Link) -> {Lv.okf(st, Up.N4.expired(st, link)) == True{} : Bool}:
   match link:
     case S.Idle{}:
       {==}
-    case S.Asking{+seq, +resent}:
-      Lw.ask_again(st, seq, resent, U32.is_lt(resent, Up.N4.n1()))
+    case S.Waiting{+req, +request, +seq, +resent}:
+      Lw.again(st, req, request, seq, resent, U32.is_lt(resent, Up.N4.n1()))
     case S.Paused{}:
       Lw.n4_start(st)
     case S.Up{}:
       {==}
-    case S.Beating{+seq, +resent}:
-      Lw.beat_again(st, seq, resent, U32.is_lt(resent, Up.N4.n1()))
 
 def Lw.node_timer(+st: S.State, +ok: Bool) -> {Lv.okf(st, K.Kernel.node_timer(st, ok)) == True{} : Bool}:
   match ok:
