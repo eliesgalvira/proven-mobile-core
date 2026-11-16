@@ -170,15 +170,12 @@ def NgSetup.supported_d1(config: Maybe<&2, S.Cfg>, ies: List<&2, Fr.Ie>, ok: Boo
     case False{}:
       False{}
 
-def NgSetup.supported_dispatch(config: Maybe<&2, S.Cfg>, kind: Nat, code: Nat, ies: List<&2, Fr.Ie>) -> Bool:
-  NgSetup.supported_d1(config, ies, Ngap.is_ng_setup(kind, code))
-
 def NgSetup.supported_ies(config: Maybe<&2, S.Cfg>, kind: Nat, code: Nat, r: Ap.Rd(List<&2, Fr.Ie>)) -> Bool:
   match r:
     case Fail{e}:
       False{}
     case Done{(ies, c)}:
-      NgSetup.supported_dispatch(config, kind, code, ies)
+      NgSetup.supported_d1(config, ies, Ngap.is_ng_setup(kind, code))
 
 def NgSetup.supported_pdu(config: Maybe<&2, S.Cfg>, r: Result<&2, &2, B.Err, Fr.Pdu>) -> Bool:
   match r:

@@ -76,15 +76,6 @@ def Ue.conflicts_sym(+a: S.Ue, +b: S.Ue) -> {S.Ue.conflicts(a, b) == S.Ue.confli
 # A sieve keeps a row
 # -------------------
 
-def Sift.next(+s: S.Sieve, +k: U32, +u: S.Ue, +k0: U32, +w: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +ehk: {U32.is_eq(k0, k) == False{} : Bool}, +r: {Tb.Table.get(S.Ue, k, S.Ues.sift(s, more)) == Some{u} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, k, Tb.Table.keep(S.Ue, k0, w, S.Ues.sift(s, more), b)) == Some{u} : Maybe<&2, S.Ue>}:
-  match b:
-    case True{}:
-      se = Equal.sym(Bool, U32.is_eq(k0, k), False{}, ehk)
-      %se : {Tb.Table.hit(S.Ue, w, Tb.Table.get(S.Ue, k, S.Ues.sift(s, more)), _) == Some{u} : Maybe<&2, S.Ue>}
-      r
-    case False{}:
-      r
-
 def Sift.row(+s: S.Sieve, +k: U32, +u: S.Ue, +k0: U32, +w: S.Ue, +more: Tb.Table(S.Ue), +hk: Bool, +ehk: {U32.is_eq(k0, k) == hk : Bool}, +eu: {Tb.Table.hit(S.Ue, w, Tb.Table.get(S.Ue, k, more), hk) == Some{u} : Maybe<&2, S.Ue>}, +ek: {S.Sieve.keeps(s, k, u) == True{} : Bool}, ih: {Tb.Table.get(S.Ue, k, more) == Some{u} : Maybe<&2, S.Ue>} -> {Tb.Table.get(S.Ue, k, S.Ues.sift(s, more)) == Some{u} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, k, Tb.Table.keep(S.Ue, k0, w, S.Ues.sift(s, more), S.Sieve.keeps(s, k0, w))) == Some{u} : Maybe<&2, S.Ue>}:
   match hk:
     case True{}:
@@ -98,7 +89,7 @@ def Sift.row(+s: S.Sieve, +k: U32, +u: S.Ue, +k0: U32, +w: S.Ue, +more: Tb.Table
       %r : {Tb.Table.hit(S.Ue, u, Tb.Table.get(S.Ue, k, S.Ues.sift(s, more)), _) == Some{u} : Maybe<&2, S.Ue>}
       {==}
     case False{}:
-      Sift.next(s, k, u, k0, w, more, S.Sieve.keeps(s, k0, w), ehk, ih(eu))
+      P.Keep.by(S.Ue, tb => {Tb.Table.get(S.Ue, k, tb) == Some{u} : Maybe<&2, S.Ue>}, k0, w, S.Ues.sift(s, more), S.Sieve.keeps(s, k0, w), e => h => (%Equal.sym(Bool, U32.is_eq(k0, k), False{}, ehk) : {Tb.Table.hit(S.Ue, w, Tb.Table.get(S.Ue, k, S.Ues.sift(s, more)), _) == Some{u} : Maybe<&2, S.Ue>}; h), ih(eu))
 
 # The row under k survives a sieve that keeps it.
 def Sift.get(+s: S.Sieve, +k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +eu: {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}, +ek: {S.Sieve.keeps(s, k, u) == True{} : Bool}) -> {Tb.Table.get(S.Ue, k, S.Ues.sift(s, ues)) == Some{u} : Maybe<&2, S.Ue>}:
@@ -1908,4 +1899,4 @@ def Tk.assocs(+st: S.State, +assoc: U32, +as: Tb.Table(B.Bytes()), +k: U32, +u: 
 
 def L.amf.takeover.authenticated(st, entropy, assoc, stream, len, bytes, k, u, e, eu, ea, eg):
   +x = S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
-  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => cx => Tk.kept_get(k, u, S.State.ues(st), eu), +id => +ok => acts => h => cx => Tk.assocs(st, assoc, S.Assocs.set(assoc, id, S.State.assocs(N.Step.state(R.Route.drop(st, assoc))), ok), k, u, eu, ea), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => ea2 => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))
+  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => cx => nr => Tk.kept_get(k, u, S.State.ues(st), eu), +id => +ok => acts => h => cx => er => Tk.assocs(st, assoc, S.Assocs.set(assoc, id, S.State.assocs(N.Step.state(R.Route.drop(st, assoc))), ok), k, u, eu, ea), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => ea2 => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))

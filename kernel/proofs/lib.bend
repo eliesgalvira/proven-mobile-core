@@ -1,6 +1,7 @@
 import Base
 import ../bytes.bend as B
 import ../nas/ie.bend as I
+import ../table.bend as Tb
 
 # Proof helpers shared by kernel/proofs/*.bend.
 
@@ -863,3 +864,15 @@ def Bool.or_true_r(a: Bool, +b: Bool, ea: {a == False{} : Bool}, e: {Bool.or(a, 
       Empty.absurd({b == True{} : Bool}, Refute.true_false(ea))
     case False{}:
       e
+
+# Tables
+# ------
+
+# What holds of the rest, and of a row in front of it when the row is kept,
+# holds of the rest with the row kept or dropped.
+def Keep.by(-V: Data, -Q: Tb.Table(V) -> Type, +k: U32, +v: V, +rest: Tb.Table(V), +b: Bool, kept: {b == True{} : Bool} -> Q(rest) -> Q((k, v) <> rest), hr: Q(rest)) -> Q(Tb.Table.keep(V, k, v, rest, b)):
+  match b:
+    case True{}:
+      kept({==}, hr)
+    case False{}:
+      hr
