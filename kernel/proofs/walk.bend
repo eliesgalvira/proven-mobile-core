@@ -317,6 +317,38 @@ def Rt.read_if(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: 
 def Rt.read(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, bad: Q((st, N.Ngap.bad_pdu(assoc))), refused: Q((st, N.Ngap.unhandled(assoc))), routed: Rt.Routed(Q, st, entropy, assoc, stream, kind, code)) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
   Rt.read_if(Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), ep, {==}, en, bad, refused, routed)
 
+# A UE message, routed: its procedure f takes the view of its IEs (ed: {==}
+# for a given message). What holds of f's outcome on the view r holds of the
+# step.
+def Rt.view(-A: Data, -Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, -view: List<&2, Fr.Ie> -> Result<&2, &2, B.Err, A>, -f: Result<&2, &2, B.Err, A> -> N.GOut(), +r: Result<&2, &2, B.Err, A>, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}, ed: {f(view(ies)) == R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code))) : N.GOut()}, ev: {view(ies) == r : Result<&2, &2, B.Err, A>}, h: Q(N.Step.of(st, f(r)))) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  e = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), N.Step.of(st, R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code)))), Rt.routed(st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, ep, ei, en, ea))
+  %e : Q(_)
+  %ed : Q(N.Step.of(st, _))
+  sv = Equal.sym(Result<&2, &2, B.Err, A>, view(ies), r, ev)
+  %sv : Q(N.Step.of(st, f(_)))
+  h
+
+# The view read as v, f goes on as g on the key its AMF-UE-NGAP-ID amf gives
+# (ef: {==} for a given message); what holds of g's outcome for that key m
+# holds of the step.
+def Rt.ue(-A: Data, -Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, -view: List<&2, Fr.Ie> -> Result<&2, &2, B.Err, A>, -f: Result<&2, &2, B.Err, A> -> N.GOut(), -g: Maybe<&2, U32> -> N.GOut(), +v: A, +amf: B.Bytes(), +m: Maybe<&2, U32>, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}, ed: {f(view(ies)) == R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code))) : N.GOut()}, ev: {view(ies) == Done{v} : Result<&2, &2, B.Err, A>}, ef: {g(N.Ngap.ue_key(amf)) == f(Done{v}) : N.GOut()}, em: {N.Ngap.ue_key(amf) == m : Maybe<&2, U32>}, h: Q(N.Step.of(st, g(m)))) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  sm = Equal.sym(Maybe<&2, U32>, N.Ngap.ue_key(amf), m, em)
+  Rt.view(A, Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, view, f, Done{v}, ep, ei, en, ea, ed, ev, (%ef : Q(N.Step.of(st, _)); (%sm : Q(N.Step.of(st, g(_))); h)))
+
+# The key named, g goes on as h on the context the association owns under
+# that key and its RAN-UE-NGAP-ID ran (eg: {==} for a given message).
+def Rt.owned(-A: Data, -Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, -view: List<&2, Fr.Ie> -> Result<&2, &2, B.Err, A>, -f: Result<&2, &2, B.Err, A> -> N.GOut(), -g: Maybe<&2, U32> -> N.GOut(), -h: Maybe<&2, S.Ue> -> N.GOut(), +v: A, +amf: B.Bytes(), +k: U32, +ran: B.Bytes(), +o: Maybe<&2, S.Ue>, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}, ed: {f(view(ies)) == R.Route.d2(st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(kind), U32.to_nat(code))) : N.GOut()}, ev: {view(ies) == Done{v} : Result<&2, &2, B.Err, A>}, ef: {g(N.Ngap.ue_key(amf)) == f(Done{v}) : N.GOut()}, eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, eg: {h(Gmm.Gmm.owner(st, assoc, k, ran)) == g(Some{k}) : N.GOut()}, eo: {Gmm.Gmm.owner(st, assoc, k, ran) == o : Maybe<&2, S.Ue>}, h0: Q(N.Step.of(st, h(o)))) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
+  so = Equal.sym(Maybe<&2, S.Ue>, Gmm.Gmm.owner(st, assoc, k, ran), o, eo)
+  Rt.ue(A, Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, ies, c, view, f, g, v, amf, Some{k}, ep, ei, en, ea, ed, ev, ef, eid, (%eg : Q(N.Step.of(st, _)); (%so : Q(N.Step.of(st, h(_))); h0)))
+
+# A context another association has is not the association's.
+def Rt.other(+st: S.State, +assoc: U32, +k: U32, +ran: B.Bytes(), +ue: S.Ue, eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, ea: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}) -> {Gmm.Gmm.owner(st, assoc, k, ran) == None{} : Maybe<&2, S.Ue>}:
+  seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{ue}, eu)
+  %seu : {N.Owner.of(_, assoc, ran) == None{} : Maybe<&2, S.Ue>}
+  sea = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(ue), assoc), False{}, ea)
+  %sea : {N.Owner.check(ue, Bool.and(_, B.bytes_eq(S.Ue.ran_id(ue), ran))) == None{} : Maybe<&2, S.Ue>}
+  {==}
+
 # The session side
 # ----------------
 # A transaction that changes no context (sessions changed in place or
