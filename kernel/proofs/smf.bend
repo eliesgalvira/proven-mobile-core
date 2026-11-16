@@ -847,7 +847,7 @@ def Rel.faileds(+st: S.State, +key: U32, pre: G.PDUSessionResourceFailedToSetupL
     case Nil{}:
       +a = Gsm.Gsm.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)))
       +b = Gsm.Gsm.faileds(st, key, post, U32.add(seq, 1))
-      Rel.join_r((S.BumpSeq{1}, []), N.Out.join(a, b), skey, s, Rel.join_l(st, a, b, skey, s, Rel.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), skey, s, guard, pti, es, eh), P.Bool.and_true_r(PL.Lv.acts(st, N.Out.acts(b)), PL.Lv.free(st, N.Out.tx(b)), PL.Lw.faileds(st, key, post, U32.add(seq, 1))), Ql.faileds(st, key, post, U32.add(seq, 1))))
+      Rel.join_r((S.BumpSeq{1}, []), N.Out.join(a, b), skey, s, Rel.join_l(st, a, b, skey, s, Rel.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), skey, s, guard, pti, es, eh), PL.Lv.okf_free(st, b, PL.Lw.faileds(st, key, post, U32.add(seq, 1))), Ql.faileds(st, key, post, U32.add(seq, 1))))
     case G.PDUSessionResourceFailedToSetupItemSURes{+p2, t2, x2} <> +pre2:
       +a = Gsm.Gsm.failed(st, seq, S.Sessions.by_psi(key, p2, S.State.sessions(st)))
       +b = Gsm.Gsm.faileds(st, key, List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre2, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post), U32.add(seq, 1))
@@ -1353,7 +1353,7 @@ def Hd.drop(+st: S.State, +assoc: U32, +skey: U32, +s0: S.Session, +eu: {S.Sessi
       +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
       +d = Up.N4.deletions(gone, pfcp_seq)
       +hd = PL.Lv.dels(s1, gone, pfcp_seq, PL.Lv.srows_sift(S.SOrphan{left}, sessions), PL.Lv.krows_orphan(s1, left))
-      +hh = PL.Lv.free_homed(s1, N.Out.tx(d), ues, P.Bool.and_true_r(PL.Lv.acts(s1, N.Out.acts(d)), PL.Lv.free(s1, N.Out.tx(d)), hd))
+      +hh = PL.Lv.free_homed(s1, N.Out.tx(d), ues, PL.Lv.okf_free(s1, d, hd))
       +e1 = Hd.apply(s1, N.Out.tx(d), ues, s1, skey, s0, hh, eu, e0, eh, e0)
       Hd.get_sift(S.SOwned{left}, S.State.sessions(S.Tx.apply(N.Out.tx(d), s1)), skey, s0, e1, Hd.owned(s0, left, eh))
 

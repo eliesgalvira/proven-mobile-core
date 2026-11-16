@@ -455,7 +455,7 @@ def Acts.runs(+k: U32, acts: List<&2, Act>) -> Bool:
   match acts:
     case Nil{}:
       False{}
-    case a <> more:
+    case a <> +more:
       Bool.or(Acts.runs(k, more), Bool.and(Act.starts(k, a), Bool.not(Acts.stops(k, more))))
 
 # Some action sends the PFCP message bytes.
