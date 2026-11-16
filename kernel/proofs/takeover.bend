@@ -1889,14 +1889,184 @@ def Tk.out(+st: S.State, +o: N.GOut(), +k: U32, +u: S.Ue, w: Tk.Ok(k, u, S.State
   se = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), Tk.ues(N.Out.tx(o), S.State.ues(st)), Tk.render(st, o))
   (%se : Tk.Kept(k, u, _); w)
 
-# NG Setup changes the associations set up, no context.
-# NG Setup releases only its own association's contexts.
-def Tk.assocs(+st: S.State, +assoc: U32, +as: Tb.Table(B.Bytes()), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(S.State.with_assocs(N.Step.state(R.Route.drop(st, assoc)), as))):
-  match st:
+# NG Setup
+# --------
+# NG Setup re-initialises its association's contexts (R.Route.reset): the N2
+# handovers it takes part in end, then its contexts go. Ending one rephases
+# another association's context only when its handover is aimed at this one
+# (Ho.Ho.aimed), so with its SUPI verified, into a phase holding a security
+# context; a key names one row of a unique table, so that row is rephased
+# once, keeps its owner, and survives the sieve.
+
+# The row under k is u, or a context of u's owner securing u's SUPI.
+def Tk.held(+k: U32, +u: S.Ue, m: Maybe<&2, S.Ue>) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{+w}:
+      Bool.and(U32.is_eq(S.Ue.assoc(w), S.Ue.assoc(u)), S.Ue.secures(w, S.Ue.supi(u)))
+
+def Tk.Down(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue)) -> Data:
+  Either<&2, &2, {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}, {Tk.held(k, u, Tb.Table.get(S.Ue, k, ues)) == True{} : Bool}>
+
+def Tk.down_join(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +a: N.GOut(), +b: N.GOut(), +h: Tk.Down(k, u, Tk.ues(N.Out.tx(b), Tk.ues(N.Out.tx(a), ues)))) -> Tk.Down(k, u, Tk.ues(N.Out.tx(N.Out.join(a, b)), ues)):
+  match a:
+    case (ta, aa):
+      match b:
+        case (tb, ab):
+          h
+
+def Tk.sp_leg(+k1: U32, +u1: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +t: Bool, +s: Bool, +k: U32, +w: S.Ue, +ne: {U32.is_eq(k, k1) == False{} : Bool}) -> {Tk.sp(k, w, Ho.Ho.down_leg(k1, u1, ctx, nh, leg, t, s)) == True{} : Bool}:
+  match t s:
+    case True{} _:
+      Tk.sp_rephase(k, w, k1, S.Registered{ctx, nh, None{}}, ne)
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+def Tk.sp_row(+assoc: U32, +k1: U32, +u1: S.Ue, +p: S.Phase, +k: U32, +w: S.Ue, +ne: {U32.is_eq(k, k1) == False{} : Bool}) -> {Tk.sp(k, w, Ho.Ho.down_row(assoc, k1, u1, p)) == True{} : Bool}:
+  match p:
+    case S.Handover{+ctx, +nh, source, +leg}:
+      Tk.sp_leg(k1, u1, ctx, nh, leg, Ho.Ho.aimed(u1, assoc), U32.is_eq(S.Ue.assoc(u1), assoc), k, w, ne)
+    case S.Created{}:
+      {==}
+    case S.Identifying{guard}:
+      {==}
+    case S.Authenticating{guard, av, resynced, supi}:
+      {==}
+    case S.SecurityMode{guard, ctx, k_amf}:
+      {==}
+    case S.ContextSetup{guard, ctx, nh, response, complete}:
+      {==}
+    case S.Registered{ctx, nh, released}:
+      {==}
+    case S.Switching{guard, ctx, nh, released}:
+      {==}
+    case S.Releasing{guard}:
+      {==}
+
+# The handovers of rows clear of key k spare its row.
+def Tk.sp_downs(+assoc: U32, +rows: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +w: S.Ue, +hc: {S.Ues.clear(k, u, rows) == True{} : Bool}) -> {Tk.sp(k, w, Ho.Ho.downs(assoc, rows)) == True{} : Bool}:
+  match rows:
+    case Nil{}:
+      {==}
+    case (+k1, +u1) <> +more:
+      +c = S.Row.conflicts(k, u, k1, u1)
+      +n1 = P.Bool.or_false_l(U32.is_eq(k1, k), S.Ue.conflicts(u, u1), P.Bool.not_true(c, P.Bool.and_true_l(Bool.not(c), S.Ues.clear(k, u, more), hc)))
+      +ne = Equal.trans(Bool, U32.is_eq(k, k1), U32.is_eq(k1, k), False{}, P.U32.sym(k, k1), n1)
+      Tk.sp_join(k, w, Ho.Ho.down_row(assoc, k1, u1, S.Ue.phase(u1)), Ho.Ho.downs(assoc, more), Tk.sp_row(assoc, k1, u1, S.Ue.phase(u1), k, w, ne), Tk.sp_downs(assoc, more, k, u, w, P.Bool.and_true_r(Bool.not(c), S.Ues.clear(k, u, more), hc)))
+
+def Tk.held_spared(+k: U32, +u: S.Ue, +tx: S.Tx, +x: Tb.Table(S.Ue), +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, x) == m : Maybe<&2, S.Ue>}, +e: {Tk.held(k, u, m) == True{} : Bool}, sp: @w:S.Ue -> {Tk.spares(k, w, tx) == True{} : Bool}) -> {Tk.held(k, u, Tb.Table.get(S.Ue, k, Tk.ues(tx, x))) == True{} : Bool}:
+  match m:
+    case None{}:
+      Empty.absurd({Tk.held(k, u, Tb.Table.get(S.Ue, k, Tk.ues(tx, x))) == True{} : Bool}, P.Refute.bool(e))
+    case Some{+w}:
+      sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, Tk.ues(tx, x)), Some{w}, Tk.spared(k, w, tx, x, em, sp(w)))
+      (%sg : {Tk.held(k, u, _) == True{} : Bool}; e)
+
+def Tk.down_spared(+k: U32, +u: S.Ue, +tx: S.Tx, +x: Tb.Table(S.Ue), +h: Tk.Down(k, u, x), sp: @w:S.Ue -> {Tk.spares(k, w, tx) == True{} : Bool}) -> Tk.Down(k, u, Tk.ues(tx, x)):
+  match h:
+    case Inl{+e}:
+      Inl{Tk.spared(k, u, tx, x, e, sp(u))}
+    case Inr{+e}:
+      Inr{Tk.held_spared(k, u, tx, x, Tb.Table.get(S.Ue, k, x), {==}, e, sp)}
+
+def Tk.assoc_phase(+u: S.Ue, +p: S.Phase) -> {U32.is_eq(S.Ue.assoc(S.Ue.with_phase(u, p)), S.Ue.assoc(u)) == True{} : Bool}:
+  match u:
+    case S.Ue{+assoc, ran_id, stream, supi, tmsi, reg, ngksi, phase, last_dl}:
+      P.U32.is_eq_refl(assoc)
+
+# The handover of u's own row: when aimed at the association, its context
+# becomes Registered with its security context.
+def Tk.leg_self(+assoc: U32, +k: U32, +u: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +x: Tb.Table(S.Ue), +eg: {Tb.Table.get(S.Ue, k, x) == Some{u} : Maybe<&2, S.Ue>}, +t: Bool, +et: {Ho.Ho.aimed(u, assoc) == t : Bool}, +s: Bool) -> Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.down_leg(k, u, ctx, nh, leg, t, s)), x)):
+  match t s:
+    case True{} _:
+      +p : S.Phase = S.Registered{ctx, nh, None{}}
+      +v = S.Ue.with_phase(u, p)
+      sr = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.rephase(k, p, x)), Some{v}, Rephase.self(k, p, u, x, eg))
+      Inr{(%sr : {Tk.held(k, u, _) == True{} : Bool}; P.Bool.and_intro(U32.is_eq(S.Ue.assoc(v), S.Ue.assoc(u)), S.Ue.secures(v, S.Ue.supi(u)), Tk.assoc_phase(u, p), W.secures_self(u, p, PW.Walk.aimed_supi(u, assoc, et), {==})))}
+    case False{} True{}:
+      Inl{eg}
+    case False{} False{}:
+      Inl{eg}
+
+def Tk.row_self(+assoc: U32, +k: U32, +u: S.Ue, +p: S.Phase, +x: Tb.Table(S.Ue), +eg: {Tb.Table.get(S.Ue, k, x) == Some{u} : Maybe<&2, S.Ue>}) -> Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.down_row(assoc, k, u, p)), x)):
+  match p:
+    case S.Handover{+ctx, +nh, source, +leg}:
+      Tk.leg_self(assoc, k, u, ctx, nh, leg, x, eg, Ho.Ho.aimed(u, assoc), {==}, U32.is_eq(S.Ue.assoc(u), assoc))
+    case S.Created{}:
+      Inl{eg}
+    case S.Identifying{guard}:
+      Inl{eg}
+    case S.Authenticating{guard, av, resynced, supi}:
+      Inl{eg}
+    case S.SecurityMode{guard, ctx, k_amf}:
+      Inl{eg}
+    case S.ContextSetup{guard, ctx, nh, response, complete}:
+      Inl{eg}
+    case S.Registered{ctx, nh, released}:
+      Inl{eg}
+    case S.Switching{guard, ctx, nh, released}:
+      Inl{eg}
+    case S.Releasing{guard}:
+      Inl{eg}
+
+def Tk.downs_at(+assoc: U32, +k: U32, +u: S.Ue, +more: Tb.Table(S.Ue), +x: Tb.Table(S.Ue), +eg: {Tb.Table.get(S.Ue, k, x) == Some{u} : Maybe<&2, S.Ue>}, +hc: {S.Ues.clear(k, u, more) == True{} : Bool}) -> Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.downs(assoc, (k, u) <> more)), x)):
+  +a = Ho.Ho.down_row(assoc, k, u, S.Ue.phase(u))
+  +b = Ho.Ho.downs(assoc, more)
+  Tk.down_join(k, u, x, a, b, Tk.down_spared(k, u, N.Out.tx(b), Tk.ues(N.Out.tx(a), x), Tk.row_self(assoc, k, u, S.Ue.phase(u), x, eg), w => Tk.sp_downs(assoc, more, k, u, w, hc)))
+
+def Tk.downs_if(+assoc: U32, +k1: U32, +u1: S.Ue, +more: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +x: Tb.Table(S.Ue), +eg: {Tb.Table.get(S.Ue, k, x) == Some{u} : Maybe<&2, S.Ue>}, +b: Bool, +eb: {U32.is_eq(k1, k) == b : Bool}, +er: {Tb.Table.hit(S.Ue, u1, Tb.Table.get(S.Ue, k, more), b) == Some{u} : Maybe<&2, S.Ue>}, +un: {Bool.and(S.Ues.clear(k1, u1, more), S.Ues.unique(more)) == True{} : Bool}, ih: @y:Tb.Table(S.Ue) -> {Tb.Table.get(S.Ue, k, y) == Some{u} : Maybe<&2, S.Ue>} -> {Tb.Table.get(S.Ue, k, more) == Some{u} : Maybe<&2, S.Ue>} -> Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.downs(assoc, more)), y))) -> Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.downs(assoc, (k1, u1) <> more)), x)):
+  match b:
+    case True{}:
+      +ek = P.U32.eq_of_is_eq(k1, k, eb)
+      +eu = P.Some.inj(S.Ue, u1, u, er)
+      hc : {S.Ues.clear(k, u, more) == True{} : Bool} = (%ek : {S.Ues.clear(_, u, more) == True{} : Bool}; (%eu : {S.Ues.clear(k1, _, more) == True{} : Bool}; P.Bool.and_true_l(S.Ues.clear(k1, u1, more), S.Ues.unique(more), un)))
+      sk = Equal.sym(U32, k1, k, ek)
+      su = Equal.sym(S.Ue, u1, u, eu)
+      (%sk : Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.downs(assoc, (_, u1) <> more)), x)); (%su : Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.downs(assoc, (k, _) <> more)), x)); Tk.downs_at(assoc, k, u, more, x, eg, hc)))
+    case False{}:
+      +a = Ho.Ho.down_row(assoc, k1, u1, S.Ue.phase(u1))
+      +ne = Equal.trans(Bool, U32.is_eq(k, k1), U32.is_eq(k1, k), False{}, P.U32.sym(k, k1), eb)
+      Tk.down_join(k, u, x, a, Ho.Ho.downs(assoc, more), ih(Tk.ues(N.Out.tx(a), x), Tk.spared(k, u, N.Out.tx(a), x, eg, Tk.sp_row(assoc, k1, u1, S.Ue.phase(u1), k, u, ne)), er))
+
+# Ending the handovers of a unique table's rows keeps the row under k, or
+# rephases it once.
+def Tk.downs(+assoc: U32, +rows: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +x: Tb.Table(S.Ue), +eg: {Tb.Table.get(S.Ue, k, x) == Some{u} : Maybe<&2, S.Ue>}, +er: {Tb.Table.get(S.Ue, k, rows) == Some{u} : Maybe<&2, S.Ue>}, +un: {S.Ues.unique(rows) == True{} : Bool}) -> Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.downs(assoc, rows)), x)):
+  match rows:
+    case Nil{}:
+      Empty.absurd(Tk.Down(k, u, Tk.ues(N.Out.tx(Ho.Ho.downs(assoc, [])), x)), P.Refute.none_some(S.Ue, u, er))
+    case (+k1, +u1) <> +more:
+      Tk.downs_if(assoc, k1, u1, more, k, u, x, eg, U32.is_eq(k1, k), {==}, er, un, y => ey => em => Tk.downs(assoc, more, k, u, y, ey, em, P.Bool.and_true_r(S.Ues.clear(k1, u1, more), S.Ues.unique(more), un)))
+
+def Tk.drop_held(+assoc: U32, +ues: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, ues) == m : Maybe<&2, S.Ue>}, +e: {Tk.held(k, u, m) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {S.Ues.secured(S.Ue.supi(u), S.Ues.sift(S.Others{assoc}, ues)) == True{} : Bool}:
+  match m:
+    case None{}:
+      Empty.absurd({S.Ues.secured(S.Ue.supi(u), S.Ues.sift(S.Others{assoc}, ues)) == True{} : Bool}, P.Refute.bool(e))
+    case Some{+w}:
+      +same = U32.is_eq(S.Ue.assoc(w), S.Ue.assoc(u))
+      ew = Equal.sym(U32, S.Ue.assoc(w), S.Ue.assoc(u), P.U32.eq_of_is_eq(S.Ue.assoc(w), S.Ue.assoc(u), P.Bool.and_true_l(same, S.Ue.secures(w, S.Ue.supi(u)), e)))
+      sa = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(w), assoc), False{}, (%ew : {U32.is_eq(_, assoc) == False{} : Bool}; ea))
+      W.sec_get(S.Ue.supi(u), k, w, S.Ues.sift(S.Others{assoc}, ues), Sift.get(S.Others{assoc}, k, w, ues, em, (%sa : {Bool.not(_) == True{} : Bool}; {==})), P.Bool.and_true_r(same, S.Ue.secures(w, S.Ue.supi(u)), e))
+
+# Its contexts going spare u, of another association, or what secures it.
+def Tk.drop(+s: S.State, +assoc: U32, +as: Tb.Table(B.Bytes()), +k: U32, +u: S.Ue, +h: Tk.Down(k, u, S.State.ues(s)), +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(S.State.with_assocs(N.Step.state(R.Route.drop(s, assoc)), as))):
+  match s:
     case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-      sa = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(u), assoc), False{}, ea)
-      Inl{Sift.get(S.Others{assoc}, k, u, ues, eu, (%sa : {Bool.not(_) == True{} : Bool}; {==}))}
+      match h:
+        case Inl{+eu}:
+          sa = Equal.sym(Bool, U32.is_eq(S.Ue.assoc(u), assoc), False{}, ea)
+          Inl{Sift.get(S.Others{assoc}, k, u, ues, eu, (%sa : {Bool.not(_) == True{} : Bool}; {==}))}
+        case Inr{+e}:
+          Inr{Tk.drop_held(assoc, ues, k, u, Tb.Table.get(S.Ue, k, ues), {==}, e, ea)}
+
+def Tk.reset(+st: S.State, +assoc: U32, +as: Tb.Table(B.Bytes()), +k: U32, +u: S.Ue, +eu: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +un: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> Tk.Kept(k, u, S.State.ues(S.State.with_assocs(N.Step.state(R.Route.reset(st, assoc)), as))):
+  +o = Ho.Ho.down(st, assoc)
+  +s1 = N.Step.state(N.Step.of(st, o))
+  se = Equal.sym(Tb.Table(S.Ue), S.State.ues(s1), Tk.ues(N.Out.tx(o), S.State.ues(st)), Tk.render(st, o))
+  Tk.drop(s1, assoc, as, k, u, (%se : Tk.Down(k, u, _); Tk.downs(assoc, S.State.ues(st), k, u, S.State.ues(st), eu, eu, un)), ea)
 
 def L.amf.takeover.authenticated(st, entropy, assoc, stream, len, bytes, k, u, e, eu, ea, eg):
   +x = S.State.ues(K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
-  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => cx => nr => Tk.kept_get(k, u, S.State.ues(st), eu), +id => +ok => acts => h => cx => er => Tk.assocs(st, assoc, S.Assocs.set(assoc, id, S.State.assocs(N.Step.state(R.Route.drop(st, assoc))), ok), k, u, eu, ea), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => ea2 => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))
+  Tk.removed(k, u, x, eg, PW.Walk.pdu(o => Tk.Kept(k, u, S.State.ues(K.Kernel.state(o))), o => Tk.Ok(k, u, S.State.ues(st), o), st, assoc, stream, entropy, Fr.Pdu.read(bytes), acts => h => cx => nr => Tk.kept_get(k, u, S.State.ues(st), eu), +id => +ok => acts => h => cx => er => Tk.reset(st, assoc, S.Assocs.set(assoc, id, S.State.assocs(N.Step.state(R.Route.reset(st, assoc))), ok), k, u, eu, e, ea), +o => w => Tk.out(st, o, k, u, w), +kind => +code => +ies => ea2 => W.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), k, u, eu, e, ea)))

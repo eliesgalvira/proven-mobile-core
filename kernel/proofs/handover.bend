@@ -394,7 +394,7 @@ def So.down(+st: S.State, +assoc: U32, +e: {Bool.and(S.Ues.unique(S.State.ues(st
       P.Bool.and_intro(S.Ues.unique(S.Ues.sift(S.Others{assoc}, ues)), S.Ues.single(S.Ues.sift(S.Others{assoc}, ues)), PK.Unique.sift(S.Others{assoc}, ues, So.parts(ues, e)), So.sift(S.Others{assoc}, ues, So.part2(ues, e)))
 
 def So.step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {Bool.and(S.Ues.unique(S.State.ues(st)), S.Ues.single(S.State.ues(st))) == True{} : Bool}) -> {Bool.and(S.Ues.unique(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ues.single(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))))) == True{} : Bool}:
-  PL.Inv.step(ues => ss => Bool.and(S.Ues.unique(ues), S.Ues.single(ues)), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => So.down(s, a, e1), a => s => e1 => So.down(s, a, e1))
+  PL.Inv.step(ues => ss => Bool.and(S.Ues.unique(ues), S.Ues.single(ues)), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~So.inv, ~PL.Inv.none, ~So.tx_put, ~So.tx_rephase, ~So.tx_del, ~So.tx_put_session, ~So.tx_revar, ~So.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => So.down(s, a, e1), a => s => e1 => So.down(s, a, e1))
 
 # amf.handover.single_owner
 # -------------------------
@@ -532,7 +532,7 @@ def Hp.timed(+ues: Tb.Table(S.Ue)) -> {S.Ues.timed(ues) == True{} : Bool}:
 
 # The guard timers stay unique (state.ids.free), every step.
 def Hp.timed_step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {Bool.and(S.Ids.free(S.State.ues(st), S.State.sessions(st)), S.Sessions.owned(S.State.sessions(st), S.State.ues(st))) == True{} : Bool}) -> {Bool.and(S.Ues.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ids.free(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy))))) == True{} : Bool}:
-  P.Bool.and_intro(S.Ues.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ids.free(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), Hp.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), PL.Inv.step(ues => ss => S.Ids.free(ues, ss), st, ev, entropy, P.Bool.and_true_l(S.Ids.free(S.State.ues(st), S.State.sessions(st)), S.Sessions.owned(S.State.sessions(st), S.State.ues(st)), e), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => PL.Id.down(s, a, e1), a => s => e1 => PL.Id.down(s, a, e1)))
+  P.Bool.and_intro(S.Ues.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), S.Ids.free(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), Hp.timed(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))), PL.Inv.step(ues => ss => S.Ids.free(ues, ss), st, ev, entropy, P.Bool.and_true_l(S.Ids.free(S.State.ues(st), S.State.sessions(st)), S.Sessions.owned(S.State.sessions(st), S.State.ues(st)), e), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~PL.Id.inv, ~PL.Id.pre, ~PL.Id.tx_put, ~PL.Id.tx_rephase, ~PL.Id.tx_del, ~PL.Id.tx_put_session, ~PL.Id.tx_revar, ~PL.Id.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => PL.Id.down(s, a, e1), a => s => e1 => PL.Id.down(s, a, e1)))
 
 def Hp.g_guard(+p: S.Phase, +t: U32, +e: {S.Phase.pending(p) == Some{t} : Maybe<&2, U32>}) -> {Tb.Table.present(S.Guard, S.Phase.guard(p)) == True{} : Bool}:
   match p:
@@ -1057,11 +1057,6 @@ def Hs.drop_rows(+s: S.State, +assoc: U32, +k: U32, +r: Rw, +e: {Hs.rows(k, r, S
     case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
       Hs.sift(k, r, S.Others{assoc}, ues, e)
 
-def Hs.ready(+st: S.State, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, +tc: {N.Acts.touches(k, acts) == False{} : Bool}) -> Hs.Q(k, (S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts))):
-  -G = {Hs.rows(k, Idle{}, S.State.ues(S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok))) == True{} : Bool}
-  +xs = N.Step.acts(R.Route.drop(st, assoc))
-  e => Hs.app(G, k, xs, acts, e, l => Hs.drop_quiet(G, st, assoc, k, es, l), r => P.Bool.contra(G, N.Acts.stops(k, acts), r, Hs.untouched(k, acts, tc)))
-
 def Hs.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, K.Kernel.config(complete, st, tlvs, entropy)):
   match complete:
     case False{}:
@@ -1075,7 +1070,7 @@ def Hs.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B
           +o = N.Out.also(Up.N4.start(st2), n)
           Hs.out(st2, k, es, o, PL.Lv.ok_of(st2, o, PL.Lv.also(st2, Up.N4.start(st2), n, PL.Lw.n4_start(st2), {==}, {==})))
 
-def Hs.down(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, R.Route.down(st, assoc)):
+def Hs.reset(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, R.Route.reset(st, assoc)):
   +o = Ho.Ho.down(st, assoc)
   +s1 = N.Step.of(st, o)
   +s2 = R.Route.drop(N.Step.state(s1), assoc)
@@ -1083,7 +1078,14 @@ def Hs.down(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k,
   q1 = Hs.out(st, k, es, o, PL.Lw.ho_down(st, assoc))
   ds = Equal.sym(Tb.Table(S.Session), S.State.sessions(N.Step.state(s1)), S.State.sessions(st), PL.Lw.down_sessions(st, assoc))
   es1 : {Tb.Table.get(S.Session, k, S.State.sessions(N.Step.state(s1))) == None{} : Maybe<&2, S.Session>} = (%ds : {Tb.Table.get(S.Session, k, _) == None{} : Maybe<&2, S.Session>}; es)
-  e => Hs.app(G, k, N.Step.acts(s1), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(s2), e, l => Hs.drop_rows(N.Step.state(s1), assoc, k, Idle{}, q1(l)), r => Hs.drop_quiet(G, N.Step.state(s1), assoc, k, es1, r))
+  e => Hs.app(G, k, N.Step.acts(s1), N.Step.acts(s2), e, l => Hs.drop_rows(N.Step.state(s1), assoc, k, Idle{}, q1(l)), r => Hs.drop_quiet(G, N.Step.state(s1), assoc, k, es1, r))
+
+# NG Setup: its association's contexts re-initialised; the rest stops no k.
+def Hs.ready(+st: S.State, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, +tc: {N.Acts.touches(k, acts) == False{} : Bool}) -> Hs.Q(k, (S.State.ready(N.Step.state(R.Route.reset(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.reset(st, assoc)), acts))):
+  +s = N.Step.state(R.Route.reset(st, assoc))
+  -G = {Hs.rows(k, Idle{}, S.State.ues(S.State.ready(s, assoc, id, ok))) == True{} : Bool}
+  +xs = N.Step.acts(R.Route.reset(st, assoc))
+  e => Hs.app(G, k, xs, acts, e, l => PW.Walk.assocs(ues => ss => Hs.rows(k, Idle{}, ues), s, S.Assocs.set(assoc, id, S.State.assocs(s), ok), [], Hs.reset(st, assoc, k, es)(l)), r => P.Bool.contra(G, N.Acts.stops(k, acts), r, Hs.untouched(k, acts, tc)))
 
 # A session's guard firing while it is being deleted, and the UPF's answer to
 # a deletion, stop no guard of their own.
@@ -1129,7 +1131,7 @@ def Hs.settled_if(+st: S.State, +k: U32, +es: {Tb.Table.get(S.Session, k, S.Stat
       e => Hs.out(st, k, es, (tx, more), h)(e)
 
 def Hs.ends(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, K.Kernel.step(st, ev, entropy)):
-  PL.Dw.walk(o => Hs.Q(k, o), o => Hs.Q(k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => e => P.Bool.contra({Hs.rows(k, Idle{}, S.State.ues(st)) == True{} : Bool}, N.Acts.stops(k, acts), e, Hs.untouched(k, acts, tc(k))), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Hs.ready(st, assoc, id, ok, acts, k, es, tc(k)), +tlvs => Hs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, es), +assoc => Hs.down(st, assoc, k, es), o => h => h, +o => +h => Hs.out(st, k, es, o, h), +k1 => +t => +g => +r => ek => eu => em => ep => Hs.quiet_out(st, k, es, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Hs.resend_quiet(k, k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Hs.quiet_out(st, k, es, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Hs.deleted_quiet(k, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Hs.settled_if(st, k, es, k1, tx, more, U32.is_eq(k1, k), {==}, eh, h))
+  PL.Dw.walk(o => Hs.Q(k, o), o => Hs.Q(k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => e => P.Bool.contra({Hs.rows(k, Idle{}, S.State.ues(st)) == True{} : Bool}, N.Acts.stops(k, acts), e, Hs.untouched(k, acts, tc(k))), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Hs.ready(st, assoc, id, ok, acts, k, es, tc(k)), +tlvs => Hs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, es), +assoc => Hs.reset(st, assoc, k, es), o => h => h, +o => +h => Hs.out(st, k, es, o, h), +k1 => +t => +g => +r => ek => eu => em => ep => Hs.quiet_out(st, k, es, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Hs.resend_quiet(k, k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Hs.quiet_out(st, k, es, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Hs.deleted_quiet(k, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Hs.settled_if(st, k, es, k1, tx, more, U32.is_eq(k1, k), {==}, eh, h))
 
 # amf.ncc.step
 # ------------
@@ -1286,16 +1288,6 @@ def Nc.deleted_sx(+msg: Pf.Msg, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>
     case Some{(+skey, +s)}:
       Nc.dphase_sx(skey, msg, S.Session.phase(s))
 
-def Nc.with_assocs(+x: S.State, +as: Tb.Table(B.Bytes()), +k: U32, +r: Rw, +h: {Hs.rows(k, r, S.State.ues(x)) == True{} : Bool}) -> {Hs.rows(k, r, S.State.ues(S.State.with_assocs(x, as))) == True{} : Bool}:
-  match x:
-    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-      h
-
-def Nc.ready(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>) -> Nc.Q(st, k, (S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), acts)):
-  +x = N.Step.state(R.Route.drop(st, assoc))
-  +h = Hs.drop_rows(st, assoc, k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, Nc.base(k, S.State.ues(st), acts, eu))
-  Nc.with_assocs(x, S.Assocs.set(assoc, id, S.State.assocs(x), ok), k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, h)
-
 def Nc.down_seeds(+st: S.State, +o: N.GOut(), +more: List<&2, N.Act>, +h: {PL.Lv.ok(st, o) == True{} : Bool}) -> {PL.Lv.seeds(st, N.Out.tx(o), List.append(&2, N.Act, K.Kernel.actions(N.Step.of(st, o)), more)) == True{} : Bool}:
   match o:
     case (+tx, +acts):
@@ -1307,15 +1299,27 @@ def Nc.settled(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == Tru
   +g = N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st)))
   Nc.out_with(st, k, eu, (tx, more), h, N.TimerCancel{k1} <> List.append(&2, N.Act, more, g), PL.Lv.seeds_r(st, tx, [N.TimerCancel{k1}], List.append(&2, N.Act, more, g), PL.Lv.seeds_l(st, tx, more, g, PL.Lv.ok_seeds(st, (tx, more), h))))
 
+# An association's contexts re-initialised, judged against acts its
+# handovers' ending seeds: they end, then the association's contexts go.
+def Nc.reset(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +assoc: U32, +acts: List<&2, N.Act>, +hw: {PL.Lv.seeds(st, N.Out.tx(Ho.Ho.down(st, assoc)), acts) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, S.State.ues(K.Kernel.state(R.Route.reset(st, assoc)))) == True{} : Bool}:
+  +o = Ho.Ho.down(st, assoc)
+  Hs.drop_rows(K.Kernel.state(N.Step.of(st, o)), assoc, k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, Nc.out_with(st, k, eu, o, PL.Lw.ho_down(st, assoc), acts, hw))
+
 def Nc.down(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +assoc: U32) -> Nc.Q(st, k, R.Route.down(st, assoc)):
   +o = Ho.Ho.down(st, assoc)
-  +s1 = N.Step.of(st, o)
-  +more : List<&2, N.Act> = N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(R.Route.drop(N.Step.state(s1), assoc))
-  +acts = List.append(&2, N.Act, N.Step.acts(s1), more)
-  Hs.drop_rows(N.Step.state(s1), assoc, k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, Nc.out_with(st, k, eu, o, PL.Lw.ho_down(st, assoc), acts, Nc.down_seeds(st, o, more, PL.Lw.ho_down(st, assoc))))
+  +b = K.Kernel.actions(R.Route.drop(K.Kernel.state(N.Step.of(st, o)), assoc))
+  +xs = List.append(&2, N.Act, K.Kernel.actions(N.Step.of(st, o)), b)
+  Nc.reset(st, k, eu, assoc, N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> xs, PL.Lv.seeds_r(st, N.Out.tx(o), [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}], xs, Nc.down_seeds(st, o, b, PL.Lw.ho_down(st, assoc))))
+
+def Nc.ready(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>) -> Nc.Q(st, k, (S.State.ready(N.Step.state(R.Route.reset(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.reset(st, assoc)), acts))):
+  +o = Ho.Ho.down(st, assoc)
+  +x = K.Kernel.state(R.Route.reset(st, assoc))
+  +xs = List.append(&2, N.Act, K.Kernel.actions(R.Route.reset(st, assoc)), acts)
+  +hw = PL.Lv.seeds_l(st, N.Out.tx(o), K.Kernel.actions(R.Route.reset(st, assoc)), acts, Nc.down_seeds(st, o, K.Kernel.actions(R.Route.drop(K.Kernel.state(N.Step.of(st, o)), assoc)), PL.Lw.ho_down(st, assoc)))
+  PW.Walk.assocs(ues => ss => Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, xs}, ues), x, S.Assocs.set(assoc, id, S.State.assocs(x), ok), [], Nc.reset(st, k, eu, assoc, xs, hw))
 
 def Nc.step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> Nc.Q(st, k, K.Kernel.step(st, ev, entropy)):
-  PL.Dw.walk(o => Nc.Q(st, k, o), o => Nc.Q(st, k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => Nc.base(k, S.State.ues(st), acts, eu), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Nc.ready(st, k, eu, assoc, id, ok, List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)), +tlvs => PW.Walk.config(ues => ss => Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy))}, ues), S.Cfg.complete(tlvs), st, tlvs, entropy, Nc.base(k, S.State.ues(st), K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), eu)), +assoc => Nc.down(st, k, eu, assoc), o => h => h, +o => +h => Nc.out(st, k, eu, o, h), +k1 => +t => +g => +r => ek => eu2 => em => ep => Nc.sx(st, k, eu, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Nc.resend_sx(k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Nc.sx(st, k, eu, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Nc.deleted_sx(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Nc.settled(st, k, eu, k1, tx, more, h))
+  PL.Dw.walk(o => Nc.Q(st, k, o), o => Nc.Q(st, k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => Nc.base(k, S.State.ues(st), acts, eu), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Nc.ready(st, k, eu, assoc, id, ok, acts), +tlvs => PW.Walk.config(ues => ss => Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy))}, ues), S.Cfg.complete(tlvs), st, tlvs, entropy, Nc.base(k, S.State.ues(st), K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), eu)), +assoc => Nc.down(st, k, eu, assoc), o => h => h, +o => +h => Nc.out(st, k, eu, o, h), +k1 => +t => +g => +r => ek => eu2 => em => ep => Nc.sx(st, k, eu, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Nc.resend_sx(k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Nc.sx(st, k, eu, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Nc.deleted_sx(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Nc.settled(st, k, eu, k1, tx, more, h))
 
 # The row the key names after the step holds what its rows hold.
 def Nc.found_row(+k: U32, +r: Rw, +u0: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +e: {Bool.and(Bool.or(Bool.not(b), Hs.holds(r, S.Ue.phase(u0))), Hs.rows(k, r, more)) == True{} : Bool}, +v: S.Ue, +eg: {Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b) == Some{v} : Maybe<&2, S.Ue>}, ih: {Hs.rows(k, r, more) == True{} : Bool} -> {Tb.Table.get(S.Ue, k, more) == Some{v} : Maybe<&2, S.Ue>} -> {Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}) -> {Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}:
