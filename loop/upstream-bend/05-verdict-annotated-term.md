@@ -31,7 +31,7 @@ template over a closed lambda, a template recursing on a list) all pass `--verdi
 mismatch shows only at the size of the kernel's proofs. The full-size reproduction is the
 repository at the ticket 37 commits:
 
-- case 1: at `7e60d26`, change the result type of `Inv.step` in `kernel/proofs/liveness.bend`
+- case 1: at `7419ab0`, change the result type of `Inv.step` in `kernel/proofs/liveness.bend`
   to `PW.Walk.Tables(inv, K.Kernel.step(st, ev, entropy))` and run
   `bend kernel/PROOF.bend --verdict`;
 - case 2: at the same commit, rewrite `Gd.tx_put` .. `Gd.tx_del_session` as zero-argument
