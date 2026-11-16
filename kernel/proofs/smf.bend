@@ -1416,8 +1416,9 @@ def Run.notes(+k: U32, +ok: Bool) -> {N.Acts.touches(k, Gsm.Gsm.deleted_notes(ok
 # Every outcome but its guard's and the UPF's answer to it changes or forgets
 # only rows live in the state before the step and puts only sessions clear
 # of it (PL.Lv.homed); with no two sessions sharing a key, its row stays. A
-# UE procedure stops only a context's guard (PL.Lv.reach), and the guards a
-# step stops are of rows gone, so its guard keeps running.
+# UE procedure stops only a context's guard and starts only a context's, timer
+# 0 or a kept row's (PL.Lv.reach), and the guards a step stops are of rows
+# gone, so its guard is left alone.
 
 def Hd.Q(+skey: U32, +s0: S.Session, o: N.Step()) -> Type:
   {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(o))) == Some{s0} : Maybe<&2, S.Session>} & {N.Acts.touches(skey, K.Kernel.actions(o)) == False{} : Bool}
@@ -1744,11 +1745,14 @@ def L.smf.deletion.held(st, ev, entropy, skey, s, guard, request, eu, en, ef, ez
 # A session that starts being deleted, armed
 # ------------------------------------------
 # Every row under skey is live, or being deleted under a guard that has not
-# fired, its request sent and timer skey running once the actions are done
-# (Ar.rows). Where no row under skey is being deleted before the step, every
-# outcome keeps it so: a UE procedure starts every deletion it makes with its
-# request and its guard (PL.Lv.arms) and stops no session's guard (PL.Lv.reach),
-# and the guards a step stops are of rows gone (N.Gone.cancels).
+# fired, its request sent and timer skey running for T1 once the actions are
+# done (Ar.rows). Where no row under skey is being deleted before the step and
+# skey is free (Run.free), every outcome keeps it so: a UE procedure starts
+# every deletion it makes with its request and its guard for T1 (PL.Lv.arms),
+# stops no session's guard and starts one only for T1 (Run.sure), and the
+# guards a step stops are of rows gone (N.Gone.cancels). Ar.rows is a fold of
+# its own rather than S.Sessions.each: what it asks of a row depends on the
+# step's actions, which state.bend cannot name.
 
 def Ar.row(+k: U32, +acts: List<&2, N.Act>, p: S.SPhase) -> Bool:
   match p:

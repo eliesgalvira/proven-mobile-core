@@ -601,13 +601,6 @@ def Lv.starts_l(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts
     case +a <> +more:
       P.Bool.or_mono(N.Act.starts(k, a), N.Acts.starts(k, more), N.Acts.starts(k, List.append(&2, N.Act, more, ys)), h, hm => Lv.starts_l(k, more, ys, hm))
 
-def Lv.starts_r(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.starts(k, ys) == True{} : Bool}) -> {N.Acts.starts(k, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      h
-    case +a <> +more:
-      P.Bool.or_r(N.Act.starts(k, a), N.Acts.starts(k, List.append(&2, N.Act, more, ys)), Lv.starts_r(k, more, ys, h))
-
 def Lv.starts_for_l(+k: U32, +ms: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.starts_for(k, ms, xs) == True{} : Bool}) -> {N.Acts.starts_for(k, ms, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
   match xs:
     case Nil{}:
@@ -857,11 +850,6 @@ def Lv.fresh_held(+st: S.State, +key: U32, +em: {S.State.fresh(st) == Some{key} 
   sem = Equal.sym(Maybe<&2, U32>, S.State.fresh(st), Some{key}, em)
   ef : {S.Maybe.same_u32(S.State.fresh(st), Some{key}) == True{} : Bool} = (%sem : {S.Maybe.same_u32(_, Some{key}) == True{} : Bool}; P.U32.is_eq_refl(key))
   P.Bool.or_r(Tb.Table.has(S.Ue, key, S.State.ues(st)), S.Maybe.same_u32(S.State.fresh(st), Some{key}), ef)
-
-def Lv.fresh_live(+st: S.State, +key: U32, +em: {S.State.fresh(st) == Some{key} : Maybe<&2, U32>}) -> {Lv.live(st, key) == True{} : Bool}:
-  sem = Equal.sym(Maybe<&2, U32>, S.State.fresh(st), Some{key}, em)
-  ef : {S.Maybe.same_u32(S.State.fresh(st), Some{key}) == True{} : Bool} = (%sem : {S.Maybe.same_u32(_, Some{key}) == True{} : Bool}; P.U32.is_eq_refl(key))
-  P.Bool.or_l(Lv.held(st, key), Lv.owner(key, S.State.sessions(st)), P.Bool.or_r(Tb.Table.has(S.Ue, key, S.State.ues(st)), S.Maybe.same_u32(S.State.fresh(st), Some{key}), ef))
 
 def Lv.owner_row(+x: U32, +t: S.Session, +more: Tb.Table(S.Session), +ues: Tb.Table(S.Ue), +b: Bool, +eb: {S.Maybe.same_u32(S.Session.tag(t), Some{x}) == b : Bool}, +eo: {Bool.and(S.Session.owned(t, ues), S.Sessions.owned(more, ues)) == True{} : Bool}, +ew: {Bool.or(b, Lv.owner(x, more)) == True{} : Bool}, ih: {S.Sessions.owned(more, ues) == True{} : Bool} -> {Lv.owner(x, more) == True{} : Bool} -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}) -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}:
   match b:
