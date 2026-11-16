@@ -23,7 +23,7 @@ import ../nas/security.bend as Sec
 # The step function, walked once
 # ------------------------------
 # A step ends in one of five ways: the state as it was, with actions that
-# name no UE context (an NGAP PDU or IE list that does not decode, a message
+# name no UE context and stop no timer (an NGAP PDU or IE list that does not decode, a message
 # from an association without NG Setup, an incomplete Config, an association
 # coming up); an association's UE contexts released and the associations set
 # up changed (NG Setup); a procedure's outcome o rendered by N.Step.of (a
@@ -33,12 +33,12 @@ import ../nas/security.bend as Sec
 # that each of them has.
 
 def Walk.Keep(-Q: N.Step() -> Type, +st: S.State) -> Type:
-  @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((st, acts))
+  @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.stops(k, acts) == False{} : Bool}) -> Q((st, acts))
 
 # NG Setup: the association's UE-related contexts re-initialised, then the
-# associations set up changed, with actions that name no UE context.
+# associations set up changed, with actions that name no UE context and stop no timer.
 def Walk.Ready(-Q: N.Step() -> Type, +st: S.State, +assoc: U32) -> Type:
-  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
+  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.stops(k, acts) == False{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
 
 def Walk.Out(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State) -> Type:
   @o:N.GOut() -> ok(o) -> Q(N.Step.of(st, o))
@@ -101,16 +101,16 @@ def Walk.d2(-ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kin
 def Walk.setup(-Q: N.Step() -> Type, +st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc)) -> Q(R.Route.setup(st, assoc, r)):
   match r:
     case Fail{e}:
-      keep(N.Ngap.bad_view(assoc), k => {==})
+      keep(N.Ngap.bad_view(assoc), k => {==}, k => {==})
     case Done{+v}:
-      ready(N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==})
+      ready(N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==}, k => {==})
 
 def Walk.ready(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, +eb: {S.Assocs.has(assoc, S.State.assocs(st)) == b : Bool}, keep: Walk.Keep(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b)):
   match b:
     case True{}:
       out(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), routed(kind, code, ies, eb))
     case False{}:
-      keep(N.Ngap.unhandled(assoc), k => {==})
+      keep(N.Ngap.unhandled(assoc), k => {==}, k => {==})
 
 def Walk.d1(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, b)):
   match b:
@@ -122,14 +122,14 @@ def Walk.d1(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U
 def Walk.ies(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)):
   match r:
     case Fail{err}:
-      keep(N.Ngap.bad_pdu(assoc), k => {==})
+      keep(N.Ngap.bad_pdu(assoc), k => {==}, k => {==})
     case Done{(+ies, c)}:
       Walk.d1(Q, ok, st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_ng_setup(kind, code), keep, ready, out, routed)
 
 def Walk.pdu(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_pdu(st, assoc, stream, entropy, r)):
   match r:
     case Fail{err}:
-      keep(N.Ngap.bad_pdu(assoc), k => {==})
+      keep(N.Ngap.bad_pdu(assoc), k => {==}, k => {==})
     case Done{Fr.Pdu{kind, code, crit, value}}:
       Walk.ies(Q, ok, st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), keep, ready, out, routed)
 
@@ -138,7 +138,7 @@ def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.
     case F.Config{len, +tlvs}:
       config(tlvs)
     case F.NgapAssocUp{assoc}:
-      keep([], k => {==})
+      keep([], k => {==}, k => {==})
     case F.NgapAssocDown{assoc}:
       down(assoc)
     case F.NgapData{+assoc, +stream, len, +bytes}:
