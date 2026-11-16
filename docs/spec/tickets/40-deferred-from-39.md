@@ -12,6 +12,8 @@ What ticket 39 left open on 2026-11-12:
    - `amf.handover.guarded`: while a handover stays pending, no step emits `TimerCancel` for its key.
 
    Either through evidence at every leaf of the shared walk, or by `N.Step.of` deriving UE guard stops from the table diff, as `N.Gone.cancels` does for sessions.
+
+   Done, through evidence at every leaf (`Lv.stops`, `Lv.chain`, `Lv.seeds`); deriving the stops in `N.Step.of` would have changed the frames. `amf.ncc.step` holds where no two contexts share a key; its `Nh.initial` is of the K_AMF of the context's Security Mode and of the KgNB the same step sends it in Initial Context Setup (`Ng.Acts.seeds`). `amf.handover.guarded` holds for a key no session holds, and says that a step stopping the timer leaves no handover pending under it.
 3. **Releases** (ticket 39 items 1 and 9):
    - PDU Session Resource Release Command and Response, with their transfers, in the NGAP generator. Send the Command after a failure that follows the Accept (TS 23.502 §4.3.4.2).
    - PDU Session Release Command to the UE for sessions dropped in a Path Switch or at Handover Notify.

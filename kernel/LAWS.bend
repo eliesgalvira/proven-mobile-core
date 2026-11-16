@@ -209,6 +209,28 @@ law amf.ncc.chain:
   {St.Nh.next(St.Nh{k_amf, nh, ncc}) == St.Nh{k_amf, K.kdf.nh(k_amf, nh), U32.mod(U32.add(ncc, 1), 8)} : St.Nh}
   & {St.Nh.initial(k_amf, k_gnb) == St.Nh{k_amf, K.kdf.nh(k_amf, k_gnb), 1} : St.Nh}
 
+# TS 33.501 §6.9.2.1.1: a UE's {NH, NCC} pair moves only along its chain.
+# After any step, a context that held a pair holds it or the next one
+# (Handover Required, Path Switch), and one that held none was in Security
+# Mode and holds Nh.initial of the K_AMF it derived there and of a KgNB the
+# same step sends it in Initial Context Setup (Security Mode Complete;
+# amf.ncc.chain gives its NCC, 1). So the stored pair never goes back, skips
+# one or starts again. It holds where the contexts are unique
+# (amf.indexes.unique).
+law amf.ncc.step:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +k: U32
+  for +m: St.Nh
+  for +k_amf: B.Bytes()
+  for +nh: B.Bytes()
+  for +ncc: U32
+  for +eu: {St.Ues.unique(St.State.ues(st)) == True{} : Bool}
+  for +en: {St.Ue.nh(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))) == Some{St.Nh{k_amf, nh, ncc}} : Maybe<&2, St.Nh>}
+  ({St.Ue.nh(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{m} : Maybe<&2, St.Nh>} -> {St.Nh{k_amf, nh, ncc} == m : St.Nh} | {St.Nh{k_amf, nh, ncc} == St.Nh.next(m) : St.Nh})
+  & ({St.Ue.nh(Tb.Table.get(St.Ue, k, St.State.ues(st))) == None{} : Maybe<&2, St.Nh>} -> {St.Ue.mode_k_amf(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{k_amf} : Maybe<&2, B.Bytes()>} & {Ng.Acts.seeds(k_amf, k, St.Nh{k_amf, nh, ncc}, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool})
+
 # Advisory GHSA-f9c2-535p-3mwc: the serving network name the AUSF derives keys
 # with, built from the configured PLMN, is never empty: every configuration the
 # kernel holds is valid (kernel.config.valid).
@@ -2110,7 +2132,9 @@ law amf.handover.single_owner:
 # begin a handover or advance it, start that timer, the preparation guard or
 # the completion guard; when it fires, no handover is pending any more. Every
 # other way out ends the handover first: the target or source association
-# going down, the UE released or taken over.
+# going down, the UE released or taken over. So no step stops the guard and
+# leaves the handover pending: a step that stops timer k, which no session
+# holds (state.ids.free), leaves no handover pending under k.
 law amf.handover.guarded:
   for +st: St.State
   for +ev: F.Evt
@@ -2130,6 +2154,7 @@ law amf.handover.guarded:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 12, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
   & ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{t} : Maybe<&2, U32>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) == None{} : Maybe<&2, U32>})
+  & ({Tb.Table.get(St.Session, k, St.State.sessions(st)) == None{} : Maybe<&2, St.Session>} -> {Ng.Acts.stops(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))) == None{} : Maybe<&2, U32>})
 
 # TS 38.413 §8.3.3: the side an N2 handover released, the source after
 # Handover Notify or the target after a cancel or the guard firing, answers

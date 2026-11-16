@@ -390,22 +390,15 @@ def Rel.Spec(+o: N.GOut(), +skey: U32, +s: S.Session) -> Type:
 def Rel.Law(+r: N.Step(), +skey: U32, +s: S.Session) -> Type:
   {S.Sessions.each(skey, S.SFresh{}, S.State.sessions(K.Kernel.state(r))) == True{} : Bool} & (({S.Session.known(s) == False{} : Bool} -> {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(r))) == None{} : Maybe<&2, S.Session>}) & ({S.Session.known(s) == True{} : Bool} -> {S.SPhase.live(S.Session.phase(s)) == True{} : Bool} -> Up.N4.deleted(skey, s, K.Kernel.actions(r))))
 
-def App.assoc(xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +zs: List<&2, N.Act>) -> {List.append(&2, N.Act, xs, List.append(&2, N.Act, ys, zs)) == List.append(&2, N.Act, List.append(&2, N.Act, xs, ys), zs) : List<&2, N.Act>}:
-  match xs:
-    case Nil{}:
-      {==}
-    case +x <> more:
-      Equal.cong(List<&2, N.Act>, List<&2, N.Act>, l => x <> l, List.append(&2, N.Act, more, List.append(&2, N.Act, ys, zs)), List.append(&2, N.Act, List.append(&2, N.Act, more, ys), zs), App.assoc(more, ys, zs))
-
 def Del.app_r.eq(+xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +pre: List<&2, N.Act>, +a: N.Act, +post: List<&2, N.Act>, e: {ys == List.append(&2, N.Act, pre, a <> post) : List<&2, N.Act>}) -> {List.append(&2, N.Act, xs, ys) == List.append(&2, N.Act, List.append(&2, N.Act, xs, pre), a <> post) : List<&2, N.Act>}:
   se = Equal.sym(List<&2, N.Act>, ys, List.append(&2, N.Act, pre, a <> post), e)
   %se : {List.append(&2, N.Act, xs, _) == List.append(&2, N.Act, List.append(&2, N.Act, xs, pre), a <> post) : List<&2, N.Act>}
-  App.assoc(xs, pre, a <> post)
+  PL.Lv.app_assoc(xs, pre, a <> post)
 
 def Del.app_l.eq(+xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +pre: List<&2, N.Act>, +a: N.Act, +post: List<&2, N.Act>, e: {xs == List.append(&2, N.Act, pre, a <> post) : List<&2, N.Act>}) -> {List.append(&2, N.Act, xs, ys) == List.append(&2, N.Act, pre, a <> List.append(&2, N.Act, post, ys)) : List<&2, N.Act>}:
   se = Equal.sym(List<&2, N.Act>, xs, List.append(&2, N.Act, pre, a <> post), e)
   %se : {List.append(&2, N.Act, _, ys) == List.append(&2, N.Act, pre, a <> List.append(&2, N.Act, post, ys)) : List<&2, N.Act>}
-  Equal.sym(List<&2, N.Act>, List.append(&2, N.Act, pre, List.append(&2, N.Act, a <> post, ys)), List.append(&2, N.Act, List.append(&2, N.Act, pre, a <> post), ys), App.assoc(pre, a <> post, ys))
+  Equal.sym(List<&2, N.Act>, List.append(&2, N.Act, pre, List.append(&2, N.Act, a <> post, ys)), List.append(&2, N.Act, List.append(&2, N.Act, pre, a <> post), ys), PL.Lv.app_assoc(pre, a <> post, ys))
 
 def Del.app_r(+key: U32, +s: S.Session, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, d: Up.N4.deleted(key, s, ys)) -> Up.N4.deleted(key, s, List.append(&2, N.Act, xs, ys)):
   (+seq, (+pre, (+post, e))) = d
@@ -726,7 +719,7 @@ def Rel.dg(+skey: U32, +s: S.Session, +seq: U32, +b: Bool, +st2: S.State) -> {S.
 def Rel.dn(+skey: U32, +s: S.Session, +seq: U32, +b: Bool, +eb: {S.Session.known(s) == b : Bool}, +kf: {S.Session.known(s) == False{} : Bool}, +st2: S.State) -> {Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(N.Out.tx(Up.N4.delete_if(skey, s, seq, q => Up.N4.deletions([], q), b)), st2))) == None{} : Maybe<&2, S.Session>}:
   match b:
     case True{}:
-      Empty.absurd({Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(N.Out.tx(Up.N4.delete_if(skey, s, seq, q => Up.N4.deletions([], q), True{})), st2))) == None{} : Maybe<&2, S.Session>}, P.Refute.true_false(Equal.trans(Bool, True{}, S.Session.known(s), False{}, Equal.sym(Bool, S.Session.known(s), True{}, eb), kf)))
+      P.Bool.contra({Tb.Table.get(S.Session, skey, S.State.sessions(S.Tx.apply(N.Out.tx(Up.N4.delete_if(skey, s, seq, q => Up.N4.deletions([], q), True{})), st2))) == None{} : Maybe<&2, S.Session>}, S.Session.known(s), eb, kf)
     case False{}:
       match st2:
         case S.State{config, subs, assocs, ues, +sessions, pfcp_seq, next_ue, n4}:
@@ -1117,7 +1110,7 @@ def Run.ne(+ues: Tb.Table(S.Ue), +t: U32, +k: U32, +c: Bool, +ec: {U32.is_eq(t, 
     case True{}:
       e1 = P.U32.eq_of_is_eq(t, k, ec)
       ek : {Tb.Table.has(S.Ue, k, ues) == True{} : Bool} = (%e1 : {Tb.Table.has(S.Ue, _, ues) == True{} : Bool}; eh)
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.true_false(Equal.trans(Bool, True{}, Tb.Table.has(S.Ue, k, ues), False{}, Equal.sym(Bool, Tb.Table.has(S.Ue, k, ues), True{}, ek), hn)))
+      P.Bool.contra({True{} == False{} : Bool}, Tb.Table.has(S.Ue, k, ues), ek, hn)
     case False{}:
       {==}
 
@@ -1257,7 +1250,7 @@ def Run.key_ne(+st: S.State, +key: U32, +k: U32, +c: Bool, +ec: {U32.is_eq(key, 
     case True{}:
       e1 = P.U32.eq_of_is_eq(key, k, ec)
       hk2 : {PL.Lv.kept(st, k) == True{} : Bool} = (%e1 : {PL.Lv.kept(st, _) == True{} : Bool}; hk)
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.true_false(Equal.trans(Bool, True{}, PL.Lv.kept(st, k), False{}, Equal.sym(Bool, PL.Lv.kept(st, k), True{}, hk2), nk)))
+      P.Bool.contra({True{} == False{} : Bool}, PL.Lv.kept(st, k), hk2, nk)
     case False{}:
       {==}
 
@@ -1393,7 +1386,7 @@ def Hd.key_ne_if(+st0: S.State, +k: U32, +skey: U32, +s0: S.Session, +c: Bool, +
       se1 = Equal.sym(U32, skey, k, P.U32.eq_of_is_eq(skey, k, ec))
       hk2 : {PL.Lv.live_m(Tb.Table.get(S.Session, skey, ss0)) == True{} : Bool} = (%se1 : {PL.Lv.live_m(Tb.Table.get(S.Session, _, ss0)) == True{} : Bool}; hk)
       h3 : {PL.Lv.live_m(Some{s0}) == True{} : Bool} = (%e0 : {PL.Lv.live_m(_) == True{} : Bool}; hk2)
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.true_false(Equal.trans(Bool, True{}, S.SPhase.live(S.Session.phase(s0)), False{}, Equal.sym(Bool, S.SPhase.live(S.Session.phase(s0)), True{}, h3), eh)))
+      P.Bool.contra({True{} == False{} : Bool}, S.SPhase.live(S.Session.phase(s0)), h3, eh)
     case False{}:
       {==}
 
@@ -1650,7 +1643,7 @@ def Hd.settled(+st: S.State, +k: U32, +tx: S.Tx, +more: List<&2, N.Act>, +ek: {P
 
 def L.smf.deletion.held(st, ev, entropy, skey, s, guard, request, eu, en, ef, ez, es, ep, et, ea):
   +eh = Hd.unlive(s, guard, request, ep)
-  PL.Dw.walk(o => Hd.Q(skey, s, o), o => Hd.Q(skey, s, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => (es, c(skey)), +assoc => ns => +id => +ok => +acts => h => c => ers => Hd.ready(st, assoc, id, ok, acts, skey, s, eu, es, eh, c(skey)), +tlvs => Hd.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, s, eu, es, eh, ez), +assoc => Hd.down(st, assoc, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh), o => h => h, +o => +h => Hd.step_of(st, o, skey, s, h, eu, Run.free_of(st, skey, en, ef, ez), es, eh), +k => +t => +g => +r => ek => eu2 => em => ep2 => Hd.resent(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, s, Hd.timer_ne(ev, k, skey, U32.is_eq(skey, k), {==}, ek, et), es), +len => +bytes => +msg => +rest => ev2 => er => ek => Hd.deleted(st, skey, s, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), PL.Lv.got_by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), e => ea(len, bytes, msg, rest, ev2, er, ek, e), eu, es, eh), +k => +tx => +more => ek => h => Hd.settled(st, k, tx, more, ek, h, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh))
+  PL.Dw.walk(o => Hd.Q(skey, s, o), o => Hd.Q(skey, s, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => (es, c(skey)), +assoc => ns => +id => +ok => +acts => h => c => ers => Hd.ready(st, assoc, id, ok, acts, skey, s, eu, es, eh, c(skey)), +tlvs => Hd.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, s, eu, es, eh, ez), +assoc => Hd.down(st, assoc, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh), o => h => h, +o => +h => Hd.step_of(st, o, skey, s, h, eu, Run.free_of(st, skey, en, ef, ez), es, eh), +k => +t => +g => +r => ek => eu2 => em => ep2 => Hd.resent(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, s, Hd.timer_ne(ev, k, skey, U32.is_eq(skey, k), {==}, ek, et), es), +len => +bytes => +msg => +rest => ev2 => er => ek => Hd.deleted(st, skey, s, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), PL.Lv.got_by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), e => ea(len, bytes, msg, rest, ev2, er, ek, e), eu, es, eh), +k => +tx => +more => ek => ehs => h => Hd.settled(st, k, tx, more, ek, h, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh))
 
 # A session that starts being deleted, armed
 # ------------------------------------------
@@ -2121,5 +2114,5 @@ def Ar.first(+skey: U32, +acts: List<&2, N.Act>, ss: Tb.Table(S.Session), +s: S.
 def L.smf.deletion.armed(st, ev, entropy, skey, s, guard, request, en, ef, ez, eh, es, ep):
   +o = K.Kernel.step(st, ev, entropy)
   +ss = S.State.sessions(K.Kernel.state(o))
-  q = PL.Dw.walk(o => Ar.Q(skey, o), o => Ar.Q(skey, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => Ar.calm(skey, (st, acts), eh), +assoc => ns => +id => +ok => +acts => h => c => ers => Ar.ready(st, assoc, id, ok, acts, skey, eh, c(skey)), +tlvs => Ar.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, eh), +assoc => Ar.down(st, assoc, skey, eh), o => h => h, +o => +h => Ar.step_of(st, o, skey, h, Run.free_of(st, skey, en, ef, ez), eh), +k => +t => +g => +r => ek => eu => em => ep2 => Ar.resend(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, Ar.key_ne(S.State.sessions(st), k, t, skey, g, r, U32.is_eq(k, skey), {==}, em, ep2, eh), eh), +len => +bytes => +msg => +rest => ev2 => er => ek => Ar.deleted(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), skey, eh), +k => +tx => +more => ek => h => Ar.settled(st, k, tx, more, h, skey, Run.free_of(st, skey, en, ef, ez), eh))
+  q = PL.Dw.walk(o => Ar.Q(skey, o), o => Ar.Q(skey, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => Ar.calm(skey, (st, acts), eh), +assoc => ns => +id => +ok => +acts => h => c => ers => Ar.ready(st, assoc, id, ok, acts, skey, eh, c(skey)), +tlvs => Ar.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, eh), +assoc => Ar.down(st, assoc, skey, eh), o => h => h, +o => +h => Ar.step_of(st, o, skey, h, Run.free_of(st, skey, en, ef, ez), eh), +k => +t => +g => +r => ek => eu => em => ep2 => Ar.resend(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, Ar.key_ne(S.State.sessions(st), k, t, skey, g, r, U32.is_eq(k, skey), {==}, em, ep2, eh), eh), +len => +bytes => +msg => +rest => ev2 => er => ek => Ar.deleted(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), skey, eh), +k => +tx => +more => ek => ehs => h => Ar.settled(st, k, tx, more, h, skey, Run.free_of(st, skey, en, ef, ez), eh))
   Ar.first(skey, K.Kernel.actions(o), ss, s, guard, request, q(Run.has(ss, skey, s, es)), es, ep)

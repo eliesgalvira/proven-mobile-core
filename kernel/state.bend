@@ -166,6 +166,11 @@ def Nh.next(c: Nh) -> Nh:
     case Nh{+k_amf, nh, ncc}:
       Nh{k_amf, Kd.kdf.nh(k_amf, nh), U32.mod(U32.add(ncc, 1), 8)}
 
+def Nh.same(x: Nh, y: Nh) -> Bool:
+  match x y:
+    case Nh{+a, +h, +c} Nh{+a2, +h2, +c2}:
+      Bool.and(B.bytes_eq(a, a2), Bool.and(B.bytes_eq(h, h2), U32.is_eq(c, c2)))
+
 # At initial setup KgNB is a virtual NH with NCC 0, and the AMF keeps the
 # first NH, NCC 1, unsent: the first pair a target gNB gets has NCC 2.
 def Nh.initial(k_amf: B.Bytes(), k_gnb: B.Bytes()) -> Nh:
@@ -329,6 +334,29 @@ def Phase.pending(p: Phase) -> Maybe<&2, U32>:
     case _:
       None{}
 
+# The {NH, NCC} pair the phase holds, from Security Mode Complete on.
+def Phase.nh(p: Phase) -> Maybe<&2, Nh>:
+  match p:
+    case ContextSetup{guard, ctx, nh, response, complete}:
+      Some{nh}
+    case Registered{ctx, nh, released}:
+      Some{nh}
+    case Switching{guard, ctx, nh, released}:
+      Some{nh}
+    case Handover{ctx, nh, source, leg}:
+      Some{nh}
+    case _:
+      None{}
+
+# The K_AMF a context in Security Mode derived, which its NH chain will start
+# from; none in any other phase.
+def Phase.mode_k_amf(p: Phase) -> Maybe<&2, B.Bytes()>:
+  match p:
+    case SecurityMode{guard, ctx, k_amf}:
+      Some{k_amf}
+    case _:
+      None{}
+
 # Association a, under RAN-UE-NGAP-ID r, is the side a handover released.
 def Phase.released(p: Phase, +a: U32, +r: B.Bytes()) -> Bool:
   match p:
@@ -463,6 +491,20 @@ def Ue.pending(m: Maybe<&2, Ue>) -> Maybe<&2, U32>:
       None{}
     case Some{u}:
       Phase.pending(Ue.phase(u))
+
+def Ue.nh(m: Maybe<&2, Ue>) -> Maybe<&2, Nh>:
+  match m:
+    case None{}:
+      None{}
+    case Some{u}:
+      Phase.nh(Ue.phase(u))
+
+def Ue.mode_k_amf(m: Maybe<&2, Ue>) -> Maybe<&2, B.Bytes()>:
+  match m:
+    case None{}:
+      None{}
+    case Some{u}:
+      Phase.mode_k_amf(Ue.phase(u))
 
 def Ue.released(m: Maybe<&2, Ue>, +a: U32, +r: B.Bytes()) -> Bool:
   match m:

@@ -158,7 +158,7 @@ def Fl.of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err
     case Done{V.PathSwitchRequest.View{+ran, +amf, uli, +caps, +items, failed, rrc}}:
       +ts = Sw.Sw.path_tunnels(items)
       +m = Ps.Ps.named(st, amf)
-      +h = PW.Pw.claim(o => Fl.Cls(o), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Fl.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh))
+      +h = PW.Pw.claim(o => Fl.Cls(o), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => rel => ep => Fl.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh))
       Fl.also_cls(Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m), Ps.Ps.caps_note(caps, m), h, Fl.caps_note(caps, m))
 
 def Fl.final(+st: S.State, +o: N.GOut(), +h: Fl.Cls(o), +ef: {N.Ngap.any_switch_failure(K.Kernel.actions(N.Step.of(st, o))) == True{} : Bool}) -> {K.Kernel.state(N.Step.of(st, o)) == st : S.State}:
@@ -172,7 +172,7 @@ def Fl.final(+st: S.State, +o: N.GOut(), +h: Fl.Cls(o), +ef: {N.Ngap.any_switch_
           +st2 = S.Tx.apply(tx, st)
           +gone = N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2))
           nf = Fl.app(acts, gone, e, Fl.gone(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2)))
-          Empty.absurd({st2 == st : S.State}, P.Refute.true_false(Equal.trans(Bool, True{}, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), False{}, Equal.sym(Bool, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), True{}, ef), nf)))
+          P.Bool.contra({st2 == st : S.State}, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), ef, nf)
 
 def Fl.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ef: {N.Ngap.any_switch_failure(K.Kernel.actions(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   +o = Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))
@@ -241,7 +241,7 @@ def Mv.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len
   %seu : Mv.Qu(st, k, assoc, ran, _)
   sa = Equal.sym(S.Tx, N.Out.tx(N.Out.also(rr, n)), N.Out.tx(rr), PL.Lv.tx_also(rr, n))
   %sa : Mv.Qt(st, k, assoc, ran, _)
-  PW.Pw.claim(x => Mv.Qt(st, k, assoc, ran, N.Out.tx(x)), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => Mv.go(st, assoc, stream, amf, ran, items, ts, k, eid, key, ue, ctx, nh, ek))
+  PW.Pw.claim(x => Mv.Qt(st, k, assoc, ran, N.Out.tx(x)), st, assoc, stream, amf, ran, items, ts, cause => Inl{{==}}, +key => +ue => +ctx => +nh => sp => ek => eg => es => rel => ep => Mv.go(st, assoc, stream, amf, ran, items, ts, k, eid, key, ue, ctx, nh, ek))
 
 def L.amf.path_switch.moves_owner(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ran, amf, uli, caps, items, failed, rrc, k, ep, ei, ev, eid):
   PW.Rt.cases(x => Mv.Qu(st, k, assoc, ran, S.State.ues(K.Kernel.state(x))), st, entropy, assoc, stream, len, bytes, 0, 25, crit, value, ies, c, ep, ei, {==}, Inl{{==}}, +eup => Mv.routed(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, ran, amf, uli, caps, items, failed, rrc, k, ep, ei, ev, eid, eup))
