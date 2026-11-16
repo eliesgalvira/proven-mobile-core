@@ -23,23 +23,24 @@ import ../nas/security.bend as Sec
 # The step function, walked once
 # ------------------------------
 # A step ends in one of five ways: the state as it was, with actions that
-# name no UE context and stop no timer (an NGAP PDU or IE list that does not
-# decode, a message from an association without NG Setup, an incomplete
-# Config, an association coming up); an association's UE contexts released and the associations set
-# up changed (NG Setup); a procedure's outcome o rendered by N.Step.of (a
+# name no UE context and start or stop no timer (an NGAP PDU or IE list that
+# does not decode, a message from an association without NG Setup, an
+# incomplete Config, an association coming up); an association's UE contexts
+# released and the associations set up changed (NG Setup); a procedure's
+# outcome o rendered by N.Step.of (a
 # routed NGAP message, a PFCP message, a timer); a new configuration; or an
 # association going down. A property Q of steps holds after every step
 # when it holds after each of them, the outcomes known only by a property ok
 # that each of them has.
 
 def Walk.Keep(-Q: N.Step() -> Type, +st: S.State) -> Type:
-  @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.stops(k, acts) == False{} : Bool}) -> Q((st, acts))
+  @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.touches(k, acts) == False{} : Bool}) -> Q((st, acts))
 
 # NG Setup: the association's UE-related contexts re-initialised, then the
-# associations set up changed, with actions that name no UE context and stop
-# no timer.
+# associations set up changed, with actions that name no UE context and
+# start or stop no timer.
 def Walk.Ready(-Q: N.Step() -> Type, +st: S.State, +assoc: U32) -> Type:
-  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.stops(k, acts) == False{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
+  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.touches(k, acts) == False{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
 
 def Walk.Out(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State) -> Type:
   @o:N.GOut() -> ok(o) -> Q(N.Step.of(st, o))
