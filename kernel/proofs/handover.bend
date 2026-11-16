@@ -605,20 +605,6 @@ def Hp.g_guard(+p: S.Phase, +t: U32, +e: {S.Phase.pending(p) == Some{t} : Maybe<
     case S.Releasing{guard}:
       Empty.absurd({Tb.Table.present(S.Guard, S.Phase.guard(S.Releasing{guard})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
 
-def Hp.or_mono(+x: Bool, +y: Bool, +z: Bool, +h: {Bool.or(x, y) == True{} : Bool}, f: {y == True{} : Bool} -> {z == True{} : Bool}) -> {Bool.or(x, z) == True{} : Bool}:
-  match x:
-    case True{}:
-      {==}
-    case False{}:
-      f(h)
-
-def Hp.starts_app(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.starts(k, xs) == True{} : Bool}) -> {N.Acts.starts(k, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, [], ys)) == True{} : Bool}, P.Refute.bool(h))
-    case +a <> +more:
-      Hp.or_mono(N.Act.starts(k, a), N.Acts.starts(k, more), N.Acts.starts(k, List.append(&2, N.Act, more, ys)), h, hm => Hp.starts_app(k, more, ys, hm))
-
 # A phase change of another key leaves the row under k.
 def Hp.other_row(+key: U32, +p: S.Phase, +k: U32, +k0: U32, +w: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +ne: {U32.is_eq(key, k) == False{} : Bool}, ih: {Tb.Table.get(S.Ue, k, S.Ues.rephase(key, p, more)) == Tb.Table.get(S.Ue, k, more) : Maybe<&2, S.Ue>}) -> {Tb.Table.hit(S.Ue, S.Ue.rephase_if(w, p, U32.is_eq(k0, key)), Tb.Table.get(S.Ue, k, S.Ues.rephase(key, p, more)), U32.is_eq(k0, k)) == Tb.Table.hit(S.Ue, w, Tb.Table.get(S.Ue, k, more), U32.is_eq(k0, k)) : Maybe<&2, S.Ue>}:
   match b:
@@ -647,7 +633,7 @@ def Hp.g_rephase(+st: S.State, +k: U32, +key: U32, +p: S.Phase, +acts: List<&2, 
   match b:
     case True{}:
       es : {Bool.or(Bool.not(True{}), N.Acts.starts(k, acts)) == True{} : Bool} = (%eb : {Bool.or(Bool.not(_), N.Acts.starts(k, acts)) == True{} : Bool}; e)
-      ne => Hp.starts_app(k, acts, [], es)
+      ne => PL.Lv.starts_l(k, acts, [], es)
     case False{}:
       ua = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(S.Rephase{key, p}, st)), PT.Tk.ues(S.Rephase{key, p}, S.State.ues(st)), PT.Tk.ues_apply(S.Rephase{key, p}, st))
       same : {Tb.Table.get(S.Ue, k, S.State.ues(S.Tx.apply(S.Rephase{key, p}, st))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} = (%ua : {Tb.Table.get(S.Ue, k, _) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>}; Hp.get_other(key, p, k, S.State.ues(st), eb))

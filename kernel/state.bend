@@ -979,6 +979,14 @@ def Sessions.deleting(+key: U32, sessions: Tb.Table(Session)) -> Bool:
     case (+k, +s) <> more:
       Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), SPhase.fresh(Session.phase(s))), Sessions.deleting(key, more))
 
+# No session under the key is being deleted.
+def Sessions.held(+key: U32, sessions: Tb.Table(Session)) -> Bool:
+  match sessions:
+    case Nil{}:
+      True{}
+    case (+k, +s) <> more:
+      Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), SPhase.held(Session.phase(s))), Sessions.held(key, more))
+
 # Which sessions to keep: those not of a UE, those of one UE, those owned, the
 # orphans, those clear of a session, the victims of one, all but a key. A
 # session being deleted is of no UE and owned (Session.tag, Session.owned).

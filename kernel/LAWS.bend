@@ -1698,8 +1698,9 @@ law smf.deletion.answered:
 # answers its Session Deletion Request (smf.deletion.retransmitted,
 # smf.deletion.answered): no other step changes or forgets its row, so no
 # other session is given its address, TEID or SEID while the UPF may still
-# hold them. It holds in every state where no two sessions share a key or an
-# identity (smf.ip_pool.unique).
+# hold them, nor stops its guard, so one of the two comes. It holds in every
+# state where no two sessions share a key or an identity (smf.ip_pool.unique)
+# and no context holds the session's key (state.ids.free).
 law smf.deletion.held:
   for +st: St.State
   for +ev: F.Evt
@@ -1709,11 +1710,33 @@ law smf.deletion.held:
   for +guard: St.Guard
   for +request: B.Bytes()
   for +eu: {St.Sessions.unique(St.State.sessions(st)) == True{} : Bool}
+  for +en: {Tb.Table.get(St.Ue, skey, St.State.ues(st)) == None{} : Maybe<&2, St.Ue>}
   for +es: {Tb.Table.get(St.Session, skey, St.State.sessions(st)) == Some{s} : Maybe<&2, St.Session>}
   for +ep: {St.Session.phase(s) == St.Deleting{guard, request} : St.SPhase}
   for et: {ev == F.TimerFired{skey} : F.Evt} -> Empty
   for ea: @len:U32 -> @bytes:B.Bytes() -> @msg:Pf.Msg -> @rest:B.Bytes() -> {ev == F.PfcpData{len, bytes} : F.Evt} -> {Pf.Msg.read(bytes) == Done{(msg, rest)} : B.Read(Pf.Msg)} -> {Pf.Msg.kind(msg) == 55 : U32} -> {St.Sessions.by_seq(Pf.Msg.seq(msg), St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> Empty
-  {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == Some{s} : Maybe<&2, St.Session>}
+  {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == Some{s} : Maybe<&2, St.Session>} & {Ng.Acts.stops(skey, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == False{} : Bool}
+
+# Whatever starts deleting a session (its release, its UE's, an eviction, an
+# association going down, a failure: Up.N4.deletions) leaves it being deleted
+# under a guard that has not fired, sends its Session Deletion Request and
+# leaves its guard running: with smf.deletion.held, smf.deletion.retransmitted
+# and smf.deletion.answered, the row goes within N1 + 1 guard periods. It
+# holds in every state where no context holds the session's key
+# (state.ids.free).
+law smf.deletion.armed:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +skey: U32
+  for +s: St.Session
+  for +guard: St.Guard
+  for +request: B.Bytes()
+  for +en: {Tb.Table.get(St.Ue, skey, St.State.ues(st)) == None{} : Maybe<&2, St.Ue>}
+  for +eh: {St.Sessions.held(skey, St.State.sessions(st)) == True{} : Bool}
+  for +es: {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == Some{s} : Maybe<&2, St.Session>}
+  for +ep: {St.Session.phase(s) == St.Deleting{guard, request} : St.SPhase}
+  {guard == St.Guard{0} : St.Guard} & ({Ng.Acts.sends(request, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool} & {Ng.Acts.runs(skey, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool})
 
 # The UPF knows every session past Creating, by the UP SEID it answered with,
 # and none being created, in the initial state and after every step.

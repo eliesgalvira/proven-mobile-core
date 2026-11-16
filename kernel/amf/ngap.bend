@@ -449,6 +449,30 @@ def Acts.stops(+k: U32, acts: List<&2, Act>) -> Bool:
     case a <> more:
       Bool.or(Act.stops(k, a), Acts.stops(k, more))
 
+# Timer k runs once the actions are done: the last of them that starts or
+# stops it starts it.
+def Acts.runs(+k: U32, acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      False{}
+    case a <> +more:
+      Bool.or(Acts.runs(k, more), Bool.and(Act.starts(k, a), Bool.not(Acts.stops(k, more))))
+
+# Some action sends the PFCP message bytes.
+def Act.sends(+bytes: B.Bytes(), a: Act) -> Bool:
+  match a:
+    case Pfcp{ue, b}:
+      B.bytes_eq(b, bytes)
+    case _:
+      False{}
+
+def Acts.sends(+bytes: B.Bytes(), acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Act.sends(bytes, a), Acts.sends(bytes, more))
+
 # No action is built from the UE context keyed k.
 def Acts.spare(+k: U32, acts: List<&2, Act>) -> Bool:
   match acts:
