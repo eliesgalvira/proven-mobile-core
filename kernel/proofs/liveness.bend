@@ -1999,7 +1999,7 @@ def Lv.tag_var(+s: S.Session, +u: B.Bytes(), +q: U32, +ss: Tb.Table(S.Session), 
     case S.Session{id, var}:
       es
 
-def Lw.setup_gone(+st: S.State, +skey: U32, +s: S.Session, +up_seid: B.Bytes(), +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Up.N4.deletions([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Session.phase(s)}))], S.State.pfcp_seq(st))) == True{} : Bool}:
+def Lw.setup_gone(+st: S.State, +skey: U32, +s: S.Session, +up_seid: B.Bytes(), +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.setup_gone(st, skey, s, up_seid)) == True{} : Bool}:
   +s2 = S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Session.phase(s)})
   Lv.dels(st, [(skey, s2)], S.State.pfcp_seq(st), Lw.one(st, skey, s2, Lv.tag_var(s, up_seid, S.Session.seq(s), S.State.sessions(st), es)), Lv.one_kept(st, skey, s2, ekd))
 

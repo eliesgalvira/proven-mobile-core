@@ -395,6 +395,11 @@ def Gsm.ul_transport(st: S.State, key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, +fields:
 # The UPF's answers
 # --------------
 
+# Session Establishment accepted with no UE context, security context or
+# configuration to set it up with: the session the UPF made is deleted.
+def Gsm.setup_gone(+st: S.State, skey: U32, +s: S.Session, up_seid: B.Bytes()) -> N.GOut():
+  Up.N4.deletions([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Session.phase(s)}))], S.State.pfcp_seq(st))
+
 # Session Establishment accepted: the UP SEID is kept and the gNB is asked to
 # set the session up, the Accept inside; the session's guard bounds the wait.
 def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, ctx: Maybe<&2, Sec.Nas.Ctx>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
@@ -403,12 +408,12 @@ def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm
       +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))
       (S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}}}, [N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.transfer(cf, S.Session.teid(s))}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
     case _ _:
-      Up.N4.deletions([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Session.phase(s)}))], S.State.pfcp_seq(st))
+      Gsm.setup_gone(st, skey, s, up_seid)
 
 def Gsm.setup(+st: S.State, skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, up_seid: B.Bytes(), m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
-      Up.N4.deletions([(skey, S.Session.with_var(s, S.SVar{up_seid, S.Session.seq(s), S.Session.phase(s)}))], S.State.pfcp_seq(st))
+      Gsm.setup_gone(st, skey, s, up_seid)
     case Some{+ue}:
       Gsm.setup_ue(st, skey, s, pti, accept, up_seid, ue, S.Phase.ctx(S.Ue.phase(ue)), S.State.config(st))
 
