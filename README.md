@@ -1,4 +1,4 @@
-# 5G-spec-kernel
+# Proven Mobile Core
 
 > [!WARNING]
 > SLOP WARNING: There has been no adult supervision of the code.
