@@ -15,7 +15,7 @@ What ticket 39 left open on 2026-11-12:
 3. **Releases** (ticket 39 items 1 and 9):
    - PDU Session Resource Release Command and Response, with their transfers, in the NGAP generator. Send the Command after a failure that follows the Accept (TS 23.502 §4.3.4.2).
    - PDU Session Release Command to the UE for sessions dropped in a Path Switch or at Handover Notify.
-4. **N4 states** (ticket 39 item 3): `Asking` and `Beating` become one `Waiting` state. That shape was written and proven, but it hit Bend's C backend limit "an arity over 247", so it needs a reproduction and an upstream draft first. Probes are on branch `ticket/39-arity`.
+4. **N4 states** (ticket 39 item 3), done: `Asking` and `Beating` are one `Waiting{req, request, seq, resent}`, `req` being `Setup` or `Heartbeat`. Bend's C backend limit "an arity over 247" is upstream draft 06; its workaround, `kernel/tests/pdu_session.bend`'s association checks in their own def, is applied.
 5. **Proofs** (the rest of ticket 39 item 5): one lemma for the five `Owner.*` proofs and `Step.gnb_failed`; `Walk.pdu` made input-dependent, so `Req.*` in `kernel/proofs/ng_setup.bend` goes.
 6. **Proof deduplication** (the Session Deletion review): one keep lemma for the six `*_keep` copies; `Session.conflicts_sym`, as `Ue.conflicts_sym`; `Gsm.setup_gone` in place of `Lw.setup_gone`.
 
