@@ -298,8 +298,9 @@ def Alg.pick_ia(prefs: B.Bytes(), +byte: U32) -> Maybe<&2, Sec.Nas.Ia>:
 # started again; the verified SUPI takes its place in the index.
 def Gmm.secure(+st: S.State, +key: U32, +ue: S.Ue, supi: B.Digits(), +k_amf: B.Bytes(), +ea: Sec.Nas.Ea, +ia: Sec.Nas.Ia, caps: B.Bytes()) -> N.GOut():
   +ctx : Sec.Nas.Ctx = Sec.Ctx{Sec.Keys{Kd.kdf.k_nas_int(k_amf, Sec.Nas.Ia.id(ia)), Kd.kdf.k_nas_enc(k_amf, Sec.Nas.Ea.id(ea)), ea, ia, 1}, Sec.Nas.Count.zero(), None{}}
-  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.IntegrityNew{}, Gmm.security_mode_command(U32.or(U32.shln(Sec.Nas.Ea.id(ea), 4n), Sec.Nas.Ia.id(ia)), S.Ue.ngksi(ue), caps))
-  +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, supi), S.SecurityMode{S.Guard{0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p))
+  +smc = Gmm.security_mode_command(U32.or(U32.shln(Sec.Nas.Ea.id(ea), 4n), Sec.Nas.Ia.id(ia)), S.Ue.ngksi(ue), caps)
+  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.IntegrityNew{}, smc)
+  +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, supi), S.SecurityMode{S.Guard{0}, Sec.Nas.Protected.ctx(p), k_amf}, smc)
   N.Out.also(Gmm.place(st, key, ue2), [Gmm.dl(key, ue2, Sec.Nas.Protected.msg(p)), N.TimerStart{Some{key}, key, N.Ue.guard_ms()}])
 
 # No algorithm in common is a UE security capabilities mismatch (cause #23).
@@ -416,9 +417,10 @@ def Gmm.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), ctx: 
   match cfg m:
     case Some{+c} Some{+tmsi}:
       +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
-      +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.registration_accept(c, tmsi))
+      +accept = Gmm.registration_accept(c, tmsi)
+      +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)
       +k_gnb = Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count))
-      +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), S.Nh.initial(k_amf, k_gnb), False{}, False{}}, Sec.Nas.Protected.msg(p)), reg), tmsi)
+      +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), S.Nh.initial(k_amf, k_gnb), False{}, False{}}, accept), reg), tmsi)
       N.Out.also(Gmm.place(st, key, ue2), [N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, N.Ue.caps(ue2), k_gnb, Sec.Nas.Protected.msg(p)}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}])
     case _ _:
       Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
@@ -619,10 +621,32 @@ def Gmm.release_complete_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Er
 # Guard timers
 # ------------
 
+# The last downlink message again, under phase p: plain before a NAS
+# context, and under one sealed afresh, at the COUNT after the last one sent
+# (TS 24.501 §4.4.3.1), integrity protected with the new context in Security
+# Mode, ciphered after.
+def Gmm.protection(p: S.Phase) -> Sec.Nas.Protection:
+  match p:
+    case S.SecurityMode{guard, ctx, k_amf}:
+      Sec.IntegrityNew{}
+    case _:
+      Sec.Ciphered{}
+
+def Gmm.again_in(+key: U32, +ue: S.Ue, +p: S.Phase, c: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
+  match c:
+    case None{}:
+      (S.Rephase{key, p}, [Gmm.dl(key, ue, S.Ue.last_dl(ue))])
+    case Some{x}:
+      +q : Sec.Nas.Protected = Sec.Nas.protect(x, Gmm.protection(p), S.Ue.last_dl(ue))
+      (S.Rephase{key, S.Phase.with_ctx(p, Sec.Nas.Protected.ctx(q))}, [Gmm.dl(key, ue, Sec.Nas.Protected.msg(q))])
+
+def Gmm.again(+key: U32, +ue: S.Ue, +p: S.Phase) -> N.GOut():
+  Gmm.again_in(key, ue, p, S.Phase.ctx(p))
+
 def Gmm.retry_if(st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, p: S.Phase, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
-      (S.Rephase{key, S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})}, [Gmm.dl(key, ue, S.Ue.last_dl(ue)), N.TimerStart{Some{key}, key, N.Ue.guard_ms()}])
+      N.Out.also(Gmm.again(key, ue, S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})), [N.TimerStart{Some{key}, key, N.Ue.guard_ms()}])
     case False{}:
       Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
 

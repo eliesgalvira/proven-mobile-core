@@ -390,7 +390,8 @@ def Phase.owned_by(p: Phase, +a: U32) -> Bool:
 # the stream its InitialUEMessage arrived on, its SUPI once authenticated and
 # its 5G-TMSI once given,
 # the plain Registration Request, the ngKSI in use, its phase and the last
-# downlink NAS message (retransmitted when the guard fires).
+# downlink NAS message, plain: when the guard fires it goes again, sealed
+# afresh under the phase's NAS context if it holds one (Gmm.again).
 type Ue is Data:
   Ue{assoc: U32, ran_id: B.Bytes(), stream: U32, supi: Maybe<&2, B.Digits()>, tmsi: Maybe<&2, U32>, reg: B.Bytes(), ngksi: U32, phase: Phase, last_dl: B.Bytes()}
 

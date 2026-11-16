@@ -67,9 +67,12 @@ def items_of(r: Result<&2, &2, B.Err, W.PDUSessionResourceSetupRequest.View>) ->
 def setup_items(bytes: B.Bytes()) -> G.PDUSessionResourceSetupListSUReq():
   items_of(W.PDUSessionResourceSetupRequest.view(A.ies_of(Fr.Pdu.read(bytes))))
 
+def failed_ie(psi: U32) -> Fr.Ie:
+  N.Ngap.ie(58, Fr.Criticality.ignore(), G.PDUSessionResourceFailedToSetupListSURes.write([G.PDUSessionResourceFailedToSetupItemSURes{psi, Ap.pack(G.PDUSessionResourceSetupUnsuccessfulTransfer.write(G.PDUSessionResourceSetupUnsuccessfulTransfer{N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()), None{}, None{}}, 0n, [])), None{}}], 0n, []))
+
 # A PDU Session Resource Setup Response from the gNB that failed the session.
 def setup_failure(ran: B.Bytes()) -> B.Bytes():
-  N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(58, Fr.Criticality.ignore(), G.PDUSessionResourceFailedToSetupListSURes.write([G.PDUSessionResourceFailedToSetupItemSURes{1, Ap.pack(G.PDUSessionResourceSetupUnsuccessfulTransfer.write(G.PDUSessionResourceSetupUnsuccessfulTransfer{N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified()), None{}, None{}}, 0n, [])), None{}}], 0n, []))])
+  N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), failed_ie(1)])
 
 # Warning log lines among the actions.
 def warns(actions: List<&2, F.Action>) -> Nat:
@@ -134,26 +137,16 @@ def unreadable_items(psis: List<&2, U32>) -> G.PDUSessionResourceSetupListSURes(
 def setup_unreadable(ran: B.Bytes(), psis: List<&2, U32>) -> B.Bytes():
   N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(75, Fr.Criticality.ignore(), G.PDUSessionResourceSetupListSURes.write(unreadable_items(psis), 0n, []))])
 
-# nas_sec.downlink_fresh for UE key k over the step o from st, where k holds a
-# NAS context after it.
-def fresh(+st: S.State, +k: U32, +o: N.Step()) -> Bool:
-  N.Fresh.holds(S.Ue.ctx(Tb.Table.get(S.Ue, k, S.State.ues(st))), S.Ue.ctx(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(o)))), N.Acts.nas(k, K.Kernel.actions(o)))
+# One naming PDU session 1 set up with a transfer that does not decode, and
+# PDU session 2 failed.
+def setup_mixed(ran: B.Bytes()) -> B.Bytes():
+  N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(75, Fr.Criticality.ignore(), G.PDUSessionResourceSetupListSURes.write(unreadable_items([1]), 0n, [])), failed_ie(2)])
 
 # Two protected NAS messages under consecutive sequence numbers.
-def head_or(bs: B.Bytes()) -> U32:
-  match bs:
-    case s <> rest:
-      s
-    case _:
-      256
-
-def sqn(m: B.Bytes()) -> U32:
-  head_or(List.drop(&2, U32, m, 6n))
-
 def consecutive(msgs: List<&2, B.Bytes()>) -> Bool:
   match msgs:
     case [a, b]:
-      U32.is_eq(U32.add(sqn(a), 1), sqn(b))
+      U32.is_eq(U32.add(A.sqn(a), 1), A.sqn(b))
     case _:
       False{}
 
@@ -333,7 +326,11 @@ def main() -> IO(Unit):
     +o_both : N.Step() = step(st_two, A.data(1, setup_unreadable(ran, [1, 2])))
     C.Check.report("two sessions of the UE set up at the gNB, their Accepts sent", Bool.and(Nat.is_eq(Pc.session_count(st_two), 2n), Nat.is_eq(List.length(&2, B.Bytes(), N.Acts.nas(1, K.Kernel.actions(o_up2))), 1n)))
     C.Check.report("one response sets both up with transfers that do not decode: a PDU Session Resource Release Command for each, their PDU Session Release Commands under consecutive sequence numbers", consecutive(N.Acts.nas(1, K.Kernel.actions(o_both))))
-    C.Check.report("that step keeps nas_sec.downlink_fresh: the two sealed in turn from the context's downlink COUNT, the context left on the COUNT after them", fresh(st_two, 1, o_both))
+    C.Check.report("that step keeps nas_sec.downlink_fresh: the two sealed in turn from the context's downlink COUNT, the context left on the COUNT after them", A.fresh(st_two, 1, o_both))
+    C.Check.report("that step spends one PFCP sequence number per session named and one per Session Deletion Request, the two requests under the first two", Bool.and(U32.is_eq(S.State.pfcp_seq(K.Kernel.state(o_both)), U32.add(S.State.pfcp_seq(st_two), 4)), Bool.and(U32.is_eq(Pc.pfcp_seq(Pc.head_or_empty(Pc.pfcp_sends(K.Kernel.frames(o_both)))), S.State.pfcp_seq(st_two)), U32.is_eq(Pc.pfcp_seq(Pc.head_or_empty(List.drop(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_both)), 1n))), U32.add(S.State.pfcp_seq(st_two), 1)))))
+    +o_mixed : N.Step() = step(st_two, A.data(1, setup_mixed(ran)))
+    +mixed : List<&2, B.Bytes()> = N.Acts.nas(1, K.Kernel.actions(o_mixed))
+    C.Check.report("one response sets session 1 up with a transfer that does not decode and fails session 2: PDU Session Release Command for 1, then Establishment Reject #26 for 2, under consecutive sequence numbers, nas_sec.downlink_fresh kept", Bool.and(consecutive(mixed), Bool.and(B.bytes_eq(inner(Pc.head_or_empty(mixed)), rel_cmd), A.fresh(st_two, 1, o_mixed))))
     +o_gnb : N.Step() = step(st2, A.data(1, setup_failure(ran)))
     C.Check.report("the gNB fails the setup: Session Deletion at the UPF, Establishment Reject #26, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_gnb), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_gnb))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_gnb))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1]))))
     +o_dnn : N.Step() = step(st_reg, A.data(1, A.uplink(ran, uli, A.ue_protect(2, ul_transport(A.hex_of(A.entry(32n, msgs), "hex"), [37, 4, 3, 102, 111, 111])))))

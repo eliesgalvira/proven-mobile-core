@@ -411,6 +411,52 @@ def Out.tx_join(+a: N.GOut(), +b: N.GOut()) -> {N.Out.tx(N.Out.join(a, b)) == S.
         case (tb, ab):
           {==}
 
+# Items (Gsm.Item): a property of outcomes that joins keep holds of what runs
+# a UE's NAS context through parts when it holds of each part, whatever
+# context runs through them; the context is written once, after them, where
+# the UE's phase holds one.
+def It.Join(-P: N.GOut() -> Type) -> Type:
+  @a:N.GOut() -> @b:N.GOut() -> P(a) -> P(b) -> P(N.Out.join(a, b))
+
+def It.after(-P: N.GOut() -> Type, join: It.Join(P), +o: N.GOut(), +r: Gsm.Gsm.Item(), ho: P(o), hr: P(Gsm.Gsm.Item.out(r))) -> P(Gsm.Gsm.Item.out(Gsm.Gsm.after(o, r))):
+  match r:
+    case (+c, +o2):
+      join(o, o2, ho, hr)
+
+def It.then(-P: N.GOut() -> Type, join: It.Join(P), +r: Gsm.Gsm.Item(), rest: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Gsm.Item(), hr: P(Gsm.Gsm.Item.out(r)), hrest: @c:Maybe<&2, Sec.Nas.Ctx> -> P(Gsm.Gsm.Item.out(rest(c)))) -> P(Gsm.Gsm.Item.out(Gsm.Gsm.then(r, rest))):
+  match r:
+    case (+c, +o):
+      It.after(P, join, o, rest(c), hr, hrest(c))
+
+def It.settled(-P: N.GOut() -> Type, join: It.Join(P), +key: U32, +ue: S.Ue, +r: Gsm.Gsm.Item(), hw: @c:Maybe<&2, Sec.Nas.Ctx> -> P(Gsm.Gsm.ctx_written(key, ue, c)), hr: P(Gsm.Gsm.Item.out(r))) -> P(Gsm.Gsm.settled(key, ue, r)):
+  match r:
+    case (+c, +o):
+      join(Gsm.Gsm.ctx_written(key, ue, c), o, hw(c), hr)
+
+def It.under_ctx(-P: N.GOut() -> Type, join: It.Join(P), +key: U32, +ue: S.Ue, f: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Gsm.Item(), +c0: Maybe<&2, Sec.Nas.Ctx>, +e0: {S.Phase.ctx(S.Ue.phase(ue)) == c0 : Maybe<&2, Sec.Nas.Ctx>}, hf: @c:Maybe<&2, Sec.Nas.Ctx> -> P(Gsm.Gsm.Item.out(f(c))), hw: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool} -> @c:Maybe<&2, Sec.Nas.Ctx> -> P(Gsm.Gsm.ctx_written(key, ue, c))) -> P(Gsm.Gsm.under_ctx(key, ue, f, c0)):
+  match c0:
+    case None{}:
+      hf(None{})
+    case Some{+x}:
+      s0 = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, S.Phase.ctx(S.Ue.phase(ue)), Some{x}, e0)
+      It.settled(P, join, key, ue, f(Some{x}), hw((%s0 : {Tb.Table.present(Sec.Nas.Ctx, _) == True{} : Bool}; {==})), hf(Some{x}))
+
+def It.under(-P: N.GOut() -> Type, join: It.Join(P), +key: U32, +ue: S.Ue, f: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Gsm.Item(), hf: @c:Maybe<&2, Sec.Nas.Ctx> -> P(Gsm.Gsm.Item.out(f(c))), hw: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool} -> @c:Maybe<&2, Sec.Nas.Ctx> -> P(Gsm.Gsm.ctx_written(key, ue, c))) -> P(Gsm.Gsm.under(key, ue, f)):
+  It.under_ctx(P, join, key, ue, f, S.Phase.ctx(S.Ue.phase(ue)), {==}, hf, hw)
+
+def It.told_then(-P: N.GOut() -> Type, join: It.Join(P), +r: N.Told(), +o: N.GOut(), ht: P((S.Keep{}, Gsm.Gsm.Told.acts(r))), ho: P(o)) -> P(Gsm.Gsm.Item.out(Gsm.Gsm.told_then(r, o))):
+  match r:
+    case (+c, +acts):
+      join((S.Keep{}, acts), o, ht, ho)
+
+# A session given up under the context c.
+def It.give_up_in(-P: N.GOut() -> Type, join: It.Join(P), +key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +t: Gsm.Tell, +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>, ht: @x:Sec.Nas.Ctx -> P((S.Keep{}, Gsm.Gsm.Told.acts(Gsm.Gsm.told(key, ue, x, S.Session.psi(s), t)))), hd: P(Up.N4.deletions([(skey, s)], seq))) -> P(Gsm.Gsm.Item.out(Gsm.Gsm.give_up_in(key, ue, skey, s, t, seq, c))):
+  match c:
+    case None{}:
+      hd
+    case Some{+x}:
+      It.told_then(P, join, Gsm.Gsm.told(key, ue, x, S.Session.psi(s), t), Up.N4.deletions([(skey, s)], seq), ht(x), hd)
+
 def Sx.join(+a: N.GOut(), +b: N.GOut(), +ea: {Sx.only(N.Out.tx(a)) == True{} : Bool}, +eb: {Sx.only(N.Out.tx(b)) == True{} : Bool}) -> {Sx.only(N.Out.tx(N.Out.join(a, b))) == True{} : Bool}:
   e = Equal.sym(S.Tx, N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), N.Out.tx(b)}, Out.tx_join(a, b))
   (%e : {Sx.only(_) == True{} : Bool}; P.Bool.and_intro(Sx.only(N.Out.tx(a)), Sx.only(N.Out.tx(b)), ea, eb))
@@ -492,17 +538,6 @@ def Tg.same_r(+m: Maybe<&2, U32>, +t: S.Session, +t2: S.Session, h: Tg.Moved(t, 
     case Inr{en}:
       se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), None{}, en)
       (%se : {S.Maybe.same_u32(m, _) == False{} : Bool}; Tg.same_none(m))
-
-# A session tagged with a UE is that UE's.
-def Tg.ue_go(+u: U32, +x: U32, +h: Bool, +e: {S.Maybe.same_u32(Tb.Table.hit(U32, u, None{}, h), Some{x}) == True{} : Bool}) -> {U32.is_eq(u, x) == True{} : Bool}:
-  match h:
-    case True{}:
-      e
-    case False{}:
-      Empty.absurd({U32.is_eq(u, x) == True{} : Bool}, P.Refute.bool(e))
-
-def Tg.ue(+s: S.Session, +x: U32, +e: {S.Maybe.same_u32(S.Session.tag(s), Some{x}) == True{} : Bool}) -> {U32.is_eq(S.Session.ue(s), x) == True{} : Bool}:
-  Tg.ue_go(S.Session.ue(s), x, S.SPhase.live(S.Session.phase(s)), e)
 
 # An owned session tagged with a UE has that UE's context.
 def Tg.has_go(+u: U32, +x: U32, +h: Bool, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.same_u32(Tb.Table.hit(U32, u, None{}, h), Some{x}) == True{} : Bool}, +e2: {Bool.or(Bool.not(Tb.Table.present(U32, Tb.Table.hit(U32, u, None{}, h))), Tb.Table.has(S.Ue, u, ues)) == True{} : Bool}) -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}:

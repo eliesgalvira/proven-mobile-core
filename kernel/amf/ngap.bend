@@ -823,10 +823,24 @@ def Ue.found(m: Maybe<&2, Keyed()>, none: GOut(), go: U32 -> S.Ue -> GOut()) -> 
 def Out.verified(key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, why: String) -> GOut():
   (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, [Note{F.Warn{}, why}])
 
-# A protected downlink NAS message to a UE, its context moved on.
-def Out.dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> GOut():
+# What a procedure tells a UE under a NAS context: the context the messages
+# leave, which the next message to the UE is sealed under, and the actions.
+def Told() -> Data:
+  Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, Act>>
+
+# A protected downlink NAS message to a UE, in DL NAS Transport.
+def Out.told_dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> Told():
   +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, plain)
-  (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p)}])
+  (Sec.Nas.Protected.ctx(p), [DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p)}])
+
+# What was told, the context it leaves written to the UE's phase.
+def Out.written(+key: U32, +ue: S.Ue, r: Told()) -> GOut():
+  match r:
+    case (c, acts):
+      (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), c)}, acts)
+
+def Out.dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> GOut():
+  Out.written(key, ue, Out.told_dl(key, ue, ctx, plain))
 
 def Ngap.bad_pdu(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.transfer_syntax_error())}, Note{F.Warn{}, "NGAP: PDU rejected, transfer syntax error"}]
