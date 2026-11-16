@@ -27,6 +27,7 @@ import ./takeover.bend as PT
 import ./path_switch.bend as PPs
 import ./liveness.bend as PL
 import ./kernel.bend as PK
+import ./smf.bend as PSm
 
 # Proofs of the N2 handover laws (ticket 28).
 
@@ -944,13 +945,6 @@ def Hs.app(-R: Type, +k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +e: {N
     case +a <> +more:
       Hs.app_or(R, k, a, more, ys, N.Act.stops(k, a), {==}, e, l, e2 => l2 => Hs.app(R, k, more, ys, e2, l2, r))
 
-def Hs.app_false(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +hx: {N.Acts.stops(k, xs) == False{} : Bool}, +hy: {N.Acts.stops(k, ys) == False{} : Bool}) -> {N.Acts.stops(k, List.append(&2, N.Act, xs, ys)) == False{} : Bool}:
-  match xs:
-    case Nil{}:
-      hy
-    case +a <> +more:
-      P.Bool.or_false(N.Act.stops(k, a), N.Acts.stops(k, List.append(&2, N.Act, more, ys)), P.Bool.or_false_l(N.Act.stops(k, a), N.Acts.stops(k, more), hx), Hs.app_false(k, more, ys, P.Bool.or_false_r(N.Act.stops(k, a), N.Acts.stops(k, more), hx), hy))
-
 # Actions that touch no timer stop none.
 def Hs.untouched(+k: U32, +acts: List<&2, N.Act>, +e: {N.Acts.touches(k, acts) == False{} : Bool}) -> {N.Acts.stops(k, acts) == False{} : Bool}:
   match acts:
@@ -1005,29 +999,14 @@ def Hs.quiet(+k: U32, +tx: S.Tx, +acts: List<&2, N.Act>, +hs: {PL.Lv.stops(tx, a
   Hs.quiet_if(k, tx, acts, N.Acts.stops(k, acts), {==}, hs, hx)
 
 # The guards of the sessions gone are those of rows of the session table.
-def Hs.cancel_quiet(+k: U32, +k0: U32, +g: Maybe<&2, S.Guard>, +ne: {U32.is_eq(k0, k) == False{} : Bool}) -> {N.Acts.stops(k, N.Guard.cancel(k0, g)) == False{} : Bool}:
-  match g:
-    case None{}:
-      {==}
-    case Some{guard}:
-      sn = Equal.sym(Bool, U32.is_eq(k0, k), False{}, ne)
-      (%sn : {Bool.or(_, False{}) == False{} : Bool}; {==})
-
-def Hs.gone_row(+k: U32, +k0: U32, +t: S.Session, +kept: Bool, +ne: {U32.is_eq(k0, k) == False{} : Bool}) -> {N.Acts.stops(k, N.Gone.row(k0, t, kept)) == False{} : Bool}:
-  match kept:
-    case True{}:
-      {==}
-    case False{}:
-      Hs.cancel_quiet(k, k0, S.SPhase.guard(S.Session.phase(t)), ne)
-
-def Hs.gone_if(+k: U32, +k0: U32, +t: S.Session, +more: Tb.Table(S.Session), +after: Tb.Table(S.Session), +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +es: {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), b) == None{} : Maybe<&2, S.Session>}, ih: {Tb.Table.get(S.Session, k, more) == None{} : Maybe<&2, S.Session>} -> {N.Acts.stops(k, N.Gone.cancels(more, after)) == False{} : Bool}) -> {N.Acts.stops(k, N.Gone.cancels((k0, t) <> more, after)) == False{} : Bool}:
+def Hs.gone_if(+k: U32, +k0: U32, +t: S.Session, +more: Tb.Table(S.Session), +after: Tb.Table(S.Session), +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +es: {Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), b) == None{} : Maybe<&2, S.Session>}, ih: {Tb.Table.get(S.Session, k, more) == None{} : Maybe<&2, S.Session>} -> {N.Acts.touches(k, N.Gone.cancels(more, after)) == False{} : Bool}) -> {N.Acts.touches(k, N.Gone.cancels((k0, t) <> more, after)) == False{} : Bool}:
   match b:
     case True{}:
-      Empty.absurd({N.Acts.stops(k, N.Gone.cancels((k0, t) <> more, after)) == False{} : Bool}, P.Refute.none_some(S.Session, t, Equal.sym(Maybe<&2, S.Session>, Some{t}, None{}, es)))
+      Empty.absurd({N.Acts.touches(k, N.Gone.cancels((k0, t) <> more, after)) == False{} : Bool}, P.Refute.none_some(S.Session, t, Equal.sym(Maybe<&2, S.Session>, Some{t}, None{}, es)))
     case False{}:
-      Hs.app_false(k, N.Gone.row(k0, t, Tb.Table.has(S.Session, k0, after)), N.Gone.cancels(more, after), Hs.gone_row(k, k0, t, Tb.Table.has(S.Session, k0, after), eb), ih(es))
+      PSm.Run.app(k, N.Gone.row(k0, t, Tb.Table.has(S.Session, k0, after)), N.Gone.cancels(more, after), PSm.Run.row(k0, t, Tb.Table.has(S.Session, k0, after), k, eb), ih(es))
 
-def Hs.gone(+k: U32, +before: Tb.Table(S.Session), +after: Tb.Table(S.Session), +es: {Tb.Table.get(S.Session, k, before) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, N.Gone.cancels(before, after)) == False{} : Bool}:
+def Hs.gone(+k: U32, +before: Tb.Table(S.Session), +after: Tb.Table(S.Session), +es: {Tb.Table.get(S.Session, k, before) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.touches(k, N.Gone.cancels(before, after)) == False{} : Bool}:
   match before:
     case Nil{}:
       {==}
@@ -1039,7 +1018,7 @@ def Hs.when(+k: U32, +keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Tabl
     case True{}:
       {==}
     case False{}:
-      Hs.gone(k, before, after, es)
+      Hs.untouched(k, N.Gone.cancels(before, after), Hs.gone(k, before, after, es))
 
 # The outcome of a procedure, rendered: what its actions stop, its
 # transaction idles; the guards of sessions gone are not k.
@@ -1062,7 +1041,7 @@ def Hs.quiet_out(+st: S.State, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State
 
 # An association's contexts going: they go by a sieve, and only the guards of
 # sessions stop.
-def Hs.drop_quiet(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> {N.Acts.stops(k, K.Kernel.actions(R.Route.drop(st, assoc))) == False{} : Bool}:
+def Hs.drop_quiet(-R: Type, +st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, +e: {N.Acts.stops(k, K.Kernel.actions(R.Route.drop(st, assoc))) == True{} : Bool}) -> R:
   match st:
     case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
       +s0 : S.State = S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}
@@ -1070,7 +1049,8 @@ def Hs.drop_quiet(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Sessi
       +d = Up.N4.deletions(gone, pfcp_seq)
       +kept = S.Sessions.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(N.Out.tx(d), s0)))
       +hd = PL.Lv.dels(s0, gone, pfcp_seq, PL.Lv.srows_sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions), PL.Lv.krows_orphan(s0, S.Ues.drop_assoc(assoc, ues)))
-      Hs.app_false(k, N.Out.acts(d), N.Gone.cancels(sessions, kept), Hs.quiet(k, N.Out.tx(d), N.Out.acts(d), PL.Lv.does_stops(s0, N.Out.tx(d), N.Out.acts(d), PL.Lv.free(s0, N.Out.tx(d)), hd), PW.Sx.deletions(gone, pfcp_seq)), Hs.gone(k, sessions, kept, es))
+      +g = N.Gone.cancels(sessions, kept)
+      Hs.app(R, k, N.Out.acts(d), g, e, l => P.Bool.contra(R, N.Acts.stops(k, N.Out.acts(d)), l, Hs.quiet(k, N.Out.tx(d), N.Out.acts(d), PL.Lv.does_stops(s0, N.Out.tx(d), N.Out.acts(d), PL.Lv.free(s0, N.Out.tx(d)), hd), PW.Sx.deletions(gone, pfcp_seq))), r => P.Bool.contra(R, N.Acts.stops(k, g), r, Hs.untouched(k, g, Hs.gone(k, sessions, kept, es))))
 
 def Hs.drop_rows(+s: S.State, +assoc: U32, +k: U32, +r: Rw, +e: {Hs.rows(k, r, S.State.ues(s)) == True{} : Bool}) -> {Hs.rows(k, r, S.State.ues(K.Kernel.state(R.Route.drop(s, assoc)))) == True{} : Bool}:
   match s:
@@ -1080,7 +1060,7 @@ def Hs.drop_rows(+s: S.State, +assoc: U32, +k: U32, +r: Rw, +e: {Hs.rows(k, r, S
 def Hs.ready(+st: S.State, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, +tc: {N.Acts.touches(k, acts) == False{} : Bool}) -> Hs.Q(k, (S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts))):
   -G = {Hs.rows(k, Idle{}, S.State.ues(S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok))) == True{} : Bool}
   +xs = N.Step.acts(R.Route.drop(st, assoc))
-  e => Hs.app(G, k, xs, acts, e, l => P.Bool.contra(G, N.Acts.stops(k, xs), l, Hs.drop_quiet(st, assoc, k, es)), r => P.Bool.contra(G, N.Acts.stops(k, acts), r, Hs.untouched(k, acts, tc)))
+  e => Hs.app(G, k, xs, acts, e, l => Hs.drop_quiet(G, st, assoc, k, es, l), r => P.Bool.contra(G, N.Acts.stops(k, acts), r, Hs.untouched(k, acts, tc)))
 
 def Hs.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, K.Kernel.config(complete, st, tlvs, entropy)):
   match complete:
@@ -1103,7 +1083,7 @@ def Hs.down(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k,
   q1 = Hs.out(st, k, es, o, PL.Lw.ho_down(st, assoc))
   ds = Equal.sym(Tb.Table(S.Session), S.State.sessions(N.Step.state(s1)), S.State.sessions(st), PL.Lw.down_sessions(st, assoc))
   es1 : {Tb.Table.get(S.Session, k, S.State.sessions(N.Step.state(s1))) == None{} : Maybe<&2, S.Session>} = (%ds : {Tb.Table.get(S.Session, k, _) == None{} : Maybe<&2, S.Session>}; es)
-  e => Hs.app(G, k, N.Step.acts(s1), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(s2), e, l => Hs.drop_rows(N.Step.state(s1), assoc, k, Idle{}, q1(l)), r => P.Bool.contra(G, N.Acts.stops(k, N.Step.acts(s2)), r, Hs.drop_quiet(N.Step.state(s1), assoc, k, es1)))
+  e => Hs.app(G, k, N.Step.acts(s1), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(s2), e, l => Hs.drop_rows(N.Step.state(s1), assoc, k, Idle{}, q1(l)), r => Hs.drop_quiet(G, N.Step.state(s1), assoc, k, es1, r))
 
 # A session's guard firing while it is being deleted, and the UPF's answer to
 # a deletion, stop no guard of their own.
@@ -1114,17 +1094,10 @@ def Hs.resend_quiet(+k: U32, +k1: U32, +t: S.Session, +p: S.SPhase, +request: B.
     case False{}:
       {==}
 
-def Hs.notes_quiet(+k: U32, +ok: Bool) -> {N.Acts.stops(k, Gsm.Gsm.deleted_notes(ok)) == False{} : Bool}:
-  match ok:
-    case True{}:
-      {==}
-    case False{}:
-      {==}
-
 def Hs.dphase_quiet(+k: U32, +skey: U32, +msg: Pf.Msg, +p: S.SPhase) -> {N.Acts.stops(k, N.Out.acts(Gsm.Gsm.deleted_phase(skey, msg, p))) == False{} : Bool}:
   match p:
     case S.Deleting{guard, request}:
-      Hs.notes_quiet(k, Up.N4.accepted(Up.N4.cause(msg)))
+      Hs.untouched(k, Gsm.Gsm.deleted_notes(Up.N4.accepted(Up.N4.cause(msg))), PSm.Run.notes(k, Up.N4.accepted(Up.N4.cause(msg))))
     case S.Creating{guard, pti, accept, request}:
       {==}
     case S.Setting{guard, pti}:
