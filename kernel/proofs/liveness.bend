@@ -3450,6 +3450,34 @@ def Lw.switch_failed(+st: S.State, +key: U32, +ue: S.Ue, +psis: List<&2, U32>, +
   +d : N.Act = N.Note{F.Warn{}, "NGAP: Path Switch failed, no PDU session switched; UE released"}
   Lv.leaf(st, S.Rephase{key, S.Releasing{S.Guard{0}}}, [a, b, c, d], Lv.cons(st, a, [b, c, d], Lv.held_live(st, key, ek), Lv.cons(st, b, [c, d], Lv.held_live(st, key, ek), Lv.cons(st, c, [d], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==}))), {==}, {==}, {==})
 
+# The PDU Session Release Commands a handover sends its UE name its context
+# and stop no timer.
+def Lw.told_then(+st: S.State, +a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>, +ha: {Lv.act(st, a) == True{} : Bool}, +hr: {Lv.acts(st, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Lv.acts(st, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(a, r))) == True{} : Bool}:
+  match r:
+    case (c, +acts):
+      Lv.cons(st, a, acts, ha, hr)
+
+def Lw.told_acts(+st: S.State, +key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +psis: List<&2, U32>, +ctx: Sec.Nas.Ctx, +hl: {Lv.live(st, key) == True{} : Bool}) -> {Lv.acts(st, Gsm.Gsm.Told.acts(Gsm.Gsm.releases(key, assoc, stream, ran, psis, ctx))) == True{} : Bool}:
+  match psis:
+    case Nil{}:
+      {==}
+    case +p <> +more:
+      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))
+      Lw.told_then(st, N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), hl, Lw.told_acts(st, key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q), hl))
+
+def Lw.told_stops_then(+tx: S.Tx, +a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>, +ha: {Lv.stop(tx, Lv.cancelled(a)) == True{} : Bool}, +hr: {Lv.stops(tx, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Lv.stops(tx, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(a, r))) == True{} : Bool}:
+  match r:
+    case (c, +acts):
+      Lv.stops_cons(tx, a, acts, ha, hr)
+
+def Lw.told_stops(+tx: S.Tx, +key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +psis: List<&2, U32>, +ctx: Sec.Nas.Ctx) -> {Lv.stops(tx, Gsm.Gsm.Told.acts(Gsm.Gsm.releases(key, assoc, stream, ran, psis, ctx))) == True{} : Bool}:
+  match psis:
+    case Nil{}:
+      {==}
+    case +p <> +more:
+      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))
+      Lw.told_stops_then(tx, N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), {==}, Lw.told_stops(tx, key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
+
 def Lw.switch_end(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, +cfg: Maybe<&2, S.Cfg>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.switch_end(key, ue, ctx, nh, released, switched, cfg)) == True{} : Bool}:
   match switched:
     case Nil{}:
@@ -3464,7 +3492,10 @@ def Lw.switch_end(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.
           Lw.switch_failed(st, key, ue, List.append(&2, U32, released, p <> more), Lv.has_held(st, key, eh))
         case Some{+c}:
           +a : N.Act = N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)}
-          Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, None{}}}, [a, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}], Lv.cons(st, a, [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}], Lv.has_live(st, key, eh), Lv.cons(st, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], eh, {==})), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}), Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, None{}}}, a, [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}], {==}, Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, None{}}}, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], Lv.idles_rephase(key, S.Registered{ctx, nh, None{}}, {==}), {==})), {==})
+          +r = Gsm.Gsm.releases(key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx)
+          +ph : S.Phase = S.Registered{Gsm.Gsm.Told.ctx(r), nh, None{}}
+          +tail : List<&2, N.Act> = [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}]
+          Lv.leaf(st, S.Rephase{key, ph}, a <> List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), Lv.cons(st, a, List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), Lv.has_live(st, key, eh), Lv.append(st, Gsm.Gsm.Told.acts(r), tail, Lw.told_acts(st, key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx, Lv.has_live(st, key, eh)), Lv.cons(st, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], eh, {==}))), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}), Lv.stops_cons(S.Rephase{key, ph}, a, List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), {==}, Lv.stops_app(S.Rephase{key, ph}, Gsm.Gsm.Told.acts(r), tail, Lw.told_stops(S.Rephase{key, ph}, key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx), Lv.stops_cons(S.Rephase{key, ph}, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], Lv.idles_rephase(key, ph, {==}), {==}))), {==})
 
 def Lw.switch_next(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, +waits: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.switch_next(st, key, ue, guard, ctx, nh, released, switched, waits)) == True{} : Bool}:
   match waits:
@@ -4069,13 +4100,17 @@ def Lw.ho_failure(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.Handove
 def Lw.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +t: U32, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +eph: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}} : S.Phase}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{})) == True{} : Bool}:
   +ek = Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
   +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-  +v = S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})
+  +told = Gsm.Gsm.releases(key, assoc, s, r, Sw.Sw.released(ts, rows), ctx)
+  +ph : S.Phase = S.Registered{Gsm.Gsm.Told.ctx(told), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}
+  +v = S.Ue.moved(ue, assoc, r, s, ph)
   +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
   +b : N.GOut() = (S.Put{key, v}, [])
-  hb = Lv.leaf(st, S.Put{key, v}, [], {==}, Lv.put_ok(st, key, v, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}, Lv.p_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), {==}, {==}, P.Bool.or_l(Lv.chain(st, key, Some{nh}), Lv.unpaired(st, key), Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, Some{nh}, Lv.chains_same(nh))), Lv.home_moved(st, ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}, ea)), {==}, Lv.paired_seed(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, {==}, S.Phase.nh(S.Ue.phase(v)), []))
+  hb = Lv.leaf(st, S.Put{key, v}, [], {==}, Lv.put_ok(st, key, v, ph, Lv.p_moved(ue, assoc, r, s, ph), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), {==}, {==}, P.Bool.or_l(Lv.chain(st, key, Some{nh}), Lv.unpaired(st, key), Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, Some{nh}, Lv.chains_same(nh))), Lv.home_moved(st, ue, assoc, r, s, ph, ea)), {==}, Lv.paired_seed(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, {==}, S.Phase.nh(S.Ue.phase(v)), []))
   +x : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}
   +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}
-  Lv.also(st, N.Out.join(a, b), [x, N.TimerCancel{key}, n], Lv.join(st, a, b, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key)), hb), Lv.cons(st, x, [N.TimerCancel{key}, n], ek, Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==})), Lv.stops_cons(N.Out.tx(N.Out.join(a, b)), x, [N.TimerCancel{key}, n], {==}, Lv.stops_cons(N.Out.tx(N.Out.join(a, b)), N.TimerCancel{key}, [n], Lv.idles_join_put(a, key, v, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}, Lv.p_moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}), {==}), {==})))
+  +tx = N.Out.tx(N.Out.join(a, b))
+  +ta : List<&2, N.Act> = Gsm.Gsm.Told.acts(told)
+  Lv.also(st, N.Out.join(a, b), x <> List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), Lv.join(st, a, b, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key)), hb), Lv.cons(st, x, List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), ek, Lv.append(st, ta, [N.TimerCancel{key}, n], Lw.told_acts(st, key, assoc, s, r, Sw.Sw.released(ts, rows), ctx, ek), Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==}))), Lv.stops_cons(tx, x, List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), {==}, Lv.stops_app(tx, ta, [N.TimerCancel{key}, n], Lw.told_stops(tx, key, assoc, s, r, Sw.Sw.released(ts, rows), ctx), Lv.stops_cons(tx, N.TimerCancel{key}, [n], Lv.idles_join_put(a, key, v, ph, Lv.p_moved(ue, assoc, r, s, ph), {==}), {==}))))
 
 def Lw.ho_notify(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverNotify.View>, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.notify_of_view(st, assoc, r)) == True{} : Bool}:
   PW.Hw.notify(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => ran => +key => +ue => +ctx => +nh => +source => +t => +r2 => +s => +ts => sp => ek => +ep => eph => es => Lw.ho_complete(st, assoc, key, ue, ctx, nh, source, t, r2, s, ts, Lw.target_get(st, assoc, key, ue, ep), eph, ea))

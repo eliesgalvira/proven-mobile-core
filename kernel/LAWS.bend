@@ -31,6 +31,7 @@ import ./amf/gmm.bend as Gm
 import ./smf/gsm.bend as Gs
 import ./ausf.bend as Au
 import ./smf/n4.bend as Up
+import ./smf/switch.bend as Sw
 import ./amf/path_switch.bend as Ps
 import ./amf/handover.bend as Ho
 
@@ -1966,7 +1967,8 @@ law amf.path_switch.moves_owner:
 # carries are only compared with the stored ones. Two requests that differ in
 # nothing else leave the same state, and the acknowledgement, built from the
 # context the state holds, carries the capabilities of the Registration
-# Request stored for it.
+# Request stored for it. After it, the UE is sent PDU Session Release Command
+# for each session released (Gs.Gsm.releases), its NAS context moving on.
 law amf.path_switch.stored_capabilities:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -2007,7 +2009,7 @@ law amf.path_switch.stored_capabilities:
   for +ei2: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value2), 1n)}) == Done{(ies2, c2)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +ev2: {GV.PathSwitchRequest.view(ies2) == Done{GV.PathSwitchRequest.View{ran, amf, uli, caps2, items, failed, rrc}} : Result<&2, &2, B.Err, GV.PathSwitchRequest.View>}
   {Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len1, bytes1}, entropy)) == Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len2, bytes2}, entropy)) : St.State}
-  & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{ctx, nh, None{}}}, [Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)}, Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}]) : Ng.GOut()}
+  & {Gs.Gsm.switch_end(key, ue, ctx, nh, released, p <> more, Some{cfg}) == (St.Rephase{key, St.Registered{Gs.Gsm.Told.ctx(Gs.Gsm.releases(key, St.Ue.assoc(ue), St.Ue.stream(ue), St.Ue.ran_id(ue), released, ctx)), nh, None{}}}, Ng.SwitchAck{St.Ue.assoc(ue), St.Ue.stream(ue), key, St.Ue.ran_id(ue), Ng.Ue.caps(ue), nh, p <> more, released, St.Cfg.sst(cfg)} <> List.append(&2, Ng.Act, Gs.Gsm.Told.acts(Gs.Gsm.releases(key, St.Ue.assoc(ue), St.Ue.stream(ue), St.Ue.ran_id(ue), released, ctx)), [Ng.TimerCancel{key}, Ng.Note{F.Info{}, "NGAP: Path Switch done"}])) : Ng.GOut()}
 
 # amf (ticket 28)
 # ---------------
@@ -2177,6 +2179,47 @@ law amf.handover.guarded:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 13, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> ({Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Tb.Table.get(St.Ue, k, St.State.ues(st)) : Maybe<&2, St.Ue>} -> Empty) -> {Ng.Acts.starts(k, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool})
   & ({St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{t} : Maybe<&2, U32>} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.TimerFired{k}, entropy))))) == None{} : Maybe<&2, U32>})
   & ({Tb.Table.get(St.Session, k, St.State.sessions(st)) == None{} : Maybe<&2, St.Session>} -> {Ng.Acts.stops(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool} -> {St.Ue.pending(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))) == None{} : Maybe<&2, U32>})
+
+# TS 23.502 §4.9.1.3.3: Handover Notify from the target of the handover
+# pending, under the RAN-UE-NGAP-ID it acknowledged with and still free on it,
+# moves the UE to the target; each of the UE's PDU sessions the target did not
+# admit with an IPv4 tunnel is released at the UPF and to the UE too (§4.3.4.2):
+# PDU Session Release Command in DL NAS Transport through the target, the
+# messages protected in turn, the context holding the NAS context they leave.
+law amf.handover.notify_releases:
+  for +st: St.State
+  for +entropy: B.Bytes()
+  for +assoc: U32
+  for +stream: U32
+  for +len: U32
+  for +bytes: B.Bytes()
+  for +crit: U32
+  for +value: B.Bytes()
+  for +ies: List<&2, Fr.Ie>
+  for +c: Ap.Cur
+  for +amf: B.Bytes()
+  for +ran: B.Bytes()
+  for +uli: G.UserLocationInformation
+  for +k: U32
+  for +ue: St.Ue
+  for +ctx: N.Nas.Ctx
+  for +nh: St.Nh
+  for +source: U32
+  for +s: U32
+  for +ts: List<&2, St.Tunnel>
+  for +sp: B.Digits()
+  for +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 11, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}
+  for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
+  for +ev: {GV.HandoverNotify.view(ies) == Done{GV.HandoverNotify.View{amf, ran, uli}} : Result<&2, &2, B.Err, GV.HandoverNotify.View>}
+  for +eid: {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}
+  for +eg: {Tb.Table.get(St.Ue, k, St.State.ues(st)) == Some{ue} : Maybe<&2, St.Ue>}
+  for +eph: {St.Ue.phase(ue) == St.Handover{ctx, nh, source, St.Acked{assoc, ran, s, ts}} : St.Phase}
+  for +es: {St.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}
+  for +eo: {U32.is_eq(St.Ue.assoc(ue), assoc) == False{} : Bool}
+  for +ef: {St.Ues.ran_free(k, assoc, ran, St.State.ues(st)) == True{} : Bool}
+  for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
+  {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Some{St.Ue.moved(ue, assoc, ran, s, St.Registered{Gs.Gsm.Told.ctx(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), nh, Some{St.Side{St.Ue.assoc(ue), Some{St.Ue.ran_id(ue)}}}})} : Maybe<&2, St.Ue>}
+  & Ng.Acts.within(Gs.Gsm.Told.acts(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
 
 # TS 38.413 §8.3.3: the side an N2 handover released, the source after
 # Handover Notify or the target after a cancel or the guard firing, answers

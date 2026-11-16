@@ -464,14 +464,41 @@ def Gsm.established(st: S.State, msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ 
     case Some{(skey, +s)}:
       Gsm.established_phase(st, skey, s, msg, S.Session.phase(s))
 
+# Sessions a handover released: PDU Session Release Command (#26) to the UE
+# for each, in DL NAS Transport through its new gNB, which never set them up
+# (TS 23.502 §4.3.4.2), protected in turn; with the NAS context they leave.
+def Gsm.releases_then(+a: N.Act, r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
+  match r:
+    case (c, acts):
+      (c, a <> acts)
+
+def Gsm.releases(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), psis: List<&2, U32>, ctx: Sec.Nas.Ctx) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
+  match psis:
+    case Nil{}:
+      (ctx, [])
+    case +p <> more:
+      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.dl_transport(p, Gsm.release_command(p)))
+      Gsm.releases_then(N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
+
+def Gsm.Told.ctx(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sec.Nas.Ctx:
+  match r:
+    case (c, acts):
+      c
+
+def Gsm.Told.acts(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> List<&2, N.Act>:
+  match r:
+    case (c, acts):
+      acts
+
 # Path Switch (TS 23.502 §4.9.1.2.2)
 # -----------------------------------
 # A session repointed to the target gNB is switched once the UPF accepts it,
 # and released otherwise: deleted at the UPF and named to the target as
-# released, with no PDU Session Release Command to the UE. Once no session of
-# the UE waits, the AMF answers the target: Path Switch Request Acknowledge
-# with the next {NH, NCC} when some session was switched, Path Switch Request
-# Failure and the UE's release otherwise (TS 38.413 §8.4.4.2).
+# released. Once no session of the UE waits, the AMF answers the target: Path
+# Switch Request Acknowledge with the next {NH, NCC} when some session was
+# switched, then PDU Session Release Command to the UE for each session
+# released; Path Switch Request Failure and the UE's release otherwise (TS
+# 38.413 §8.4.4.2).
 
 def Gsm.repoint_done(+st: S.State, +skey: U32, +s: S.Session, ok: Bool) -> N.GOut():
   match ok:
@@ -525,7 +552,8 @@ def Gsm.switch_failed(+key: U32, +ue: S.Ue, psis: List<&2, U32>) -> N.GOut():
 def Gsm.switch_end(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match switched cfg:
     case (p <> more) Some{c}:
-      (S.Rephase{key, S.Registered{ctx, nh, None{}}}, [N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}])
+      +r = Gsm.releases(key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx)
+      (S.Rephase{key, S.Registered{Gsm.Told.ctx(r), nh, None{}}}, N.SwitchAck{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), N.Ue.caps(ue), nh, p <> more, released, S.Cfg.sst(c)} <> List.append(&2, N.Act, Gsm.Told.acts(r), [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}]))
     case _ _:
       Gsm.switch_failed(key, ue, List.append(&2, U32, released, switched))
 

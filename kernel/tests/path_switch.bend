@@ -54,6 +54,13 @@ def expire(n: Nat, +timer: U32, st: S.State) -> N.Step():
     case 1n+p:
       expire(p, timer, K.Kernel.state(H.step(st, F.TimerFired{timer})))
 
+def second(xs: List<&2, B.Bytes()>) -> B.Bytes():
+  match xs:
+    case x <> y <> more:
+      y
+    case _:
+      []
+
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
@@ -93,6 +100,11 @@ def main() -> IO(Unit):
     +hmod : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o_hand))
     +hack : B.Bytes() = H.sent_on(2, K.Kernel.frames(H.step(K.Kernel.state(o_hand), Pc.pfcp_event(Pc.with_seq(H.hex(msgs, 53n), Pc.pfcp_seq(hmod))))))
     C.Check.report("the hand-built Path Switch Request: its tunnel, session 1 switched and session 2, failed at gNB 2, not ours to release", Bool.and(B.bytes_eq(Pc.body(84, Pc.inside(11, Pc.inside(10, Pc.pfcp_ies(hmod)))), [1, 0, 0, 0, 0, 2, 10, 33, 0, 31]), Bool.and(A.same_ie(77, hack, cap), B.bytes_eq(H.ie(68, hack), []))))
+    +o_two : N.Step() = H.step(H.with_session(st, 2), H.on(2, psr))
+    +o_two_ok : N.Step() = H.step(K.Kernel.state(o_two), Pc.pfcp_event(Pc.with_seq(H.hex(msgs, 53n), Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_two))))))
+    +sent_two : List<&2, F.Action> = A.sends(K.Kernel.frames(o_two_ok))
+    C.Check.report("a second session the request does not name: deleted at the UPF when the switch starts, named released in the acknowledgement", Bool.and(U32.is_eq(Pc.pfcp_kind(second(Pc.pfcp_sends(K.Kernel.frames(o_two)))), 54), Bool.and(H.is_pdu(A.first_bytes(sent_two), 1, 25), Bool.not(B.bytes_eq(H.ie(68, A.first_bytes(sent_two)), [])))))
+    C.Check.report("then PDU Session Release Command #26 for it to the UE, in DL NAS Transport through gNB 2 after the acknowledgement", Bool.and(Nat.is_eq(List.length(&2, F.Action, sent_two), 2n), Bool.and(U32.is_eq(A.first_assoc(List.drop(&2, F.Action, sent_two, 1n)), 2), B.bytes_eq(H.dl_plain(A.first_bytes(List.drop(&2, F.Action, sent_two, 1n))), H.release_plain(2)))))
     +o_no : N.Step() = H.step(st1, refusal(Pc.pfcp_seq(mod)))
     +fail : B.Bytes() = H.sent_on(2, K.Kernel.frames(o_no))
     C.Check.report("the UPF refuses: the session being deleted there, Path Switch Request Failure naming it, the UE released", Bool.and(H.is_pdu(fail, 2, 25), Bool.and(Pc.sphase_is(K.Kernel.state(o_no), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_no))), 54), Bool.and(A.phase_is(K.Kernel.state(o_no), "releasing"), H.is_pdu(A.first_bytes(List.drop(&2, F.Action, A.sends(K.Kernel.frames(o_no)), 1n)), 0, 41))))))

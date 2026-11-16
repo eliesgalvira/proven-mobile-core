@@ -4,6 +4,7 @@ import ../../aper.bend as Ap
 import ../../tlv.bend as T
 import ../../ngap/frame.bend as Fr
 import ../../frame.bend as F
+import ../../table.bend as Tb
 import ../../state.bend as S
 import ../../step.bend as K
 import ../../amf/ngap.bend as N
@@ -52,6 +53,28 @@ def active(+msgs: List<&2, V.Vec>) -> S.State:
   +st4 : S.State = after(K.Kernel.state(o3), Pc.pfcp_event(Pc.with_seq(hex(msgs, 36n), Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o3))))))
   +o5 : N.Step() = step(st4, on(1, hex(msgs, 40n)))
   after(K.Kernel.state(o5), Pc.pfcp_event(Pc.with_seq(hex(msgs, 42n), Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o5))))))
+
+# The state with a copy of its first session after it, under PDU session
+# identity psi, its key, address and TEID the next free ones.
+def also_session(+psi: U32, ss: Tb.Table(S.Session)) -> Tb.Table(S.Session):
+  match ss:
+    case (+k, S.Session{S.SId{+ue, +p, +ip, +teid}, +var}) <> more:
+      (k, S.Session{S.SId{ue, p, ip, teid}, var}) <> (U32.add(k, 2), S.Session{S.SId{ue, psi, U32.add(ip, 1), U32.add(teid, 1)}, var}) <> more
+    case _:
+      ss
+
+def with_session(+st: S.State, +psi: U32) -> S.State:
+  match st:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      S.State{config, subs, assocs, ues, also_session(psi, sessions), pfcp_seq, next_ue, n4}
+
+# The NAS plaintext of a DL NAS Transport protected under NEA0.
+def dl_plain(+bytes: B.Bytes()) -> B.Bytes():
+  List.drop(&2, U32, A.nas_of(bytes), 7n)
+
+# PDU Session Release Command #26 for psi, in DL NAS Transport.
+def release_plain(+psi: U32) -> B.Bytes():
+  [126, 0, 104, 1, 0, 5, 46, psi, 0, 211, 26, 18, psi]
 
 # An NGAP PDU with one IE's value replaced.
 def swap_if(+i: U32, crit: U32, v: B.Bytes(), value: B.Bytes(), hit: Bool) -> Fr.Ie:

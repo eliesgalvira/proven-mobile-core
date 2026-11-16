@@ -229,15 +229,16 @@ def Ho.failure_phase(+assoc: U32, +key: U32, +ue: S.Ue, cause: G.Cause, p: S.Pha
 
 # Handover Notify from the target, under the RAN-UE-NGAP-ID it acknowledged
 # with, still free on it: the UE moves to the target, each session the target
-# admitted has its downlink repointed and the others are released, and the
-# source is told to release the UE.
+# admitted has its downlink repointed and the others are released, to the UE
+# too, and the source is told to release the UE.
 def Ho.complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, ok: Bool) -> N.GOut():
   match ok:
     case False{}:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
     case True{}:
       +rows = S.Sessions.of_ue(key, S.State.sessions(st))
-      N.Out.also(N.Out.join(Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st)), (S.Put{key, S.Ue.moved(ue, assoc, r, s, S.Registered{ctx, nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})}, [])), [N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.radio(G.CauseRadioNetwork.successful_handover())}, N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}])
+      +told = Gsm.Gsm.releases(key, assoc, s, r, Sw.Sw.released(ts, rows), ctx)
+      N.Out.also(N.Out.join(Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st)), (S.Put{key, S.Ue.moved(ue, assoc, r, s, S.Registered{Gsm.Gsm.Told.ctx(told), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})}, [])), N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.radio(G.CauseRadioNetwork.successful_handover())} <> List.append(&2, N.Act, Gsm.Gsm.Told.acts(told), [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]))
 
 def Ho.notify_phase(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), p: S.Phase) -> N.GOut():
   match p:

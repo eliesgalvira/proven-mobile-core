@@ -126,6 +126,13 @@ def first_bytes(ss: List<&2, F.Action>) -> B.Bytes():
     case _:
       []
 
+def first_assoc(ss: List<&2, F.Action>) -> U32:
+  match ss:
+    case F.NgapSend{assoc, stream, len, bytes} <> more:
+      assoc
+    case _:
+      999
+
 def first_stream(ss: List<&2, F.Action>) -> U32:
   match ss:
     case F.NgapSend{assoc, stream, len, bytes} <> more:
