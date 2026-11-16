@@ -819,6 +819,99 @@ def Rel.faileds(+st: S.State, +key: U32, +ue: S.Ue, pre: G.PDUSessionResourceFai
       +a = Gsm.Gsm.failed(key, ue, seq, S.Sessions.by_psi(key, p2, S.State.sessions(st)), c)
       Rel.then_r(Gsm.Gsm.after((S.BumpSeq{1}, []), a), c2 => Gsm.Gsm.faileds(st, key, ue, List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre2, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post), U32.add(seq, 1), c2), skey, s, +c2 => Rel.faileds(st, key, ue, pre2, psi, transfer, x, post, U32.add(seq, 1), c2, skey, s, guard, pti, ekey, es, eh))
 
+# The gNB lists the session set up, in the last item naming it, with a
+# tunnel that does not read: that item gives it up, its release to the gNB.
+def Rel.set_up_last(+key: U32, +ue: S.Ue, +transfer: B.Bytes(), +seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, again: Bool, +c: Maybe<&2, Sec.Nas.Ctx>, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, em: {m == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, en: {again == False{} : Bool}, eh: {S.Session.phase(s) == S.Setting{guard, pti} : S.SPhase}, et: {Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}) -> Rel.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.set_up_last(key, ue, transfer, seq, m, again, c)), skey, s):
+  sen = Equal.sym(Bool, again, False{}, en)
+  %sen : Rel.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.set_up_last(key, ue, transfer, seq, m, _, c)), skey, s)
+  sem = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, m, Some{(skey, s)}, em)
+  %sem : Rel.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.set_up(key, ue, transfer, seq, _, c)), skey, s)
+  seh = Equal.sym(S.SPhase, S.Session.phase(s), S.Setting{guard, pti}, eh)
+  %seh : Rel.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.set_up_phase(key, ue, skey, s, transfer, seq, _, c)), skey, s)
+  set = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), None{}, et)
+  %set : Rel.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.modify(key, ue, skey, s, seq, _, c)), skey, s)
+  Rel.give_up_in(key, ue, skey, s, Gsm.Release{}, seq, c)
+
+# What a release asks of the actions alone: past Creating, a Session
+# Deletion Request for the session goes out, its guard started right after
+# it. Whatever comes before or after keeps that.
+def Dd.Spec(+o: N.GOut(), +skey: U32, +s: S.Session) -> Type:
+  {S.Session.known(s) == True{} : Bool} -> {S.SPhase.live(S.Session.phase(s)) == True{} : Bool} -> Up.N4.deleted(skey, s, N.Out.acts(o))
+
+def Dd.of(+o: N.GOut(), +skey: U32, +s: S.Session, h: Rel.Spec(o, skey, s)) -> Dd.Spec(o, skey, s):
+  (g, (n, d)) = h
+  d
+
+def Dd.join_l(+a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Session, h: Dd.Spec(a, skey, s)) -> Dd.Spec(N.Out.join(a, b), skey, s):
+  match a:
+    case (ta, +aa):
+      match b:
+        case (tb, +ab):
+          k => eh => Del.app_l(skey, s, aa, ab, h(k, eh))
+
+def Dd.join_r(+a: N.GOut(), +b: N.GOut(), +skey: U32, +s: S.Session, h: Dd.Spec(b, skey, s)) -> Dd.Spec(N.Out.join(a, b), skey, s):
+  match a:
+    case (ta, +aa):
+      match b:
+        case (tb, +ab):
+          k => eh => Del.app_r(skey, s, aa, ab, h(k, eh))
+
+def Dd.after_r(+o: N.GOut(), +r: Gsm.Gsm.Item(), +skey: U32, +s: S.Session, h: Dd.Spec(Gsm.Gsm.Item.out(r), skey, s)) -> Dd.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.after(o, r)), skey, s):
+  match r:
+    case (c, +o2):
+      Dd.join_r(o, o2, skey, s, h)
+
+def Dd.then_r(+r: Gsm.Gsm.Item(), rest: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Gsm.Item(), +skey: U32, +s: S.Session, h: @c:Maybe<&2, Sec.Nas.Ctx> -> Dd.Spec(Gsm.Gsm.Item.out(rest(c)), skey, s)) -> Dd.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.then(r, rest)), skey, s):
+  match r:
+    case (+c, +o):
+      Dd.after_r(o, rest(c), skey, s, h(c))
+
+def Dd.after_l(+o: N.GOut(), +r: Gsm.Gsm.Item(), +skey: U32, +s: S.Session, h: Dd.Spec(o, skey, s)) -> Dd.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.after(o, r)), skey, s):
+  match r:
+    case (c, +o2):
+      Dd.join_l(o, o2, skey, s, h)
+
+def Dd.then_l(+r: Gsm.Gsm.Item(), rest: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Gsm.Item(), +skey: U32, +s: S.Session, h: Dd.Spec(Gsm.Gsm.Item.out(r), skey, s)) -> Dd.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.then(r, rest)), skey, s):
+  match r:
+    case (+c, +o):
+      Dd.after_l(o, rest(c), skey, s, h)
+
+def Dd.settled(+key: U32, +ue: S.Ue, +r: Gsm.Gsm.Item(), +skey: U32, +s: S.Session, h: Dd.Spec(Gsm.Gsm.Item.out(r), skey, s)) -> Dd.Spec(Gsm.Gsm.settled(key, ue, r), skey, s):
+  match r:
+    case (+c, +o):
+      Dd.join_r(Gsm.Gsm.ctx_written(key, ue, c), o, skey, s, h)
+
+def Dd.under_ctx(+key: U32, +ue: S.Ue, f: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Gsm.Item(), +c0: Maybe<&2, Sec.Nas.Ctx>, +skey: U32, +s: S.Session, hf: @c:Maybe<&2, Sec.Nas.Ctx> -> Dd.Spec(Gsm.Gsm.Item.out(f(c)), skey, s)) -> Dd.Spec(Gsm.Gsm.under_ctx(key, ue, f, c0), skey, s):
+  match c0:
+    case None{}:
+      hf(None{})
+    case Some{+x}:
+      +r = f(Some{x})
+      Dd.settled(key, ue, r, skey, s, hf(Some{x}))
+
+# Wherever the item stands in the setup list, whatever the items around it
+# and the NAS context running through them do.
+def Dd.set_ups(+st: S.State, +key: U32, +ue: S.Ue, pre: G.PDUSessionResourceSetupListSURes(), +psi: U32, +transfer: B.Bytes(), +x: Maybe<&2, List<&2, Fr.Ie>>, +post: G.PDUSessionResourceSetupListSURes(), +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>, +skey: U32, +s: S.Session, +guard: S.Guard, +pti: U32, +es: {S.Sessions.by_psi(key, psi, S.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>}, +en: {Gsm.Gsm.named(psi, post) == False{} : Bool}, +eh: {S.Session.phase(s) == S.Setting{guard, pti} : S.SPhase}, +et: {Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}) -> Dd.Spec(Gsm.Gsm.Item.out(Gsm.Gsm.set_ups(st, key, ue, List.append(&2, G.PDUSessionResourceSetupItemSURes, pre, G.PDUSessionResourceSetupItemSURes{psi, transfer, x} <> post), seq, c)), skey, s):
+  match pre:
+    case Nil{}:
+      +m = S.Sessions.by_psi(key, psi, S.State.sessions(st))
+      +a = Gsm.Gsm.set_up_last(key, ue, transfer, seq, m, Gsm.Gsm.named(psi, post), c)
+      Dd.then_l(Gsm.Gsm.after((S.BumpSeq{1}, []), a), c2 => Gsm.Gsm.set_ups(st, key, ue, post, U32.add(seq, 1), c2), skey, s, Dd.after_r((S.BumpSeq{1}, []), a, skey, s, Dd.of(Gsm.Gsm.Item.out(a), skey, s, Rel.set_up_last(key, ue, transfer, seq, m, Gsm.Gsm.named(psi, post), c, skey, s, guard, pti, es, en, eh, et))))
+    case G.PDUSessionResourceSetupItemSURes{+p2, +t2, x2} <> +pre2:
+      +more = List.append(&2, G.PDUSessionResourceSetupItemSURes, pre2, G.PDUSessionResourceSetupItemSURes{psi, transfer, x} <> post)
+      +a = Gsm.Gsm.set_up_last(key, ue, t2, seq, S.Sessions.by_psi(key, p2, S.State.sessions(st)), Gsm.Gsm.named(p2, more), c)
+      Dd.then_r(Gsm.Gsm.after((S.BumpSeq{1}, []), a), c2 => Gsm.Gsm.set_ups(st, key, ue, more, U32.add(seq, 1), c2), skey, s, +c2 => Dd.set_ups(st, key, ue, pre2, psi, transfer, x, post, U32.add(seq, 1), c2, skey, s, guard, pti, es, en, eh, et))
+
+def Dd.step(+st: S.State, +o: N.GOut(), +skey: U32, +s: S.Session, h: Dd.Spec(o, skey, s), +k: {S.Session.known(s) == True{} : Bool}, +eh: {S.SPhase.live(S.Session.phase(s)) == True{} : Bool}) -> Up.N4.deleted(skey, s, K.Kernel.actions(N.Step.of(st, o))):
+  match o:
+    case (+tx, +acts):
+      Del.app_l(skey, s, acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))), h(k, eh))
+
+def Dd.by(+r: N.Step(), +st: S.State, +o: N.GOut(), +skey: U32, +s: S.Session, eq: {r == N.Step.of(st, o) : N.Step()}, h: Dd.Spec(o, skey, s), +k: {S.Session.known(s) == True{} : Bool}, +eh: {S.SPhase.live(S.Session.phase(s)) == True{} : Bool}) -> Up.N4.deleted(skey, s, K.Kernel.actions(r)):
+  se = Equal.sym(N.Step(), r, N.Step.of(st, o), eq)
+  %se : Up.N4.deleted(skey, s, K.Kernel.actions(_))
+  Dd.step(st, o, skey, s, h, k, eh)
+
 # The steps
 # ---------
 
@@ -956,14 +1049,18 @@ def Fail.held_of(+st: S.State, +k: U32, +ue: S.Ue, +assoc: U32, pr: {Tb.Table.ge
 def Fail.held(+st: S.State, +k: U32, +assoc: U32, +ran: B.Bytes(), +ue: S.Ue, +eo: {N.Owner.of(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> {PL.Lv.held(st, k) == True{} : Bool}:
   Fail.held_of(st, k, ue, assoc, PT.Own.get(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran, ue, eo))
 
-def L.smf.establish.failure_releases(st, entropy, len, bytes, msg, rest, skey, s, guard, pti, accept, request, assoc, stream, crit, value, ies, c, amf, k, ran, oks, pre, psi, transfer, x, post, diag, uli, ue, ctx, ek):
+def L.smf.establish.failure_releases(st, entropy, len, bytes, msg, rest, skey, s, guard, pti, accept, request, assoc, stream, crit, value, ies, c, amf, k, ran, oks, pre, psi, transfer, x, post, diag, uli, ue, ctx, opre, opost, fl, ek):
   +fails = List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)
   +seq2 = U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks))))
   +ss = S.State.sessions(st)
+  +oks2 = List.append(&2, G.PDUSessionResourceSetupItemSURes, opre, G.PDUSessionResourceSetupItemSURes{psi, transfer, x} <> opost)
+  +fails2 = Gsm.Gsm.list_or(G.PDUSessionResourceFailedToSetupItemSURes, fl)
+  +seq3 = U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, oks2)))
   (em => ek1 => +es => +ep => ec => Fail.gone(K.Kernel.step(st, F.PfcpData{len, bytes}, entropy), skey, s, Rel.by(K.Kernel.step(st, F.PfcpData{len, bytes}, entropy), st, Gsm.Gsm.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st)), skey, s, Step.refused(st, entropy, len, bytes, msg, rest, skey, s, guard, pti, accept, request, em, ek1, es, ep, ec), Rel.abort(st, skey, s, pti, 38, S.State.pfcp_seq(st))), Kn.creating(s, guard, pti, accept, request, ep, PL.Lv.found_known(S.Sessions.by_seq(Pf.Msg.seq(msg), ss), ss, skey, s, es, PL.Lv.by_seq(Pf.Msg.seq(msg), ss), ek))),
    (et => eg => Fail.timer(st, entropy, skey, s, guard, pti, accept, request, ek, et, eg, ue, ctx),
     (em => ek1 => +es => +ep => ec => Fail.dropped(K.Kernel.step(st, F.PfcpData{len, bytes}, entropy), st, skey, s, S.State.pfcp_seq(st), ue, ctx, Step.unmodified(st, entropy, len, bytes, msg, rest, skey, s, guard, request, em, ek1, es, ep, ec), Kn.past(s, S.Modifying{guard, request}, ep, PL.Lv.found_known(S.Sessions.by_seq(Pf.Msg.seq(msg), ss), ss, skey, s, es, PL.Lv.by_seq(Pf.Msg.seq(msg), ss), ek)), Kn.held(s, S.Modifying{guard, request}, ep, {==})),
-     eup => ep => ei => ev => eid => +eo => +es => +eh => Fail.known(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), skey, s, Rel.by(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), st, Gsm.Gsm.results(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails), skey, s, PW.Rt.owned(V.PDUSessionResourceSetupResponse.View, x => {x == N.Step.of(st, Gsm.Gsm.results(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails)) : N.Step()}, st, entropy, assoc, stream, len, bytes, 1, 29, crit, value, ies, c, i => V.PDUSessionResourceSetupResponse.view(i), r => Gsm.Gsm.setup_response_of_view(st, assoc, r), m => Gsm.Gsm.setup_response_key(st, assoc, ran, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails, m), o => Gsm.Gsm.setup_response_ue(st, assoc, k, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails, o), V.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{fails}, diag, uli}, amf, k, ran, Some{ue}, ep, ei, {==}, eup, {==}, ev, {==}, eid, {==}, eo, {==}), Rel.under_ctx(k, ue, c => Gsm.Gsm.then(Gsm.Gsm.set_ups(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), S.State.pfcp_seq(st), c), c2 => Gsm.Gsm.faileds(st, k, ue, fails, seq2, c2)), S.Phase.ctx(S.Ue.phase(ue)), skey, s, +c => Rel.then_r(Gsm.Gsm.set_ups(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), S.State.pfcp_seq(st), c), c2 => Gsm.Gsm.faileds(st, k, ue, fails, seq2, c2), skey, s, +c2 => Rel.faileds(st, k, ue, pre, psi, transfer, x, post, seq2, c2, skey, s, guard, pti, Fail.held(st, k, assoc, ran, ue, eo), es, eh)))), Kn.past(s, S.Setting{guard, pti}, eh, PL.Lv.found_known(S.Sessions.by_psi(k, psi, ss), ss, skey, s, es, PL.Lv.by_psi(k, psi, ss), ek)), Kn.held(s, S.Setting{guard, pti}, eh, {==})))))
+     eup => ep => ei => ev => eid => +eo => +es => +eh => Fail.known(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), skey, s, Rel.by(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), st, Gsm.Gsm.results(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails), skey, s, PW.Rt.owned(V.PDUSessionResourceSetupResponse.View, x => {x == N.Step.of(st, Gsm.Gsm.results(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails)) : N.Step()}, st, entropy, assoc, stream, len, bytes, 1, 29, crit, value, ies, c, i => V.PDUSessionResourceSetupResponse.view(i), r => Gsm.Gsm.setup_response_of_view(st, assoc, r), m => Gsm.Gsm.setup_response_key(st, assoc, ran, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails, m), o => Gsm.Gsm.setup_response_ue(st, assoc, k, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails, o), V.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{fails}, diag, uli}, amf, k, ran, Some{ue}, ep, ei, {==}, eup, {==}, ev, {==}, eid, {==}, eo, {==}), Rel.under_ctx(k, ue, c => Gsm.Gsm.then(Gsm.Gsm.set_ups(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), S.State.pfcp_seq(st), c), c2 => Gsm.Gsm.faileds(st, k, ue, fails, seq2, c2)), S.Phase.ctx(S.Ue.phase(ue)), skey, s, +c => Rel.then_r(Gsm.Gsm.set_ups(st, k, ue, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), S.State.pfcp_seq(st), c), c2 => Gsm.Gsm.faileds(st, k, ue, fails, seq2, c2), skey, s, +c2 => Rel.faileds(st, k, ue, pre, psi, transfer, x, post, seq2, c2, skey, s, guard, pti, Fail.held(st, k, assoc, ran, ue, eo), es, eh)))), Kn.past(s, S.Setting{guard, pti}, eh, PL.Lv.found_known(S.Sessions.by_psi(k, psi, ss), ss, skey, s, es, PL.Lv.by_psi(k, psi, ss), ek)), Kn.held(s, S.Setting{guard, pti}, eh, {==})),
+      eup => ep => ei => ev => eid => +eo => +en => +et => +es => +eh => Dd.by(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), st, Gsm.Gsm.results(st, k, ue, oks2, fails2), skey, s, PW.Rt.owned(V.PDUSessionResourceSetupResponse.View, x => {x == N.Step.of(st, Gsm.Gsm.results(st, k, ue, oks2, fails2)) : N.Step()}, st, entropy, assoc, stream, len, bytes, 1, 29, crit, value, ies, c, i => V.PDUSessionResourceSetupResponse.view(i), r => Gsm.Gsm.setup_response_of_view(st, assoc, r), m => Gsm.Gsm.setup_response_key(st, assoc, ran, oks2, fails2, m), o => Gsm.Gsm.setup_response_ue(st, assoc, k, oks2, fails2, o), V.PDUSessionResourceSetupResponse.View{amf, ran, Some{oks2}, fl, diag, uli}, amf, k, ran, Some{ue}, ep, ei, {==}, eup, {==}, ev, {==}, eid, {==}, eo, {==}), Dd.under_ctx(k, ue, c => Gsm.Gsm.then(Gsm.Gsm.set_ups(st, k, ue, oks2, S.State.pfcp_seq(st), c), c2 => Gsm.Gsm.faileds(st, k, ue, fails2, seq3, c2)), S.Phase.ctx(S.Ue.phase(ue)), skey, s, +c => Dd.then_l(Gsm.Gsm.set_ups(st, k, ue, oks2, S.State.pfcp_seq(st), c), c2 => Gsm.Gsm.faileds(st, k, ue, fails2, seq3, c2), skey, s, Dd.set_ups(st, k, ue, opre, psi, transfer, x, opost, S.State.pfcp_seq(st), c, skey, s, guard, pti, es, en, eh, et))), Kn.past(s, S.Setting{guard, pti}, eh, PL.Lv.found_known(S.Sessions.by_psi(k, psi, ss), ss, skey, s, es, PL.Lv.by_psi(k, psi, ss), ek)), Kn.held(s, S.Setting{guard, pti}, eh, {==})))))
 
 def Rl.then(+a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> {Gsm.Gsm.releases_then(a, r) == (Gsm.Gsm.Told.ctx(r), a <> Gsm.Gsm.Told.acts(r)) : Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>}:
   match r:
