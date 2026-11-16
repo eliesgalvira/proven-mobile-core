@@ -16,8 +16,8 @@ What ticket 39 left open on 2026-11-12:
    - PDU Session Resource Release Command and Response, with their transfers, in the NGAP generator. Send the Command after a failure that follows the Accept (TS 23.502 §4.3.4.2).
    - PDU Session Release Command to the UE for sessions dropped in a Path Switch or at Handover Notify.
 4. **N4 states** (ticket 39 item 3): `Asking` and `Beating` become one `Waiting` state. That shape was written and proven, but it hit Bend's C backend limit "an arity over 247", so it needs a reproduction and an upstream draft first. Probes are on branch `ticket/39-arity`.
-5. **Proofs** (the rest of ticket 39 item 5): one lemma for the five `Owner.*` proofs and `Step.gnb_failed`; `Walk.pdu` made input-dependent, so `Req.*` in `kernel/proofs/ng_setup.bend` goes.
-6. **Proof deduplication** (the Session Deletion review): one keep lemma for the six `*_keep` copies; `Session.conflicts_sym`, as `Ue.conflicts_sym`; `Gsm.setup_gone` in place of `Lw.setup_gone`.
+5. **Proofs:** done. `PW.Rt.view`, `PW.Rt.ue` and `PW.Rt.owned` walk a UE message to its procedure, in place of the `Owner.*`, `Unknown.*` and `Step.gnb_failed` copies and the handover proofs' own routing; `PW.Walk.Ready` is indexed by what the request supports (`N.NgSetup.supported_*`), so `Req.*` went.
+6. **Proof deduplication:** done. `P.Keep.by` replaces the 35 `*_keep` lemmas; `Session.conflicts_sym` replaces `Cf.l` and `Tg.same_l`; `Lw.setup_gone` is stated on `Gsm.setup_gone`, the deletion `kernel/smf/gsm.bend` wrote twice.
 
 ## Verify
 
