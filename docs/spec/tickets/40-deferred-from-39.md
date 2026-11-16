@@ -7,6 +7,8 @@ Depends on: 39. Estimate: 6–9 h. Not started; the next plan decides when.
 What ticket 39 left open on 2026-11-12:
 
 1. **NG Setup ends handovers:** a NG Setup that releases an association's UEs first ends the handovers that association takes part in (`Ho.down`), so a pending handover to it doesn't wait for its guard, and the target of a handover it started gets UE Context Release Command. Today `Ho.down` rephases another association's UE without the SUPI check `amf.takeover.authenticated` requires, which is the obstacle.
+
+   Done: NG Setup and the association going down share `Route.reset` (`Ho.down`, then `Route.drop`). `Ho.down` ends a handover on the target's side only when `Ho.aimed` holds, so `amf.takeover.authenticated` keeps its statement, proven over the fold of `Ho.downs`: a key names one row of a unique table, so that row is rephased once, into a phase holding a security context, and keeps its owner through the sieve.
 2. **Handover law strength** (ticket 39 item 10):
    - `amf.ncc.step`: after any step, every UE's stored {NH, NCC} is unchanged, `Nh.next` of the old pair, or `Nh.initial`.
    - `amf.handover.guarded`: while a handover stays pending, no step emits `TimerCancel` for its key.

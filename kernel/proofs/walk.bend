@@ -26,22 +26,23 @@ import ../nas/security.bend as Sec
 # name no UE context, start or stop no timer and answer no NG Setup (an NGAP
 # PDU or IE list that does not decode, a message from an association without
 # NG Setup, an incomplete Config, an association coming up); an association's
-# UE contexts released and the associations set up changed (NG Setup); a
-# procedure's outcome o rendered by N.Step.of (a routed NGAP message, a PFCP
-# message, a timer); a new configuration; or an association going down. A
-# property Q of steps holds after every step when it holds after each of
-# them, the outcomes known only by a property ok that each of them has.
+# UE-related contexts re-initialised (R.Route.reset) and the associations set
+# up changed (NG Setup); a procedure's outcome o rendered by N.Step.of (a
+# routed NGAP message, a PFCP message, a timer); a new configuration; or an
+# association going down. A property Q of steps holds after every step when it
+# holds after each of them, the outcomes known only by a property ok that each
+# of them has.
 
 def Walk.Keep(-Q: N.Step() -> Type, +st: S.State) -> Type:
   @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.touches(k, acts) == False{} : Bool}) -> {N.Ngap.any_ng_setup_response(acts) == False{} : Bool} -> Q((st, acts))
 
-# NG Setup: the association's UE-related contexts re-initialised, then the
-# associations set up changed, with actions that name no UE context and
-# start or stop no timer; among them an NG Setup Response exactly when the
-# request, from the bytes, supports a tracking area of ours (s,
-# N.NgSetup.supported_*).
+# NG Setup: the association's UE-related contexts re-initialised
+# (R.Route.reset), then the associations set up changed, with further actions
+# that name no UE context and start or stop no timer; among them an NG Setup
+# Response exactly when the request, from the bytes, supports a tracking area
+# of ours (s, N.NgSetup.supported_*).
 def Walk.Ready(-Q: N.Step() -> Type, +st: S.State, +assoc: U32, +s: Bool) -> Type:
-  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.touches(k, acts) == False{} : Bool}) -> {N.Ngap.any_ng_setup_response(acts) == s : Bool} -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
+  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.touches(k, acts) == False{} : Bool}) -> {N.Ngap.any_ng_setup_response(acts) == s : Bool} -> Q((S.State.ready(N.Step.state(R.Route.reset(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.reset(st, assoc)), acts)))
 
 def Walk.Out(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State) -> Type:
   @o:N.GOut() -> ok(o) -> Q(N.Step.of(st, o))
@@ -259,6 +260,11 @@ def Walk.assocs(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.Stat
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       e
+
+def Walk.assocs_sessions(+x: S.State, +as: Tb.Table(B.Bytes())) -> {S.State.sessions(S.State.with_assocs(x, as)) == S.State.sessions(x) : Tb.Table(S.Session)}:
+  match x:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      {==}
 
 # The route, from the bytes
 # -------------------------

@@ -373,13 +373,13 @@ def Cfgv.assocs(st: S.State, as: Tb.Table(B.Bytes())) -> {S.State.config(S.State
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
 
-def Cfgv.down(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(R.Route.drop(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+def Cfgv.drop(st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(R.Route.drop(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
   match st:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       {==}
 
-def Cfgv.down_all(+st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(R.Route.down(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
-  Equal.trans(Maybe<&2, S.Cfg>, S.State.config(K.Kernel.state(R.Route.down(st, assoc))), S.State.config(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc)))), S.State.config(st), Cfgv.down(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc))), assoc), Cfgv.render(st, Ho.Ho.down(st, assoc)))
+def Cfgv.reset(+st: S.State, +assoc: U32) -> {S.State.config(K.Kernel.state(R.Route.reset(st, assoc))) == S.State.config(st) : Maybe<&2, S.Cfg>}:
+  Equal.trans(Maybe<&2, S.Cfg>, S.State.config(K.Kernel.state(R.Route.reset(st, assoc))), S.State.config(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc)))), S.State.config(st), Cfgv.drop(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc))), assoc), Cfgv.render(st, Ho.Ho.down(st, assoc)))
 
 # The configuration a state holds is valid, if it holds one.
 def Cfgv.held(m: Maybe<&2, S.Cfg>) -> Bool:
@@ -417,7 +417,7 @@ def Cfgv.config(complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: 
 
 def L.kernel.config.valid(st, ev, entropy, cfg, e, ec):
   +h = Cfgv.of(S.State.config(st), e)
-  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => cx => nr => h, +a => ns => +id => +ok => acts => x => cx => er => Cfgv.kept(st, S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok)), Equal.trans(Maybe<&2, S.Cfg>, S.State.config(S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok))), S.State.config(N.Step.state(R.Route.drop(st, a))), S.State.config(st), Cfgv.assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok)), Cfgv.down(st, a)), h), +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(R.Route.down(st, a)), Cfgv.down_all(st, a), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
+  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => cx => nr => h, +a => ns => +id => +ok => acts => x => cx => er => Cfgv.kept(st, S.State.with_assocs(N.Step.state(R.Route.reset(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.reset(st, a))), ok)), Equal.trans(Maybe<&2, S.Cfg>, S.State.config(S.State.with_assocs(N.Step.state(R.Route.reset(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.reset(st, a))), ok))), S.State.config(N.Step.state(R.Route.reset(st, a))), S.State.config(st), Cfgv.assocs(N.Step.state(R.Route.reset(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.reset(st, a))), ok)), Cfgv.reset(st, a)), h), +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(R.Route.down(st, a)), Cfgv.reset(st, a), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
   ({==}, (%ec : {Cfgv.held(_) == True{} : Bool}; held))
 
 # GHSA-f9c2-535p-3mwc: a PLMN that decodes names a serving network.

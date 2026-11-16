@@ -11,6 +11,7 @@ import ../table.bend as Tb
 import ../state.bend as S
 import ../step.bend as K
 import ../amf/ngap.bend as N
+import ../nas/security.bend as Sec
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
@@ -20,7 +21,8 @@ import ./lib/pfcp.bend as P
 # Drives step with Config, NgapAssocUp and the captured NG Setup Request: the
 # answer is the captured NG Setup Response, byte for byte. Then the failure
 # cases: an unsupported TAC, no configuration, an undecodable PDU, an
-# incomplete Config; and an association going down releases its UEs.
+# incomplete Config; and an association going down releases its UEs, as NG
+# Setup does, both first ending the N2 handovers the association takes part in.
 
 def sixteen() -> B.Bytes():
   [70, 91, 92, 232, 177, 153, 180, 159, 170, 95, 10, 46, 226, 56, 166, 188]
@@ -158,6 +160,28 @@ def with_ues(st: S.State, ues: List<&2, Sigma<&2, &2, U32, _ => S.Ue>>, sessions
     case S.State{config, subs, assocs, old_ues, old_sessions, pfcp_seq, next_ue, recovery}:
       S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, recovery}
 
+# A context in N2 handover from its owner to association t.
+def in_handover(+assoc: U32, ran: B.Bytes(), t: U32) -> S.Ue:
+  +ctx : Sec.Nas.Ctx = Sec.Ctx{Sec.Keys{A.key32(), A.key32(), Sec.Nea0{}, Sec.Nia2{}, 1}, Sec.Count{0, 0}, None{}}
+  S.Ue{assoc, ran, 1, Some{[48, 48, 49]}, None{}, [], 0, S.Handover{ctx, S.Nh{A.key32(), A.key32(), 1}, assoc, S.Asked{t}}, []}
+
+def sent_if(bytes: B.Bytes(), more: B.Bytes(), hit: Bool) -> B.Bytes():
+  match hit:
+    case True{}:
+      List.append(&2, U32, bytes, more)
+    case False{}:
+      more
+
+# The NGAP PDUs a step sends on an association, end to end.
+def sent_to(+assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
+  match actions:
+    case Nil{}:
+      []
+    case F.NgapSend{a, stream, len, bytes} <> more:
+      sent_if(bytes, sent_to(assoc, more), U32.is_eq(a, assoc))
+    case a <> more:
+      sent_to(assoc, more)
+
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
@@ -215,3 +239,8 @@ def main() -> IO(Unit):
     +o_fail : N.Step() = K.Kernel.step(st_rep, data_event(1, request), A.entropy())
     C.Check.report("NG Setup failing again: the association's UEs are released, their sessions being deleted at the UPF", Bool.and(B.bytes_eq(ue_keys(K.Kernel.state(o_fail)), [8]), Bool.and(P.sphase_is(K.Kernel.state(o_fail), "deleting"), pfcp_type(Pf.Msg.read(P.first_pfcp(K.Kernel.frames(o_fail))), 54, True{}))))
     C.Check.report("NG Setup failing again: NG Setup Failure, the association no longer set up", Bool.and(A.pdu_is(Fr.Pdu.read(send_bytes(one_send(K.Kernel.frames(o_fail)))), Fr.Pdu.unsuccessful(), 21), Bool.not(S.Assocs.has(1, S.State.assocs(K.Kernel.state(o_fail))))))
+    +st_ho : S.State = with_ues(K.Kernel.state(o3), [(1, in_handover(2, [1], 1)), (9, in_handover(1, [2], 2))], [])
+    +o_hs : N.Step() = K.Kernel.step(st_ho, data_event(1, request), A.entropy())
+    +o_hd : N.Step() = K.Kernel.step(st_ho, F.NgapAssocDown{1}, A.entropy())
+    C.Check.report("NG Setup during a handover to the association and one from it, as the association going down: the UE handed to it registered with its owner, the other gone", Bool.and(B.bytes_eq(ue_keys(K.Kernel.state(o_hs)), [1]), Bool.and(A.phase_is(K.Kernel.state(o_hs), "registered"), Bool.and(B.bytes_eq(ue_keys(K.Kernel.state(o_hd)), [1]), A.phase_is(K.Kernel.state(o_hd), "registered")))))
+    C.Check.report("NG Setup during those handovers, as the association going down: Handover Preparation Failure and UE Context Release Command to the other association, the pending guard stopped", Bool.and(Bool.not(B.bytes_eq(sent_to(2, K.Kernel.frames(o_hs)), [])), Bool.and(B.bytes_eq(sent_to(2, K.Kernel.frames(o_hs)), sent_to(2, K.Kernel.frames(o_hd))), Bool.and(P.cancels(K.Kernel.frames(o_hs), 1), P.cancels(K.Kernel.frames(o_hd), 1)))))

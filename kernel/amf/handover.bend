@@ -282,11 +282,12 @@ def Ho.expiry(+key: U32, +ue: S.Ue, leg: S.Leg) -> List<&2, N.Act>:
 def Ho.expired(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg) -> N.GOut():
   (S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, List.append(&2, N.Act, Ho.expiry(key, ue, leg), [N.Note{F.Warn{}, "NGAP: N2 handover guard expired; the UE stays with its owner"}]))
 
-# An association going down
-# -------------------------
-# A handover pending to it ends, the UE staying with its owner, which gets
-# Handover Preparation Failure if the target never answered; the target of a
-# handover its own UE had pending is released.
+# An association going down, or its NG Setup
+# ------------------------------------------
+# NG Setup re-initialises an association's UE contexts as its going down
+# does. A handover pending to it (Ho.aimed) ends, the UE staying with its
+# owner, which gets Handover Preparation Failure if the target never answered;
+# the target of a handover its own UE had pending is released.
 
 def Ho.lost(+k: U32, +u: S.Ue, leg: S.Leg) -> List<&2, N.Act>:
   match leg:
@@ -298,7 +299,7 @@ def Ho.lost(+k: U32, +u: S.Ue, leg: S.Leg) -> List<&2, N.Act>:
 def Ho.down_leg(+k: U32, +u: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg, target: Bool, source: Bool) -> N.GOut():
   match target source:
     case True{} _:
-      (S.Rephase{k, S.Registered{ctx, nh, None{}}}, List.append(&2, N.Act, Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's association went down; N2 handover ended"}]))
+      (S.Rephase{k, S.Registered{ctx, nh, None{}}}, List.append(&2, N.Act, Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}]))
     case False{} True{}:
       (S.Keep{}, Ho.drop(k, leg, Ho.radio(G.CauseRadioNetwork.unspecified())))
     case False{} False{}:
@@ -307,7 +308,7 @@ def Ho.down_leg(+k: U32, +u: S.Ue, ctx: Sec.Nas.Ctx, nh: S.Nh, +leg: S.Leg, targ
 def Ho.down_row(+assoc: U32, +k: U32, +u: S.Ue, p: S.Phase) -> N.GOut():
   match p:
     case S.Handover{ctx, nh, source, +leg}:
-      Ho.down_leg(k, u, ctx, nh, leg, U32.is_eq(S.Leg.target(leg), assoc), U32.is_eq(S.Ue.assoc(u), assoc))
+      Ho.down_leg(k, u, ctx, nh, leg, Ho.aimed(u, assoc), U32.is_eq(S.Ue.assoc(u), assoc))
     case _:
       (S.Keep{}, [])
 

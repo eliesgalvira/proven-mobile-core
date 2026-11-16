@@ -27,22 +27,26 @@ def Route.drop(st: S.State, +assoc: U32) -> N.Step():
       +kept = S.Sessions.sift(S.SOwned{left}, S.State.sessions(st1))
       (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, kept, S.State.pfcp_seq(st1), next_ue, S.State.n4(st1)}, List.append(&2, N.Act, N.Out.acts(o), N.Gone.cancels(sessions, kept)))
 
-# An association going down: first the N2 handovers it takes part in end
-# (Ho.Ho.down), then its UEs go.
-def Route.down(+st: S.State, +assoc: U32) -> N.Step():
+# An association's UE-related contexts re-initialised, when it goes down and
+# at its NG Setup, which does this as NG Reset does (TS 38.413 §8.7.1.1):
+# first the N2 handovers it takes part in end (Ho.Ho.down), then its UEs go.
+def Route.reset(+st: S.State, +assoc: U32) -> N.Step():
   +s1 = N.Step.of(st, Ho.Ho.down(st, assoc))
   +s2 = Route.drop(N.Step.state(s1), assoc)
-  (N.Step.state(s2), List.append(&2, N.Act, N.Step.acts(s1), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(s2)))
+  (N.Step.state(s2), List.append(&2, N.Act, N.Step.acts(s1), N.Step.acts(s2)))
 
-# NG Setup re-initialises the association's UE-related contexts, as NG Reset
-# does (TS 38.413 §8.7.1.1): its UEs go; then it is set up when the answer is
-# a Response.
+def Route.down(+st: S.State, +assoc: U32) -> N.Step():
+  +s = Route.reset(st, assoc)
+  (N.Step.state(s), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(s))
+
+# NG Setup: the association's UE-related contexts re-initialised, then it is
+# set up when the answer is a Response.
 def Route.setup(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.NGSetupRequest.View>) -> N.Step():
   match r:
     case Fail{e}:
       (st, N.Ngap.bad_view(assoc))
     case Done{+v}:
-      +s = Route.drop(st, assoc)
+      +s = Route.reset(st, assoc)
       (S.State.ready(N.Step.state(s), assoc, N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v)), List.append(&2, N.Act, N.Step.acts(s), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}]))
 
 def Route.d8(st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, ies: List<&2, Fr.Ie>, ok: Bool) -> N.GOut():

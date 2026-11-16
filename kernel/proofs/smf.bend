@@ -149,7 +149,7 @@ def Down.sunique(+st: S.State, +assoc: U32, +e: {S.Sessions.unique(S.State.sessi
       SUnique.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(tx, s0)), PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, s0, {==}, tx, s0, e, PL.Lv.drop_homed(s0, assoc)))
 
 def L.smf.ip_pool.unique(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => S.Sessions.unique(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => Down.sunique(s, a, e1), a => s => e1 => Down.sunique(s, a, e1)))
+  ({==}, PL.Inv.step(ues => ss => S.Sessions.unique(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => Down.sunique(s, a, e1), a => s => e1 => Down.sunique(s, a, e1)))
 
 # Rows of a unique table
 # ----------------------
@@ -274,7 +274,7 @@ def Bd.down(+st: S.State, +assoc: U32, +e: {Gsm.Gsm.bounded(S.State.sessions(st)
       Bd.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(tx, s0)), PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, s0, e, tx, s0, e, PL.Lv.drop_homed(s0, assoc)))
 
 def L.smf.packet_filters.capacity_reject(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => Gsm.Gsm.bounded(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Bd.down(s, a, e1), a => s => e1 => Bd.down(s, a, e1)))
+  ({==}, PL.Inv.step(ues => ss => Gsm.Gsm.bounded(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Bd.down(s, a, e1), a => s => e1 => Bd.down(s, a, e1)))
 
 def L.smf.epco.response_bounded(cfg, wanted):
   match wanted:
@@ -373,7 +373,7 @@ def Kw.down(+st: S.State, +assoc: U32, +e: {S.Sessions.known(S.State.sessions(st
       Kw.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(tx, s0)), PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, s0, e, tx, s0, e, PL.Lv.drop_homed(s0, assoc)))
 
 def L.smf.sessions.known(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => S.Sessions.known(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Kw.down(s, a, e1), a => s => e1 => Kw.down(s, a, e1)))
+  ({==}, PL.Inv.step(ues => ss => S.Sessions.known(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Kw.down(s, a, e1), a => s => e1 => Kw.down(s, a, e1)))
 
 # A failed establishment releases the session
 # --------------------------------------------
@@ -1535,20 +1535,22 @@ def Hd.drop(+st: S.State, +assoc: U32, +skey: U32, +s0: S.Session, +eu: {S.Sessi
       +e2 = Hd.get_sift(S.SOwned{left}, S.State.sessions(S.Tx.apply(N.Out.tx(d), s1)), skey, s0, e1, Hd.owned(s0, left, eh))
       (e2, Run.app(skey, N.Out.acts(d), N.Gone.cancels(sessions, kept), Run.dels(s1, gone, pfcp_seq, skey, PL.Lv.krows_orphan(s1, left), Hd.unkept(s1, skey, s0, eu, e0, eh)), Run.gone(sessions, kept, skey, Run.has(kept, skey, s0, e2))))
 
-def Hd.ready(+st: S.State, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, +skey: U32, +s0: S.Session, +eu: {S.Sessions.unique(S.State.sessions(st)) == True{} : Bool}, +e0: {Tb.Table.get(S.Session, skey, S.State.sessions(st)) == Some{s0} : Maybe<&2, S.Session>}, +eh: {S.SPhase.live(S.Session.phase(s0)) == False{} : Bool}, +hc: {N.Acts.touches(skey, acts) == False{} : Bool}) -> Hd.Q(skey, s0, (S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts))):
-  match st:
-    case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
-      +s1 : S.State = S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}
-      (Hd.row(skey, s0, R.Route.drop(s1, assoc), Hd.drop(s1, assoc, skey, s0, eu, e0, eh)), Run.app(skey, N.Step.acts(R.Route.drop(s1, assoc)), acts, Hd.running(skey, s0, R.Route.drop(s1, assoc), Hd.drop(s1, assoc, skey, s0, eu, e0, eh)), hc))
-
-def Hd.down(+st: S.State, +assoc: U32, +skey: U32, +s0: S.Session, +eu: {S.Sessions.unique(S.State.sessions(st)) == True{} : Bool}, +ef: {Run.free(st, skey) == True{} : Bool}, +e0: {Tb.Table.get(S.Session, skey, S.State.sessions(st)) == Some{s0} : Maybe<&2, S.Session>}, +eh: {S.SPhase.live(S.Session.phase(s0)) == False{} : Bool}) -> Hd.Q(skey, s0, R.Route.down(st, assoc)):
+# An association's contexts re-initialised: its handovers end, leaving the
+# sessions, then its contexts go.
+def Hd.reset(+st: S.State, +assoc: U32, +skey: U32, +s0: S.Session, +eu: {S.Sessions.unique(S.State.sessions(st)) == True{} : Bool}, +ef: {Run.free(st, skey) == True{} : Bool}, +e0: {Tb.Table.get(S.Session, skey, S.State.sessions(st)) == Some{s0} : Maybe<&2, S.Session>}, +eh: {S.SPhase.live(S.Session.phase(s0)) == False{} : Bool}) -> Hd.Q(skey, s0, R.Route.reset(st, assoc)):
   +o1 = N.Step.of(st, Ho.Ho.down(st, assoc))
   +s1 = K.Kernel.state(o1)
   +ess = Equal.sym(Tb.Table(S.Session), S.State.sessions(s1), S.State.sessions(st), PL.Lw.down_sessions(st, assoc))
   h1 = Hd.running(skey, s0, o1, Hd.step_of(st, Ho.Ho.down(st, assoc), skey, s0, PL.Lw.ho_down(st, assoc), eu, ef, e0, eh))
   +eu1 : {S.Sessions.unique(S.State.sessions(s1)) == True{} : Bool} = (%ess : {S.Sessions.unique(_) == True{} : Bool}; eu)
   +e1 : {Tb.Table.get(S.Session, skey, S.State.sessions(s1)) == Some{s0} : Maybe<&2, S.Session>} = (%ess : {Tb.Table.get(S.Session, skey, _) == Some{s0} : Maybe<&2, S.Session>}; e0)
-  (Hd.row(skey, s0, R.Route.drop(s1, assoc), Hd.drop(s1, assoc, skey, s0, eu1, e1, eh)), Run.app(skey, K.Kernel.actions(o1), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> K.Kernel.actions(R.Route.drop(s1, assoc)), h1, Hd.running(skey, s0, R.Route.drop(s1, assoc), Hd.drop(s1, assoc, skey, s0, eu1, e1, eh))))
+  (Hd.row(skey, s0, R.Route.drop(s1, assoc), Hd.drop(s1, assoc, skey, s0, eu1, e1, eh)), Run.app(skey, K.Kernel.actions(o1), K.Kernel.actions(R.Route.drop(s1, assoc)), h1, Hd.running(skey, s0, R.Route.drop(s1, assoc), Hd.drop(s1, assoc, skey, s0, eu1, e1, eh))))
+
+def Hd.ready_of(+skey: U32, +s0: S.Session, +r: N.Step(), +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, q: Hd.Q(skey, s0, r), +hc: {N.Acts.touches(skey, acts) == False{} : Bool}) -> Hd.Q(skey, s0, (S.State.ready(N.Step.state(r), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(r), acts))):
+  match q:
+    case (a, b):
+      sw = Equal.sym(Tb.Table(S.Session), S.State.sessions(S.State.ready(N.Step.state(r), assoc, id, ok)), S.State.sessions(N.Step.state(r)), PW.Walk.assocs_sessions(N.Step.state(r), S.Assocs.set(assoc, id, S.State.assocs(N.Step.state(r)), ok)))
+      ((%sw : {Tb.Table.get(S.Session, skey, _) == Some{s0} : Maybe<&2, S.Session>}; a), Run.app(skey, N.Step.acts(r), acts, b, hc))
 
 def Hd.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +skey: U32, +s0: S.Session, +eu: {S.Sessions.unique(S.State.sessions(st)) == True{} : Bool}, +e0: {Tb.Table.get(S.Session, skey, S.State.sessions(st)) == Some{s0} : Maybe<&2, S.Session>}, +eh: {S.SPhase.live(S.Session.phase(s0)) == False{} : Bool}, +ez: {U32.is_eq(skey, S.N4.timer()) == False{} : Bool}) -> Hd.Q(skey, s0, K.Kernel.config(complete, st, tlvs, entropy)):
   match complete:
@@ -1643,7 +1645,7 @@ def Hd.settled(+st: S.State, +k: U32, +tx: S.Tx, +more: List<&2, N.Act>, +ek: {P
 
 def L.smf.deletion.held(st, ev, entropy, skey, s, guard, request, eu, en, ef, ez, es, ep, et, ea):
   +eh = Hd.unlive(s, guard, request, ep)
-  PL.Dw.walk(o => Hd.Q(skey, s, o), o => Hd.Q(skey, s, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => (es, c(skey)), +assoc => ns => +id => +ok => +acts => h => c => ers => Hd.ready(st, assoc, id, ok, acts, skey, s, eu, es, eh, c(skey)), +tlvs => Hd.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, s, eu, es, eh, ez), +assoc => Hd.down(st, assoc, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh), o => h => h, +o => +h => Hd.step_of(st, o, skey, s, h, eu, Run.free_of(st, skey, en, ef, ez), es, eh), +k => +t => +g => +r => ek => eu2 => em => ep2 => Hd.resent(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, s, Hd.timer_ne(ev, k, skey, U32.is_eq(skey, k), {==}, ek, et), es), +len => +bytes => +msg => +rest => ev2 => er => ek => Hd.deleted(st, skey, s, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), PL.Lv.got_by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), e => ea(len, bytes, msg, rest, ev2, er, ek, e), eu, es, eh), +k => +tx => +more => ek => ehs => h => Hd.settled(st, k, tx, more, ek, h, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh))
+  PL.Dw.walk(o => Hd.Q(skey, s, o), o => Hd.Q(skey, s, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => (es, c(skey)), +assoc => ns => +id => +ok => +acts => h => c => ers => Hd.ready_of(skey, s, R.Route.reset(st, assoc), assoc, id, ok, acts, Hd.reset(st, assoc, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh), c(skey)), +tlvs => Hd.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, s, eu, es, eh, ez), +assoc => Hd.reset(st, assoc, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh), o => h => h, +o => +h => Hd.step_of(st, o, skey, s, h, eu, Run.free_of(st, skey, en, ef, ez), es, eh), +k => +t => +g => +r => ek => eu2 => em => ep2 => Hd.resent(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, s, Hd.timer_ne(ev, k, skey, U32.is_eq(skey, k), {==}, ek, et), es), +len => +bytes => +msg => +rest => ev2 => er => ek => Hd.deleted(st, skey, s, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), PL.Lv.got_by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), e => ea(len, bytes, msg, rest, ev2, er, ek, e), eu, es, eh), +k => +tx => +more => ek => ehs => h => Hd.settled(st, k, tx, more, ek, h, skey, s, eu, Run.free_of(st, skey, en, ef, ez), es, eh))
 
 # A session that starts being deleted, armed
 # ------------------------------------------
@@ -2054,20 +2056,20 @@ def Ar.drop(+st: S.State, +assoc: U32, +skey: U32, +eh: {S.Sessions.each(skey, S
       +r2 = Ar.sift(S.SOwned{left}, S.State.sessions(S.Tx.apply(N.Out.tx(d), s1)), skey, N.Out.acts(d), r1)
       hx => Ar.rows_l(skey, N.Out.acts(d), N.Gone.cancels(sessions, kept), kept, r2, Run.gone(sessions, kept, skey, hx))
 
-def Ar.ready(+st: S.State, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, +skey: U32, +eh: {S.Sessions.each(skey, S.SLive{}, S.State.sessions(st)) == True{} : Bool}, +hc: {N.Acts.touches(skey, acts) == False{} : Bool}) -> Ar.Q(skey, (S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts))):
-  match st:
-    case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
-      +s1 : S.State = S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}
-      hx => Ar.rows_l(skey, N.Step.acts(R.Route.drop(s1, assoc)), acts, S.State.sessions(N.Step.state(R.Route.drop(s1, assoc))), Ar.drop(s1, assoc, skey, eh, hx), hc)
-
-def Ar.down(+st: S.State, +assoc: U32, +skey: U32, +eh: {S.Sessions.each(skey, S.SLive{}, S.State.sessions(st)) == True{} : Bool}) -> Ar.Q(skey, R.Route.down(st, assoc)):
+# An association's contexts re-initialised: its handovers end, leaving the
+# sessions, then its contexts go.
+def Ar.reset(+st: S.State, +assoc: U32, +skey: U32, +eh: {S.Sessions.each(skey, S.SLive{}, S.State.sessions(st)) == True{} : Bool}) -> Ar.Q(skey, R.Route.reset(st, assoc)):
   +o1 = N.Step.of(st, Ho.Ho.down(st, assoc))
   +s1 = K.Kernel.state(o1)
   +ess = Equal.sym(Tb.Table(S.Session), S.State.sessions(s1), S.State.sessions(st), PL.Lw.down_sessions(st, assoc))
   +eh1 : {S.Sessions.each(skey, S.SLive{}, S.State.sessions(s1)) == True{} : Bool} = (%ess : {S.Sessions.each(skey, S.SLive{}, _) == True{} : Bool}; eh)
-  +n : N.Act = N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}
-  +ss = S.State.sessions(K.Kernel.state(R.Route.drop(s1, assoc)))
-  hx => Ar.rows_r(skey, K.Kernel.actions(o1), n <> K.Kernel.actions(R.Route.drop(s1, assoc)), ss, Ar.rows_r(skey, [n], K.Kernel.actions(R.Route.drop(s1, assoc)), ss, Ar.drop(s1, assoc, skey, eh1, hx)))
+  hx => Ar.rows_r(skey, K.Kernel.actions(o1), K.Kernel.actions(R.Route.drop(s1, assoc)), S.State.sessions(K.Kernel.state(R.Route.drop(s1, assoc))), Ar.drop(s1, assoc, skey, eh1, hx))
+
+def Ar.ready(+st: S.State, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, +skey: U32, +eh: {S.Sessions.each(skey, S.SLive{}, S.State.sessions(st)) == True{} : Bool}, +hc: {N.Acts.touches(skey, acts) == False{} : Bool}) -> Ar.Q(skey, (S.State.ready(N.Step.state(R.Route.reset(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.reset(st, assoc)), acts))):
+  +r = R.Route.reset(st, assoc)
+  +ew = PW.Walk.assocs_sessions(N.Step.state(r), S.Assocs.set(assoc, id, S.State.assocs(N.Step.state(r)), ok))
+  sw = Equal.sym(Tb.Table(S.Session), S.State.sessions(S.State.ready(N.Step.state(r), assoc, id, ok)), S.State.sessions(N.Step.state(r)), ew)
+  hx => (%sw : {Ar.rows(skey, List.append(&2, N.Act, N.Step.acts(r), acts), _) == True{} : Bool}; Ar.rows_l(skey, N.Step.acts(r), acts, S.State.sessions(N.Step.state(r)), Ar.reset(st, assoc, skey, eh, (%ew : {Tb.Table.has(S.Session, skey, _) == True{} : Bool}; hx)), hc))
 
 def Ar.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +skey: U32, +eh: {S.Sessions.each(skey, S.SLive{}, S.State.sessions(st)) == True{} : Bool}) -> Ar.Q(skey, K.Kernel.config(complete, st, tlvs, entropy)):
   match complete:
@@ -2114,5 +2116,5 @@ def Ar.first(+skey: U32, +acts: List<&2, N.Act>, ss: Tb.Table(S.Session), +s: S.
 def L.smf.deletion.armed(st, ev, entropy, skey, s, guard, request, en, ef, ez, eh, es, ep):
   +o = K.Kernel.step(st, ev, entropy)
   +ss = S.State.sessions(K.Kernel.state(o))
-  q = PL.Dw.walk(o => Ar.Q(skey, o), o => Ar.Q(skey, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => Ar.calm(skey, (st, acts), eh), +assoc => ns => +id => +ok => +acts => h => c => ers => Ar.ready(st, assoc, id, ok, acts, skey, eh, c(skey)), +tlvs => Ar.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, eh), +assoc => Ar.down(st, assoc, skey, eh), o => h => h, +o => +h => Ar.step_of(st, o, skey, h, Run.free_of(st, skey, en, ef, ez), eh), +k => +t => +g => +r => ek => eu => em => ep2 => Ar.resend(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, Ar.key_ne(S.State.sessions(st), k, t, skey, g, r, U32.is_eq(k, skey), {==}, em, ep2, eh), eh), +len => +bytes => +msg => +rest => ev2 => er => ek => Ar.deleted(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), skey, eh), +k => +tx => +more => ek => ehs => h => Ar.settled(st, k, tx, more, h, skey, Run.free_of(st, skey, en, ef, ez), eh))
+  q = PL.Dw.walk(o => Ar.Q(skey, o), o => Ar.Q(skey, N.Step.of(st, o)), st, ev, entropy, acts => h => c => nr => Ar.calm(skey, (st, acts), eh), +assoc => ns => +id => +ok => +acts => h => c => ers => Ar.ready(st, assoc, id, ok, acts, skey, eh, c(skey)), +tlvs => Ar.config(S.Cfg.complete(tlvs), st, tlvs, entropy, skey, eh), +assoc => hx => Ar.rows_r(skey, [N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"}], K.Kernel.actions(R.Route.reset(st, assoc)), S.State.sessions(K.Kernel.state(R.Route.reset(st, assoc))), Ar.reset(st, assoc, skey, eh, hx)), o => h => h, +o => +h => Ar.step_of(st, o, skey, h, Run.free_of(st, skey, en, ef, ez), eh), +k => +t => +g => +r => ek => eu => em => ep2 => Ar.resend(st, k, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()), skey, Ar.key_ne(S.State.sessions(st), k, t, skey, g, r, U32.is_eq(k, skey), {==}, em, ep2, eh), eh), +len => +bytes => +msg => +rest => ev2 => er => ek => Ar.deleted(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)), skey, eh), +k => +tx => +more => ek => ehs => h => Ar.settled(st, k, tx, more, h, skey, Run.free_of(st, skey, en, ef, ez), eh))
   Ar.first(skey, K.Kernel.actions(o), ss, s, guard, request, q(Run.has(ss, skey, s, es)), es, ep)
