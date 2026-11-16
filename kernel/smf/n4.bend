@@ -155,55 +155,55 @@ def N4.accepted(c: Maybe<&2, U32>) -> Bool:
 
 # The association
 # ---------------
-# A request goes again with its own sequence number, T1 apart, up to N1 times
-# (TS 29.244 §6.4). Without an answer to the Association Setup Request the SMF
-# pauses; without one to a Heartbeat Request the association is lost, and
-# asked for again.
+# A request goes again unchanged, T1 apart, up to N1 times (TS 29.244 §6.4).
+# Without an answer to the Association Setup Request the SMF pauses; without
+# one to a Heartbeat Request the association is lost, and asked for again.
 
-def N4.asked(+st: S.State, cfg: Maybe<&2, S.Cfg>, +seq: U32, resent: U32, tx: S.Tx) -> N.GOut():
+# The request sent, timer 0 started for T1, the link waiting on its answer.
+def N4.wait(+req: S.Req, +request: B.Bytes(), +seq: U32, +resent: U32) -> N.GOut():
+  (S.SetLink{S.Waiting{req, request, seq, resent}}, [N.Pfcp{None{}, request}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
+
+def N4.asked(+st: S.State, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match cfg:
     case None{}:
       (S.Keep{}, [])
     case Some{c}:
-      (S.Both{tx, S.SetLink{S.Asking{seq, resent}}}, [N.Pfcp{None{}, N4.assoc_setup(c, S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
+      +seq = S.State.pfcp_seq(st)
+      N.Out.join((S.BumpSeq{1}, []), N4.wait(S.Setup{}, N4.assoc_setup(c, S.N4.recovery(S.State.n4(st)), seq), seq, 0))
 
 def N4.pause() -> N.GOut():
   (S.SetLink{S.Paused{}}, [N.TimerStart{None{}, S.N4.timer(), N4.pause_ms()}, N.Note{F.Warn{}, "PFCP: no association with the UPF; trying again later"}])
 
 # Config, the pause over or the association lost: a new Association Setup Request.
 def N4.start(+st: S.State) -> N.GOut():
-  N4.asked(st, S.State.config(st), S.State.pfcp_seq(st), 0, S.BumpSeq{1})
+  N4.asked(st, S.State.config(st))
 
-def N4.ask_again(+st: S.State, +seq: U32, +resent: U32, more: Bool) -> N.GOut():
-  match more:
-    case True{}:
-      N4.asked(st, S.State.config(st), seq, U32.add(resent, 1), S.Keep{})
-    case False{}:
+def N4.gave_up(+st: S.State, req: S.Req) -> N.GOut():
+  match req:
+    case S.Setup{}:
       N4.pause()
+    case S.Heartbeat{}:
+      N.Out.also(N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with the UPF lost"}])
 
-def N4.beat(+st: S.State, +seq: U32, resent: U32) -> N.GOut():
-  (S.SetLink{S.Beating{seq, resent}}, [N.Pfcp{None{}, N4.heartbeat(Pf.Type.heartbeat_request(), S.N4.recovery(S.State.n4(st)), seq)}, N.TimerStart{None{}, S.N4.timer(), N4.t1_ms()}])
-
-def N4.beat_again(+st: S.State, +seq: U32, +resent: U32, more: Bool) -> N.GOut():
+def N4.again(+st: S.State, +req: S.Req, +request: B.Bytes(), +seq: U32, +resent: U32, more: Bool) -> N.GOut():
   match more:
     case True{}:
-      N4.beat(st, seq, U32.add(resent, 1))
+      N4.wait(req, request, seq, U32.add(resent, 1))
     case False{}:
-      N.Out.also(N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with the UPF lost"}])
+      N4.gave_up(st, req)
 
 # Timer 0 fired.
 def N4.expired(+st: S.State, link: S.Link) -> N.GOut():
   match link:
     case S.Idle{}:
       (S.Keep{}, [])
-    case S.Asking{seq, +resent}:
-      N4.ask_again(st, seq, resent, U32.is_lt(resent, N4.n1()))
+    case S.Waiting{req, request, seq, +resent}:
+      N4.again(st, req, request, seq, resent, U32.is_lt(resent, N4.n1()))
     case S.Paused{}:
       N4.start(st)
     case S.Up{}:
-      N.Out.join((S.BumpSeq{1}, []), N4.beat(st, S.State.pfcp_seq(st), 0))
-    case S.Beating{seq, +resent}:
-      N4.beat_again(st, seq, resent, U32.is_lt(resent, N4.n1()))
+      +seq = S.State.pfcp_seq(st)
+      N.Out.join((S.BumpSeq{1}, []), N4.wait(S.Heartbeat{}, N4.heartbeat(Pf.Type.heartbeat_request(), S.N4.recovery(S.State.n4(st)), seq), seq, 0))
 
 def N4.fired(+st: S.State) -> N.GOut():
   N4.expired(st, S.N4.link(S.State.n4(st)))
@@ -225,7 +225,7 @@ def N4.assoc_seq(msg: Pf.Msg, ok: Bool) -> N.GOut():
 # An Association Setup Response answers the request outstanding, by its sequence number.
 def N4.assoc_for(link: S.Link, +msg: Pf.Msg) -> N.GOut():
   match link:
-    case S.Asking{seq, resent}:
+    case S.Waiting{S.Setup{}, request, seq, resent}:
       N4.assoc_seq(msg, U32.is_eq(seq, Pf.Msg.seq(msg)))
     case _:
       N.Out.warn("PFCP: Association Setup Response for no pending request")
@@ -243,7 +243,7 @@ def N4.alive_seq(ok: Bool) -> N.GOut():
 # A Heartbeat Response answers the Heartbeat Request outstanding, by its sequence number.
 def N4.alive_for(link: S.Link, +seq: U32) -> N.GOut():
   match link:
-    case S.Beating{s, resent}:
+    case S.Waiting{S.Heartbeat{}, request, s, resent}:
       N4.alive_seq(U32.is_eq(s, seq))
     case _:
       (S.Keep{}, [])
@@ -258,7 +258,7 @@ def Link.up(l: S.Link) -> Bool:
   match l:
     case S.Up{}:
       True{}
-    case S.Beating{seq, resent}:
+    case S.Waiting{S.Heartbeat{}, request, seq, resent}:
       True{}
     case _:
       False{}

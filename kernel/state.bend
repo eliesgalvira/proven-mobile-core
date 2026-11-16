@@ -633,16 +633,20 @@ def Session.tag(+s: Session) -> Maybe<&2, U32>:
 def Session.owned(+s: Session, +ues: Tb.Table(Ue)) -> Bool:
   Bool.or(Bool.not(Tb.Table.present(U32, Session.tag(s))), Tb.Table.has(Ue, Session.ue(s), ues))
 
-# The PFCP association with the UPF, which the SMF starts: asked for (the
-# Association Setup Request's sequence number and how often it was sent
-# again), paused after too many tries, up, or up with a Heartbeat Request
-# unanswered (likewise).
+# The PFCP request the SMF waits on the answer to: an Association Setup
+# Request, or a Heartbeat Request while the association is up.
+type Req is Data:
+  Setup{}
+  Heartbeat{}
+
+# The PFCP association with the UPF, which the SMF starts: waiting on the
+# answer to a request (its bytes, its sequence number and how often it was
+# sent again), paused after too many tries, or up.
 type Link is Data:
   Idle{}
-  Asking{seq: U32, resent: U32}
+  Waiting{req: Req, request: B.Bytes(), seq: U32, resent: U32}
   Paused{}
   Up{}
-  Beating{seq: U32, resent: U32}
 
 # N4: the PFCP recovery stamp chosen at Config, and the association.
 type N4 is Data:

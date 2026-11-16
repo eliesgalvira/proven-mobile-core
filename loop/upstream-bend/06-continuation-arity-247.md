@@ -89,3 +89,4 @@ Keep fewer wide values live at once. In `kernel/tests/pdu_session.bend`, the ass
 heartbeat checks become their own IO def, called right after `o_tick` is made rather than at the
 end of `main`, so `o_tick` (33 words) is dead before the widest continuation: 214 words with
 `Waiting`. No kernel definition comes near the limit (the widest, in `Kernel.step`, is 109).
+Applied in ticket 40 item 4, where the kernel took the `Waiting` state.
