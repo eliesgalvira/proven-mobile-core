@@ -96,6 +96,32 @@ def setup_twice(ran: B.Bytes(), oks: G.PDUSessionResourceSetupListSURes()) -> B.
     case _:
       []
 
+def bytes_if(bs: B.Bytes(), ok: Bool) -> B.Bytes():
+  match ok:
+    case True{}:
+      bs
+    case False{}:
+      []
+
+# A PDU Session Resource Release Command to UE 1 under ran naming PDU session
+# 1 alone, with cause misc unspecified: its NAS-PDU, or nothing.
+def release_cause(r: Ap.Rd(G.PDUSessionResourceReleaseCommandTransfer)) -> Bool:
+  match r:
+    case Done{(G.PDUSessionResourceReleaseCommandTransfer{G.Cause_misc{Ap.Root{c}}, None{}}, cur)}:
+      U32.is_eq(c, G.CauseMisc.unspecified())
+    case _:
+      False{}
+
+def release_nas_of(+ran: B.Bytes(), r: Result<&2, &2, B.Err, W.PDUSessionResourceReleaseCommand.View>) -> B.Bytes():
+  match r:
+    case Done{W.PDUSessionResourceReleaseCommand.View{amf, r2, Some{nas}, [G.PDUSessionResourceToReleaseItemRelCmd{1, transfer, None{}}]}}:
+      bytes_if(nas, Bool.and(B.bytes_eq(amf, [1]), Bool.and(B.bytes_eq(r2, ran), release_cause(G.PDUSessionResourceReleaseCommandTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})))))
+    case _:
+      []
+
+def release_nas(+ran: B.Bytes(), +bytes: B.Bytes()) -> B.Bytes():
+  bytes_if(release_nas_of(ran, W.PDUSessionResourceReleaseCommand.view(A.ies_of(Fr.Pdu.read(bytes)))), A.pdu_is(Fr.Pdu.read(bytes), Fr.Pdu.initiating(), 28))
+
 # UL NAS Transport with an N1 SM message, the PDU session identity, request type initial, and more IEs.
 def ul_transport(+sm: B.Bytes(), more: B.Bytes()) -> B.Bytes():
   List.append(&2, U32, [126, 0, 103, 1, 0, U32.from_nat(List.length(&2, U32, sm))], List.append(&2, U32, sm, List.append(&2, U32, [18, 1, 129], more)))
@@ -250,12 +276,12 @@ def main() -> IO(Unit):
     C.Check.report("no Session Establishment Response after the third retransmission: Establishment Reject #38, no session left", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_late)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_late))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
     +rel_cmd : B.Bytes() = [126, 0, 104, 1, 0, 5, 46, 1, 0, 211, 26, 18, 1]
     +o_set_late : N.Step() = step(st2, F.TimerFired{Pc.session_timer(st2)})
-    C.Check.report("no answer from the gNB in time, after the Accept: PDU Session Release Command #26, Session Deletion at the UPF, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_set_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_set_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_set_late))))), rel_cmd))))
+    C.Check.report("no answer from the gNB in time, after the Accept: PDU Session Resource Release Command to the gNB, PDU Session Release Command #26 inside, Session Deletion at the UPF, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_set_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_set_late))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_set_late))))), rel_cmd))))
     +o_mod_no : N.Step() = step(st3, Pc.pfcp_event(Pf.Msg.write(Pf.Msg.make(53, Some{[0, 0, 0, 0, 0, 0, 0, 1]}, Pc.pfcp_seq(mod), [T.Tlv.make(19, [73])]), [])))
-    C.Check.report("Session Modification refused by the UPF: PDU Session Release Command #26, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_no), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_no))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_no))))), rel_cmd))))
+    C.Check.report("Session Modification refused by the UPF: PDU Session Resource Release Command, PDU Session Release Command #26 inside, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_no), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_no))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_mod_no))))), rel_cmd))))
     C.Check.report("no Session Modification Response: three retransmissions of the same request, the session still being modified", Bool.and(again(expire(0n, st3), mod), Bool.and(again(expire(1n, st3), mod), Bool.and(again(expire(2n, st3), mod), Pc.sphase_is(K.Kernel.state(expire(2n, st3)), "modifying")))))
     +o_mod_late : N.Step() = expire(3n, st3)
-    C.Check.report("no Session Modification Response after the third retransmission: PDU Session Release Command #26, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
+    C.Check.report("no Session Modification Response after the third retransmission: PDU Session Resource Release Command, PDU Session Release Command #26 inside, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
     +o_twice : N.Step() = step(st2, A.data(1, setup_twice(ran, oks_of(W.PDUSessionResourceSetupResponse.view(A.ies_of(Fr.Pdu.read(A.hex_of(A.entry(40n, msgs), "hex"))))))))
     C.Check.report("the gNB names the session set up twice, first with a transfer that does not decode: only the last naming counts, one Session Modification, one warning", Bool.and(Pc.sphase_is(K.Kernel.state(o_twice), "modifying"), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_twice))), 1n), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_twice))), 52), Nat.is_eq(warns(K.Kernel.frames(o_twice)), 1n)))))
     +o_gnb : N.Step() = step(st2, A.data(1, setup_failure(ran)))

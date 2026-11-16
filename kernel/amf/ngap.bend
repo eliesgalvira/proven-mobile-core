@@ -286,6 +286,11 @@ def Ngap.ue_ambr() -> Ap.Bits():
 def Ngap.pdu_setup(key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()) -> B.Bytes():
   Ngap.pdu(Fr.Pdu.initiating(), G.Proc.PDUSessionResourceSetup(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.PDUSessionResourceSetupListSUReq(), Fr.Criticality.reject(), G.PDUSessionResourceSetupListSUReq.write([G.PDUSessionResourceSetupItemSUReq{psi, Some{nas}, G.S_NSSAI{sst, None{}, None{}}, transfer, None{}}], 0n, [])), Ngap.ie(G.Id.UEAggregateMaximumBitRate(), Fr.Criticality.ignore(), Ngap.ue_ambr())])
 
+# PDU Session Resource Release Command (§9.2.1.3): one session released with
+# its cause, and the NAS message for the UE.
+def Ngap.pdu_release(key: U32, ran_id: B.Bytes(), psi: U32, nas: B.Bytes(), cause: G.Cause) -> B.Bytes():
+  Ngap.pdu(Fr.Pdu.initiating(), G.Proc.PDUSessionResourceRelease(), Fr.Criticality.reject(), [Ngap.ie(G.Id.AMF_UE_NGAP_ID(), Fr.Criticality.reject(), G.AMF_UE_NGAP_ID.write(Ngap.big(key), 0n, [])), Ngap.ie(G.Id.RAN_UE_NGAP_ID(), Fr.Criticality.reject(), G.RAN_UE_NGAP_ID.write(ran_id, 0n, [])), Ngap.ie(G.Id.NAS_PDU(), Fr.Criticality.ignore(), G.NAS_PDU.write(nas, 0n, [])), Ngap.ie(G.Id.PDUSessionResourceToReleaseListRelCmd(), Fr.Criticality.reject(), G.PDUSessionResourceToReleaseListRelCmd.write([G.PDUSessionResourceToReleaseItemRelCmd{psi, Ap.pack(G.PDUSessionResourceReleaseCommandTransfer.write(G.PDUSessionResourceReleaseCommandTransfer{cause, None{}}, 0n, [])), None{}}], 0n, []))])
+
 # Path Switch (§8.4.4)
 # --------------------
 

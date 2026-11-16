@@ -778,29 +778,36 @@ def Psi.by_psi(+key: U32, +psi: U32, +sessions: Tb.Table(S.Session)) -> {Tk.of_u
 
 # 5GSM (Ws): phase changes of the UE named, and sessions.
 
-def Ws.to_ue_ctx(+key: U32, +ue: S.Ue, +psi: U32, +sm: B.Bytes(), +ctx: Maybe<&2, Sec.Nas.Ctx>, +k: U32, +u: S.Ue, +hk: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.to_ue_ctx(key, ue, psi, sm, ctx)) == True{} : Bool}:
+def Ws.tell(+key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +t: Gsm.Tell, +k: U32, +u: S.Ue, +hk: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.tell(key, ue, ctx, psi, t)) == True{} : Bool}:
+  match t:
+    case Gsm.Reply{+sm}:
+      Tk.sp_dl(k, u, key, ue, ctx, Gsm.Gsm.dl_transport(psi, sm), hk)
+    case Gsm.Release{}:
+      Tk.sp_rephase(k, u, key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.release_command(psi))))), hk)
+
+def Ws.to_ue_ctx(+key: U32, +ue: S.Ue, +psi: U32, +t: Gsm.Tell, +ctx: Maybe<&2, Sec.Nas.Ctx>, +k: U32, +u: S.Ue, +hk: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.to_ue_ctx(key, ue, psi, t, ctx)) == True{} : Bool}:
   match ctx:
     case None{}:
       {==}
     case Some{+c}:
-      Tk.sp_dl(k, u, key, ue, c, Gsm.Gsm.dl_transport(psi, sm), hk)
+      Ws.tell(key, ue, c, psi, t, k, u, hk)
 
-def Ws.to_ue_m(+key: U32, +psi: U32, +sm: B.Bytes(), +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +hk: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.to_ue_m(key, psi, sm, m)) == True{} : Bool}:
+def Ws.to_ue_m(+key: U32, +psi: U32, +t: Gsm.Tell, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +hk: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.to_ue_m(key, psi, t, m)) == True{} : Bool}:
   match m:
     case None{}:
       {==}
     case Some{+ue}:
-      Ws.to_ue_ctx(key, ue, psi, sm, S.Phase.ctx(S.Ue.phase(ue)), k, u, hk)
+      Ws.to_ue_ctx(key, ue, psi, t, S.Phase.ctx(S.Ue.phase(ue)), k, u, hk)
 
-def Ws.give_up_m(+skey: U32, +s: S.Session, +sm: B.Bytes(), +seq: U32, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.give_up_m(skey, s, sm, seq, m)) == True{} : Bool}:
-  +a = Gsm.Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m)
-  Tk.sp_join(k, u, a, Up.N4.deletions([(skey, s)], seq), Ws.to_ue_m(S.Session.ue(s), S.Session.psi(s), sm, m, k, u, hs), Tk.sp_deletions(k, u, [(skey, s)], seq))
+def Ws.give_up_m(+skey: U32, +s: S.Session, +t: Gsm.Tell, +seq: U32, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.give_up_m(skey, s, t, seq, m)) == True{} : Bool}:
+  +a = Gsm.Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), t, m)
+  Tk.sp_join(k, u, a, Up.N4.deletions([(skey, s)], seq), Ws.to_ue_m(S.Session.ue(s), S.Session.psi(s), t, m, k, u, hs), Tk.sp_deletions(k, u, [(skey, s)], seq))
 
 def Ws.abort(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +cause: U32, +seq: U32, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.abort(st, skey, s, pti, cause, seq)) == True{} : Bool}:
-  Ws.give_up_m(skey, s, Gsm.Gsm.reject(S.Session.psi(s), pti, cause), seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), k, u, hs)
+  Ws.give_up_m(skey, s, Gsm.Reply{Gsm.Gsm.reject(S.Session.psi(s), pti, cause)}, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), k, u, hs)
 
 def Ws.drop(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.drop(st, skey, s, seq)) == True{} : Bool}:
-  Ws.give_up_m(skey, s, Gsm.Gsm.release_command(S.Session.psi(s)), seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), k, u, hs)
+  Ws.give_up_m(skey, s, Gsm.Release{}, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), k, u, hs)
 
 def Ws.modify(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.modify(st, skey, s, pti, seq, tunnel)) == True{} : Bool}:
   match tunnel:
