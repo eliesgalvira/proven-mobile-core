@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-# Provisions Bend and Lean in cloud sessions from GitHub release assets, which the default
-# network level allows. Local machines install their own toolchain.
+# Installs .githooks in every session (AGENTS.md § Publishing). Provisions Bend and Lean
+# in cloud sessions from GitHub release assets, which the default network level allows. Local
+# machines install their own toolchain.
 import hashlib
 import os
 import shutil
@@ -46,6 +47,12 @@ def link(target: Path, name: str) -> None:
 
 
 def main() -> None:
+    project = Path(os.environ.get("CLAUDE_PROJECT_DIR", "."))
+    if (project / ".githooks").is_dir():
+        hooks = Path(output("git", "-C", str(project), "rev-parse", "--path-format=absolute", "--git-path", "hooks"))
+        hooks.mkdir(exist_ok=True)
+        for hook in (project / ".githooks").iterdir():
+            shutil.copy(hook, hooks / hook.name)
     if os.environ.get("CLAUDE_CODE_REMOTE") != "true":
         return
     os.environ.update(BEND_HOME=str(BEND_HOME), BEND_NO_TELEMETRY="1")

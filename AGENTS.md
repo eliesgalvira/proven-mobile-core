@@ -56,6 +56,10 @@ The milestone specs are `docs/spec/milestone-1.md` and `docs/spec/milestone-2.md
 11. **Long commands.** Give every command a timeout. Run anything longer than 5 minutes in the background and poll it. Split heavy checks per file: `scripts/test-kernel.nu name…` runs only the named tests.
 12. **Finish.** When no eligible ticket remains, run `scripts/check.nu`, write a summary at the top of `loop/progress.md` (what's done, blocked and needs-human, and what to do next), push, and stop.
 
+## Publishing
+
+The repo will be public. Every push goes through `.githooks/pre-push`, which runs `scripts/privacy-check.py` on what the push adds and blocks personal paths, machine names, agent and thread ids, briefs, credentials and new binaries. The SessionStart hook copies `.githooks` into the clone's hooks directory, where they stay when an older branch is checked out; a clone used outside Claude Code runs `python3 -I .claude/hooks/session-start.py` once. Never push with `--no-verify`. When the check blocks, take the data out of the commits rather than adding an exception; exceptions are only for published test material. History from before the 2026-11-16 rewrite is refused: fetch, then rebase onto the rewritten branch.
+
 ## Erasure
 
 This section exists to amend your most glaring defect. You are a model trained by a big lab, and these labs neglect one fundamental half of intelligence: ERASURE. Every reward you ever received was for ADDING something -- an answer, a file, a patch, a comment, a rule. Almost none was for REMOVING. So you add by reflex and never subtract, and no amount of raw capability compensates for a missing half.
