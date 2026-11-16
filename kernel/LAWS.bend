@@ -1615,10 +1615,14 @@ law smf.establish.reject_leaves_state:
 # set up, or while it is being created or modified once its PFCP request has
 # gone N1 times again (smf.request.retransmitted); the UPF refuses the Session
 # Modification; or the gNB lists the session among those that failed to set
-# up, whatever else its response names. Once the Accept has gone out in the
-# PDU Session Resource Setup Request (being set up or modified), the first
-# action also tells the UE's gNB to release the session, the PDU Session
-# Release Command inside, when the UE holds a NAS context (TS 23.502 §4.3.4.2).
+# up, whatever else its response names. When the guard fires while the
+# session is being set up, or its Session Modification is refused or goes
+# unanswered, all after the Accept went out in the PDU Session Resource Setup
+# Request, the first action also tells the UE's gNB to release the session,
+# the PDU Session Release Command inside, when the UE holds a NAS context
+# (TS 23.502 §4.3.4.2). A setup response naming the session set up with a
+# tunnel that does not read drops it the same way (Gs.Gsm.modify), which this
+# law does not state: there the session's actions follow the earlier items'.
 law smf.establish.failure_releases:
   for +st: St.State
   for +entropy: B.Bytes()
