@@ -347,19 +347,12 @@ def L.amf.handover.responses_correlated(st, entropy, assoc, stream, len, bytes, 
 def So.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Bool:
   Bool.and(S.Ues.unique(ues), S.Ues.single(ues))
 
-def So.keep(+k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +b: Bool, +hv: {S.Ue.single(v) == True{} : Bool}, +hr: {S.Ues.single(rest) == True{} : Bool}) -> {S.Ues.single(Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Ue.single(v), S.Ues.single(rest), hv, hr)
-    case False{}:
-      hr
-
 def So.sift(+s: S.Sieve, +ues: Tb.Table(S.Ue), +e: {S.Ues.single(ues) == True{} : Bool}) -> {S.Ues.single(S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      So.keep(k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), P.Bool.and_true_l(S.Ue.single(v), S.Ues.single(more), e), So.sift(s, more, P.Bool.and_true_r(S.Ue.single(v), S.Ues.single(more), e)))
+      P.Keep.by(S.Ue, tb => {S.Ues.single(tb) == True{} : Bool}, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), e1 => h => P.Bool.and_intro(S.Ue.single(v), S.Ues.single(S.Ues.sift(s, more)), P.Bool.and_true_l(S.Ue.single(v), S.Ues.single(more), e), h), So.sift(s, more, P.Bool.and_true_r(S.Ue.single(v), S.Ues.single(more), e)))
 
 # A key no row holds is rephased nowhere.
 def So.untouched_row(+key: U32, +w: S.Ue, +p: S.Phase, +k: U32, +v: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +eb: {U32.is_eq(k, key) == b : Bool}, +ec: {Bool.not(S.Row.conflicts(key, w, k, v)) == True{} : Bool}, ih: {S.Ues.rephase(key, p, more) == more : Tb.Table(S.Ue)}) -> {(k, S.Ue.rephase_if(v, p, U32.is_eq(k, key))) <> S.Ues.rephase(key, p, more) == (k, v) <> more : Tb.Table(S.Ue)}:
