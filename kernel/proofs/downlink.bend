@@ -503,24 +503,22 @@ def Fq.step_nas(+s: S.State, +o: N.GOut(), +k: U32, +hm: {PF.Fs.amute(N.Out.acts
     case (+tx, +acts):
       PF.Fs.amute_nas(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(s), S.State.sessions(S.Tx.apply(tx, s)))), PF.Fs.amute_app(acts, N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(s), S.State.sessions(S.Tx.apply(tx, s))), hm, Fq.gone_mute(S.Tx.keeps_sessions(tx), S.State.sessions(s), S.State.sessions(S.Tx.apply(tx, s)))))
 
-def Fq.config_nas(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +k: U32) -> {N.Acts.nas(k, K.Kernel.actions(K.Kernel.config(complete, st, tlvs, entropy))) == [] : List<&2, B.Bytes()>}:
+def Fq.config_fin(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes(), +k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +e: {PH.Hs.rows(k, PH.Fresh{b, []}, S.State.ues(st)) == True{} : Bool}) -> Fq.Fin(k, b, N.Acts.nas(k, K.Kernel.actions(K.Kernel.config(complete, st, tlvs, entropy))), S.State.ues(K.Kernel.state(K.Kernel.config(complete, st, tlvs, entropy)))):
   match complete:
     case False{}:
-      {==}
+      Fq.fin_nil(k, b, [], S.State.ues(st), e, {==})
     case True{}:
       match st:
         case S.State{config, subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, n4}:
           +cfg = S.Cfg.of(tlvs)
           +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
-          Fq.step_nas(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]), k, {==})
+          +o = N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}])
+          Fq.fin_nil(k, b, N.Acts.nas(k, K.Kernel.actions(N.Step.of(st2, o))), ues, e, Fq.step_nas(st2, o, k, {==}))
 
 def Fq.config(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +complete: Bool, +tlvs: List<&2, T.Tlv>, +entropy: B.Bytes()) -> Fq.Law(st, k, K.Kernel.config(complete, st, tlvs, entropy)):
   +b = PF.Fs.ctx(st, k)
   +x = K.Kernel.config(complete, st, tlvs, entropy)
-  +after = S.State.ues(K.Kernel.state(x))
-  +ms = N.Acts.nas(k, K.Kernel.actions(x))
-  +e = PW.Walk.config(ues => ss => PH.Hs.rows(k, PH.Fresh{b, []}, ues), complete, st, tlvs, entropy, PH.Nc.base(k, S.State.ues(st), PH.Kept{}, eu))
-  Fq.law_fin(k, b, ms, after, Fq.fin_nil(k, b, ms, after, e, Fq.config_nas(complete, st, tlvs, entropy, k)))
+  Fq.law_fin(k, b, N.Acts.nas(k, K.Kernel.actions(x)), S.State.ues(K.Kernel.state(x)), Fq.config_fin(complete, st, tlvs, entropy, k, b, PH.Nc.base(k, S.State.ues(st), PH.Kept{}, eu)))
 
 def Fq.step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> Fq.Law(st, k, K.Kernel.step(st, ev, entropy)):
   PL.Dw.walk(o => Fq.Law(st, k, o), o => Fq.Law(st, k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => Fq.keep(st, k, acts, sp(k)), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Fq.ready(st, k, eu, assoc, id, ok, acts, sp(k)), +tlvs => Fq.config(st, k, eu, S.Cfg.complete(tlvs), tlvs, entropy), +assoc => Fq.down(st, k, eu, assoc), o => h => h, +o => +h => Fq.out(st, k, eu, o, h), +k1 => +t => +g => +r => ek => eu2 => em => ep => Fq.sx(st, k, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), PH.Nc.resend_sx(k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1())), Fq.resend_mute(k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Fq.sx(st, k, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), PH.Nc.deleted_sx(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Fq.deleted_mute(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Fq.settled(st, k, eu, k1, tx, more, h))
