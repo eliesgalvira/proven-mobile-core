@@ -110,6 +110,9 @@ def Ngap.is_ue_context_release_complete(+kind: Nat, +code: Nat) -> Bool:
 def Ngap.is_pdu_session_resource_setup_response(+kind: Nat, +code: Nat) -> Bool:
   Ngap.is_procedure(kind, code, Fr.Pdu.successful(), G.Proc.PDUSessionResourceSetup())
 
+def Ngap.is_pdu_session_resource_release_response(+kind: Nat, +code: Nat) -> Bool:
+  Ngap.is_procedure(kind, code, Fr.Pdu.successful(), G.Proc.PDUSessionResourceRelease())
+
 def Ngap.is_path_switch_request(+kind: Nat, +code: Nat) -> Bool:
   Ngap.is_procedure(kind, code, Fr.Pdu.initiating(), G.Proc.PathSwitchRequest())
 

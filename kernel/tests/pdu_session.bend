@@ -18,6 +18,7 @@ import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
 import ./lib/amf.bend as A
 import ./lib/pfcp.bend as Pc
+import ./lib/handover.bend as H
 
 # Replays the captured PDU session establishment after the captured
 # registration: the UL NAS Transport opens a session whose PFCP Session
@@ -279,6 +280,12 @@ def main() -> IO(Unit):
     C.Check.report("no answer from the gNB in time, after the Accept: PDU Session Resource Release Command to the gNB, PDU Session Release Command #26 inside, Session Deletion at the UPF, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_set_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_set_late))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_set_late))))), rel_cmd))))
     +o_mod_no : N.Step() = step(st3, Pc.pfcp_event(Pf.Msg.write(Pf.Msg.make(53, Some{[0, 0, 0, 0, 0, 0, 0, 1]}, Pc.pfcp_seq(mod), [T.Tlv.make(19, [73])]), [])))
     C.Check.report("Session Modification refused by the UPF: PDU Session Resource Release Command, PDU Session Release Command #26 inside, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_no), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_no))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_mod_no))))), rel_cmd))))
+    +o_answered : N.Step() = step(K.Kernel.state(o_mod_no), A.data(1, A.pdu_release_response([1], ran, 1)))
+    C.Check.report("the gNB's PDU Session Resource Release Response: logged, nothing sent, nothing changed", Bool.and(H.unchanged(K.Kernel.state(o_mod_no), o_answered), Bool.and(Pc.sphase_is(K.Kernel.state(o_answered), "deleting"), Bool.and(Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.frames(o_answered))), 0n), Bool.and(Nat.is_eq(warns(K.Kernel.frames(o_answered)), 0n), Nat.is_eq(List.length(&2, F.Action, K.Kernel.frames(o_answered)), 1n))))))
+    +o_unasked : N.Step() = step(st4, A.data(1, A.pdu_release_response([1], ran, 1)))
+    C.Check.report("a PDU Session Resource Release Response naming an active session: one warning, nothing sent, the session active", Bool.and(H.unchanged(st4, o_unasked), Bool.and(Pc.sphase_is(K.Kernel.state(o_unasked), "active"), Bool.and(Nat.is_eq(List.length(&2, F.Action, A.sends(K.Kernel.frames(o_unasked))), 0n), Nat.is_eq(warns(K.Kernel.frames(o_unasked)), 1n)))))
+    +o_stranger : N.Step() = step(st4, A.data(1, A.pdu_release_response([9], ran, 1)))
+    C.Check.report("a PDU Session Resource Release Response for an unknown UE: Error Indication, unknown local UE NGAP ID, the session active", Bool.and(H.unchanged(st4, o_stranger), Bool.and(Pc.sphase_is(K.Kernel.state(o_stranger), "active"), B.bytes_eq(H.sent_on(1, K.Kernel.frames(o_stranger)), N.Ngap.pdu(Fr.Pdu.initiating(), G.Proc.ErrorIndication(), Fr.Criticality.ignore(), [N.Ngap.ie(G.Id.Cause(), Fr.Criticality.ignore(), G.Cause.write(N.Ngap.radio_cause(G.CauseRadioNetwork.unknown_local_UE_NGAP_ID()), 0n, []))])))))
     C.Check.report("no Session Modification Response: three retransmissions of the same request, the session still being modified", Bool.and(again(expire(0n, st3), mod), Bool.and(again(expire(1n, st3), mod), Bool.and(again(expire(2n, st3), mod), Pc.sphase_is(K.Kernel.state(expire(2n, st3)), "modifying")))))
     +o_mod_late : N.Step() = expire(3n, st3)
     C.Check.report("no Session Modification Response after the third retransmission: PDU Session Resource Release Command, PDU Session Release Command #26 inside, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))

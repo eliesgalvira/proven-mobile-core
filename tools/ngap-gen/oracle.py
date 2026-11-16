@@ -7,6 +7,8 @@ compiled to a runtime module in a temporary directory) and by our codec
 the same order); both are printed in the normal form gen_show.py defines and
 must agree. pycrate must also re-encode each message to its octets, and a
 hand-made message's octets must be pycrate's encoding of its `jer` value.
+Messages no vector holds, which oracle.bend builds with the kernel's encoder
+and prints in hex after the vectors, are compared the same way.
 Run with python -I from the repository root; exits 1 on any difference.
 """
 import json
@@ -130,6 +132,8 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         objs = runtime(tmp)
         bend = ours(tmp)
+    messages += [{"message": name.split(" ")[0], "hex": name.split(" ")[1], "built": True} for name, _ in bend[len(messages):]]
+    bend = [(name.split(" ")[0], line) for name, line in bend]
     normal = Normal(g, objs)
     pdu = objs["NGAP-PDU"]
     status = 0
@@ -138,7 +142,7 @@ def main():
         return 1
     for m, (name, theirs_line) in zip(messages, bend):
         raw = bytes.fromhex(m["hex"])
-        where = f"frame {m['frame']}" if "frame" in m else "hand-made"
+        where = f"frame {m['frame']}" if "frame" in m else "built" if "built" in m else "hand-made"
         pdu.from_aper(raw)
         kind, body = pdu.get_val()
         if pdu.to_aper() != raw:

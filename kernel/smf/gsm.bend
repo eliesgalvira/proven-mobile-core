@@ -802,6 +802,51 @@ def Gsm.setup_response_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Err,
     case Done{v}:
       Gsm.setup_response(st, assoc, v)
 
+# The gNB's release
+# -----------------
+# PDU Session Resource Release Response (TS 38.413 §8.2.2.2): the sessions a
+# Release Command named were deleted at the UPF when it went, so the answer
+# changes nothing. One naming a live session of the UE answers no Command of
+# ours: a logical error in a response, handled locally (§10.4), by a warning.
+
+def Gsm.unasked(+key: U32, items: G.PDUSessionResourceReleasedListRelRes(), +ss: Tb.Table(S.Session)) -> Bool:
+  match items:
+    case Nil{}:
+      False{}
+    case G.PDUSessionResourceReleasedItemRelRes{+psi, transfer, x} <> more:
+      Bool.or(Tb.Table.present(Sigma<&2, &2, U32, _ => S.Session>, S.Sessions.by_psi(key, psi, ss)), Gsm.unasked(key, more, ss))
+
+def Gsm.release_noted(unasked: Bool) -> List<&2, N.Act>:
+  match unasked:
+    case True{}:
+      [N.Note{F.Warn{}, "NGAP: PDU Session Resource Release Response naming a PDU session not being released"}]
+    case False{}:
+      [N.Note{F.Info{}, "NGAP: PDU Session Resource Release Response"}]
+
+def Gsm.release_answer_ue(+st: S.State, +assoc: U32, +key: U32, items: G.PDUSessionResourceReleasedListRelRes(), m: Maybe<&2, S.Ue>) -> List<&2, N.Act>:
+  match m:
+    case None{}:
+      N.Ngap.unknown_ue(assoc)
+    case Some{ue}:
+      Gsm.release_noted(Gsm.unasked(key, items, S.State.sessions(st)))
+
+def Gsm.release_answer_key(+st: S.State, +assoc: U32, ran: B.Bytes(), items: G.PDUSessionResourceReleasedListRelRes(), m: Maybe<&2, U32>) -> List<&2, N.Act>:
+  match m:
+    case None{}:
+      N.Ngap.unknown_ue(assoc)
+    case Some{+key}:
+      Gsm.release_answer_ue(st, assoc, key, items, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+
+def Gsm.release_answer(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.PDUSessionResourceReleaseResponse.View>) -> List<&2, N.Act>:
+  match r:
+    case Fail{e}:
+      N.Ngap.bad_view(assoc)
+    case Done{V.PDUSessionResourceReleaseResponse.View{amf, ran, items, uli, diagnostics}}:
+      Gsm.release_answer_key(st, assoc, ran, items, N.Ngap.ue_key(amf))
+
+def Gsm.release_response_of_view(+st: S.State, +assoc: U32, r: Result<&2, &2, B.Err, V.PDUSessionResourceReleaseResponse.View>) -> N.GOut():
+  (S.Keep{}, Gsm.release_answer(st, assoc, r))
+
 # Guard timers
 # ------------
 
