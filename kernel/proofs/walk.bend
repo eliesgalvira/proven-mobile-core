@@ -23,9 +23,9 @@ import ../nas/security.bend as Sec
 # The step function, walked once
 # ------------------------------
 # A step ends in one of five ways: the state as it was, with actions that
-# name no UE context and stop no timer (an NGAP PDU or IE list that does not decode, a message
-# from an association without NG Setup, an incomplete Config, an association
-# coming up); an association's UE contexts released and the associations set
+# name no UE context and stop no timer (an NGAP PDU or IE list that does not
+# decode, a message from an association without NG Setup, an incomplete
+# Config, an association coming up); an association's UE contexts released and the associations set
 # up changed (NG Setup); a procedure's outcome o rendered by N.Step.of (a
 # routed NGAP message, a PFCP message, a timer); a new configuration; or an
 # association going down. A property Q of steps holds after every step
@@ -36,7 +36,8 @@ def Walk.Keep(-Q: N.Step() -> Type, +st: S.State) -> Type:
   @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.stops(k, acts) == False{} : Bool}) -> Q((st, acts))
 
 # NG Setup: the association's UE-related contexts re-initialised, then the
-# associations set up changed, with actions that name no UE context and stop no timer.
+# associations set up changed, with actions that name no UE context and stop
+# no timer.
 def Walk.Ready(-Q: N.Step() -> Type, +st: S.State, +assoc: U32) -> Type:
   @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.stops(k, acts) == False{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
 
@@ -458,16 +459,6 @@ def Tg.has_go(+u: U32, +x: U32, +h: Bool, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.sa
 
 def Tg.has(+t: S.Session, +x: U32, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.same_u32(S.Session.tag(t), Some{x}) == True{} : Bool}, +e2: {S.Session.owned(t, ues) == True{} : Bool}) -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}:
   Tg.has_go(S.Session.ue(t), x, S.SPhase.held(S.Session.phase(t)), ues, e1, e2)
-
-# A session that belongs to no UE still belongs to none.
-def Tg.untagged(+t: S.Session, +t2: S.Session, h: Tg.Moved(t, t2), +e: {Tb.Table.present(U32, S.Session.tag(t)) == False{} : Bool}) -> {Tb.Table.present(U32, S.Session.tag(t2)) == False{} : Bool}:
-  match h:
-    case Inl{ee}:
-      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), S.Session.tag(t), ee)
-      (%se : {Tb.Table.present(U32, _) == False{} : Bool}; e)
-    case Inr{en}:
-      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), None{}, en)
-      (%se : {Tb.Table.present(U32, _) == False{} : Bool}; {==})
 
 # A context looked up by key
 # --------------------------
