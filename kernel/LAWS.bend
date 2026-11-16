@@ -2132,9 +2132,10 @@ law amf.handover.single_owner:
 # begin a handover or advance it, start that timer, the preparation guard or
 # the completion guard; when it fires, no handover is pending any more. Every
 # other way out ends the handover first: the target or source association
-# going down, the UE released or taken over. So no step stops the guard and
-# leaves the handover pending: a step that stops timer k, which no session
-# holds (state.ids.free), leaves no handover pending under k.
+# going down or sending NG Setup, the UE released or taken over. So no step
+# stops the guard and leaves the handover pending: a step that stops timer
+# k, which no session holds (state.ids.free), leaves no handover pending
+# under k.
 law amf.handover.guarded:
   for +st: St.State
   for +ev: F.Evt

@@ -1,6 +1,6 @@
 # 40 Deferred from ticket 39
 
-Depends on: 39. Estimate: 6–9 h. Not started; the next plan decides when.
+Depends on: 39. Estimate: 6–9 h.
 
 ## Goal
 
