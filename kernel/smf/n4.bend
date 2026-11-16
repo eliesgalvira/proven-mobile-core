@@ -222,7 +222,7 @@ def N4.assoc_seq(msg: Pf.Msg, ok: Bool) -> N.GOut():
     case False{}:
       N.Out.warn("PFCP: Association Setup Response for no pending request")
 
-# An Association Setup Response answers the request outstanding, by its sequence number.
+# An Association Setup Response answers the Association Setup Request outstanding, by its sequence number.
 def N4.assoc_for(link: S.Link, +msg: Pf.Msg) -> N.GOut():
   match link:
     case S.Waiting{S.Setup{}, request, seq, resent}:

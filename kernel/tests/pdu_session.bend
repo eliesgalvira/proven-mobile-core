@@ -104,11 +104,6 @@ def ul_transport(+sm: B.Bytes(), more: B.Bytes()) -> B.Bytes():
 def inner(nas: B.Bytes()) -> B.Bytes():
   List.drop(&2, U32, nas, 7n)
 
-# A step sends one PFCP message, of this kind and sequence number, and starts T1.
-def resent(+o: N.Step(), +kind: U32, +seq: U32) -> Bool:
-  +p : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o))
-  Bool.and(U32.is_eq(Pc.pfcp_kind(p), kind), Bool.and(U32.is_eq(Pc.pfcp_seq(p), seq), U32.is_eq(Pc.first_ms(K.Kernel.frames(o)), 3000)))
-
 # The first session's guard, 466, fired n + 1 times in a row.
 def expire(n: Nat, st: S.State) -> N.Step():
   match n:
@@ -174,28 +169,30 @@ def deleting(+ran: B.Bytes(), +uli: Maybe<&2, G.UserLocationInformation>, +st3: 
 def association(+msgs: List<&2, V.Vec>, +st_reg: S.State, +o_tick: N.Step()) -> IO(Unit):
   do IO<Unit>:
     +o_cfg : N.Step() = step(S.State.initial(), F.Evt.config_make(A.config([])))
-    +seq0 : U32 = Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_cfg)))
+    +req0 : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o_cfg))
+    +seq0 : U32 = Pc.pfcp_seq(req0)
     +o_t1 : N.Step() = step(K.Kernel.state(o_cfg), F.TimerFired{0})
     +o_t2 : N.Step() = step(K.Kernel.state(o_t1), F.TimerFired{0})
     +o_t3 : N.Step() = step(K.Kernel.state(o_t2), F.TimerFired{0})
     +o_t4 : N.Step() = step(K.Kernel.state(o_t3), F.TimerFired{0})
-    C.Check.report("no Association Setup Response: three retransmissions with the first request's sequence number", Bool.and(resent(o_t1, 5, seq0), Bool.and(resent(o_t2, 5, seq0), resent(o_t3, 5, seq0))))
+    C.Check.report("no Association Setup Response: the first request sent again unchanged three times", Bool.and(again(o_t1, req0), Bool.and(again(o_t2, req0), again(o_t3, req0))))
     C.Check.report("no Association Setup Response after the third retransmission: a pause", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_t4))), 0n), Nat.is_eq(A.timer_starts(K.Kernel.frames(o_t4)), 1n)))
     +st_t4 : S.State = K.Kernel.state(o_t4)
     C.Check.report("the pause over: the association is asked for again", U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(step(st_t4, F.TimerFired{0})))), 5))
     +o_late_answer : N.Step() = step(st_t4, Pc.pfcp_event(Pc.with_seq(A.hex_of(A.entry(1n, msgs), "hex"), seq0)))
     C.Check.report("an Association Setup Response during the pause: ignored", Bool.not(Up.N4.up(K.Kernel.state(o_late_answer))))
-    +hb : U32 = Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_tick)))
+    +req_hb : B.Bytes() = Pc.first_pfcp(K.Kernel.frames(o_tick))
+    +hb : U32 = Pc.pfcp_seq(req_hb)
     +st_b0 : S.State = K.Kernel.state(o_tick)
     +o_b1 : N.Step() = step(st_b0, F.TimerFired{0})
     +o_b2 : N.Step() = step(K.Kernel.state(o_b1), F.TimerFired{0})
     +o_b3 : N.Step() = step(K.Kernel.state(o_b2), F.TimerFired{0})
-    C.Check.report("no Heartbeat Response: three retransmissions with the same sequence number, the link still up", Bool.and(resent(o_b1, 1, hb), Bool.and(resent(o_b2, 1, hb), Bool.and(resent(o_b3, 1, hb), Up.N4.up(K.Kernel.state(o_b3))))))
+    C.Check.report("no Heartbeat Response: the request sent again unchanged three times, the link still up", Bool.and(again(o_b1, req_hb), Bool.and(again(o_b2, req_hb), Bool.and(again(o_b3, req_hb), Up.N4.up(K.Kernel.state(o_b3))))))
     +o_lost : N.Step() = step(K.Kernel.state(o_b3), F.TimerFired{0})
     +st_lost : S.State = K.Kernel.state(o_lost)
     C.Check.report("no Heartbeat Response after the third retransmission: the link is down and the association asked for again", Bool.and(Bool.not(Up.N4.up(st_lost)), U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_lost))), 5)))
     +o_wrong : N.Step() = step(st_b0, Pc.pfcp_event(Up.N4.heartbeat(2, [0, 0, 0, 1], U32.add(hb, 1))))
-    C.Check.report("a Heartbeat Response with another sequence number: ignored", resent(step(K.Kernel.state(o_wrong), F.TimerFired{0}), 1, hb))
+    C.Check.report("a Heartbeat Response with another sequence number: ignored", again(step(K.Kernel.state(o_wrong), F.TimerFired{0}), req_hb))
     +o_alive : N.Step() = step(st_b0, Pc.pfcp_event(Up.N4.heartbeat(2, [0, 0, 0, 1], hb)))
     C.Check.report("the Heartbeat Response: the link up, the next Heartbeat Request in 30 s with a new sequence number", Bool.and(Up.N4.up(K.Kernel.state(o_alive)), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_alive))), 0n), Bool.and(U32.is_eq(Pc.first_ms(K.Kernel.frames(o_alive)), 30000), Bool.not(U32.is_eq(Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(step(K.Kernel.state(o_alive), F.TimerFired{0})))), hb))))))
     +st_lost_reg : S.State = K.Kernel.state(step(K.Kernel.state(step(K.Kernel.state(step(K.Kernel.state(step(K.Kernel.state(step(st_reg, F.TimerFired{0})), F.TimerFired{0})), F.TimerFired{0})), F.TimerFired{0})), F.TimerFired{0}))
