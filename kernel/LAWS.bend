@@ -1508,8 +1508,9 @@ law smf.guard.stopped:
 # An AMF-UE-NGAP-ID of 2^32 or more, which Ng.Ngap.ue_key gives no key for,
 # names no UE context, never the one its low 32 bits would fold onto: a UE
 # Context Release Request or Complete, an Initial Context Setup Response, a
-# PDU Session Resource Setup Response or an Uplink NAS Transport carrying one
-# changes no state, and the only actions are Error Indication and a log line.
+# PDU Session Resource Setup Response, an Uplink NAS Transport or a PDU
+# Session Resource Release Response carrying one changes no state, and the
+# only actions are Error Indication and a log line.
 law amf.ue_key.unknown:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1532,6 +1533,7 @@ law amf.ue_key.unknown:
   for +fails: Maybe<&2, G.PDUSessionResourceFailedToSetupListSURes()>
   for +nas: B.Bytes()
   for +loc: G.UserLocationInformation
+  for +items: G.PDUSessionResourceReleasedListRelRes()
   for +eid: {Ng.Ngap.ue_key(amf) == None{} : Maybe<&2, U32>}
   for +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}
   for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
@@ -1540,6 +1542,7 @@ law amf.ue_key.unknown:
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 14, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.InitialContextSetupResponse.view(ies) == Done{GV.InitialContextSetupResponse.View{amf, ran, diag}} : Result<&2, &2, B.Err, GV.InitialContextSetupResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, fails, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
   & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 46, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.UplinkNASTransport.view(ies) == Done{GV.UplinkNASTransport.View{amf, ran, nas, loc}} : Result<&2, &2, B.Err, GV.UplinkNASTransport.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
+  & ({Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 28, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {GV.PDUSessionResourceReleaseResponse.view(ies) == Done{GV.PDUSessionResourceReleaseResponse.View{amf, ran, items, uli, diag}} : Result<&2, &2, B.Err, GV.PDUSessionResourceReleaseResponse.View>} -> {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == (st, Ng.Ngap.unknown_ue(assoc)) : Ng.Step()})
 
 # smf (ticket 19)
 # ---------------
@@ -1687,9 +1690,7 @@ law smf.releases.sent:
 
 # TS 38.413 §8.2.2.2: the gNB's PDU Session Resource Release Response answers
 # a Command whose sessions the step that sent it already deleted at the UPF.
-# Whatever it names and whoever sends it, it changes no state: one naming a
-# session not being released is logged as a warning, one naming a UE its
-# association does not own gets Error Indication.
+# Whatever it names and whoever sends it, it changes no state.
 law smf.release_response.keeps_state:
   for +st: St.State
   for +entropy: B.Bytes()
