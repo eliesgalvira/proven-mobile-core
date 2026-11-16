@@ -100,88 +100,42 @@ def L.amf.ng_setup.first(st, entropy, assoc, stream, len, bytes, kind, code, cri
 # A row kept by a sieve is a row of the table, so what holds of every row of a
 # table holds of every row of its sifting.
 
-def Ues.none_keep(+a: U32, k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(U32.is_eq(S.Ue.assoc(v), a)) == b : Bool}, ih: {S.Ues.none_assoc(a, rest) == True{} : Bool}) -> {S.Ues.none_assoc(a, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Bool.not(U32.is_eq(S.Ue.assoc(v), a)), S.Ues.none_assoc(a, rest), eb, ih)
-    case False{}:
-      ih
-
 def Ues.drop_none(+a: U32, ues: Tb.Table(S.Ue)) -> {S.Ues.none_assoc(a, S.Ues.drop_assoc(a, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (k, +v) <> +more:
-      Ues.none_keep(a, k, v, S.Ues.drop_assoc(a, more), Bool.not(U32.is_eq(S.Ue.assoc(v), a)), {==}, Ues.drop_none(a, more))
-
-def Clear.keep(+key: U32, +u: S.Ue, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, e1: {Bool.not(S.Row.conflicts(key, u, k, v)) == True{} : Bool}, ih: {S.Ues.clear(key, u, rest) == True{} : Bool}) -> {S.Ues.clear(key, u, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, rest), e1, ih)
-    case False{}:
-      ih
+      P.Keep.by(S.Ue, tb => {S.Ues.none_assoc(a, tb) == True{} : Bool}, k, v, S.Ues.drop_assoc(a, more), Bool.not(U32.is_eq(S.Ue.assoc(v), a)), e => h => P.Bool.and_intro(Bool.not(U32.is_eq(S.Ue.assoc(v), a)), S.Ues.none_assoc(a, S.Ues.drop_assoc(a, more)), e, h), Ues.drop_none(a, more))
 
 def Clear.sift(+key: U32, +u: S.Ue, +s: S.Sieve, ues: Tb.Table(S.Ue), +e: {S.Ues.clear(key, u, ues) == True{} : Bool}) -> {S.Ues.clear(key, u, S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Clear.keep(key, u, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), P.Bool.and_true_l(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more), e), Clear.sift(key, u, s, more, P.Bool.and_true_r(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more), e)))
-
-def Unique.keep(+key: U32, +u: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, ec: {S.Ues.clear(key, u, rest) == True{} : Bool}, eu: {S.Ues.unique(rest) == True{} : Bool}) -> {S.Ues.unique(Tb.Table.keep(S.Ue, key, u, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Ues.clear(key, u, rest), S.Ues.unique(rest), ec, eu)
-    case False{}:
-      eu
+      P.Keep.by(S.Ue, tb => {S.Ues.clear(key, u, tb) == True{} : Bool}, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), e2 => h => P.Bool.and_intro(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, S.Ues.sift(s, more)), P.Bool.and_true_l(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more), e), h), Clear.sift(key, u, s, more, P.Bool.and_true_r(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, more), e)))
 
 def Unique.sift(+s: S.Sieve, ues: Tb.Table(S.Ue), +e: {S.Ues.unique(ues) == True{} : Bool}) -> {S.Ues.unique(S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+key, +u) <> +more:
-      Unique.keep(key, u, S.Ues.sift(s, more), S.Sieve.keeps(s, key, u), Clear.sift(key, u, s, more, P.Bool.and_true_l(S.Ues.clear(key, u, more), S.Ues.unique(more), e)), Unique.sift(s, more, P.Bool.and_true_r(S.Ues.clear(key, u, more), S.Ues.unique(more), e)))
+      P.Keep.by(S.Ue, tb => {S.Ues.unique(tb) == True{} : Bool}, key, u, S.Ues.sift(s, more), S.Sieve.keeps(s, key, u), e1 => h => P.Bool.and_intro(S.Ues.clear(key, u, S.Ues.sift(s, more)), S.Ues.unique(S.Ues.sift(s, more)), Clear.sift(key, u, s, more, P.Bool.and_true_l(S.Ues.clear(key, u, more), S.Ues.unique(more), e)), h), Unique.sift(s, more, P.Bool.and_true_r(S.Ues.clear(key, u, more), S.Ues.unique(more), e)))
 
 # The rows the Clear sieve keeps are, by its definition, clear of the context.
-def Clear.own_keep(+key: U32, +u: S.Ue, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(S.Row.conflicts(key, u, k, v)) == b : Bool}, ih: {S.Ues.clear(key, u, rest) == True{} : Bool}) -> {S.Ues.clear(key, u, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, rest), eb, ih)
-    case False{}:
-      ih
-
 def Clear.own(+key: U32, +u: S.Ue, ues: Tb.Table(S.Ue)) -> {S.Ues.clear(key, u, S.Ues.sift(S.Clear{key, u}, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Clear.own_keep(key, u, k, v, S.Ues.sift(S.Clear{key, u}, more), S.Sieve.keeps(S.Clear{key, u}, k, v), {==}, Clear.own(key, u, more))
+      P.Keep.by(S.Ue, tb => {S.Ues.clear(key, u, tb) == True{} : Bool}, k, v, S.Ues.sift(S.Clear{key, u}, more), S.Sieve.keeps(S.Clear{key, u}, k, v), e => h => P.Bool.and_intro(Bool.not(S.Row.conflicts(key, u, k, v)), S.Ues.clear(key, u, S.Ues.sift(S.Clear{key, u}, more)), e, h), Clear.own(key, u, more))
 
 # The Except sieve leaves no row under its key.
-def Del.keep(+key: U32, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), b: Bool, eb: {Bool.not(U32.is_eq(k, key)) == b : Bool}, ih: {Tb.Table.get(S.Ue, key, rest) == None{} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, key, Tb.Table.keep(S.Ue, k, v, rest, b)) == None{} : Maybe<&2, S.Ue>}:
-  match b:
-    case True{}:
-      ne = Equal.sym(Bool, U32.is_eq(k, key), False{}, P.Bool.not_true(U32.is_eq(k, key), eb))
-      %ne : {Tb.Table.hit(S.Ue, v, Tb.Table.get(S.Ue, key, rest), _) == None{} : Maybe<&2, S.Ue>}
-      ih
-    case False{}:
-      ih
-
 def Del.get(+key: U32, ues: Tb.Table(S.Ue)) -> {Tb.Table.get(S.Ue, key, S.Ues.del(key, ues)) == None{} : Maybe<&2, S.Ue>}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Del.keep(key, k, v, S.Ues.sift(S.Except{key}, more), S.Sieve.keeps(S.Except{key}, k, v), {==}, Del.get(key, more))
-
-def Sessions.drop_keep(+ue: U32, +k: U32, +s: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(S.Maybe.same_u32(S.Session.tag(s), Some{ue})) == b : Bool}, ih: {S.Sessions.sift(S.SOf{ue}, rest) == [] : Tb.Table(S.Session)}) -> {S.Sessions.sift(S.SOf{ue}, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : Tb.Table(S.Session)}:
-  match b:
-    case True{}:
-      ne = Equal.sym(Bool, S.Maybe.same_u32(S.Session.tag(s), Some{ue}), False{}, P.Bool.not_true(S.Maybe.same_u32(S.Session.tag(s), Some{ue}), eb))
-      %ne : {Tb.Table.keep(S.Session, k, s, S.Sessions.sift(S.SOf{ue}, rest), _) == [] : Tb.Table(S.Session)}
-      ih
-    case False{}:
-      ih
+      P.Keep.by(S.Ue, tb => {Tb.Table.get(S.Ue, key, tb) == None{} : Maybe<&2, S.Ue>}, k, v, S.Ues.sift(S.Except{key}, more), S.Sieve.keeps(S.Except{key}, k, v), e => h => (%Equal.sym(Bool, U32.is_eq(k, key), False{}, P.Bool.not_true(U32.is_eq(k, key), e)) : {Tb.Table.hit(S.Ue, v, Tb.Table.get(S.Ue, key, S.Ues.sift(S.Except{key}, more)), _) == None{} : Maybe<&2, S.Ue>}; h), Del.get(key, more))
 
 # No session of a UE is left once its sessions are dropped.
 def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.of_ue(ue, S.Sessions.drop_ue(ue, sessions)) == [] : Tb.Table(S.Session)}:
@@ -189,7 +143,7 @@ def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.o
     case Nil{}:
       {==}
     case (+k, +s) <> +more:
-      Sessions.drop_keep(ue, k, s, S.Sessions.sift(S.SOthers{ue}, more), S.SSieve.keeps(S.SOthers{ue}, k, s), {==}, Sessions.drop_none(ue, more))
+      P.Keep.by(S.Session, tb => {S.Sessions.sift(S.SOf{ue}, tb) == [] : Tb.Table(S.Session)}, k, s, S.Sessions.sift(S.SOthers{ue}, more), S.SSieve.keeps(S.SOthers{ue}, k, s), e => h => (%Equal.sym(Bool, S.Maybe.same_u32(S.Session.tag(s), Some{ue}), False{}, P.Bool.not_true(S.Maybe.same_u32(S.Session.tag(s), Some{ue}), e)) : {Tb.Table.keep(S.Session, k, s, S.Sessions.sift(S.SOf{ue}, S.Sessions.sift(S.SOthers{ue}, more)), _) == [] : Tb.Table(S.Session)}; h), Sessions.drop_none(ue, more))
 
 # An association going down
 # -------------------------

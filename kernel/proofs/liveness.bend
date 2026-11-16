@@ -940,19 +940,12 @@ def Pv.refl(+ues: Tb.Table(S.Ue)) -> {Lv.keys_in(ues, ues) == True{} : Bool}:
     case (+k, +v) <> +more:
       P.Bool.and_intro(Tb.Table.has(S.Ue, k, (k, v) <> more), Lv.keys_in(more, (k, v) <> more), Lv.has_head(k, v, more), Lv.keys_cons(more, k, v, more, Pv.refl(more)))
 
-def Lv.keys_keep(+k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +b: Bool, +ues: Tb.Table(S.Ue), +hk: {Tb.Table.has(S.Ue, k, ues) == True{} : Bool}, +hr: {Lv.keys_in(rest, ues) == True{} : Bool}) -> {Lv.keys_in(Tb.Table.keep(S.Ue, k, v, rest, b), ues) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Tb.Table.has(S.Ue, k, ues), Lv.keys_in(rest, ues), hk, hr)
-    case False{}:
-      hr
-
 def Lv.keys_sift(+s: S.Sieve, +ues: Tb.Table(S.Ue)) -> {Lv.keys_in(S.Ues.sift(s, ues), ues) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Lv.keys_keep(k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), (k, v) <> more, Lv.has_head(k, v, more), Lv.keys_cons(S.Ues.sift(s, more), k, v, more, Lv.keys_sift(s, more)))
+      P.Keep.by(S.Ue, tb => {Lv.keys_in(tb, (k, v) <> more) == True{} : Bool}, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), e => h => P.Bool.and_intro(Tb.Table.has(S.Ue, k, (k, v) <> more), Lv.keys_in(S.Ues.sift(s, more), (k, v) <> more), Lv.has_head(k, v, more), h), Lv.keys_cons(S.Ues.sift(s, more), k, v, more, Lv.keys_sift(s, more)))
 
 def Lv.owner_cons(+x: U32, +k: U32, +t: S.Session, +more: Tb.Table(S.Session), +e: {Lv.owner(x, more) == True{} : Bool}) -> {Lv.owner(x, (k, t) <> more) == True{} : Bool}:
   P.Bool.or_r(S.Maybe.same_u32(S.Session.tag(t), Some{x}), Lv.owner(x, more), e)
@@ -997,19 +990,12 @@ def Lv.srows_cons(+rows: Tb.Table(S.Session), +k: U32, +t: S.Session, +more: Tb.
     case (+k1, +t1) <> +rest:
       P.Bool.and_intro(Lv.tagged(S.Session.tag(t1), (k, t) <> more), Lv.srows(rest, (k, t) <> more), Lv.tagged_cons(S.Session.tag(t1), k, t, more, P.Bool.and_true_l(Lv.tagged(S.Session.tag(t1), more), Lv.srows(rest, more), e)), Lv.srows_cons(rest, k, t, more, P.Bool.and_true_r(Lv.tagged(S.Session.tag(t1), more), Lv.srows(rest, more), e)))
 
-def Lv.srows_keep(+k: U32, +t: S.Session, +rest: Tb.Table(S.Session), +b: Bool, +ss: Tb.Table(S.Session), +ht: {Lv.tagged(S.Session.tag(t), ss) == True{} : Bool}, +hr: {Lv.srows(rest, ss) == True{} : Bool}) -> {Lv.srows(Tb.Table.keep(S.Session, k, t, rest, b), ss) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Lv.tagged(S.Session.tag(t), ss), Lv.srows(rest, ss), ht, hr)
-    case False{}:
-      hr
-
 def Lv.srows_sift(+s: S.SSieve, +ss: Tb.Table(S.Session)) -> {Lv.srows(S.Sessions.sift(s, ss), ss) == True{} : Bool}:
   match ss:
     case Nil{}:
       {==}
     case (+k, +t) <> +more:
-      Lv.srows_keep(k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), (k, t) <> more, Lv.tagged_head(k, t, more), Lv.srows_cons(S.Sessions.sift(s, more), k, t, more, Lv.srows_sift(s, more)))
+      P.Keep.by(S.Session, tb => {Lv.srows(tb, (k, t) <> more) == True{} : Bool}, k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), e => h => P.Bool.and_intro(Lv.tagged(S.Session.tag(t), (k, t) <> more), Lv.srows(S.Sessions.sift(s, more), (k, t) <> more), Lv.tagged_head(k, t, more), h), Lv.srows_cons(S.Sessions.sift(s, more), k, t, more, Lv.srows_sift(s, more)))
 
 def Lv.srows_app(+xs: Tb.Table(S.Session), +ys: Tb.Table(S.Session), +ss: Tb.Table(S.Session), +hx: {Lv.srows(xs, ss) == True{} : Bool}, +hy: {Lv.srows(ys, ss) == True{} : Bool}) -> {Lv.srows(List.append(&2, Sigma<&2, &2, U32, _ => S.Session>, xs, ys), ss) == True{} : Bool}:
   match xs:
@@ -1076,19 +1062,12 @@ def Lv.krows_app(+xs: Tb.Table(S.Session), +ys: Tb.Table(S.Session), +st: S.Stat
     case (+k, +t) <> +more:
       P.Bool.and_intro(Lv.kept(st, k), Lv.krows(List.append(&2, Sigma<&2, &2, U32, _ => S.Session>, more, ys), st), P.Bool.and_true_l(Lv.kept(st, k), Lv.krows(more, st), hx), Lv.krows_app(more, ys, st, P.Bool.and_true_r(Lv.kept(st, k), Lv.krows(more, st), hx), hy))
 
-def Lv.clear_keep(+key: U32, +s: S.Session, +k: U32, +t: S.Session, +rest: Tb.Table(S.Session), b: Bool, e1: {Bool.not(S.SRow.conflicts(key, s, k, t)) == True{} : Bool}, ih: {S.Sessions.clear(key, s, rest) == True{} : Bool}) -> {S.Sessions.clear(key, s, Tb.Table.keep(S.Session, k, t, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, rest), e1, ih)
-    case False{}:
-      ih
-
 def Lv.clear_sift(+key: U32, +s: S.Session, +v: S.SSieve, sessions: Tb.Table(S.Session), +e: {S.Sessions.clear(key, s, sessions) == True{} : Bool}) -> {S.Sessions.clear(key, s, S.Sessions.sift(v, sessions)) == True{} : Bool}:
   match sessions:
     case Nil{}:
       {==}
     case (+k, +t) <> +more:
-      Lv.clear_keep(key, s, k, t, S.Sessions.sift(v, more), S.SSieve.keeps(v, k, t), P.Bool.and_true_l(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, more), e), Lv.clear_sift(key, s, v, more, P.Bool.and_true_r(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, more), e)))
+      P.Keep.by(S.Session, tb => {S.Sessions.clear(key, s, tb) == True{} : Bool}, k, t, S.Sessions.sift(v, more), S.SSieve.keeps(v, k, t), e2 => h => P.Bool.and_intro(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, S.Sessions.sift(v, more)), P.Bool.and_true_l(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, more), e), h), Lv.clear_sift(key, s, v, more, P.Bool.and_true_r(Bool.not(S.SRow.conflicts(key, s, k, t)), S.Sessions.clear(key, s, more), e)))
 
 # A row clear of the rows keeps their lookups.
 def Lv.hrows_cons(+rows: Tb.Table(S.Session), +k0: U32, +t0: S.Session, +more: Tb.Table(S.Session), +hc: {S.Sessions.clear(k0, t0, rows) == True{} : Bool}, +h: {Lv.hrows(rows, more) == True{} : Bool}) -> {Lv.hrows(rows, (k0, t0) <> more) == True{} : Bool}:
@@ -1102,16 +1081,6 @@ def Lv.hrows_cons(+rows: Tb.Table(S.Session), +k0: U32, +t0: S.Session, +more: T
       sf = P.U32.sym_false(k1, k0, U32.is_eq(k0, k1), {==}, ne)
       +hm = Lv.live_m(Tb.Table.get(S.Session, k1, more))
       (%sf : {Bool.and(Lv.live_m(Tb.Table.hit(S.Session, t0, Tb.Table.get(S.Session, k1, more), _)), Lv.hrows(rest, (k0, t0) <> more)) == True{} : Bool}; P.Bool.and_intro(hm, Lv.hrows(rest, (k0, t0) <> more), P.Bool.and_true_l(hm, Lv.hrows(rest, more), h), Lv.hrows_cons(rest, k0, t0, more, P.Bool.and_true_r(Bool.not(c), S.Sessions.clear(k0, t0, rest), hc), P.Bool.and_true_r(hm, Lv.hrows(rest, more), h))))
-
-def Lv.hrows_keep(+v: S.SSieve, +k: U32, +t: S.Session, +more: Tb.Table(S.Session), +b: Bool, +eb: {S.SSieve.keeps(v, k, t) == b : Bool}, +hk: {Bool.or(Bool.not(S.SSieve.keeps(v, k, t)), S.SPhase.live(S.Session.phase(t))) == True{} : Bool}, +tail: {Lv.hrows(S.Sessions.sift(v, more), (k, t) <> more) == True{} : Bool}) -> {Lv.hrows(Tb.Table.keep(S.Session, k, t, S.Sessions.sift(v, more), b), (k, t) <> more) == True{} : Bool}:
-  match b:
-    case True{}:
-      ser = Equal.sym(Bool, U32.is_eq(k, k), True{}, P.U32.is_eq_refl(k))
-      seb = Equal.sym(Bool, S.SSieve.keeps(v, k, t), True{}, eb)
-      +ht = P.Bool.or_true_r(Bool.not(S.SSieve.keeps(v, k, t)), S.SPhase.live(S.Session.phase(t)), (%seb : {Bool.not(_) == False{} : Bool}; {==}), hk)
-      P.Bool.and_intro(Lv.live_m(Tb.Table.get(S.Session, k, (k, t) <> more)), Lv.hrows(S.Sessions.sift(v, more), (k, t) <> more), (%ser : {Lv.live_m(Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), _)) == True{} : Bool}; ht), tail)
-    case False{}:
-      tail
 
 # Every row a sieve keeps is live.
 def Lv.sieved(+v: S.SSieve, ss: Tb.Table(S.Session)) -> Bool:
@@ -1130,7 +1099,7 @@ def Lv.hrows_sift(+v: S.SSieve, +ss: Tb.Table(S.Session), +eu: {S.Sessions.uniqu
       +ec = P.Bool.and_true_l(S.Sessions.clear(k, t, more), S.Sessions.unique(more), eu)
       +em = P.Bool.and_true_r(S.Sessions.clear(k, t, more), S.Sessions.unique(more), eu)
       +x = Bool.or(Bool.not(S.SSieve.keeps(v, k, t)), S.SPhase.live(S.Session.phase(t)))
-      Lv.hrows_keep(v, k, t, more, S.SSieve.keeps(v, k, t), {==}, P.Bool.and_true_l(x, Lv.sieved(v, more), es), Lv.hrows_cons(S.Sessions.sift(v, more), k, t, more, Lv.clear_sift(k, t, v, more, ec), Lv.hrows_sift(v, more, em, P.Bool.and_true_r(x, Lv.sieved(v, more), es))))
+      P.Keep.by(S.Session, tb => {Lv.hrows(tb, (k, t) <> more) == True{} : Bool}, k, t, S.Sessions.sift(v, more), S.SSieve.keeps(v, k, t), e => h => P.Bool.and_intro(Lv.live_m(Tb.Table.get(S.Session, k, (k, t) <> more)), Lv.hrows(S.Sessions.sift(v, more), (k, t) <> more), (%Equal.sym(Bool, U32.is_eq(k, k), True{}, P.U32.is_eq_refl(k)) : {Lv.live_m(Tb.Table.hit(S.Session, t, Tb.Table.get(S.Session, k, more), _)) == True{} : Bool}; P.Bool.or_true_r(Bool.not(S.SSieve.keeps(v, k, t)), S.SPhase.live(S.Session.phase(t)), (%Equal.sym(Bool, S.SSieve.keeps(v, k, t), True{}, e) : {Bool.not(_) == False{} : Bool}; {==}), P.Bool.and_true_l(x, Lv.sieved(v, more), es))), h), Lv.hrows_cons(S.Sessions.sift(v, more), k, t, more, Lv.clear_sift(k, t, v, more, ec), Lv.hrows_sift(v, more, em, P.Bool.and_true_r(x, Lv.sieved(v, more), es))))
 
 def Lv.krows_sift(+st: S.State, +v: S.SSieve, +es: {Lv.sieved(v, S.State.sessions(st)) == True{} : Bool}) -> {Lv.krows(S.Sessions.sift(v, S.State.sessions(st)), st) == True{} : Bool}:
   Lv.krows_by(S.Sessions.sift(v, S.State.sessions(st)), st, eu => Lv.hrows_sift(v, S.State.sessions(st), eu, es))
@@ -1406,19 +1375,12 @@ def Lv.frows_cons(+rows: Tb.Table(S.Session), +k: U32, +t: S.Session, +more: Tb.
     case (+k1, +t1) <> +rest:
       P.Bool.and_intro(Lv.found(Some{(k1, t1)}, (k, t) <> more), Lv.frows(rest, (k, t) <> more), Lv.found_cons(Some{(k1, t1)}, k, t, more, P.Bool.and_true_l(Lv.found(Some{(k1, t1)}, more), Lv.frows(rest, more), e)), Lv.frows_cons(rest, k, t, more, P.Bool.and_true_r(Lv.found(Some{(k1, t1)}, more), Lv.frows(rest, more), e)))
 
-def Lv.frows_keep(+k: U32, +t: S.Session, +rest: Tb.Table(S.Session), +b: Bool, +ss: Tb.Table(S.Session), +ht: {Lv.found(Some{(k, t)}, ss) == True{} : Bool}, +hr: {Lv.frows(rest, ss) == True{} : Bool}) -> {Lv.frows(Tb.Table.keep(S.Session, k, t, rest, b), ss) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Lv.found(Some{(k, t)}, ss), Lv.frows(rest, ss), ht, hr)
-    case False{}:
-      hr
-
 def Lv.frows_sift(+s: S.SSieve, +ss: Tb.Table(S.Session)) -> {Lv.frows(S.Sessions.sift(s, ss), ss) == True{} : Bool}:
   match ss:
     case Nil{}:
       {==}
     case (+k, +t) <> +more:
-      Lv.frows_keep(k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), (k, t) <> more, Lv.pick(k, t, None{}, True{}, more, {==}), Lv.frows_cons(S.Sessions.sift(s, more), k, t, more, Lv.frows_sift(s, more)))
+      P.Keep.by(S.Session, tb => {Lv.frows(tb, (k, t) <> more) == True{} : Bool}, k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), e => h => P.Bool.and_intro(Lv.found(Some{(k, t)}, (k, t) <> more), Lv.frows(S.Sessions.sift(s, more), (k, t) <> more), Lv.pick(k, t, None{}, True{}, more, {==}), h), Lv.frows_cons(S.Sessions.sift(s, more), k, t, more, Lv.frows_sift(s, more)))
 
 def Lv.by_seq(+seq: U32, +ss: Tb.Table(S.Session)) -> {Lv.found(S.Sessions.by_seq(seq, ss), ss) == True{} : Bool}:
   match ss:
@@ -3841,26 +3803,12 @@ def Lv.drop_acts(+st: S.State, +assoc: U32) -> {Lv.actsw(st, K.Kernel.actions(R.
       +kept = S.Sessions.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(N.Out.tx(d), s0)))
       Lv.appendw(s0, N.Out.acts(d), N.Gone.cancels(sessions, kept), Lv.acts_w(s0, N.Out.acts(d), P.Bool.and_true_l(Lv.acts(s0, N.Out.acts(d)), Bool.and(Lv.arms(N.Out.tx(d), N.Out.acts(d)), Lv.free(s0, N.Out.tx(d))), Lv.dels(s0, gone, pfcp_seq, Lv.srows_sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions), Lv.krows_orphan(s0, S.Ues.drop_assoc(assoc, ues))))), Lv.gone(s0, sessions, kept))
 
-def Lv.owned_keep(+k: U32, +t: S.Session, +rest: Tb.Table(S.Session), +b: Bool, +ues: Tb.Table(S.Ue), +ht: {S.Session.owned(t, ues) == True{} : Bool}, +hr: {S.Sessions.owned(rest, ues) == True{} : Bool}) -> {S.Sessions.owned(Tb.Table.keep(S.Session, k, t, rest, b), ues) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Session.owned(t, ues), S.Sessions.owned(rest, ues), ht, hr)
-    case False{}:
-      hr
-
 def Lv.owned_sift(+s: S.SSieve, +ss: Tb.Table(S.Session), +ues: Tb.Table(S.Ue), +e: {S.Sessions.owned(ss, ues) == True{} : Bool}) -> {S.Sessions.owned(S.Sessions.sift(s, ss), ues) == True{} : Bool}:
   match ss:
     case Nil{}:
       {==}
     case (+k, +t) <> +more:
-      Lv.owned_keep(k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), ues, P.Bool.and_true_l(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e), Lv.owned_sift(s, more, ues, P.Bool.and_true_r(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e)))
-
-def Lv.owned_own_keep(+k: U32, +t: S.Session, +rest: Tb.Table(S.Session), +b: Bool, +ues: Tb.Table(S.Ue), +eb: {S.Session.owned(t, ues) == b : Bool}, +hr: {S.Sessions.owned(rest, ues) == True{} : Bool}) -> {S.Sessions.owned(Tb.Table.keep(S.Session, k, t, rest, b), ues) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Session.owned(t, ues), S.Sessions.owned(rest, ues), eb, hr)
-    case False{}:
-      hr
+      P.Keep.by(S.Session, tb => {S.Sessions.owned(tb, ues) == True{} : Bool}, k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), e1 => h => P.Bool.and_intro(S.Session.owned(t, ues), S.Sessions.owned(S.Sessions.sift(s, more), ues), P.Bool.and_true_l(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e), h), Lv.owned_sift(s, more, ues, P.Bool.and_true_r(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e)))
 
 # The sessions a put keeps are those owned by the contexts left.
 def Lv.owned_owned(+ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> {S.Sessions.owned(S.Sessions.sift(S.SOwned{ues}, ss), ues) == True{} : Bool}:
@@ -3868,7 +3816,7 @@ def Lv.owned_owned(+ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> {S.Session
     case Nil{}:
       {==}
     case (+k, +t) <> +more:
-      Lv.owned_own_keep(k, t, S.Sessions.sift(S.SOwned{ues}, more), S.Session.owned(t, ues), ues, {==}, Lv.owned_owned(ues, more))
+      P.Keep.by(S.Session, tb => {S.Sessions.owned(tb, ues) == True{} : Bool}, k, t, S.Sessions.sift(S.SOwned{ues}, more), S.Session.owned(t, ues), e => h => P.Bool.and_intro(S.Session.owned(t, ues), S.Sessions.owned(S.Sessions.sift(S.SOwned{ues}, more), ues), e, h), Lv.owned_owned(ues, more))
 
 def Lv.owned_rephase(+ss: Tb.Table(S.Session), +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +e: {S.Sessions.owned(ss, ues) == True{} : Bool}) -> {S.Sessions.owned(ss, S.Ues.rephase(key, p, ues)) == True{} : Bool}:
   match ss:
@@ -3898,20 +3846,13 @@ def Lv.owned_ex_go(+u: U32, +key: U32, +ues: Tb.Table(S.Ue), +h: Bool, +ne: {Boo
 def Lv.owned_except(+t: S.Session, +key: U32, +ues: Tb.Table(S.Ue), +ne: {Bool.not(S.Maybe.same_u32(S.Session.tag(t), Some{key})) == True{} : Bool}, +ht: {S.Session.owned(t, ues) == True{} : Bool}) -> {S.Session.owned(t, S.Ues.sift(S.Except{key}, ues)) == True{} : Bool}:
   Lv.owned_ex_go(S.Session.ue(t), key, ues, S.SPhase.live(S.Session.phase(t)), ne, ht)
 
-def Lv.owned_del_keep(+k: U32, +t: S.Session, +rest: Tb.Table(S.Session), +b: Bool, +key: U32, +ues: Tb.Table(S.Ue), +eb: {Bool.not(S.Maybe.same_u32(S.Session.tag(t), Some{key})) == b : Bool}, +ht: {S.Session.owned(t, ues) == True{} : Bool}, +hr: {S.Sessions.owned(rest, S.Ues.sift(S.Except{key}, ues)) == True{} : Bool}) -> {S.Sessions.owned(Tb.Table.keep(S.Session, k, t, rest, b), S.Ues.sift(S.Except{key}, ues)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Session.owned(t, S.Ues.sift(S.Except{key}, ues)), S.Sessions.owned(rest, S.Ues.sift(S.Except{key}, ues)), Lv.owned_except(t, key, ues, eb, ht), hr)
-    case False{}:
-      hr
-
 # Forgetting a context forgets its sessions, so the others keep theirs.
 def Lv.owned_del(+ss: Tb.Table(S.Session), +key: U32, +ues: Tb.Table(S.Ue), +e: {S.Sessions.owned(ss, ues) == True{} : Bool}) -> {S.Sessions.owned(S.Sessions.sift(S.SOthers{key}, ss), S.Ues.sift(S.Except{key}, ues)) == True{} : Bool}:
   match ss:
     case Nil{}:
       {==}
     case (+k, +t) <> +more:
-      Lv.owned_del_keep(k, t, S.Sessions.sift(S.SOthers{key}, more), Bool.not(S.Maybe.same_u32(S.Session.tag(t), Some{key})), key, ues, {==}, P.Bool.and_true_l(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e), Lv.owned_del(more, key, ues, P.Bool.and_true_r(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e)))
+      P.Keep.by(S.Session, tb => {S.Sessions.owned(tb, S.Ues.sift(S.Except{key}, ues)) == True{} : Bool}, k, t, S.Sessions.sift(S.SOthers{key}, more), Bool.not(S.Maybe.same_u32(S.Session.tag(t), Some{key})), e1 => h => P.Bool.and_intro(S.Session.owned(t, S.Ues.sift(S.Except{key}, ues)), S.Sessions.owned(S.Sessions.sift(S.SOthers{key}, more), S.Ues.sift(S.Except{key}, ues)), Lv.owned_except(t, key, ues, e1, P.Bool.and_true_l(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e)), h), Lv.owned_del(more, key, ues, P.Bool.and_true_r(S.Session.owned(t, ues), S.Sessions.owned(more, ues), e)))
 
 # A session changed in place stays owned: it keeps its UE, and keeps its tag or drops it.
 def Lv.owned_moved(+t: S.Session, +t2: S.Session, +ues: Tb.Table(S.Ue), h: PW.Tg.Moved(t, t2), +ei: {S.Session.id(t2) == S.Session.id(t) : S.SId}, +e: {S.Session.owned(t, ues) == True{} : Bool}) -> {S.Session.owned(t2, ues) == True{} : Bool}:
@@ -4219,19 +4160,12 @@ def Hm.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Boo
 def Hm.pre(+st0: S.State) -> Bool:
   S.Ues.set_up(S.State.ues(st0), S.State.assocs(st0))
 
-def Hm.keep(+k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +as: Tb.Table(B.Bytes()), +b: Bool, +hv: {S.Assocs.has(S.Ue.assoc(v), as) == True{} : Bool}, +hr: {S.Ues.set_up(rest, as) == True{} : Bool}) -> {S.Ues.set_up(Tb.Table.keep(S.Ue, k, v, rest, b), as) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(rest, as), hv, hr)
-    case False{}:
-      hr
-
 def Hm.sift(+s: S.Sieve, +ues: Tb.Table(S.Ue), +as: Tb.Table(B.Bytes()), +e: {S.Ues.set_up(ues, as) == True{} : Bool}) -> {S.Ues.set_up(S.Ues.sift(s, ues), as) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Hm.keep(k, v, S.Ues.sift(s, more), as, S.Sieve.keeps(s, k, v), P.Bool.and_true_l(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e), Hm.sift(s, more, as, P.Bool.and_true_r(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e)))
+      P.Keep.by(S.Ue, tb => {S.Ues.set_up(tb, as) == True{} : Bool}, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), e1 => h => P.Bool.and_intro(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(S.Ues.sift(s, more), as), P.Bool.and_true_l(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e), h), Hm.sift(s, more, as, P.Bool.and_true_r(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e)))
 
 def Hm.rephase_if(+b: Bool, +u: S.Ue, +p: S.Phase, +as: Tb.Table(B.Bytes()), +hu: {S.Assocs.has(S.Ue.assoc(u), as) == True{} : Bool}) -> {S.Assocs.has(S.Ue.assoc(S.Ue.rephase_if(u, p, b)), as) == True{} : Bool}:
   match b:
@@ -4338,13 +4272,6 @@ def Hm.hit_has(+v: B.Bytes(), +m: Maybe<&2, B.Bytes()>, +c: Bool, +e: {Tb.Table.
       e
 
 # An association dropped: what was set up and is another association stays set up.
-def Hm.keep_has(+b: U32, +k0: U32, +id: B.Bytes(), +rest: Tb.Table(B.Bytes()), +keep: Bool, +e: {Tb.Table.has(B.Bytes(), b, rest) == True{} : Bool}) -> {Tb.Table.has(B.Bytes(), b, Tb.Table.keep(B.Bytes(), k0, id, rest, keep)) == True{} : Bool}:
-  match keep:
-    case True{}:
-      Hm.hit_has(id, Tb.Table.get(B.Bytes(), b, rest), U32.is_eq(k0, b), e)
-    case False{}:
-      e
-
 def Hm.drop_row(+b: U32, +a: U32, +k0: U32, +id: B.Bytes(), +more: Tb.Table(B.Bytes()), +c: Bool, +ec: {U32.is_eq(k0, b) == c : Bool}, +ne: {U32.is_eq(b, a) == False{} : Bool}, +e: {Tb.Table.present(B.Bytes(), Tb.Table.hit(B.Bytes(), id, Tb.Table.get(B.Bytes(), b, more), c)) == True{} : Bool}, ih: {Tb.Table.has(B.Bytes(), b, more) == True{} : Bool} -> {S.Assocs.has(b, S.Assocs.drop(a, more)) == True{} : Bool}) -> {S.Assocs.has(b, Tb.Table.keep(B.Bytes(), k0, id, S.Assocs.drop(a, more), Bool.not(U32.is_eq(k0, a)))) == True{} : Bool}:
   match c:
     case True{}:
@@ -4355,7 +4282,7 @@ def Hm.drop_row(+b: U32, +a: U32, +k0: U32, +id: B.Bytes(), +more: Tb.Table(B.By
       r = Equal.sym(Bool, U32.is_eq(b, b), True{}, P.U32.is_eq_refl(b))
       (%r : {Tb.Table.present(B.Bytes(), Tb.Table.hit(B.Bytes(), id, Tb.Table.get(B.Bytes(), b, S.Assocs.drop(a, more)), _)) == True{} : Bool}; {==})
     case False{}:
-      Hm.keep_has(b, k0, id, S.Assocs.drop(a, more), Bool.not(U32.is_eq(k0, a)), ih(e))
+      P.Keep.by(B.Bytes(), tb => {Tb.Table.has(B.Bytes(), b, tb) == True{} : Bool}, k0, id, S.Assocs.drop(a, more), Bool.not(U32.is_eq(k0, a)), e1 => h => Hm.hit_has(id, Tb.Table.get(B.Bytes(), b, S.Assocs.drop(a, more)), U32.is_eq(k0, b), h), ih(e))
 
 def Hm.drop_has(+b: U32, +a: U32, +as: Tb.Table(B.Bytes()), +ne: {U32.is_eq(b, a) == False{} : Bool}, +e: {S.Assocs.has(b, as) == True{} : Bool}) -> {S.Assocs.has(b, S.Assocs.drop(a, as)) == True{} : Bool}:
   match as:
@@ -4373,33 +4300,19 @@ def Hm.set_has(+b: U32, +a: U32, +id: B.Bytes(), +as: Tb.Table(B.Bytes()), +ok: 
 
 # The contexts of the other associations stay set up, without the association
 # (drop) or with it set up again or not (ready).
-def Hm.drop_keep(+a: U32, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +as: Tb.Table(B.Bytes()), +b: Bool, +eb: {U32.is_eq(S.Ue.assoc(v), a) == b : Bool}, +hv: {S.Assocs.has(S.Ue.assoc(v), as) == True{} : Bool}, +hr: {S.Ues.set_up(rest, S.Assocs.drop(a, as)) == True{} : Bool}) -> {S.Ues.set_up(Tb.Table.keep(S.Ue, k, v, rest, Bool.not(b)), S.Assocs.drop(a, as)) == True{} : Bool}:
-  match b:
-    case True{}:
-      hr
-    case False{}:
-      P.Bool.and_intro(S.Assocs.has(S.Ue.assoc(v), S.Assocs.drop(a, as)), S.Ues.set_up(rest, S.Assocs.drop(a, as)), Hm.drop_has(S.Ue.assoc(v), a, as, eb, hv), hr)
-
 def Hm.others_drop(+a: U32, +ues: Tb.Table(S.Ue), +as: Tb.Table(B.Bytes()), +e: {S.Ues.set_up(ues, as) == True{} : Bool}) -> {S.Ues.set_up(S.Ues.sift(S.Others{a}, ues), S.Assocs.drop(a, as)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Hm.drop_keep(a, k, v, S.Ues.sift(S.Others{a}, more), as, U32.is_eq(S.Ue.assoc(v), a), {==}, P.Bool.and_true_l(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e), Hm.others_drop(a, more, as, P.Bool.and_true_r(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e)))
-
-def Hm.ready_keep(+a: U32, +id: B.Bytes(), +ok: Bool, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +as: Tb.Table(B.Bytes()), +b: Bool, +eb: {U32.is_eq(S.Ue.assoc(v), a) == b : Bool}, +hv: {S.Assocs.has(S.Ue.assoc(v), as) == True{} : Bool}, +hr: {S.Ues.set_up(rest, S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)) == True{} : Bool}) -> {S.Ues.set_up(Tb.Table.keep(S.Ue, k, v, rest, Bool.not(b)), S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)) == True{} : Bool}:
-  match b:
-    case True{}:
-      hr
-    case False{}:
-      P.Bool.and_intro(S.Assocs.has(S.Ue.assoc(v), S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)), S.Ues.set_up(rest, S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)), Hm.set_has(S.Ue.assoc(v), a, id, S.Assocs.drop(a, as), ok, eb, Hm.drop_has(S.Ue.assoc(v), a, as, eb, hv)), hr)
+      P.Keep.by(S.Ue, tb => {S.Ues.set_up(tb, S.Assocs.drop(a, as)) == True{} : Bool}, k, v, S.Ues.sift(S.Others{a}, more), Bool.not(U32.is_eq(S.Ue.assoc(v), a)), e1 => h => P.Bool.and_intro(S.Assocs.has(S.Ue.assoc(v), S.Assocs.drop(a, as)), S.Ues.set_up(S.Ues.sift(S.Others{a}, more), S.Assocs.drop(a, as)), Hm.drop_has(S.Ue.assoc(v), a, as, P.Bool.not_true(U32.is_eq(S.Ue.assoc(v), a), e1), P.Bool.and_true_l(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e)), h), Hm.others_drop(a, more, as, P.Bool.and_true_r(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e)))
 
 def Hm.others_ready(+a: U32, +id: B.Bytes(), +ok: Bool, +ues: Tb.Table(S.Ue), +as: Tb.Table(B.Bytes()), +e: {S.Ues.set_up(ues, as) == True{} : Bool}) -> {S.Ues.set_up(S.Ues.sift(S.Others{a}, ues), S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Hm.ready_keep(a, id, ok, k, v, S.Ues.sift(S.Others{a}, more), as, U32.is_eq(S.Ue.assoc(v), a), {==}, P.Bool.and_true_l(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e), Hm.others_ready(a, id, ok, more, as, P.Bool.and_true_r(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e)))
+      P.Keep.by(S.Ue, tb => {S.Ues.set_up(tb, S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)) == True{} : Bool}, k, v, S.Ues.sift(S.Others{a}, more), Bool.not(U32.is_eq(S.Ue.assoc(v), a)), +e1 => h => P.Bool.and_intro(S.Assocs.has(S.Ue.assoc(v), S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)), S.Ues.set_up(S.Ues.sift(S.Others{a}, more), S.Assocs.set(a, id, S.Assocs.drop(a, as), ok)), Hm.set_has(S.Ue.assoc(v), a, id, S.Assocs.drop(a, as), ok, P.Bool.not_true(U32.is_eq(S.Ue.assoc(v), a), e1), Hm.drop_has(S.Ue.assoc(v), a, as, P.Bool.not_true(U32.is_eq(S.Ue.assoc(v), a), e1), P.Bool.and_true_l(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e))), h), Hm.others_ready(a, id, ok, more, as, P.Bool.and_true_r(S.Assocs.has(S.Ue.assoc(v), as), S.Ues.set_up(more, as), e)))
 
 def Hm.drop(+st: S.State, +assoc: U32, +e: {S.Ues.set_up(S.State.ues(st), S.State.assocs(st)) == True{} : Bool}) -> {S.Ues.set_up(S.State.ues(K.Kernel.state(R.Route.drop(st, assoc))), S.State.assocs(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:
@@ -4429,19 +4342,12 @@ def L.amf.contexts.set_up(st, ev, entropy, e):
 # Contexts stay guarded
 # ---------------------
 
-def Gd.keep(+k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +b: Bool, +hv: {S.Phase.guarded(S.Ue.phase(v)) == True{} : Bool}, +hr: {S.Ues.guarded(rest) == True{} : Bool}) -> {S.Ues.guarded(Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(v)), S.Ues.guarded(rest), hv, hr)
-    case False{}:
-      hr
-
 def Gd.sift(+s: S.Sieve, +ues: Tb.Table(S.Ue), +e: {S.Ues.guarded(ues) == True{} : Bool}) -> {S.Ues.guarded(S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Gd.keep(k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), P.Bool.and_true_l(S.Phase.guarded(S.Ue.phase(v)), S.Ues.guarded(more), e), Gd.sift(s, more, P.Bool.and_true_r(S.Phase.guarded(S.Ue.phase(v)), S.Ues.guarded(more), e)))
+      P.Keep.by(S.Ue, tb => {S.Ues.guarded(tb) == True{} : Bool}, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), e1 => h => P.Bool.and_intro(S.Phase.guarded(S.Ue.phase(v)), S.Ues.guarded(S.Ues.sift(s, more)), P.Bool.and_true_l(S.Phase.guarded(S.Ue.phase(v)), S.Ues.guarded(more), e), h), Gd.sift(s, more, P.Bool.and_true_r(S.Phase.guarded(S.Ue.phase(v)), S.Ues.guarded(more), e)))
 
 def Gd.rephase_if(+b: Bool, +u: S.Ue, +p: S.Phase, +hu: {S.Phase.guarded(S.Ue.phase(u)) == True{} : Bool}, +hp: {S.Phase.guarded(p) == True{} : Bool}) -> {S.Phase.guarded(S.Ue.phase(S.Ue.rephase_if(u, p, b))) == True{} : Bool}:
   match b:
@@ -4493,19 +4399,12 @@ def L.amf.contexts.guarded(st, ev, entropy, e):
 # (S.Ids). A context appears only under a key held, that is a context's or
 # the one the step gives.
 
-def Id.keep(+k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +b: Bool, +hk: {S.Ids.odd(k) == True{} : Bool}, +hr: {S.Ues.keyed(rest) == True{} : Bool}) -> {S.Ues.keyed(Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Ids.odd(k), S.Ues.keyed(rest), hk, hr)
-    case False{}:
-      hr
-
 def Id.sift(+s: S.Sieve, +ues: Tb.Table(S.Ue), +e: {S.Ues.keyed(ues) == True{} : Bool}) -> {S.Ues.keyed(S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Id.keep(k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), P.Bool.and_true_l(S.Ids.odd(k), S.Ues.keyed(more), e), Id.sift(s, more, P.Bool.and_true_r(S.Ids.odd(k), S.Ues.keyed(more), e)))
+      P.Keep.by(S.Ue, tb => {S.Ues.keyed(tb) == True{} : Bool}, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), e1 => h => P.Bool.and_intro(S.Ids.odd(k), S.Ues.keyed(S.Ues.sift(s, more)), P.Bool.and_true_l(S.Ids.odd(k), S.Ues.keyed(more), e), h), Id.sift(s, more, P.Bool.and_true_r(S.Ids.odd(k), S.Ues.keyed(more), e)))
 
 def Id.rephase(+key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +e: {S.Ues.keyed(ues) == True{} : Bool}) -> {S.Ues.keyed(S.Ues.rephase(key, p, ues)) == True{} : Bool}:
   match ues:
@@ -4514,19 +4413,12 @@ def Id.rephase(+key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +e: {S.Ues.keyed(ue
     case (+k, +u) <> +more:
       P.Bool.and_intro(S.Ids.odd(k), S.Ues.keyed(S.Ues.rephase(key, p, more)), P.Bool.and_true_l(S.Ids.odd(k), S.Ues.keyed(more), e), Id.rephase(key, p, more, P.Bool.and_true_r(S.Ids.odd(k), S.Ues.keyed(more), e)))
 
-def Id.skeep(+k: U32, +t: S.Session, +rest: Tb.Table(S.Session), +b: Bool, +hk: {S.Ids.seid(k) == True{} : Bool}, +hr: {S.Sessions.keyed(rest) == True{} : Bool}) -> {S.Sessions.keyed(Tb.Table.keep(S.Session, k, t, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(S.Ids.seid(k), S.Sessions.keyed(rest), hk, hr)
-    case False{}:
-      hr
-
 def Id.ssift(+s: S.SSieve, +ss: Tb.Table(S.Session), +e: {S.Sessions.keyed(ss) == True{} : Bool}) -> {S.Sessions.keyed(S.Sessions.sift(s, ss)) == True{} : Bool}:
   match ss:
     case Nil{}:
       {==}
     case (+k, +t) <> +more:
-      Id.skeep(k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), P.Bool.and_true_l(S.Ids.seid(k), S.Sessions.keyed(more), e), Id.ssift(s, more, P.Bool.and_true_r(S.Ids.seid(k), S.Sessions.keyed(more), e)))
+      P.Keep.by(S.Session, tb => {S.Sessions.keyed(tb) == True{} : Bool}, k, t, S.Sessions.sift(s, more), S.SSieve.keeps(s, k, t), e1 => h => P.Bool.and_intro(S.Ids.seid(k), S.Sessions.keyed(S.Sessions.sift(s, more)), P.Bool.and_true_l(S.Ids.seid(k), S.Sessions.keyed(more), e), h), Id.ssift(s, more, P.Bool.and_true_r(S.Ids.seid(k), S.Sessions.keyed(more), e)))
 
 def Id.srevar(+key: U32, +v: S.SVar, +ss: Tb.Table(S.Session), +e: {S.Sessions.keyed(ss) == True{} : Bool}) -> {S.Sessions.keyed(S.Sessions.revar(key, v, ss)) == True{} : Bool}:
   match ss:
@@ -4702,19 +4594,12 @@ def Pv.of_keys(+st: S.State, +vs: Tb.Table(S.Ue), +e: {Lv.keys_in(vs, S.State.ue
       +hk = P.Bool.and_true_l(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e)
       P.Bool.and_intro(Lv.held(st, k), Pv.all(st, more), P.Bool.or_l(Tb.Table.has(S.Ue, k, S.State.ues(st)), S.Maybe.same_u32(S.State.fresh(st), Some{k}), hk), Pv.of_keys(st, more, P.Bool.and_true_r(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e)))
 
-def Pv.keep(+st0: S.State, +k: U32, +v: S.Ue, +rest: Tb.Table(S.Ue), +b: Bool, +hk: {Lv.held(st0, k) == True{} : Bool}, +hr: {Pv.all(st0, rest) == True{} : Bool}) -> {Pv.all(st0, Tb.Table.keep(S.Ue, k, v, rest, b)) == True{} : Bool}:
-  match b:
-    case True{}:
-      P.Bool.and_intro(Lv.held(st0, k), Pv.all(st0, rest), hk, hr)
-    case False{}:
-      hr
-
 def Pv.sift(+st0: S.State, +s: S.Sieve, +ues: Tb.Table(S.Ue), +e: {Pv.all(st0, ues) == True{} : Bool}) -> {Pv.all(st0, S.Ues.sift(s, ues)) == True{} : Bool}:
   match ues:
     case Nil{}:
       {==}
     case (+k, +v) <> +more:
-      Pv.keep(st0, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), P.Bool.and_true_l(Lv.held(st0, k), Pv.all(st0, more), e), Pv.sift(st0, s, more, P.Bool.and_true_r(Lv.held(st0, k), Pv.all(st0, more), e)))
+      P.Keep.by(S.Ue, tb => {Pv.all(st0, tb) == True{} : Bool}, k, v, S.Ues.sift(s, more), S.Sieve.keeps(s, k, v), e1 => h => P.Bool.and_intro(Lv.held(st0, k), Pv.all(st0, S.Ues.sift(s, more)), P.Bool.and_true_l(Lv.held(st0, k), Pv.all(st0, more), e), h), Pv.sift(st0, s, more, P.Bool.and_true_r(Lv.held(st0, k), Pv.all(st0, more), e)))
 
 def Pv.rephase(+st0: S.State, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +e: {Pv.all(st0, ues) == True{} : Bool}) -> {Pv.all(st0, S.Ues.rephase(key, p, ues)) == True{} : Bool}:
   match ues:
