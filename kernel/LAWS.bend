@@ -340,7 +340,8 @@ law nas_sec.count_monotonic:
 # security protected NAS messages the actions carry to the UE keyed k (in DL
 # NAS Transport, Initial Context Setup, PDU Session Resource Setup or Release)
 # are each sealed under the COUNT after the one before (Ng.Fresh.run), the
-# first at the downlink COUNT k's context held before the step when they are
+# first at the downlink COUNT of the NAS context k's phase held before the
+# step (St.Phase.nas, in force or kept through an N2 handover) when they are
 # under the keys it held, at 0 when under new ones, which only a context
 # taken into use by Security Mode holds (TS 24.501 §5.4.2). If k holds a
 # context after the step, its downlink COUNT is the one after the last of
@@ -355,7 +356,7 @@ law nas_sec.downlink_fresh:
   for +entropy: B.Bytes()
   for +k: U32
   for +eu: {St.Ues.unique(St.State.ues(st)) == True{} : Bool}
-  Ng.Fresh.Law(St.Ue.ctx(Tb.Table.get(St.Ue, k, St.State.ues(st))), St.Ue.ctx(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))), Ng.Acts.nas(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))))
+  Ng.Fresh.Law(St.Ue.nas(Tb.Table.get(St.Ue, k, St.State.ues(st))), St.Ue.nas(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))), Ng.Acts.nas(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))))
 
 # NAS 5GMM codec (ticket 10)
 # --------------------------

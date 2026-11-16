@@ -300,7 +300,7 @@ def registered(msgs: List<&2, V.Vec>) -> S.State:
 # nas_sec.downlink_fresh for UE key k over the step o from st, where k holds a
 # NAS context after it.
 def fresh(+st: S.State, +k: U32, +o: N.Step()) -> Bool:
-  N.Fresh.holds(S.Ue.ctx(Tb.Table.get(S.Ue, k, S.State.ues(st))), S.Ue.ctx(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(o)))), N.Acts.nas(k, K.Kernel.actions(o)))
+  N.Fresh.holds(S.Ue.nas(Tb.Table.get(S.Ue, k, S.State.ues(st))), S.Ue.nas(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(o)))), N.Acts.nas(k, K.Kernel.actions(o)))
 
 def head_or(bs: B.Bytes()) -> U32:
   match bs:

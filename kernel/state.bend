@@ -313,6 +313,16 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
     case _:
       None{}
 
+# The NAS security context a phase holds, in force or not: a UE in N2
+# handover holds the one it goes back to, which Phase.ctx does not give, as
+# no NAS message goes to it while its handover is pending.
+def Phase.nas(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
+  match p:
+    case Handover{ctx, nh, source, leg}:
+      Some{ctx}
+    case other:
+      Phase.ctx(other)
+
 def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
   match p:
     case SecurityMode{guard, ctx, k_amf}:
@@ -500,12 +510,12 @@ def Ue.nh(m: Maybe<&2, Ue>) -> Maybe<&2, Nh>:
     case Some{u}:
       Phase.nh(Ue.phase(u))
 
-def Ue.ctx(m: Maybe<&2, Ue>) -> Maybe<&2, N.Nas.Ctx>:
+def Ue.nas(m: Maybe<&2, Ue>) -> Maybe<&2, N.Nas.Ctx>:
   match m:
     case None{}:
       None{}
     case Some{u}:
-      Phase.ctx(Ue.phase(u))
+      Phase.nas(Ue.phase(u))
 
 def Ue.mode_k_amf(m: Maybe<&2, Ue>) -> Maybe<&2, B.Bytes()>:
   match m:
