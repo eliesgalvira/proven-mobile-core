@@ -1898,8 +1898,8 @@ def Tk.out(+st: S.State, +o: N.GOut(), +k: U32, +u: S.Ue, w: Tk.Ok(k, u, S.State
 # context; a key names one row of a unique table, so that row is rephased
 # once, keeps its owner, and survives the sieve.
 
-# The row under k is u, or a context of u's owner securing u's SUPI.
-def Tk.held(+k: U32, +u: S.Ue, m: Maybe<&2, S.Ue>) -> Bool:
+# The row m is a context of u's owner securing u's SUPI.
+def Tk.held(+u: S.Ue, m: Maybe<&2, S.Ue>) -> Bool:
   match m:
     case None{}:
       False{}
@@ -1907,7 +1907,7 @@ def Tk.held(+k: U32, +u: S.Ue, m: Maybe<&2, S.Ue>) -> Bool:
       Bool.and(U32.is_eq(S.Ue.assoc(w), S.Ue.assoc(u)), S.Ue.secures(w, S.Ue.supi(u)))
 
 def Tk.Down(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue)) -> Data:
-  Either<&2, &2, {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}, {Tk.held(k, u, Tb.Table.get(S.Ue, k, ues)) == True{} : Bool}>
+  Either<&2, &2, {Tb.Table.get(S.Ue, k, ues) == Some{u} : Maybe<&2, S.Ue>}, {Tk.held(u, Tb.Table.get(S.Ue, k, ues)) == True{} : Bool}>
 
 def Tk.down_join(+k: U32, +u: S.Ue, +ues: Tb.Table(S.Ue), +a: N.GOut(), +b: N.GOut(), +h: Tk.Down(k, u, Tk.ues(N.Out.tx(b), Tk.ues(N.Out.tx(a), ues)))) -> Tk.Down(k, u, Tk.ues(N.Out.tx(N.Out.join(a, b)), ues)):
   match a:
@@ -1957,13 +1957,13 @@ def Tk.sp_downs(+assoc: U32, +rows: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +w: S.Ue,
       +ne = Equal.trans(Bool, U32.is_eq(k, k1), U32.is_eq(k1, k), False{}, P.U32.sym(k, k1), n1)
       Tk.sp_join(k, w, Ho.Ho.down_row(assoc, k1, u1, S.Ue.phase(u1)), Ho.Ho.downs(assoc, more), Tk.sp_row(assoc, k1, u1, S.Ue.phase(u1), k, w, ne), Tk.sp_downs(assoc, more, k, u, w, P.Bool.and_true_r(Bool.not(c), S.Ues.clear(k, u, more), hc)))
 
-def Tk.held_spared(+k: U32, +u: S.Ue, +tx: S.Tx, +x: Tb.Table(S.Ue), +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, x) == m : Maybe<&2, S.Ue>}, +e: {Tk.held(k, u, m) == True{} : Bool}, sp: @w:S.Ue -> {Tk.spares(k, w, tx) == True{} : Bool}) -> {Tk.held(k, u, Tb.Table.get(S.Ue, k, Tk.ues(tx, x))) == True{} : Bool}:
+def Tk.held_spared(+k: U32, +u: S.Ue, +tx: S.Tx, +x: Tb.Table(S.Ue), +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, x) == m : Maybe<&2, S.Ue>}, +e: {Tk.held(u, m) == True{} : Bool}, sp: @w:S.Ue -> {Tk.spares(k, w, tx) == True{} : Bool}) -> {Tk.held(u, Tb.Table.get(S.Ue, k, Tk.ues(tx, x))) == True{} : Bool}:
   match m:
     case None{}:
-      Empty.absurd({Tk.held(k, u, Tb.Table.get(S.Ue, k, Tk.ues(tx, x))) == True{} : Bool}, P.Refute.bool(e))
+      Empty.absurd({Tk.held(u, Tb.Table.get(S.Ue, k, Tk.ues(tx, x))) == True{} : Bool}, P.Refute.bool(e))
     case Some{+w}:
       sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, Tk.ues(tx, x)), Some{w}, Tk.spared(k, w, tx, x, em, sp(w)))
-      (%sg : {Tk.held(k, u, _) == True{} : Bool}; e)
+      (%sg : {Tk.held(u, _) == True{} : Bool}; e)
 
 def Tk.down_spared(+k: U32, +u: S.Ue, +tx: S.Tx, +x: Tb.Table(S.Ue), +h: Tk.Down(k, u, x), sp: @w:S.Ue -> {Tk.spares(k, w, tx) == True{} : Bool}) -> Tk.Down(k, u, Tk.ues(tx, x)):
   match h:
@@ -1985,7 +1985,7 @@ def Tk.leg_self(+assoc: U32, +k: U32, +u: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +l
       +p : S.Phase = S.Registered{ctx, nh, None{}}
       +v = S.Ue.with_phase(u, p)
       sr = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.Ues.rephase(k, p, x)), Some{v}, Rephase.self(k, p, u, x, eg))
-      Inr{(%sr : {Tk.held(k, u, _) == True{} : Bool}; P.Bool.and_intro(U32.is_eq(S.Ue.assoc(v), S.Ue.assoc(u)), S.Ue.secures(v, S.Ue.supi(u)), Tk.assoc_phase(u, p), W.secures_self(u, p, PW.Walk.aimed_supi(u, assoc, et), {==})))}
+      Inr{(%sr : {Tk.held(u, _) == True{} : Bool}; P.Bool.and_intro(U32.is_eq(S.Ue.assoc(v), S.Ue.assoc(u)), S.Ue.secures(v, S.Ue.supi(u)), Tk.assoc_phase(u, p), W.secures_self(u, p, PW.Walk.aimed_supi(u, assoc, et), {==})))}
     case False{} True{}:
       Inl{eg}
     case False{} False{}:
@@ -2040,7 +2040,7 @@ def Tk.downs(+assoc: U32, +rows: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +x: Tb.Table
     case (+k1, +u1) <> +more:
       Tk.downs_if(assoc, k1, u1, more, k, u, x, eg, U32.is_eq(k1, k), {==}, er, un, y => ey => em => Tk.downs(assoc, more, k, u, y, ey, em, P.Bool.and_true_r(S.Ues.clear(k1, u1, more), S.Ues.unique(more), un)))
 
-def Tk.drop_held(+assoc: U32, +ues: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, ues) == m : Maybe<&2, S.Ue>}, +e: {Tk.held(k, u, m) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {S.Ues.secured(S.Ue.supi(u), S.Ues.sift(S.Others{assoc}, ues)) == True{} : Bool}:
+def Tk.drop_held(+assoc: U32, +ues: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, ues) == m : Maybe<&2, S.Ue>}, +e: {Tk.held(u, m) == True{} : Bool}, +ea: {U32.is_eq(S.Ue.assoc(u), assoc) == False{} : Bool}) -> {S.Ues.secured(S.Ue.supi(u), S.Ues.sift(S.Others{assoc}, ues)) == True{} : Bool}:
   match m:
     case None{}:
       Empty.absurd({S.Ues.secured(S.Ue.supi(u), S.Ues.sift(S.Others{assoc}, ues)) == True{} : Bool}, P.Refute.bool(e))
