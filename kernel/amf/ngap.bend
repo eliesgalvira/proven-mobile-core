@@ -493,6 +493,22 @@ def Acts.sends(+bytes: B.Bytes(), acts: List<&2, Act>) -> Bool:
     case a <> more:
       Bool.or(Act.sends(bytes, a), Acts.sends(bytes, more))
 
+# Some action sends the context keyed k, in Initial Context Setup, a KgNB
+# from which n is the first {NH, NCC} pair of the chain from k_amf.
+def Act.seeds(+k_amf: B.Bytes(), +k: U32, +n: S.Nh, a: Act) -> Bool:
+  match a:
+    case Ics{assoc, stream, +key, ran_id, cfg, caps, +k_gnb, nas}:
+      Bool.and(U32.is_eq(key, k), S.Nh.same(n, S.Nh.initial(k_amf, k_gnb)))
+    case _:
+      False{}
+
+def Acts.seeds(+k_amf: B.Bytes(), +k: U32, +n: S.Nh, acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Act.seeds(k_amf, k, n, a), Acts.seeds(k_amf, k, n, more))
+
 # No action is built from the UE context keyed k.
 def Acts.spare(+k: U32, acts: List<&2, Act>) -> Bool:
   match acts:

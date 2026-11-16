@@ -851,12 +851,30 @@ def Bool.or_mono_false(+x: Bool, +y: Bool, +z: Bool, +h: {Bool.or(x, y) == False
     case False{}:
       f(h)
 
+def Bool.or_mono_l(+x: Bool, +y: Bool, +z: Bool, +h: {Bool.or(x, z) == True{} : Bool}, f: {x == True{} : Bool} -> {y == True{} : Bool}) -> {Bool.or(y, z) == True{} : Bool}:
+  match x:
+    case True{}:
+      Bool.or_l(y, z, f({==}))
+    case False{}:
+      Bool.or_r(y, z, h)
+
+def Bool.or_swap(+a: Bool, +b: Bool, +e: {Bool.or(a, b) == True{} : Bool}) -> {Bool.or(b, a) == True{} : Bool}:
+  match a:
+    case True{}:
+      Bool.or_r(b, True{}, {==})
+    case False{}:
+      Bool.or_l(b, False{}, e)
+
+# A Bool both true and false proves anything.
+def Bool.contra(-G: Type, +x: Bool, +e: {x == True{} : Bool}, +f: {x == False{} : Bool}) -> G:
+  Empty.absurd(G, Refute.true_false(Equal.trans(Bool, True{}, x, False{}, Equal.sym(Bool, x, True{}, e), f)))
+
 def Bool.or_true_l(a: Bool, +b: Bool, eb: {b == False{} : Bool}, e: {Bool.or(a, b) == True{} : Bool}) -> {a == True{} : Bool}:
   match a:
     case True{}:
       {==}
     case False{}:
-      Empty.absurd({False{} == True{} : Bool}, Refute.true_false(Equal.trans(Bool, True{}, b, False{}, Equal.sym(Bool, b, True{}, e), eb)))
+      Bool.contra({False{} == True{} : Bool}, b, e, eb)
 
 def Bool.or_true_r(a: Bool, +b: Bool, ea: {a == False{} : Bool}, e: {Bool.or(a, b) == True{} : Bool}) -> {b == True{} : Bool}:
   match a:

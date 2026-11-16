@@ -25,7 +25,7 @@ def Req.skip(+xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Ngap.any_ng_setu
 
 # Actions with no setup response, said to have one: refuted.
 def Req.none(+acts: List<&2, N.Act>, +h: {N.Ngap.any_ng_setup_response(acts) == False{} : Bool}, +e: {N.Ngap.any_ng_setup_response(acts) == True{} : Bool}, -T: Type) -> T:
-  Empty.absurd(T, P.Refute.true_false(Equal.trans(Bool, True{}, N.Ngap.any_ng_setup_response(acts), False{}, Equal.sym(Bool, N.Ngap.any_ng_setup_response(acts), True{}, e), h)))
+  P.Bool.contra(T, N.Ngap.any_ng_setup_response(acts), e, h)
 
 def L.amf.ng_setup.requires_supported_plmn(st, entropy, assoc, stream, len, bytes, e):
   +drop = K.Kernel.actions(R.Route.drop(st, assoc))

@@ -172,7 +172,7 @@ def Fl.final(+st: S.State, +o: N.GOut(), +h: Fl.Cls(o), +ef: {N.Ngap.any_switch_
           +st2 = S.Tx.apply(tx, st)
           +gone = N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2))
           nf = Fl.app(acts, gone, e, Fl.gone(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(st2)))
-          Empty.absurd({st2 == st : S.State}, P.Refute.true_false(Equal.trans(Bool, True{}, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), False{}, Equal.sym(Bool, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), True{}, ef), nf)))
+          P.Bool.contra({st2 == st : S.State}, N.Ngap.any_switch_failure(List.append(&2, N.Act, acts, gone)), ef, nf)
 
 def Fl.routed(+st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +crit: U32, +value: B.Bytes(), +ies: List<&2, Fr.Ie>, +c: Ap.Cur, +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{0, 25, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +ei: {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)}, +ef: {N.Ngap.any_switch_failure(K.Kernel.actions(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) == True{} : Bool}, +eup: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {K.Kernel.state(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)) == st : S.State}:
   +o = Ps.Ps.of_view(st, assoc, stream, V.PathSwitchRequest.view(ies))

@@ -212,10 +212,11 @@ law amf.ncc.chain:
 # TS 33.501 §6.9.2.1.1: a UE's {NH, NCC} pair moves only along its chain.
 # After any step, a context that held a pair holds it or the next one
 # (Handover Required, Path Switch), and one that held none was in Security
-# Mode and holds the first pair of a chain, NCC 1, from the K_AMF it derived
-# there (Security Mode Complete). So no step takes NCC back or skips a pair,
-# and a target gNB never gets a pair twice. It holds where no two contexts
-# share a key (amf.handover.single_owner).
+# Mode and holds Nh.initial of the K_AMF it derived there and of the KgNB the
+# same step sends it in Initial Context Setup (Security Mode Complete;
+# amf.ncc.chain gives its NCC, 1). So the stored pair never goes back, skips
+# one or starts again. It holds where no two contexts share a key
+# (amf.handover.single_owner).
 law amf.ncc.step:
   for +st: St.State
   for +ev: F.Evt
@@ -228,7 +229,7 @@ law amf.ncc.step:
   for +eu: {St.Ues.unique(St.State.ues(st)) == True{} : Bool}
   for +en: {St.Ue.nh(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))) == Some{St.Nh{k_amf, nh, ncc}} : Maybe<&2, St.Nh>}
   ({St.Ue.nh(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{m} : Maybe<&2, St.Nh>} -> {St.Nh{k_amf, nh, ncc} == m : St.Nh} | {St.Nh{k_amf, nh, ncc} == St.Nh.next(m) : St.Nh})
-  & ({St.Ue.nh(Tb.Table.get(St.Ue, k, St.State.ues(st))) == None{} : Maybe<&2, St.Nh>} -> {St.Ue.k_amf(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{k_amf} : Maybe<&2, B.Bytes()>} & {ncc == 1 : U32})
+  & ({St.Ue.nh(Tb.Table.get(St.Ue, k, St.State.ues(st))) == None{} : Maybe<&2, St.Nh>} -> {St.Ue.mode_k_amf(Tb.Table.get(St.Ue, k, St.State.ues(st))) == Some{k_amf} : Maybe<&2, B.Bytes()>} & {Ng.Acts.seeds(k_amf, k, St.Nh{k_amf, nh, ncc}, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == True{} : Bool})
 
 # Advisory GHSA-f9c2-535p-3mwc: the serving network name the AUSF derives keys
 # with, built from the configured PLMN, is never empty: every configuration the
