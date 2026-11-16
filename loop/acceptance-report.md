@@ -1,6 +1,6 @@
 # Acceptance report (ticket 23)
 
-Audited at commit 657e746 on `loop/m1`, 2026-11-02, re-audited by the owner on 2026-11-03, and brought up to date by tickets 32–35 and 38, the merge review's pre-merge fixes, milestone 2's tickets 24–31, the milestone 2 review's fixes, ticket 39 (2026-11-07, its Session Deletion rework 2026-11-12) and tickets 41 and 42 (2026-11-16): every in-scope row is ruled out by its laws. Figures and commands:
+Audited at commit 02ea6bb on `loop/m1`, 2026-11-02, re-audited by the owner on 2026-11-03, and brought up to date by tickets 32–35 and 38, the merge review's pre-merge fixes, milestone 2's tickets 24–31, the milestone 2 review's fixes, ticket 39 (2026-11-07, its Session Deletion rework 2026-11-12) and tickets 41 and 42 (2026-11-16): every in-scope row is ruled out by its laws. Figures and commands:
 
 | Check | Result |
 |---|---|
@@ -8,7 +8,7 @@ Audited at commit 657e746 on `loop/m1`, 2026-11-02, re-audited by the owner on 2
 | `python3 -I scripts/acceptance.py --strict --base origin/main` | 36 laws required (the 25 in-scope advisories and the laws tickets name), 0 failures; every law restated since main listed in `loop/law-changes.md` (2026-11-16) |
 | `bend kernel/PROOF.bend --verdict` | ALL PROOFS CHECK; 165 laws in `kernel/LAWS.bend` plus 788 generated NGAP laws in `kernel/ngap/gen/laws.bend` (2026-11-16) |
 | `scripts/check.nu --strict` | `CHECK OK` in 4 min 21 s (2026-11-16) |
-| `nix build .#checks.x86_64-linux.e2e` | `E2E PASS: registration`, `xn-handover` and `n2-handover` in three runs out of three on 2026-11-07 after ticket 29, in one run after the milestone 2 review's fixes, and in one run each after ticket 39's items 8, 2 and the rest so far (976e90f, f65329e, 5e793c8) after its review fixes (094f455) and after its Session Deletion rework (761cffb) and its review fixes (f8c3ebf), after its item (b) (cc0ebca) and after tickets 41 and 42: registration and PDU session through UERANSIM, then Xn and N2 handover through PacketRusher, 4/4 pings through eUPF before and after each, and after each handover eUPF's downlink FAR for the UE points at the target gNB's address only; the flake check `edge-sctp` passes too, its SCTP test run with `REQUIRE_SCTP=1` |
+| `nix build .#checks.x86_64-linux.e2e` | `E2E PASS: registration`, `xn-handover` and `n2-handover` in three runs out of three on 2026-11-07 after ticket 29, in one run after the milestone 2 review's fixes, and in one run each after ticket 39's items 8, 2 and the rest so far (78543ba, efe07e0, b29194e) after its review fixes (b5de92e) and after its Session Deletion rework (3fc0d4b) and its review fixes (95fb313), after its item (b) (1372f56) and after tickets 41 and 42: registration and PDU session through UERANSIM, then Xn and N2 handover through PacketRusher, 4/4 pings through eUPF before and after each, and after each handover eUPF's downlink FAR for the UE points at the target gNB's address only; the flake check `edge-sctp` passes too, its SCTP test run with `REQUIRE_SCTP=1` |
 
 Lines refer to `kernel/LAWS.bend` in ticket 39, after `amf.contexts.set_up`.
 

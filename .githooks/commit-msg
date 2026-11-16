@@ -1,0 +1,8 @@
+#!/usr/bin/env -S python3 -I
+# Drops the trailer cloud sessions add with a link to their private agent session (AGENTS.md § Publishing).
+import re
+import sys
+from pathlib import Path
+
+msg = Path(sys.argv[1])
+msg.write_text(re.sub(r"^Claude-Sessio[n]:.*\n?", "", msg.read_text(), flags=re.M).rstrip("\n") + "\n")
