@@ -58,7 +58,7 @@ The milestone specs are `docs/spec/milestone-1.md` and `docs/spec/milestone-2.md
 
 ## Publishing
 
-The repo will be public. Every push goes through `.githooks/pre-push`, which runs `scripts/privacy-check.py` on what the push adds and blocks personal paths, machine names, agent and thread ids, briefs, credentials and new binaries. The SessionStart hook copies `.githooks` into the clone's hooks directory, where they stay when an older branch is checked out; a clone used outside Claude Code runs `python3 -I .claude/hooks/session-start.py` once. Never push with `--no-verify`. When the check blocks, take the data out of the commits rather than adding an exception; exceptions are only for published test material. History from before the 2026-11-16 rewrite is refused: fetch, then rebase onto the rewritten branch.
+The repo will be public. Every push goes through `.githooks/pre-push`, which runs `scripts/privacy-check.py` on what the push adds and blocks personal paths, machine names, agent and thread ids, briefs, credentials and new binaries. The SessionStart hook copies `.githooks` into the clone's hooks directory, where they stay when an older branch is checked out; a clone used outside Claude Code runs `python3 -I .claude/hooks/session-start.py` once. Never push with `--no-verify`. When the check blocks, take the data out of the commits rather than adding an exception; exceptions are only for published test material. History from before the 2026-11-16 rewrites is refused: fetch, then rebase onto the rewritten branch.
 
 ## Erasure
 

@@ -20,8 +20,11 @@ from pathlib import Path
 ZERO = "0" * 40
 IDENTITIES = {"Elies <68759092+eliesgalvira@users.noreply.github.com>", "Claude <noreply@anthropic.com>"}
 EMAILS = {"68759092+eliesgalvira@users.noreply.github.com", "noreply@anthropic.com", "verylongusername1@3gpp.com"}
-# The first commits the 2026-11-16 history rewrite changed; nothing that contains them goes back up.
-OLD_HISTORY = {"ac754fd424d255827ccf5049d2ffe2de4c29a4df", "faa0aa210d454a8cf7a82156f9b0626ac7fdeb23"}
+# The first commits each 2026-11-16 history rewrite changed; nothing that contains them goes back up.
+OLD_HISTORY = {
+    "ac754fd424d255827ccf5049d2ffe2de4c29a4df", "faa0aa210d454a8cf7a82156f9b0626ac7fdeb23",  # session trailers
+    "dc4fb46b723687c3c68af1460119c6cf27c662ae",  # LICENSE
+}
 BINARIES = ["test-vectors/capture/*.pcapng"]
 CAPTURE_NETS = [ipaddress.ip_network(n) for n in ("10.33.0.0/24", "10.45.0.0/16", "127.0.0.0/8")]
 # The test bench's own key material, published with it so the captures can be reproduced (test-vectors/capture/NOTES.md).
