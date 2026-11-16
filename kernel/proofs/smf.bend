@@ -1300,7 +1300,9 @@ def Run.notes(+k: U32, +ok: Bool) -> {N.Acts.stops(k, Gsm.Gsm.deleted_notes(ok))
 # -----------------------------
 # Every outcome but its guard's and the UPF's answer to it changes or forgets
 # only rows held in the state before the step and puts only sessions clear
-# of it (PL.Lv.homed); with no two sessions sharing a key, its row stays.
+# of it (PL.Lv.homed); with no two sessions sharing a key, its row stays. A
+# UE procedure stops only a context's guard (PL.Lv.reach), and the guards a
+# step stops are of rows gone, so its guard keeps running.
 
 def Hd.Q(+skey: U32, +s0: S.Session, o: N.Step()) -> Type:
   {Tb.Table.get(S.Session, skey, S.State.sessions(K.Kernel.state(o))) == Some{s0} : Maybe<&2, S.Session>} & {N.Acts.stops(skey, K.Kernel.actions(o)) == False{} : Bool}
