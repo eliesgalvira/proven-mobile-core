@@ -882,14 +882,8 @@ def Lv.does0_f(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {L
 def Lv.does_stops(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.stops(tx, acts) == True{} : Bool}:
   Lv.does0_stops(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
 
-def Lv.does_tail(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f))) == True{} : Bool}:
-  Lv.does0_tail(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
-
 def Lv.does_seeds(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.seeds(st, tx, acts) == True{} : Bool}:
   Lv.does0_seeds(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
-
-def Lv.does_mid(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f)) == True{} : Bool}:
-  Lv.does0_mid(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
 
 def Lv.does_rest(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.arms(tx, acts), f) == True{} : Bool}:
   Lv.does0_rest(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
@@ -2196,9 +2190,6 @@ def Lv.put_ok(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ep: {S.Ue.phase(
 # Deleting sessions first, or after: one side of the join is mute.
 def Lv.mute_dels(+rows: Tb.Table(S.Session), +seq: U32, +b: N.GOut()) -> {Bool.or(PF.Fs.mute(N.Out.tx(Up.N4.deletions(rows, seq)), N.Out.acts(Up.N4.deletions(rows, seq))), PF.Fs.mute(N.Out.tx(b), N.Out.acts(b))) == True{} : Bool}:
   P.Bool.or_l(PF.Fs.mute(N.Out.tx(Up.N4.deletions(rows, seq)), N.Out.acts(Up.N4.deletions(rows, seq))), PF.Fs.mute(N.Out.tx(b), N.Out.acts(b)), PF.Fs.deletions_mute(rows, seq))
-
-def Lv.dels_mute(+a: N.GOut(), +rows: Tb.Table(S.Session), +seq: U32) -> {Bool.or(PF.Fs.mute(N.Out.tx(a), N.Out.acts(a)), PF.Fs.mute(N.Out.tx(Up.N4.deletions(rows, seq)), N.Out.acts(Up.N4.deletions(rows, seq)))) == True{} : Bool}:
-  P.Bool.or_r(PF.Fs.mute(N.Out.tx(a), N.Out.acts(a)), PF.Fs.mute(N.Out.tx(Up.N4.deletions(rows, seq)), N.Out.acts(Up.N4.deletions(rows, seq))), PF.Fs.deletions_mute(rows, seq))
 
 def Lw.place0(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ep: {S.Ue.phase(ue) == p : S.Phase}, +eg: {S.Phase.guarded(p) == True{} : Bool}, +ei: {S.Phase.idle(p) == True{} : Bool}, +en: {S.Phase.nh(p) == None{} : Maybe<&2, S.Nh>}, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf0(st, Gmm.Gmm.place(st, key, ue)) == True{} : Bool}:
   +vs = S.Ues.evicted(key, ue, S.State.ues(st))

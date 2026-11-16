@@ -562,9 +562,6 @@ def Fs.kd_dl(m: Maybe<&2, Fs.KD()>, +d0: Sec.Nas.Count) -> Sec.Nas.Count:
     case Some{(k, d)}:
       d
 
-def Fs.Viewed(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count) -> Type:
-  {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}
-
 def Fs.start_view(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +e: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}) -> {N.Fresh.start(b, k) == d : Sec.Nas.Count}:
   match b:
     case None{}:
@@ -623,11 +620,6 @@ def Fs.seal_protected(+k: Sec.Nas.Keys, +prot: Sec.Nas.Protection, +d: Sec.Nas.C
         case Sec.CipheredNew{}:
           {==}
 
-def Fs.msg_to(+key: U32, +m: B.Bytes(), +more: List<&2, B.Bytes()>, +h: {Sec.Nas.is_protected(m) == True{} : Bool}) -> {N.Acts.nas_to(key, N.Act.nas_if(key, m, Sec.Nas.is_protected(m)), more) == m <> more : List<&2, B.Bytes()>}:
-  +sh = Equal.sym(Bool, Sec.Nas.is_protected(m), True{}, h)
-  +se = Equal.sym(Bool, U32.is_eq(key, key), True{}, P.U32.is_eq_refl(key))
-  (%sh : {N.Acts.nas_to(key, N.Act.nas_if(key, m, _), more) == m <> more : List<&2, B.Bytes()>}; (%se : {N.Acts.nas_keep(m, more, _) == m <> more : List<&2, B.Bytes()>}; {==}))
-
 # A phase that holds a context in force holds the one written into it.
 def Fs.nas_with(+q: S.Phase, +c: Sec.Nas.Ctx, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(q)) == True{} : Bool}) -> {S.Phase.nas(S.Phase.with_ctx(q, c)) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}:
   match q:
@@ -649,10 +641,6 @@ def Fs.nas_with(+q: S.Phase, +c: Sec.Nas.Ctx, +ec: {Tb.Table.present(Sec.Nas.Ctx
       Empty.absurd({S.Phase.nas(S.Phase.with_ctx(S.Handover{ctx, nh, source, leg}, c)) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, P.Refute.bool(ec))
     case S.Releasing{guard}:
       Empty.absurd({S.Phase.nas(S.Phase.with_ctx(S.Releasing{guard}, c)) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, P.Refute.bool(ec))
-
-# The protected NAS message each kind of action carries.
-def Fs.Carries(+x: N.Act, +key: U32, +m: B.Bytes()) -> Type:
-  {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}
 
 def Fs.if_true(+key: U32, +m: B.Bytes(), +h: {Sec.Nas.is_protected(m) == True{} : Bool}) -> {N.Act.nas_if(key, m, Sec.Nas.is_protected(m)) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}:
   +sh = Equal.sym(Bool, Sec.Nas.is_protected(m), True{}, h)
@@ -1209,9 +1197,6 @@ def Fs.gone_any(+b: Maybe<&2, Sec.Nas.Ctx>, +c: Sec.Nas.Ctx, +prot: Sec.Nas.Prot
 def Fs.cs_write(+st: S.State, +key: U32, +ue2: S.Ue, +ctx: Sec.Nas.Ctx, +accept: B.Bytes(), +nh: S.Nh, +epc: {S.Ue.phase(ue2) == S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)), nh, False{}, False{}} : S.Phase}, +ev: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{ctx}) : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), [Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept))]) == True{} : Bool}:
   +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)), nh, False{}, False{}}
   (%Equal.sym(S.Phase, S.Ue.phase(ue2), ph, epc) : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(_), [Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept))]) == True{} : Bool}; Fs.told_any(Fs.ctx(st, key), ctx, Sec.Ciphered{}, accept, ev))
-
-def Fs.cs_nas(+g: S.Guard, +c: Sec.Nas.Ctx, +nh: S.Nh, +r: Bool, +cm: Bool) -> {S.Phase.nas(S.ContextSetup{g, c, nh, r, cm}) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}:
-  {==}
 
 # Security Mode Complete: Initial Context Setup with the Registration Accept
 # under the stored context's COUNT, Context Setup taking the next.
