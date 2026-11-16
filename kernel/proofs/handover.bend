@@ -246,11 +246,6 @@ def L.amf.handover.owner_only(st, entropy, assoc, stream, len, bytes, crit, valu
 # amf.handover.responses_correlated
 # ---------------------------------
 
-def Hp.pair_l(+m: Maybe<&2, S.Ue>, +u: S.Ue, -Q: Type, pr: {m == Some{u} : Maybe<&2, S.Ue>} & Q) -> {m == Some{u} : Maybe<&2, S.Ue>}:
-  match pr:
-    case (+e, q):
-      e
-
 # A context whose phase holds no pending handover.
 def Hp.kept_none(+st: S.State, +k: U32, +u: S.Ue, +p: S.Phase, +eg: {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{u} : Maybe<&2, S.Ue>}, +epu: {S.Ue.phase(u) == p : S.Phase}, +en: {S.Phase.pending(p) == None{} : Maybe<&2, U32>}) -> {S.Ue.pending(Tb.Table.get(S.Ue, k, S.State.ues(st))) == None{} : Maybe<&2, U32>}:
   sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{u}, eg)
@@ -275,7 +270,7 @@ def Hp.Settled(+st: S.State, +k: U32, +o: N.GOut()) -> Type:
 # The owner's context under k, found by the key it names.
 def Hp.owned_get(+st: S.State, +assoc: U32, +ran: B.Bytes(), +amf: B.Bytes(), +k: U32, +key: U32, +ue: S.Ue, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> {Tb.Table.get(S.Ue, k, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}:
   kk = Hp.same_key(amf, k, key, eid, ek)
-  eg = Hp.pair_l(Tb.Table.get(S.Ue, key, S.State.ues(st)), ue, {U32.is_eq(S.Ue.assoc(ue), assoc) == True{} : Bool}, PT.Own.get(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran, ue, eo))
+  eg = PL.Lv.owned_get(st, assoc, key, ran, ue, eo)
   (%kk : {Tb.Table.get(S.Ue, _, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}; eg)
 
 def Hp.cancel_go(+st: S.State, +assoc: U32, +ran: B.Bytes(), +amf: B.Bytes(), +k: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +leg: S.Leg, +eid: {N.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>}, +ek: {N.Ngap.ue_key(amf) == Some{key} : Maybe<&2, U32>}, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> Hp.Settled(st, k, Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg})):

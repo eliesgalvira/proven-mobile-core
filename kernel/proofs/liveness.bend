@@ -3756,21 +3756,6 @@ def Lw.ho_fail(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +ek: {Lv.hel
   +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Required refused"}
   Lv.leaf(st, S.Keep{}, [x, n], Lv.cons(st, x, [n], Lv.held_live(st, key, ek), {==}), {==}, {==})
 
-def Lw.not_true(+x: Bool, +e: {Bool.not(x) == True{} : Bool}) -> {x == False{} : Bool}:
-  match x:
-    case True{}:
-      Empty.absurd({True{} == False{} : Bool}, P.Refute.bool(e))
-    case False{}:
-      {==}
-
-def Lw.pair_get(+m: Maybe<&2, S.Ue>, +u: S.Ue, -Q: Type, pr: {m == Some{u} : Maybe<&2, S.Ue>} & Q) -> {m == Some{u} : Maybe<&2, S.Ue>}:
-  match pr:
-    case (+e, q):
-      e
-
-# A pending handover's phase, written over the context it belongs to, names
-# that context's owner as its source and another association as its target.
-
 # A pending handover's phase, written over the context it belongs to, names
 # that context's owner as its source and another association as its target.
 def Lw.ho_fits(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}) -> {Bool.and(True{}, S.Ue.fits(S.Handover{ctx, nh, S.Ue.assoc(ue), leg}, Tb.Table.get(S.Ue, key, S.State.ues(st)))) == True{} : Bool}:
@@ -3782,19 +3767,15 @@ def Lw.ho_fits(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh,
   %sn : {Bool.and(True{}, Bool.not(_)) == True{} : Bool}
   {==}
 
-def Lw.ho_homed(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.homed(st, S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, S.State.ues(st)) == True{} : Bool}:
-  +ph : S.Phase = S.Handover{ctx, nh, S.Ue.assoc(ue), leg}
-  P.Bool.and_intro(Lv.chain(st, key, Some{nh}), Bool.and(True{}, S.Ue.fits(ph, Tb.Table.get(S.Ue, key, S.State.ues(st)))), ec, Lw.ho_fits(st, key, ue, ctx, nh, leg, eg, ne))
-
 def Lw.ho_leafok(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +acts: List<&2, N.Act>, +ha: {Lv.acts(st, acts) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}, +hs: {Lv.stops(S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.ok(st, (S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts)) == True{} : Bool}:
   +tx : S.Tx = S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}
-  Lv.does_intro(st, tx, acts, Lv.homed(st, tx, S.State.ues(st)), hs, ha, {==}, Lw.ho_homed(st, key, ue, ctx, nh, leg, eg, ne, ec))
+  Lv.does_intro(st, tx, acts, Lv.homed(st, tx, S.State.ues(st)), hs, ha, {==}, P.Bool.and_intro(Lv.chain(st, key, Some{nh}), Bool.and(True{}, S.Ue.fits(S.Handover{ctx, nh, S.Ue.assoc(ue), leg}, Tb.Table.get(S.Ue, key, S.State.ues(st)))), ec, Lw.ho_fits(st, key, ue, ctx, nh, leg, eg, ne)))
 
 # The target of a pending handover is not the context's owner.
 def Lw.ho_aimed_ne(+ue: S.Ue, +assoc: U32, +e: {Ho.Ho.aimed(ue, assoc) == True{} : Bool}) -> {U32.is_eq(assoc, S.Ue.assoc(ue)) == False{} : Bool}:
   +rest = Bool.and(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc)))
   n = P.Bool.and_true_r(Tb.Table.present(B.Digits(), S.Ue.supi(ue)), Bool.not(U32.is_eq(S.Ue.assoc(ue), assoc)), P.Bool.and_true_r(S.Maybe.same_u32(S.Phase.pending(S.Ue.phase(ue)), Some{assoc}), rest, e))
-  Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(ue)), U32.is_eq(S.Ue.assoc(ue), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(ue)), Lw.not_true(U32.is_eq(S.Ue.assoc(ue), assoc), n))
+  Equal.trans(Bool, U32.is_eq(assoc, S.Ue.assoc(ue)), U32.is_eq(S.Ue.assoc(ue), assoc), False{}, P.U32.sym(assoc, S.Ue.assoc(ue)), P.Bool.not_true(U32.is_eq(S.Ue.assoc(ue), assoc), n))
 
 # The context a message from its owner names holds its key.
 def Lw.owned_held(+st: S.State, +assoc: U32, +ran: B.Bytes(), +key: U32, +ue: S.Ue, +eo: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.held(st, key) == True{} : Bool}:
@@ -3828,7 +3809,7 @@ def Lw.ho_prepare(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.
   Lw.ho_leafok(st, key, ue, ctx, next, S.Asked{t}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], Lv.ue_start(st, key, N.Ue.guard_ms(), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))), {==})), eg, ne, {==}, Lv.chain_at(st, key, ue, S.Registered{ctx, nh, rel}, eg, eph, Some{next}, Lv.chains_next(nh, None{})))
 
 def Lw.ho_required(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverRequired.View>) -> {Lv.ok(st, Ho.Ho.required_of_view(st, assoc, r)) == True{} : Bool}:
-  PW.Hw.required(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +ran => +key => +ue => +c => ek => +eo => Lv.ok_of(st, Ho.Ho.fail(key, ue, c), Lw.ho_fail(st, key, ue, c, Lw.owned_held(st, assoc, ran, key, ue, eo))), amf => +ran => +key => +ue => +ctx => +nh => +t => +cfg => +cause => +container => +i => +more => ek => +eo => +ne => +rel => eph => Lw.ho_prepare(st, key, ue, ctx, nh, t, cfg, cause, container, i, more, Lw.pair_get(Tb.Table.get(S.Ue, key, S.State.ues(st)), ue, {U32.is_eq(S.Ue.assoc(ue), assoc) == True{} : Bool}, PT.Own.get(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran, ue, eo)), ne, rel, eph))
+  PW.Hw.required(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +ran => +key => +ue => +c => ek => +eo => Lv.ok_of(st, Ho.Ho.fail(key, ue, c), Lw.ho_fail(st, key, ue, c, Lw.owned_held(st, assoc, ran, key, ue, eo))), amf => +ran => +key => +ue => +ctx => +nh => +t => +cfg => +cause => +container => +i => +more => ek => +eo => +ne => +rel => eph => Lw.ho_prepare(st, key, ue, ctx, nh, t, cfg, cause, container, i, more, Lv.owned_get(st, assoc, key, ran, ue, eo), ne, rel, eph))
 
 def Lw.ho_acked(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +ran: B.Bytes(), +admitted: G.PDUSessionResourceAdmittedList(), +container: B.Bytes(), +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +t: U32, +ep: {Ho.Ho.pending(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc) == Some{ue} : Maybe<&2, S.Ue>}, +eph: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, S.Asked{t}} : S.Phase}) -> {Lv.ok(st, Ho.Ho.ack_phase(assoc, stream, key, ue, ran, admitted, container, S.Handover{ctx, nh, source, S.Asked{t}})) == True{} : Bool}:
   +ek = Lw.target_live(st, assoc, key, ue, ep)
