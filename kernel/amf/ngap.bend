@@ -357,6 +357,7 @@ type Act is Data:
   DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
   Ics{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()}
   PduSetup{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()}
+  PduRelease{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), psi: U32, nas: B.Bytes()}
   Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
   SwitchAck{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), caps: B.Bytes(), nh: S.Nh, switched: List<&2, U32>, released: List<&2, U32>, sst: B.Bytes()}
   SwitchFail{assoc: U32, stream: U32, ue: Maybe<&2, U32>, amf: B.Bytes(), ran_id: B.Bytes(), psis: List<&2, U32>, cause: G.Cause}
@@ -380,6 +381,8 @@ def Act.render(a: Act) -> F.Action:
       Ngap.send(assoc, stream, Ngap.ics_request(key, ran_id, cfg, caps, k_gnb, nas))
     case PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
       Ngap.send(assoc, stream, Ngap.pdu_setup(key, ran_id, psi, sst, nas, transfer))
+    case PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      Ngap.send(assoc, stream, Ngap.pdu_release(key, ran_id, psi, nas, Ngap.misc(G.CauseMisc.unspecified())))
     case Release{assoc, stream, key, ran_id, cause}:
       Ngap.send(assoc, stream, Ngap.release_command(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, cause))
     case SwitchAck{assoc, stream, key, ran_id, caps, nh, switched, released, sst}:
@@ -408,6 +411,8 @@ def Act.ue(a: Act) -> Maybe<&2, U32>:
     case Ics{assoc, stream, key, ran_id, cfg, caps, k_gnb, nas}:
       Some{key}
     case PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
+      Some{key}
+    case PduRelease{assoc, stream, key, ran_id, psi, nas}:
       Some{key}
     case Release{assoc, stream, key, ran_id, cause}:
       Some{key}

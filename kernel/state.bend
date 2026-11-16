@@ -499,6 +499,13 @@ def Ue.nh(m: Maybe<&2, Ue>) -> Maybe<&2, Nh>:
     case Some{u}:
       Phase.nh(Ue.phase(u))
 
+def Ue.ctx(m: Maybe<&2, Ue>) -> Maybe<&2, N.Nas.Ctx>:
+  match m:
+    case None{}:
+      None{}
+    case Some{u}:
+      Phase.ctx(Ue.phase(u))
+
 def Ue.mode_k_amf(m: Maybe<&2, Ue>) -> Maybe<&2, B.Bytes()>:
   match m:
     case None{}:

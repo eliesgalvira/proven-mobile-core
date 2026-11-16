@@ -75,6 +75,11 @@ def Nas.Count.carry(overflow: U32, wrapped: Bool) -> U32:
     case False{}:
       overflow
 
+def Nas.Count.same(a: Nas.Count, b: Nas.Count) -> Bool:
+  match a b:
+    case Count{o1, s1} Count{o2, s2}:
+      Bool.and(U32.is_eq(o1, o2), U32.is_eq(s1, s2))
+
 def Nas.Count.next(c: Nas.Count) -> Nas.Count:
   match c:
     case Count{overflow, +sqn}:
@@ -154,6 +159,12 @@ def Nas.Keys.bearer(k: Nas.Keys) -> U32:
   match k:
     case Keys{k_int, k_enc, ea, ia, bearer}:
       bearer
+
+# The same keys: one NAS security context.
+def Nas.Keys.same(a: Nas.Keys, b: Nas.Keys) -> Bool:
+  match a b:
+    case Keys{i1, e1, ea1, ia1, b1} Keys{i2, e2, ea2, ia2, b2}:
+      Bool.and(B.bytes_eq(i1, i2), Bool.and(B.bytes_eq(e1, e2), Bool.and(U32.is_eq(Nas.Ea.id(ea1), Nas.Ea.id(ea2)), Bool.and(U32.is_eq(Nas.Ia.id(ia1), Nas.Ia.id(ia2)), U32.is_eq(b1, b2)))))
 
 def Nas.downlink() -> U32:
   1
@@ -237,6 +248,33 @@ def Nas.open(keys: Nas.Keys, dir: U32, count: Nas.Count, msg: B.Bytes()) -> Resu
       Nas.o_epd(keys, dir, Nas.Count.value(count), code, [m0, m1, m2, m3], sqn, body, U32.is_eq(epd, Nas.epd()))
     case _:
       Fail{B.Short{}}
+
+# A security protected NAS message: security header type 1 to 4.
+def Nas.protected_by(p: Maybe<&2, Nas.Protection>) -> Bool:
+  match p:
+    case Some{x}:
+      True{}
+    case None{}:
+      False{}
+
+def Nas.is_protected(msg: B.Bytes()) -> Bool:
+  match msg:
+    case epd <> code <> rest:
+      Nas.protected_by(Nas.Protection.of(code))
+    case _:
+      False{}
+
+def Nas.resealed(keys: Nas.Keys, +count: Nas.Count, +msg: B.Bytes(), r: Result<&2, &2, B.Err, Nas.Opened>) -> Bool:
+  match r:
+    case Done{Opened{prot, plain}}:
+      B.bytes_eq(Nas.seal(keys, prot, Nas.downlink(), count, plain), msg)
+    case Fail{e}:
+      False{}
+
+# msg is a downlink message sealed under keys at count: what it opens to
+# there, sealed there again, is msg.
+def Nas.sealed(+keys: Nas.Keys, +count: Nas.Count, +msg: B.Bytes()) -> Bool:
+  Nas.resealed(keys, count, msg, Nas.open(keys, Nas.downlink(), count, msg))
 
 # The MAC a protected message carries.
 def Nas.received_mac(msg: B.Bytes()) -> B.Bytes():

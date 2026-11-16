@@ -905,6 +905,8 @@ def Hs.act(+k: U32, +tx: S.Tx, +a: N.Act, +e1: {N.Act.stops(k, a) == True{} : Bo
       Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
     case N.UeSend{assoc, stream, key, bytes}:
       Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
     case N.ErrInd{assoc, cause}:
       Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
     case N.Setup{assoc, answer}:
@@ -1382,6 +1384,8 @@ def Nc.act_amf(+ka: B.Bytes(), +k: U32, +k_amf: B.Bytes(), +nh: B.Bytes(), +ncc:
     case N.SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
       Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))
     case N.UeSend{assoc, stream, key, bytes}:
+      Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
       Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))
     case N.ErrInd{assoc, cause}:
       Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))

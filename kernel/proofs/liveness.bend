@@ -1027,6 +1027,8 @@ def Lv.act_w(+st: S.State, +a: N.Act, +h: {Lv.act(st, a) == True{} : Bool}) -> {
       h
     case N.UeSend{assoc, stream, key, bytes}:
       h
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      h
     case N.ErrInd{assoc, cause}:
       h
     case N.Setup{assoc, answer}:
@@ -2139,7 +2141,7 @@ def Lw.out_verified(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +why:
 # PDU Session Resource Release Command: the context's phase takes the NAS context moved on.
 def Lw.out_release(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.n2_release(key, ue, ctx, psi)) == True{} : Bool}:
   +p : Sec.Nas.Protected = Gsm.Gsm.release_nas(ctx, psi)
-  +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, N.Ngap.pdu_release(key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p), N.Ngap.misc(G.CauseMisc.unspecified()))}
+  +x : N.Act = N.PduRelease{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p)}
   Lv.leaf(st, S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), Lv.free_ctx(st, key, ue, Sec.Nas.Protected.ctx(p), eg, ec), {==}, {==})
 
 def Lw.tell(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +t: Gsm.Tell, +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.tell(key, ue, ctx, psi, t)) == True{} : Bool}:
@@ -4376,6 +4378,8 @@ def Dw.lead(-ok: N.GOut() -> Type, +st: S.State, +tx: S.Tx, +a: N.Act, +more: Li
       Empty.absurd(ok((tx, N.SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause} <> more)), P.Refute.bool(h))
     case N.UeSend{assoc, stream, key, bytes}:
       Empty.absurd(ok((tx, N.UeSend{assoc, stream, key, bytes} <> more)), P.Refute.bool(h))
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      Empty.absurd(ok((tx, N.PduRelease{assoc, stream, key, ran_id, psi, nas} <> more)), P.Refute.bool(h))
     case N.ErrInd{assoc, cause}:
       Empty.absurd(ok((tx, N.ErrInd{assoc, cause} <> more)), P.Refute.bool(h))
     case N.Setup{assoc, answer}:

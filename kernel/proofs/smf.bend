@@ -925,7 +925,7 @@ def Rl.then(+a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> 
       {==}
 
 def L.smf.releases.sent(key, assoc, stream, ran, p, more, ctx, keys, dl, ul, ue):
-  ({==}, (Rl.then(N.DlNas{assoc, stream, key, ran, Sec.Nas.seal(keys, Sec.Ciphered{}, Sec.Nas.downlink(), dl, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Ctx{keys, Sec.Nas.Count.next(dl), ul})), {==}))
+  ({==}, (Rl.then(N.DlNas{assoc, stream, key, ran, Sec.Nas.seal(keys, Sec.Ciphered{}, Sec.Nas.downlink(), dl, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Ctx{keys, Sec.Nas.Count.next(dl), ul})), ({==}, {==})))
 
 def L.smf.release_response.keeps_state(st, entropy, assoc, stream, len, bytes, crit, value, ep):
   PW.Rt.read(x => {K.Kernel.state(x) == st : S.State}, st, entropy, assoc, stream, len, bytes, 1, 28, crit, value, ep, {==}, {==}, {==}, ies => {==})
@@ -1212,6 +1212,8 @@ def Run.act(+st: S.State, +k: U32, +a: N.Act, +ef: {Run.free(st, k) == True{} : 
     case N.SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
       {==}
     case N.UeSend{assoc, stream, key, bytes}:
+      {==}
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
       {==}
     case N.ErrInd{assoc, cause}:
       {==}
