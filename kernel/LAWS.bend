@@ -331,6 +331,32 @@ law nas_sec.count_monotonic:
   {N.Nas.Count.advanced(last, N.Nas.Unprotected.count(u)) == True{} : Bool}
   & {U32.is_eq(N.Nas.Count.sqn(last), N.Nas.Count.sqn(N.Nas.Unprotected.count(u))) == False{} : Bool}
 
+# TS 24.501 §4.4.3.1, TS 33.501 §6.4.3: a 5G NAS security context keeps one
+# downlink NAS COUNT, which the AMF increases by one after each new or
+# retransmitted security protected message, so no two downlink messages under
+# the same keys share a COUNT. NEA1, NEA2 and NEA3 draw the keystream from the
+# keys and the COUNT: two messages under one COUNT give away the XOR of their
+# plaintexts, and the UE drops the second as a replay. Over any step, the
+# security protected NAS messages the actions carry to the UE keyed k (in DL
+# NAS Transport, Initial Context Setup, PDU Session Resource Setup or Release)
+# are each sealed under the COUNT after the one before (Ng.Fresh.run), the
+# first at the downlink COUNT k's context held before the step when they are
+# under the keys it held, at 0 when under new ones, which only a context
+# taken into use by Security Mode holds (TS 24.501 §5.4.2). If k holds a
+# context after the step, its downlink COUNT is the one after the last of
+# them: unchanged when there is none, so the next step starts where this one
+# ends, and no COUNT is used twice under k's keys. If it holds none, they are
+# still sealed in turn under one context's keys, from where k's context left
+# off under its own. It holds where no two contexts share a key
+# (amf.indexes.unique).
+law nas_sec.downlink_fresh:
+  for +st: St.State
+  for +ev: F.Evt
+  for +entropy: B.Bytes()
+  for +k: U32
+  for +eu: {St.Ues.unique(St.State.ues(st)) == True{} : Bool}
+  Ng.Fresh.Law(St.Ue.ctx(Tb.Table.get(St.Ue, k, St.State.ues(st))), St.Ue.ctx(Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy))))), Ng.Acts.nas(k, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))))
+
 # NAS 5GMM codec (ticket 10)
 # --------------------------
 

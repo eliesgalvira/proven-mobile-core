@@ -530,6 +530,129 @@ def Acts.spare(+k: U32, acts: List<&2, Act>) -> Bool:
     case a <> more:
       Bool.and(Bool.not(S.Maybe.same_u32(Act.ue(a), Some{k})), Acts.spare(k, more))
 
+# Downlink NAS COUNT freshness (nas.downlink.fresh)
+# -------------------------------------------------
+# The security protected NAS message an action carries to the UE keyed key.
+def Act.nas_if(+key: U32, +nas: B.Bytes(), p: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+  match p:
+    case True{}:
+      Some{(key, nas)}
+    case False{}:
+      None{}
+
+def Act.nas(a: Act) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+  match a:
+    case DlNas{assoc, stream, +key, ran_id, +nas}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case Ics{assoc, stream, +key, ran_id, cfg, caps, k_gnb, +nas}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case PduSetup{assoc, stream, +key, ran_id, psi, sst, +nas, transfer}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case PduRelease{assoc, stream, +key, ran_id, psi, +nas}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case _:
+      None{}
+
+def Acts.nas_keep(+nas: B.Bytes(), +more: List<&2, B.Bytes()>, hit: Bool) -> List<&2, B.Bytes()>:
+  match hit:
+    case True{}:
+      nas <> more
+    case False{}:
+      more
+
+def Acts.nas_to(+k: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +more: List<&2, B.Bytes()>) -> List<&2, B.Bytes()>:
+  match m:
+    case None{}:
+      more
+    case Some{(+key, +nas)}:
+      Acts.nas_keep(nas, more, U32.is_eq(key, k))
+
+# The security protected NAS messages the actions carry to the UE keyed k, in order.
+def Acts.nas(+k: U32, acts: List<&2, Act>) -> List<&2, B.Bytes()>:
+  match acts:
+    case Nil{}:
+      []
+    case a <> more:
+      Acts.nas_to(k, Act.nas(a), Acts.nas(k, more))
+
+# Messages sealed in turn under keys, the first at COUNT c, each at the COUNT
+# after the one before: the COUNT after the last, or none if one is not.
+def Fresh.then(ok: Bool, later: Unit -> Maybe<&2, Sec.Nas.Count>) -> Maybe<&2, Sec.Nas.Count>:
+  match ok:
+    case True{}:
+      later(Unit{})
+    case False{}:
+      None{}
+
+def Fresh.run(msgs: List<&2, B.Bytes()>, +keys: Sec.Nas.Keys, +c: Sec.Nas.Count) -> Maybe<&2, Sec.Nas.Count>:
+  match msgs:
+    case Nil{}:
+      Some{c}
+    case +m <> more:
+      Fresh.then(Sec.Nas.sealed(keys, c, m), u => Fresh.run(more, keys, Sec.Nas.Count.next(c)))
+
+# Where a context's messages start: at the downlink COUNT it held before when
+# they are under the keys it held, at 0 under new ones.
+def Fresh.start_if(+d: Sec.Nas.Count, same: Bool) -> Sec.Nas.Count:
+  match same:
+    case True{}:
+      d
+    case False{}:
+      Sec.Nas.Count.zero()
+
+def Fresh.start(b: Maybe<&2, Sec.Nas.Ctx>, +keys: Sec.Nas.Keys) -> Sec.Nas.Count:
+  match b:
+    case None{}:
+      Sec.Nas.Count.zero()
+    case Some{Sec.Ctx{kb, +d, ul}}:
+      Fresh.start_if(d, Sec.Nas.Keys.same(kb, keys))
+
+def Fresh.at(m: Maybe<&2, Sec.Nas.Count>, +d: Sec.Nas.Count) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{c}:
+      Sec.Nas.Count.same(c, d)
+
+def Fresh.from(b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Bool:
+  match b:
+    case None{}:
+      False{}
+    case Some{Sec.Ctx{+kb, +db, ub}}:
+      Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, kb, db))
+
+# A context that ends: its messages sealed in turn from the downlink COUNT
+# it held, under its keys.
+def Fresh.gone(b: Maybe<&2, Sec.Nas.Ctx>, msgs: List<&2, B.Bytes()>) -> Bool:
+  match msgs:
+    case Nil{}:
+      True{}
+    case +m <> +more:
+      Fresh.from(b, m <> more)
+
+# What a context a written under a key holds against the context b the key
+# held before the step and the messages msgs the step sends the key: they
+# are sealed in turn from where b leaves off, and a holds the COUNT after
+# them; with none written, they are sealed in turn under b.
+def Fresh.holds(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Bool:
+  match a:
+    case Some{Sec.Ctx{+ka, +da, ua}}:
+      Fresh.at(Fresh.run(msgs, ka, Fresh.start(b, ka)), da)
+    case None{}:
+      Fresh.gone(b, msgs)
+
+# nas.downlink.fresh for one key, between the context b it held before the
+# step and the context a it holds after: a holds the COUNT after msgs, sealed
+# in turn from where b leaves off; with no context after, msgs are sealed in
+# turn under one context's keys, from where b leaves off under b's keys or
+# from 0 under others.
+def Fresh.Law(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, msgs: List<&2, B.Bytes()>) -> Type:
+  match a:
+    case Some{Sec.Ctx{ka, da, ua}}:
+      {Fresh.at(Fresh.run(msgs, ka, Fresh.start(b, ka)), da) == True{} : Bool}
+    case None{}:
+      Sigma<&2, &2, Sec.Nas.Keys, k => {Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, k, Fresh.start(b, k))) == True{} : Bool}>
+
 def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
   match acts:
     case Nil{}:

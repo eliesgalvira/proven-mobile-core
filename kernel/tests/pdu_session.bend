@@ -123,9 +123,39 @@ def release_nas_of(+ran: B.Bytes(), r: Result<&2, &2, B.Err, W.PDUSessionResourc
 def release_nas(+ran: B.Bytes(), +bytes: B.Bytes()) -> B.Bytes():
   bytes_if(release_nas_of(ran, W.PDUSessionResourceReleaseCommand.view(A.ies_of(Fr.Pdu.read(bytes)))), A.pdu_is(Fr.Pdu.read(bytes), Fr.Pdu.initiating(), 28))
 
-# A PDU Session Resource Setup Response naming PDU session 1 set up, with a transfer that does not decode.
-def setup_unreadable(ran: B.Bytes()) -> B.Bytes():
-  N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(75, Fr.Criticality.ignore(), G.PDUSessionResourceSetupListSURes.write([G.PDUSessionResourceSetupItemSURes{1, [], None{}}], 0n, []))])
+def unreadable_items(psis: List<&2, U32>) -> G.PDUSessionResourceSetupListSURes():
+  match psis:
+    case Nil{}:
+      []
+    case p <> more:
+      G.PDUSessionResourceSetupItemSURes{p, [], None{}} <> unreadable_items(more)
+
+# A PDU Session Resource Setup Response naming the PDU sessions set up, each with a transfer that does not decode.
+def setup_unreadable(ran: B.Bytes(), psis: List<&2, U32>) -> B.Bytes():
+  N.Ngap.pdu(Fr.Pdu.successful(), 29, Fr.Criticality.reject(), [N.Ngap.ie(10, Fr.Criticality.ignore(), G.AMF_UE_NGAP_ID.write([1], 0n, [])), N.Ngap.ie(85, Fr.Criticality.ignore(), G.RAN_UE_NGAP_ID.write(ran, 0n, [])), N.Ngap.ie(75, Fr.Criticality.ignore(), G.PDUSessionResourceSetupListSURes.write(unreadable_items(psis), 0n, []))])
+
+# nas_sec.downlink_fresh for UE key k over the step o from st, where k holds a
+# NAS context after it.
+def fresh(+st: S.State, +k: U32, +o: N.Step()) -> Bool:
+  N.Fresh.holds(S.Ue.ctx(Tb.Table.get(S.Ue, k, S.State.ues(st))), S.Ue.ctx(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(o)))), N.Acts.nas(k, K.Kernel.actions(o)))
+
+# Two protected NAS messages under consecutive sequence numbers.
+def head_or(bs: B.Bytes()) -> U32:
+  match bs:
+    case s <> rest:
+      s
+    case _:
+      256
+
+def sqn(m: B.Bytes()) -> U32:
+  head_or(List.drop(&2, U32, m, 6n))
+
+def consecutive(msgs: List<&2, B.Bytes()>) -> Bool:
+  match msgs:
+    case [a, b]:
+      U32.is_eq(U32.add(sqn(a), 1), sqn(b))
+    case _:
+      False{}
 
 # UL NAS Transport with an N1 SM message, the PDU session identity, request type initial, and more IEs.
 def ul_transport(+sm: B.Bytes(), more: B.Bytes()) -> B.Bytes():
@@ -295,8 +325,15 @@ def main() -> IO(Unit):
     C.Check.report("no Session Modification Response after the third retransmission: PDU Session Resource Release Command, PDU Session Release Command #26 inside, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_mod_late), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_mod_late))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_mod_late))))), rel_cmd))))
     +o_twice : N.Step() = step(st2, A.data(1, setup_twice(ran, oks_of(W.PDUSessionResourceSetupResponse.view(A.ies_of(Fr.Pdu.read(A.hex_of(A.entry(40n, msgs), "hex"))))))))
     C.Check.report("the gNB names the session set up twice, first with a transfer that does not decode: only the last naming counts, one Session Modification, one warning", Bool.and(Pc.sphase_is(K.Kernel.state(o_twice), "modifying"), Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), Pc.pfcp_sends(K.Kernel.frames(o_twice))), 1n), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_twice))), 52), Nat.is_eq(warns(K.Kernel.frames(o_twice)), 1n)))))
-    +o_bad : N.Step() = step(st2, A.data(1, setup_unreadable(ran)))
+    +o_bad : N.Step() = step(st2, A.data(1, setup_unreadable(ran, [1])))
     C.Check.report("the gNB sets the session up with a transfer that does not decode: PDU Session Resource Release Command, PDU Session Release Command #26 inside, Session Deletion, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_bad), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_bad))), 54), B.bytes_eq(inner(release_nas(ran, A.first_bytes(A.sends(K.Kernel.frames(o_bad))))), rel_cmd))))
+    +o_open2 : N.Step() = step(st2, A.data(1, A.uplink(ran, uli, A.ue_protect(3, ul_transport([46, 2, 3, 193, 255, 255], [])))))
+    +o_up2 : N.Step() = step(K.Kernel.state(o_open2), Pc.pfcp_event(Pc.with_seq(A.hex_of(A.entry(36n, msgs), "hex"), Pc.pfcp_seq(Pc.first_pfcp(K.Kernel.frames(o_open2))))))
+    +st_two : S.State = K.Kernel.state(o_up2)
+    +o_both : N.Step() = step(st_two, A.data(1, setup_unreadable(ran, [1, 2])))
+    C.Check.report("two sessions of the UE set up at the gNB, their Accepts sent", Bool.and(Nat.is_eq(Pc.session_count(st_two), 2n), Nat.is_eq(List.length(&2, B.Bytes(), N.Acts.nas(1, K.Kernel.actions(o_up2))), 1n)))
+    C.Check.report("one response sets both up with transfers that do not decode: a PDU Session Resource Release Command for each, their PDU Session Release Commands under consecutive sequence numbers", consecutive(N.Acts.nas(1, K.Kernel.actions(o_both))))
+    C.Check.report("that step keeps nas_sec.downlink_fresh: the two sealed in turn from the context's downlink COUNT, the context left on the COUNT after them", fresh(st_two, 1, o_both))
     +o_gnb : N.Step() = step(st2, A.data(1, setup_failure(ran)))
     C.Check.report("the gNB fails the setup: Session Deletion at the UPF, Establishment Reject #26, the session being deleted", Bool.and(Pc.sphase_is(K.Kernel.state(o_gnb), "deleting"), Bool.and(U32.is_eq(Pc.pfcp_kind(Pc.first_pfcp(K.Kernel.frames(o_gnb))), 54), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_gnb))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 26, 18, 1]))))
     +o_dnn : N.Step() = step(st_reg, A.data(1, A.uplink(ran, uli, A.ue_protect(2, ul_transport(A.hex_of(A.entry(32n, msgs), "hex"), [37, 4, 3, 102, 111, 111])))))
