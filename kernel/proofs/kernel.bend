@@ -145,8 +145,8 @@ def Sessions.drop_none(+ue: U32, sessions: Tb.Table(S.Session)) -> {S.Sessions.o
     case (+k, +s) <> +more:
       P.Keep.by(S.Session, tb => {S.Sessions.sift(S.SOf{ue}, tb) == [] : Tb.Table(S.Session)}, k, s, S.Sessions.sift(S.SOthers{ue}, more), S.SSieve.keeps(S.SOthers{ue}, k, s), e => h => (%Equal.sym(Bool, S.Maybe.same_u32(S.Session.tag(s), Some{ue}), False{}, P.Bool.not_true(S.Maybe.same_u32(S.Session.tag(s), Some{ue}), e)) : {Tb.Table.keep(S.Session, k, s, S.Sessions.sift(S.SOf{ue}, S.Sessions.sift(S.SOthers{ue}, more)), _) == [] : Tb.Table(S.Session)}; h), Sessions.drop_none(ue, more))
 
-# An association going down
-# -------------------------
+# An association reset (going down, or its NG Setup)
+# ---------------------------------------------------
 
 def Down.none(+st: S.State, +assoc: U32) -> {S.Ues.none_assoc(assoc, S.State.ues(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:
@@ -293,8 +293,8 @@ def Unique.rephase(+key: U32, +p: S.Phase, ues: Tb.Table(S.Ue)) -> {S.Ues.unique
 # Indexes stay unique
 # -------------------
 # A Put is a clear row in front of a sifting, a Rephase changes no identity,
-# a Del and an association going down are siftings (amf.indexes.unique, in
-# liveness.bend).
+# a Del and dropping an association's contexts (R.Route.drop, when it goes
+# down and at its NG Setup) are siftings (amf.indexes.unique, in liveness.bend).
 
 def Down.unique(st: S.State, +assoc: U32, e: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> {S.Ues.unique(S.State.ues(K.Kernel.state(R.Route.drop(st, assoc)))) == True{} : Bool}:
   match st:

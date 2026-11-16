@@ -4057,8 +4057,8 @@ def Lw.ho_cancel(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.Handover
 def Lw.ho_status(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>) -> {Lv.okf(st, Ho.Ho.status_of_view(st, assoc, r)) == True{} : Bool}:
   PW.Hw.status(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, {==}, amf => +ran => +container => +key => +ue => +t => +r2 => +s => ek => +eo => Lv.leaf(st, S.Keep{}, [N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}], Lv.cons(st, N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}, [], Lw.owned_live(st, assoc, ran, key, ue, eo), {==}), {==}, {==}, {==}))
 
-# An association going down
-# -------------------------
+# An association reset (going down, or its NG Setup)
+# ---------------------------------------------------
 # The handovers it takes part in end, every action built from a context of
 # the state, each context only rephased (quiet).
 
@@ -4250,7 +4250,7 @@ def Lw.step_sessions(+st: S.State, +o: N.GOut(), +e: {Lv.quiet(N.Out.tx(o)) == T
     case (+tx, acts):
       Lv.quiet_sessions(tx, st, e)
 
-# The first part of an association going down leaves the sessions.
+# The first part of an association's reset (Ho.Ho.down) leaves the sessions.
 def Lw.down_sessions(+st: S.State, +assoc: U32) -> {S.State.sessions(K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, assoc)))) == S.State.sessions(st) : Tb.Table(S.Session)}:
   Lw.step_sessions(st, Ho.Ho.down(st, assoc), P.Bool.and_true_r(Lv.okf(st, Ho.Ho.down(st, assoc)), Lv.quiet(N.Out.tx(Ho.Ho.down(st, assoc))), Lw.ho_down_q(st, assoc)))
 
@@ -4483,8 +4483,8 @@ def Lv.no_response(+st: S.State, +as: List<&2, N.Act>, +h: {Lv.actsw(st, as) == 
 # -------------------
 
 
-# The deletions an association going down sends are a transaction a UE
-# procedure may run.
+# The deletions dropping an association's contexts sends are a transaction a
+# UE procedure may run.
 def Lv.drop_homed(+st: S.State, +assoc: U32) -> {Lv.homedw(st, N.Out.tx(Up.N4.deletions(S.Sessions.sift(S.SOrphan{S.Ues.drop_assoc(assoc, S.State.ues(st))}, S.State.sessions(st)), S.State.pfcp_seq(st))), S.State.ues(st)) == True{} : Bool}:
   +gone = S.Sessions.sift(S.SOrphan{S.Ues.drop_assoc(assoc, S.State.ues(st))}, S.State.sessions(st))
   +d = Up.N4.deletions(gone, S.State.pfcp_seq(st))
@@ -4733,8 +4733,8 @@ def Lv.down_owned(+st: S.State, +assoc: U32) -> {S.Sessions.owned(S.State.sessio
 # Invariants of every step
 # ------------------------
 # A property of the context and session tables that every transaction a UE
-# procedure may run keeps (Inv.tx), and that an association going down keeps,
-# holds after every step (PW.Walk).
+# procedure may run keeps (Inv.tx), and that dropping an association's
+# contexts keeps (R.Route.drop), holds after every step (PW.Walk).
 
 def Inv.Tx(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st0: S.State) -> Type:
   @tx:S.Tx -> @st:S.State -> {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool} -> {Lv.homedw(st0, tx, S.State.ues(st)) == True{} : Bool} -> {inv(S.State.ues(S.Tx.apply(tx, st)), S.State.sessions(S.Tx.apply(tx, st))) == True{} : Bool}
@@ -5374,8 +5374,8 @@ def L.state.ids.free(st, ev, entropy, k, e, eo):
 # Guards stopped
 # --------------
 # A step that removes a session row stops its guard: every outcome's actions
-# end with the stops N.Step.of adds for the rows gone, and an association
-# going down adds the same; the other steps keep the session table.
+# end with the stops N.Step.of adds for the rows gone, and an association's
+# reset adds the same; the other steps keep the session table.
 
 def Gs.stops_app(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.stops(k, ys) == True{} : Bool}) -> {N.Acts.stops(k, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
   match xs:

@@ -1745,7 +1745,7 @@ law smf.deletion.held:
   {Tb.Table.get(St.Session, skey, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, ev, entropy)))) == Some{s} : Maybe<&2, St.Session>} & {Ng.Acts.touches(skey, Ke.Kernel.actions(Ke.Kernel.step(st, ev, entropy))) == False{} : Bool}
 
 # Whatever starts deleting a session (its release, its UE's, an eviction, an
-# association going down, a failure: Up.N4.deletions) leaves it being deleted
+# association going down or its NG Setup, a failure: Up.N4.deletions) leaves it being deleted
 # under a guard that has not fired, sends its Session Deletion Request and
 # leaves its guard running for T1: with smf.deletion.held,
 # smf.deletion.retransmitted and smf.deletion.answered, the row goes within
