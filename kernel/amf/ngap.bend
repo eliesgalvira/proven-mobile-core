@@ -449,14 +449,37 @@ def Acts.stops(+k: U32, acts: List<&2, Act>) -> Bool:
     case a <> more:
       Bool.or(Act.stops(k, a), Acts.stops(k, more))
 
-# Timer k runs once the actions are done: the last of them that starts or
-# stops it starts it.
-def Acts.runs(+k: U32, acts: List<&2, Act>) -> Bool:
+# Some action starts or stops timer k.
+def Acts.touches(+k: U32, acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      False{}
+    case +a <> more:
+      Bool.or(Bool.or(Act.starts(k, a), Act.stops(k, a)), Acts.touches(k, more))
+
+# Some action starts timer k for ms.
+def Act.starts_for(+k: U32, +ms: U32, a: Act) -> Bool:
+  match a:
+    case TimerStart{ue, t, d}:
+      Bool.and(U32.is_eq(t, k), U32.is_eq(d, ms))
+    case _:
+      False{}
+
+def Acts.starts_for(+k: U32, +ms: U32, acts: List<&2, Act>) -> Bool:
+  match acts:
+    case Nil{}:
+      False{}
+    case a <> more:
+      Bool.or(Act.starts_for(k, ms, a), Acts.starts_for(k, ms, more))
+
+# Timer k runs for ms once the actions are done: the last of them that starts
+# or stops it starts it for ms.
+def Acts.runs(+k: U32, +ms: U32, acts: List<&2, Act>) -> Bool:
   match acts:
     case Nil{}:
       False{}
     case a <> +more:
-      Bool.or(Acts.runs(k, more), Bool.and(Act.starts(k, a), Bool.not(Acts.stops(k, more))))
+      Bool.or(Acts.runs(k, ms, more), Bool.and(Act.starts_for(k, ms, a), Bool.not(Acts.touches(k, more))))
 
 # Some action sends the PFCP message bytes.
 def Act.sends(+bytes: B.Bytes(), a: Act) -> Bool:
