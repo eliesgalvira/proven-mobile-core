@@ -24,3 +24,4 @@ import ./proofs/ng_setup.bend as PNs
 import ./proofs/path_switch.bend as PPs
 import ./proofs/handover.bend as PHo
 import ./proofs/fresh.bend as PFs
+import ./proofs/downlink.bend as PDl
