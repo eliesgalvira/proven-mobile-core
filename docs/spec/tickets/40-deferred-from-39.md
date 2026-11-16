@@ -7,11 +7,13 @@ Depends on: 39. Estimate: 6–9 h. Not started; the next plan decides when.
 What ticket 39 left open on 2026-11-12:
 
 1. **NG Setup ends handovers:** a NG Setup that releases an association's UEs first ends the handovers that association takes part in (`Ho.down`), so a pending handover to it doesn't wait for its guard, and the target of a handover it started gets UE Context Release Command. Today `Ho.down` rephases another association's UE without the SUPI check `amf.takeover.authenticated` requires, which is the obstacle.
-2. **Handover law strength** (ticket 39 item 10), done:
-   - `amf.ncc.step`: where no two contexts share a key, after any step a context's stored {NH, NCC} is the one it held or `Nh.next` of it, and a context that held none was in Security Mode and holds the first pair of a chain, NCC 1, from that K_AMF.
-   - `amf.handover.guarded`'s new clause: a step that stops timer k, which no session holds, leaves no handover pending under k.
+2. **Handover law strength** (ticket 39 item 10):
+   - `amf.ncc.step`: after any step, every UE's stored {NH, NCC} is unchanged, `Nh.next` of the old pair, or `Nh.initial`.
+   - `amf.handover.guarded`: while a handover stays pending, no step emits `TimerCancel` for its key.
 
-   Through evidence at every leaf of the shared walk (`Lv.stops`, `Lv.chain`); `N.Step.of` deriving the stops would have changed the frames.
+   Either through evidence at every leaf of the shared walk, or by `N.Step.of` deriving UE guard stops from the table diff, as `N.Gone.cancels` does for sessions.
+
+   Done, through evidence at every leaf (`Lv.stops`, `Lv.chain`, `Lv.seeds`); deriving the stops in `N.Step.of` would have changed the frames. `amf.ncc.step` holds where no two contexts share a key; its `Nh.initial` is of the K_AMF of the context's Security Mode and of the KgNB the same step sends it in Initial Context Setup (`Ng.Acts.seeds`). `amf.handover.guarded` holds for a key no session holds, and says that a step stopping the timer leaves no handover pending under it.
 3. **Releases** (ticket 39 items 1 and 9):
    - PDU Session Resource Release Command and Response, with their transfers, in the NGAP generator. Send the Command after a failure that follows the Accept (TS 23.502 §4.3.4.2).
    - PDU Session Release Command to the UE for sessions dropped in a Path Switch or at Handover Notify.
