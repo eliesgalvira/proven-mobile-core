@@ -5,7 +5,7 @@ import ../state.bend as S
 import ../amf/ngap.bend as N
 import ../nas/security.bend as Sec
 import ./lib.bend as P
-import ./nas.bend as PNs
+import ../LAWS.bend as L
 
 # Downlink NAS COUNT freshness, outcome by outcome (nas_sec.downlink_fresh)
 # -------------------------------------------------------------------------
@@ -336,3 +336,68 @@ def Fs.app_mute(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +more: List<&2,
   +xs = List.append(&2, N.Act, acts, more)
   +s = Fs.sealed_to(st, tx, acts, After{more}, hm, Fs.sealed_of(st, tx, acts, hn))
   P.Bool.and_intro(Fs.sealed(st, tx, xs), Fs.sends(tx, xs), s, Fs.sends_app(tx, acts, more, Fs.sends_of(st, tx, acts, hn), Fs.amute_sends(tx, more, hm)))
+
+# Sealing
+# -------
+
+def Fs.ea_refl(+ea: Sec.Nas.Ea) -> {U32.is_eq(Sec.Nas.Ea.id(ea), Sec.Nas.Ea.id(ea)) == True{} : Bool}:
+  match ea:
+    case Sec.Nea0{}:
+      {==}
+    case Sec.Nea2{}:
+      {==}
+
+def Fs.ia_refl(+ia: Sec.Nas.Ia) -> {U32.is_eq(Sec.Nas.Ia.id(ia), Sec.Nas.Ia.id(ia)) == True{} : Bool}:
+  match ia:
+    case Sec.Nia2{}:
+      {==}
+
+def Fs.keys_same(+k: Sec.Nas.Keys) -> {Sec.Nas.Keys.same(k, k) == True{} : Bool}:
+  match k:
+    case Sec.Keys{+i, +e, +ea, +ia, +b}:
+      +r4 = U32.is_eq(b, b)
+      +r3 = Bool.and(U32.is_eq(Sec.Nas.Ia.id(ia), Sec.Nas.Ia.id(ia)), r4)
+      +r2 = Bool.and(U32.is_eq(Sec.Nas.Ea.id(ea), Sec.Nas.Ea.id(ea)), r3)
+      +r1 = Bool.and(B.bytes_eq(e, e), r2)
+      P.Bool.and_intro(B.bytes_eq(i, i), r1, P.Bytes.eq_refl(i), P.Bool.and_intro(B.bytes_eq(e, e), r2, P.Bytes.eq_refl(e), P.Bool.and_intro(U32.is_eq(Sec.Nas.Ea.id(ea), Sec.Nas.Ea.id(ea)), r3, Fs.ea_refl(ea), P.Bool.and_intro(U32.is_eq(Sec.Nas.Ia.id(ia), Sec.Nas.Ia.id(ia)), r4, Fs.ia_refl(ia), P.U32.is_eq_refl(b)))))
+
+def Fs.count_same(+c: Sec.Nas.Count) -> {Sec.Nas.Count.same(c, c) == True{} : Bool}:
+  match c:
+    case Sec.Count{+o, +s}:
+      P.Bool.and_intro(U32.is_eq(o, o), U32.is_eq(s, s), P.U32.is_eq_refl(o), P.U32.is_eq_refl(s))
+
+# A downlink message sealed under keys at a COUNT is sealed there.
+def Fs.sealed_seal(+keys: Sec.Nas.Keys, +prot: Sec.Nas.Protection, +c: Sec.Nas.Count, +plain: B.Bytes()) -> {Sec.Nas.sealed(keys, c, Sec.Nas.seal(keys, prot, Sec.Nas.downlink(), c, plain)) == True{} : Bool}:
+  +m = Sec.Nas.seal(keys, prot, Sec.Nas.downlink(), c, plain)
+  e = Equal.sym(Result<&2, &2, B.Err, Sec.Nas.Opened>, Sec.Nas.open(keys, Sec.Nas.downlink(), c, m), Done{Sec.Opened{prot, plain}}, L.nas_sec.roundtrip(keys, prot, Sec.Nas.downlink(), c, plain))
+  (%e : {Sec.Nas.resealed(keys, c, m, _) == True{} : Bool}; P.Bytes.eq_refl(m))
+
+# What a context protects goes under its COUNT, and leaves the next.
+def Fs.protect_run(+keys: Sec.Nas.Keys, +d: Sec.Nas.Count, +ul: Maybe<&2, Sec.Nas.Count>, +prot: Sec.Nas.Protection, +plain: B.Bytes()) -> {N.Fresh.run([Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{keys, d, ul}, prot, plain))], keys, d) == Some{Sec.Nas.Count.next(d)} : Maybe<&2, Sec.Nas.Count>}:
+  e = Equal.sym(Bool, Sec.Nas.sealed(keys, d, Sec.Nas.seal(keys, prot, Sec.Nas.downlink(), d, plain)), True{}, Fs.sealed_seal(keys, prot, d, plain))
+  (%e : {N.Fresh.then(_, u => N.Fresh.run([], keys, Sec.Nas.Count.next(d))) == Some{Sec.Nas.Count.next(d)} : Maybe<&2, Sec.Nas.Count>}; {==})
+
+def Fs.run_then(+m: B.Bytes(), +more: List<&2, B.Bytes()>, +ms2: List<&2, B.Bytes()>, +keys: Sec.Nas.Keys, +c: Sec.Nas.Count, +c1: Sec.Nas.Count, +b: Bool, +eb: {Sec.Nas.sealed(keys, c, m) == b : Bool}, e: {N.Fresh.then(b, u => N.Fresh.run(more, keys, Sec.Nas.Count.next(c))) == Some{c1} : Maybe<&2, Sec.Nas.Count>}, ih: {N.Fresh.run(more, keys, Sec.Nas.Count.next(c)) == Some{c1} : Maybe<&2, Sec.Nas.Count>} -> {N.Fresh.run(List.append(&2, B.Bytes(), more, ms2), keys, Sec.Nas.Count.next(c)) == N.Fresh.run(ms2, keys, c1) : Maybe<&2, Sec.Nas.Count>}) -> {N.Fresh.then(b, u => N.Fresh.run(List.append(&2, B.Bytes(), more, ms2), keys, Sec.Nas.Count.next(c))) == N.Fresh.run(ms2, keys, c1) : Maybe<&2, Sec.Nas.Count>}:
+  match b:
+    case True{}:
+      ih(e)
+    case False{}:
+      Empty.absurd({None{} == N.Fresh.run(ms2, keys, c1) : Maybe<&2, Sec.Nas.Count>}, P.Refute.none_some(Sec.Nas.Count, c1, e))
+
+# Messages sealed in turn, then more from the COUNT they leave.
+def Fs.run_app(+ms1: List<&2, B.Bytes()>, +ms2: List<&2, B.Bytes()>, +keys: Sec.Nas.Keys, +c: Sec.Nas.Count, +c1: Sec.Nas.Count, e: {N.Fresh.run(ms1, keys, c) == Some{c1} : Maybe<&2, Sec.Nas.Count>}) -> {N.Fresh.run(List.append(&2, B.Bytes(), ms1, ms2), keys, c) == N.Fresh.run(ms2, keys, c1) : Maybe<&2, Sec.Nas.Count>}:
+  match ms1:
+    case Nil{}:
+      ec = P.Some.inj(Sec.Nas.Count, c, c1, e)
+      (%ec : {N.Fresh.run(ms2, keys, c) == N.Fresh.run(ms2, keys, _) : Maybe<&2, Sec.Nas.Count>}; {==})
+    case +m <> +more:
+      Fs.run_then(m, more, ms2, keys, c, c1, Sec.Nas.sealed(keys, c, m), {==}, e, e2 => Fs.run_app(more, ms2, keys, Sec.Nas.Count.next(c), c1, e2))
+
+# A context unchanged, no message: what a write of it holds.
+def Fs.holds_self(+b: Maybe<&2, Sec.Nas.Ctx>) -> {N.Fresh.holds(b, b, []) == True{} : Bool}:
+  match b:
+    case None{}:
+      {==}
+    case Some{Sec.Ctx{+k, +d, +ul}}:
+      e = Equal.sym(Bool, Sec.Nas.Keys.same(k, k), True{}, Fs.keys_same(k))
+      (%e : {N.Fresh.at(Some{N.Fresh.start_if(d, _)}, d) == True{} : Bool}; Fs.count_same(d))
