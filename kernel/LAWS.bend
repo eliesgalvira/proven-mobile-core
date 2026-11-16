@@ -1701,8 +1701,9 @@ law smf.deletion.answered:
 # hold them, nor starts or stops its guard, so one of the two comes within
 # T1. It holds in every state where no two sessions share a key or an
 # identity (smf.ip_pool.unique) and the session's key is neither a context's,
-# nor the one a new context takes, nor the PFCP association's timer
-# (state.ids.free: those are odd or 0, a session's even and not 0).
+# nor the one a new context takes, nor the PFCP association's timer: those
+# are odd (state.ids.free; a new context's by St.Ues.free_key) or 0, a
+# session's even and not 0 (state.ids.free).
 law smf.deletion.held:
   for +st: St.State
   for +ev: F.Evt
@@ -1728,7 +1729,7 @@ law smf.deletion.held:
 # smf.deletion.retransmitted and smf.deletion.answered, the row goes within
 # (N1 + 1) x T1. It holds in every state where the session's key is neither a
 # context's, nor the one a new context takes, nor the PFCP association's
-# timer (state.ids.free).
+# timer, as smf.deletion.held.
 law smf.deletion.armed:
   for +st: St.State
   for +ev: F.Evt
