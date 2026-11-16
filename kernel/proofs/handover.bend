@@ -1085,10 +1085,10 @@ def Hs.drop_quiet(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Sessi
       +hd = PL.Lv.dels(s0, gone, pfcp_seq, PL.Lv.srows_sift(S.SOrphan{S.Ues.drop_assoc(assoc, ues)}, sessions), PL.Lv.krows_orphan(s0, S.Ues.drop_assoc(assoc, ues)))
       Hs.app_false(k, N.Out.acts(d), N.Gone.cancels(sessions, kept), Hs.quiet(k, N.Out.tx(d), N.Out.acts(d), PL.Lv.does_stops(s0, N.Out.tx(d), N.Out.acts(d), PL.Lv.free(s0, N.Out.tx(d)), hd), PW.Sx.deletions(gone, pfcp_seq)), Hs.gone(k, sessions, kept, es))
 
-def Hs.drop_idle(+s: S.State, +assoc: U32, +k: U32, +e: {Hs.rows(k, Idle{}, S.State.ues(s)) == True{} : Bool}) -> {Hs.rows(k, Idle{}, S.State.ues(K.Kernel.state(R.Route.drop(s, assoc)))) == True{} : Bool}:
+def Hs.drop_rows(+s: S.State, +assoc: U32, +k: U32, +r: Rw, +e: {Hs.rows(k, r, S.State.ues(s)) == True{} : Bool}) -> {Hs.rows(k, r, S.State.ues(K.Kernel.state(R.Route.drop(s, assoc)))) == True{} : Bool}:
   match s:
     case S.State{config, subs, assocs, +ues, sessions, pfcp_seq, next_ue, n4}:
-      Hs.sift(k, Idle{}, S.Others{assoc}, ues, e)
+      Hs.sift(k, r, S.Others{assoc}, ues, e)
 
 def Hs.ready(+st: S.State, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}, +tc: {N.Acts.touches(k, acts) == False{} : Bool}) -> Hs.Q(k, (S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts))):
   -G = {Hs.rows(k, Idle{}, S.State.ues(S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok))) == True{} : Bool}
@@ -1116,7 +1116,7 @@ def Hs.down(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k,
   q1 = Hs.out(st, k, es, o, PL.Lw.ho_down(st, assoc))
   ds = Equal.sym(Tb.Table(S.Session), S.State.sessions(N.Step.state(s1)), S.State.sessions(st), PL.Lw.down_sessions(st, assoc))
   es1 : {Tb.Table.get(S.Session, k, S.State.sessions(N.Step.state(s1))) == None{} : Maybe<&2, S.Session>} = (%ds : {Tb.Table.get(S.Session, k, _) == None{} : Maybe<&2, S.Session>}; es)
-  e => Hs.app(G, k, N.Step.acts(s1), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(s2), e, l => Hs.drop_idle(N.Step.state(s1), assoc, k, q1(l)), r => Hs.contra(G, N.Acts.stops(k, N.Step.acts(s2)), r, Hs.drop_quiet(N.Step.state(s1), assoc, k, es1)))
+  e => Hs.app(G, k, N.Step.acts(s1), N.Note{F.Info{}, "NGAP: association down; its UE contexts and sessions released"} <> N.Step.acts(s2), e, l => Hs.drop_rows(N.Step.state(s1), assoc, k, Idle{}, q1(l)), r => Hs.contra(G, N.Acts.stops(k, N.Step.acts(s2)), r, Hs.drop_quiet(N.Step.state(s1), assoc, k, es1)))
 
 # A session's guard firing while it is being deleted, and the UPF's answer to
 # a deletion, stop no guard of their own.
@@ -1170,6 +1170,212 @@ def Hs.settled_if(+st: S.State, +k: U32, +es: {Tb.Table.get(S.Session, k, S.Stat
 
 def Hs.ends(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, K.Kernel.step(st, ev, entropy)):
   PL.Dw.walk(o => Hs.Q(k, o), o => Hs.Q(k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => e => Hs.contra({Hs.rows(k, Idle{}, S.State.ues(st)) == True{} : Bool}, N.Acts.stops(k, acts), e, Hs.untouched(k, acts, tc(k))), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Hs.ready(st, assoc, id, ok, acts, k, es, tc(k)), +tlvs => Hs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, es), +assoc => Hs.down(st, assoc, k, es), o => h => h, +o => +h => Hs.out(st, k, es, o, h), +k1 => +t => +g => +r => ek => eu => em => ep => Hs.quiet_out(st, k, es, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Hs.resend_quiet(k, k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Hs.quiet_out(st, k, es, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Hs.deleted_quiet(k, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Hs.settled_if(st, k, es, k1, tx, more, U32.is_eq(k1, k), {==}, eh, h))
+
+# amf.ncc.step
+# ------------
+# Every row under k holds a pair that chains to the one k held before the
+# step: where no two contexts share a key, the table's row under k is the
+# context k names, and every phase a step writes under k chains to it
+# (PL.Lv.chain), and nothing else writes a phase.
+
+def Nc.vacant(+k: U32, +k0: U32, +u0: S.Ue, +r: Rw, +rows: Tb.Table(S.Ue), +hc: {S.Ues.clear(k0, u0, rows) == True{} : Bool}, +ek: {k0 == k : U32}) -> {Hs.rows(k, r, rows) == True{} : Bool}:
+  match rows:
+    case Nil{}:
+      {==}
+    case (+k1, +v) <> +more:
+      +nc = Bool.not(S.Row.conflicts(k0, u0, k1, v))
+      +n1 = P.Bool.or_false_l(U32.is_eq(k1, k0), S.Ue.conflicts(u0, v), P.Bool.not_true(S.Row.conflicts(k0, u0, k1, v), P.Bool.and_true_l(nc, S.Ues.clear(k0, u0, more), hc)))
+      n2 : {U32.is_eq(k1, k) == False{} : Bool} = (%ek : {U32.is_eq(k1, _) == False{} : Bool}; n1)
+      Hs.other(k, r, k1, v, more, n2, Nc.vacant(k, k0, u0, r, more, P.Bool.and_true_r(nc, S.Ues.clear(k0, u0, more), hc), ek))
+
+def Nc.base_row(+k: U32, +k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +hc: {S.Ues.clear(k0, u0, more) == True{} : Bool}, ih: {Hs.rows(k, From{Tb.Table.get(S.Ue, k, more)}, more) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b)}, (k0, u0) <> more) == True{} : Bool}:
+  match b:
+    case True{}:
+      +n = S.Phase.nh(S.Ue.phase(u0))
+      P.Bool.and_intro(Bool.or(Bool.not(U32.is_eq(k0, k)), PL.Lv.chains(n, n, S.Phase.k_amf(S.Ue.phase(u0)))), Hs.rows(k, From{Some{u0}}, more), P.Bool.or_r(Bool.not(U32.is_eq(k0, k)), PL.Lv.chains(n, n, S.Phase.k_amf(S.Ue.phase(u0))), PL.Lv.chains_self(n, S.Phase.k_amf(S.Ue.phase(u0)))), Nc.vacant(k, k0, u0, From{Some{u0}}, more, hc, P.U32.eq_of_is_eq(k0, k, eb)))
+    case False{}:
+      Hs.other(k, From{Tb.Table.get(S.Ue, k, more)}, k0, u0, more, eb, ih)
+
+# Where no two contexts share a key, every row under k is the context k names.
+def Nc.base(+k: U32, +t: Tb.Table(S.Ue), +eu: {S.Ues.unique(t) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.get(S.Ue, k, t)}, t) == True{} : Bool}:
+  match t:
+    case Nil{}:
+      {==}
+    case (+k0, +u0) <> +more:
+      Nc.base_row(k, k0, u0, more, U32.is_eq(k0, k), {==}, P.Bool.and_true_l(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu), Nc.base(k, more, P.Bool.and_true_r(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu)))
+
+# A chain written where no two contexts share a key chains to the row found.
+def Nc.chained(+st: S.State, +key: U32, +n: Maybe<&2, S.Nh>, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +h: {PL.Lv.chain(st, key, n) == True{} : Bool}) -> {PL.Lv.chains(n, S.Ue.nh(Tb.Table.get(S.Ue, key, S.State.ues(st))), S.Ue.k_amf(Tb.Table.get(S.Ue, key, S.State.ues(st)))) == True{} : Bool}:
+  +m = Tb.Table.get(S.Ue, key, S.State.ues(st))
+  se = Equal.sym(Bool, S.Ues.unique(S.State.ues(st)), True{}, eu)
+  P.Bool.or_true_l(PL.Lv.chains(n, S.Ue.nh(m), S.Ue.k_amf(m)), Bool.not(S.Ues.unique(S.State.ues(st))), (%se : {Bool.not(_) == False{} : Bool}; {==}), h)
+
+def Nc.at(+st: S.State, +k: U32, +key: U32, +n: Maybe<&2, S.Nh>, +x: Bool, +ex: {U32.is_eq(key, k) == x : Bool}, +h: {PL.Lv.chains(n, S.Ue.nh(Tb.Table.get(S.Ue, key, S.State.ues(st))), S.Ue.k_amf(Tb.Table.get(S.Ue, key, S.State.ues(st)))) == True{} : Bool}) -> {Bool.or(Bool.not(x), PL.Lv.chains(n, S.Ue.nh(Tb.Table.get(S.Ue, k, S.State.ues(st))), S.Ue.k_amf(Tb.Table.get(S.Ue, k, S.State.ues(st))))) == True{} : Bool}:
+  match x:
+    case True{}:
+      ek = P.U32.eq_of_is_eq(key, k, ex)
+      (%ek : {PL.Lv.chains(n, S.Ue.nh(Tb.Table.get(S.Ue, _, S.State.ues(st))), S.Ue.k_amf(Tb.Table.get(S.Ue, _, S.State.ues(st)))) == True{} : Bool}; h)
+    case False{}:
+      {==}
+
+def Nc.rephase(+st: S.State, +k: U32, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +x: Bool, +ex: {U32.is_eq(key, k) == x : Bool}, +h: {Bool.or(Bool.not(x), Hs.holds(From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, p)) == True{} : Bool}, +e: {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, ues) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, S.Ues.rephase(key, p, ues)) == True{} : Bool}:
+  match x:
+    case True{}:
+      Hs.rephase_holds(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, key, p, ues, h, e)
+    case False{}:
+      Hs.rephase_other(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, key, p, ues, ex, e)
+
+# Every transaction a procedure writes keeps the rows under k chained.
+def Nc.tx(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +tx: S.Tx, +ues: Tb.Table(S.Ue), +h: {PL.Lv.homed(st, tx, ues) == True{} : Bool}, +e: {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, ues) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, PT.Tk.ues(tx, ues)) == True{} : Bool}:
+  match tx:
+    case S.Rephase{+key, +p}:
+      +c = PL.Lv.chain(st, key, S.Phase.nh(p))
+      +hc = P.Bool.and_true_l(c, Bool.and(S.Phase.guarded(p), S.Ue.fits(p, Tb.Table.get(S.Ue, key, ues))), h)
+      Nc.rephase(st, k, key, p, ues, U32.is_eq(key, k), {==}, Nc.at(st, k, key, S.Phase.nh(p), U32.is_eq(key, k), {==}, Nc.chained(st, key, S.Phase.nh(p), eu, hc)), e)
+    case S.Put{+key, +u}:
+      +c = PL.Lv.chain(st, key, S.Phase.nh(S.Ue.phase(u)))
+      +hc = P.Bool.and_true_l(c, Bool.and(PL.Lv.keyed(st, key), Bool.and(S.Phase.guarded(S.Ue.phase(u)), Bool.and(S.Ue.single(u), PL.Lv.home(st, u)))), h)
+      P.Bool.and_intro(Bool.or(Bool.not(U32.is_eq(key, k)), Hs.holds(From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, S.Ue.phase(u))), Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, S.Ues.sift(S.Clear{key, u}, ues)), Nc.at(st, k, key, S.Phase.nh(S.Ue.phase(u)), U32.is_eq(key, k), {==}, Nc.chained(st, key, S.Phase.nh(S.Ue.phase(u)), eu, hc)), Hs.sift(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, S.Clear{key, u}, ues, e))
+    case S.Del{+key}:
+      Hs.sift(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, S.Except{key}, ues, e)
+    case S.Both{+a, +b}:
+      Nc.tx(st, k, eu, b, PT.Tk.ues(a, ues), P.Bool.and_true_r(PL.Lv.homed(st, a, ues), PL.Lv.homed(st, b, PT.Tk.ues(a, ues)), h), Nc.tx(st, k, eu, a, ues, P.Bool.and_true_l(PL.Lv.homed(st, a, ues), PL.Lv.homed(st, b, PT.Tk.ues(a, ues)), h), e))
+    case S.Keep{}:
+      e
+    case S.PutSession{key, s}:
+      e
+    case S.Revar{key, v}:
+      e
+    case S.DelSession{key}:
+      e
+    case S.Subs{subs}:
+      e
+    case S.SetLink{link}:
+      e
+    case S.BumpUe{bk}:
+      e
+    case S.BumpSeq{n}:
+      e
+
+def Nc.Q(+st: S.State, +k: U32, o: N.Step()) -> Type:
+  {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, S.State.ues(K.Kernel.state(o))) == True{} : Bool}
+
+def Nc.out(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +o: N.GOut(), +h: {PL.Lv.ok(st, o) == True{} : Bool}) -> Nc.Q(st, k, N.Step.of(st, o)):
+  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), PT.Tk.render(st, o))
+  (%sr : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, _) == True{} : Bool}; Nc.tx(st, k, eu, N.Out.tx(o), S.State.ues(st), PL.Lv.ok_homed(st, o, h), Nc.base(k, S.State.ues(st), eu)))
+
+# The session side writes no phase.
+def Nc.sx(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +o: N.GOut(), +hx: {PW.Sx.only(N.Out.tx(o)) == True{} : Bool}) -> Nc.Q(st, k, N.Step.of(st, o)):
+  sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), PT.Tk.render(st, o))
+  sx = Equal.sym(Tb.Table(S.Ue), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), S.State.ues(st), PT.Tk.ues_sx(N.Out.tx(o), S.State.ues(st), hx))
+  (%sr : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, _) == True{} : Bool}; (%sx : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, _) == True{} : Bool}; Nc.base(k, S.State.ues(st), eu)))
+
+def Nc.resend_sx(+k1: U32, +t: S.Session, +p: S.SPhase, +request: B.Bytes(), +more: Bool) -> {PW.Sx.only(N.Out.tx(Gsm.Gsm.resend_if(k1, t, p, request, (S.DelSession{k1}, [N.Note{F.Warn{}, "PFCP: no Session Deletion Response; deletion given up"}]), more))) == True{} : Bool}:
+  match more:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def Nc.dphase_sx(+skey: U32, +msg: Pf.Msg, +p: S.SPhase) -> {PW.Sx.only(N.Out.tx(Gsm.Gsm.deleted_phase(skey, msg, p))) == True{} : Bool}:
+  match p:
+    case S.Deleting{guard, request}:
+      {==}
+    case S.Creating{guard, pti, accept, request}:
+      {==}
+    case S.Setting{guard, pti}:
+      {==}
+    case S.Modifying{guard, request}:
+      {==}
+    case S.Repointing{guard, request}:
+      {==}
+    case S.Active{}:
+      {==}
+
+def Nc.deleted_sx(+msg: Pf.Msg, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> {PW.Sx.only(N.Out.tx(Gsm.Gsm.deleted(msg, m))) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{(+skey, +s)}:
+      Nc.dphase_sx(skey, msg, S.Session.phase(s))
+
+def Nc.with_assocs(+x: S.State, +as: Tb.Table(B.Bytes()), +k: U32, +r: Rw, +h: {Hs.rows(k, r, S.State.ues(x)) == True{} : Bool}) -> {Hs.rows(k, r, S.State.ues(S.State.with_assocs(x, as))) == True{} : Bool}:
+  match x:
+    case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
+      h
+
+def Nc.ready(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +assoc: U32, +id: B.Bytes(), +ok: Bool, +acts: List<&2, N.Act>) -> Nc.Q(st, k, (S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), acts)):
+  +x = N.Step.state(R.Route.drop(st, assoc))
+  +h = Hs.drop_rows(st, assoc, k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, Nc.base(k, S.State.ues(st), eu))
+  Nc.with_assocs(x, S.Assocs.set(assoc, id, S.State.assocs(x), ok), k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, h)
+
+def Nc.down(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +assoc: U32) -> Nc.Q(st, k, R.Route.down(st, assoc)):
+  +o = Ho.Ho.down(st, assoc)
+  Hs.drop_rows(N.Step.state(N.Step.of(st, o)), assoc, k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, Nc.out(st, k, eu, o, PL.Lw.ho_down(st, assoc)))
+
+def Nc.step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> Nc.Q(st, k, K.Kernel.step(st, ev, entropy)):
+  PL.Dw.walk(o => Nc.Q(st, k, o), o => Nc.Q(st, k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => Nc.base(k, S.State.ues(st), eu), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Nc.ready(st, k, eu, assoc, id, ok, List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)), +tlvs => PW.Walk.config(ues => ss => Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st))}, ues), S.Cfg.complete(tlvs), st, tlvs, entropy, Nc.base(k, S.State.ues(st), eu)), +assoc => Nc.down(st, k, eu, assoc), o => h => h, +o => +h => Nc.out(st, k, eu, o, h), +k1 => +t => +g => +r => ek => eu2 => em => ep => Nc.sx(st, k, eu, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Nc.resend_sx(k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Nc.sx(st, k, eu, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Nc.deleted_sx(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Nc.out(st, k, eu, (tx, more), h))
+
+# The row the key names after the step holds what its rows hold.
+def Nc.found_row(+k: U32, +r: Rw, +u0: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +e: {Bool.and(Bool.or(Bool.not(b), Hs.holds(r, S.Ue.phase(u0))), Hs.rows(k, r, more)) == True{} : Bool}, +v: S.Ue, +eg: {Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b) == Some{v} : Maybe<&2, S.Ue>}, ih: {Hs.rows(k, r, more) == True{} : Bool} -> {Tb.Table.get(S.Ue, k, more) == Some{v} : Maybe<&2, S.Ue>} -> {Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}) -> {Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}:
+  match b:
+    case True{}:
+      eu = P.Some.inj(S.Ue, u0, v, eg)
+      (%eu : {Hs.holds(r, S.Ue.phase(_)) == True{} : Bool}; P.Bool.and_true_l(Hs.holds(r, S.Ue.phase(u0)), Hs.rows(k, r, more), e))
+    case False{}:
+      ih(P.Bool.and_true_r(True{}, Hs.rows(k, r, more), e), eg)
+
+def Nc.found(+k: U32, +r: Rw, +ues: Tb.Table(S.Ue), +e: {Hs.rows(k, r, ues) == True{} : Bool}, +v: S.Ue, +eg: {Tb.Table.get(S.Ue, k, ues) == Some{v} : Maybe<&2, S.Ue>}) -> {Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}:
+  match ues:
+    case Nil{}:
+      Empty.absurd({Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}, P.Refute.none_some(S.Ue, v, eg))
+    case (+k0, +u0) <> +more:
+      Nc.found_row(k, r, u0, more, U32.is_eq(k0, k), e, v, eg, e2 => g2 => Nc.found(k, r, more, e2, v, g2))
+
+# What the law reads off the chain.
+def Nc.pair(+k: U32, +b: Maybe<&2, S.Ue>, +ues: Tb.Table(S.Ue), +e: {Hs.rows(k, From{b}, ues) == True{} : Bool}, +n: S.Nh, +mm: Maybe<&2, S.Ue>, +emm: {Tb.Table.get(S.Ue, k, ues) == mm : Maybe<&2, S.Ue>}, +en: {S.Ue.nh(mm) == Some{n} : Maybe<&2, S.Nh>}) -> {PL.Lv.chains(Some{n}, S.Ue.nh(b), S.Ue.k_amf(b)) == True{} : Bool}:
+  match mm:
+    case None{}:
+      Empty.absurd({PL.Lv.chains(Some{n}, S.Ue.nh(b), S.Ue.k_amf(b)) == True{} : Bool}, P.Refute.none_some(S.Nh, n, en))
+    case Some{+v}:
+      (%en : {PL.Lv.chains(_, S.Ue.nh(b), S.Ue.k_amf(b)) == True{} : Bool}; Nc.found(k, From{b}, ues, e, v, emm))
+
+def Nc.nh_eq(+x: S.Nh, +y: S.Nh, +e: {PL.Lv.nh_is(x, y) == True{} : Bool}) -> {x == y : S.Nh}:
+  match x y:
+    case S.Nh{+a, +h, +c} S.Nh{+a2, +h2, +c2}:
+      +r = Bool.and(B.bytes_eq(h, h2), U32.is_eq(c, c2))
+      +er = P.Bool.and_true_r(B.bytes_eq(a, a2), r, e)
+      ea = P.Bytes.eq_of_bytes_eq(a, a2, P.Bool.and_true_l(B.bytes_eq(a, a2), r, e))
+      eh = P.Bytes.eq_of_bytes_eq(h, h2, P.Bool.and_true_l(B.bytes_eq(h, h2), U32.is_eq(c, c2), er))
+      ec = P.U32.eq_of_is_eq(c, c2, P.Bool.and_true_r(B.bytes_eq(h, h2), U32.is_eq(c, c2), er))
+      (%ea : {S.Nh{a, h, c} == S.Nh{_, h2, c2} : S.Nh}; (%eh : {S.Nh{a, h, c} == S.Nh{a, _, c2} : S.Nh}; (%ec : {S.Nh{a, h, c} == S.Nh{a, h, _} : S.Nh}; {==})))
+
+def Nc.next_or(+n: S.Nh, +m: S.Nh, +x: Bool, +ex: {PL.Lv.nh_is(n, m) == x : Bool}, +h: {Bool.or(x, PL.Lv.nh_is(n, S.Nh.next(m))) == True{} : Bool}) -> {n == m : S.Nh} | {n == S.Nh.next(m) : S.Nh}:
+  match x:
+    case True{}:
+      Inl{Nc.nh_eq(n, m, ex)}
+    case False{}:
+      Inr{Nc.nh_eq(n, S.Nh.next(m), h)}
+
+def Nc.same_eq(+kb: Maybe<&2, B.Bytes()>, +a: B.Bytes(), +e: {S.Maybe.same_bytes(kb, Some{a}) == True{} : Bool}) -> {kb == Some{a} : Maybe<&2, B.Bytes()>}:
+  match kb:
+    case None{}:
+      Empty.absurd({None{} == Some{a} : Maybe<&2, B.Bytes()>}, P.Refute.bool(e))
+    case Some{+x}:
+      ex = P.Bytes.eq_of_bytes_eq(x, a, e)
+      (%ex : {Some{x} == Some{_} : Maybe<&2, B.Bytes()>}; {==})
+
+def Nc.first_of(+kb: Maybe<&2, B.Bytes()>, +k_amf: B.Bytes(), +nh: B.Bytes(), +ncc: U32, +h: {PL.Lv.chains(Some{S.Nh{k_amf, nh, ncc}}, None{}, kb) == True{} : Bool}) -> {kb == Some{k_amf} : Maybe<&2, B.Bytes()>} & {ncc == 1 : U32}:
+  +x = S.Maybe.same_bytes(kb, Some{k_amf})
+  (Nc.same_eq(kb, k_amf, P.Bool.and_true_l(x, U32.is_eq(ncc, 1), h)), P.U32.eq_of_is_eq(ncc, 1, P.Bool.and_true_r(x, U32.is_eq(ncc, 1), h)))
+
+def L.amf.ncc.step(st, ev, entropy, k, m, k_amf, nh, ncc, eu, en):
+  +b = Tb.Table.get(S.Ue, k, S.State.ues(st))
+  +after = S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy)))
+  +n : S.Nh = S.Nh{k_amf, nh, ncc}
+  +hc = Nc.pair(k, b, after, Nc.step(st, ev, entropy, k, eu), n, Tb.Table.get(S.Ue, k, after), {==}, en)
+  +kb = S.Ue.k_amf(b)
+  (em => Nc.next_or(n, m, PL.Lv.nh_is(n, m), {==}, (%em : {PL.Lv.chains(Some{n}, _, kb) == True{} : Bool}; hc)), em => Nc.first_of(kb, k_amf, nh, ncc, (%em : {PL.Lv.chains(Some{n}, _, kb) == True{} : Bool}; hc)))
 
 def L.amf.handover.guarded(st, ev, entropy, assoc, stream, len, bytes, crit, value, k, t, p):
   (Hp.timed(S.State.ues(S.State.initial())), (e0 => Hp.timed_step(st, ev, entropy, e0), (e => Hp.g_guard(p, t, e), (ep => Hp.g_required(st, entropy, assoc, stream, len, bytes, crit, value, k, ep), (ep => Hp.g_ack(st, entropy, assoc, stream, len, bytes, crit, value, k, ep), (e => Hp.fired_ends(st, k, t, Tb.Table.get(S.Ue, k, S.State.ues(st)), {==}, e), es => ex => Hs.none(k, S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), Hs.ends(st, ev, entropy, k, es)(ex))))))))
