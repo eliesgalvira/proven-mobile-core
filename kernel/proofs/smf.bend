@@ -149,7 +149,7 @@ def Down.sunique(+st: S.State, +assoc: U32, +e: {S.Sessions.unique(S.State.sessi
       SUnique.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(tx, s0)), PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, s0, {==}, tx, s0, e, PL.Lv.drop_homed(s0, assoc)))
 
 def L.smf.ip_pool.unique(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => S.Sessions.unique(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, st, {==}, tx, st2, e2, h), a => s => e1 => Down.sunique(s, a, e1), a => s => e1 => Down.sunique(s, a, e1)))
+  ({==}, PL.Inv.step(~Su.inv, ~PL.Inv.none, ~Su.tx_put, ~Su.tx_rephase, ~Su.tx_del, ~Su.tx_put_session, ~Su.tx_revar, ~Su.tx_del_session, ~(st0 => a => s => e1 => Down.sunique(s, a, e1)), st, ev, entropy, {==}, e))
 
 # Rows of a unique table
 # ----------------------
@@ -274,7 +274,7 @@ def Bd.down(+st: S.State, +assoc: U32, +e: {Gsm.Gsm.bounded(S.State.sessions(st)
       Bd.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(tx, s0)), PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, s0, e, tx, s0, e, PL.Lv.drop_homed(s0, assoc)))
 
 def L.smf.packet_filters.capacity_reject(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => Gsm.Gsm.bounded(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Bd.down(s, a, e1), a => s => e1 => Bd.down(s, a, e1)))
+  ({==}, PL.Inv.step(~Bd.inv, ~Bd.pre, ~Bd.tx_put, ~Bd.tx_rephase, ~Bd.tx_del, ~Bd.tx_put_session, ~Bd.tx_revar, ~Bd.tx_del_session, ~(st0 => a => s => e1 => Bd.down(s, a, e1)), st, ev, entropy, e, e))
 
 def L.smf.epco.response_bounded(cfg, wanted):
   match wanted:
@@ -373,7 +373,7 @@ def Kw.down(+st: S.State, +assoc: U32, +e: {S.Sessions.known(S.State.sessions(st
       Kw.sift(S.SOwned{S.Ues.drop_assoc(assoc, ues)}, S.State.sessions(S.Tx.apply(tx, s0)), PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, s0, e, tx, s0, e, PL.Lv.drop_homed(s0, assoc)))
 
 def L.smf.sessions.known(st, ev, entropy, e):
-  ({==}, PL.Inv.step(ues => ss => S.Sessions.known(ss), st, ev, entropy, e, tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), tx => st2 => e2 => h => PL.Inv.tx(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, st, e, tx, st2, e2, h), a => s => e1 => Kw.down(s, a, e1), a => s => e1 => Kw.down(s, a, e1)))
+  ({==}, PL.Inv.step(~Kw.inv, ~Kw.pre, ~Kw.tx_put, ~Kw.tx_rephase, ~Kw.tx_del, ~Kw.tx_put_session, ~Kw.tx_revar, ~Kw.tx_del_session, ~(st0 => a => s => e1 => Kw.down(s, a, e1)), st, ev, entropy, e, e))
 
 # A failed establishment releases the session
 # --------------------------------------------
