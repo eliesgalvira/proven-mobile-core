@@ -1660,6 +1660,31 @@ law smf.establish.failure_releases:
   & ({St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool} -> {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
     -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
 
+# What the release messages are, so that the laws naming them
+# (smf.establish.failure_releases, amf.path_switch.stored_capabilities,
+# amf.handover.notify_releases) keep their meaning: the PDU Session Resource
+# Release Command to a UE's gNB (Gs.Gsm.n2_release), and the PDU Session
+# Release Commands in DL NAS Transport for the sessions a handover releases
+# (Gs.Gsm.releases). Each holds PDU Session Release Command #26 sealed under
+# the downlink COUNT of the context given, and leaves the context with the
+# next COUNT: none for no session, the first session's under the context's
+# COUNT and the rest's from the next, the context they leave last.
+law smf.releases.sent:
+  for +key: U32
+  for +assoc: U32
+  for +stream: U32
+  for +ran: B.Bytes()
+  for +p: U32
+  for +more: List<&2, U32>
+  for +ctx: N.Nas.Ctx
+  for +keys: N.Nas.Keys
+  for +dl: N.Nas.Count
+  for +ul: Maybe<&2, N.Nas.Count>
+  for +ue: St.Ue
+  {Gs.Gsm.releases(key, assoc, stream, ran, [], ctx) == (ctx, []) : Sigma<&2, &2, N.Nas.Ctx, _ => List<&2, Ng.Act>>}
+  & {Gs.Gsm.releases(key, assoc, stream, ran, p <> more, N.Ctx{keys, dl, ul}) == (Gs.Gsm.Told.ctx(Gs.Gsm.releases(key, assoc, stream, ran, more, N.Ctx{keys, N.Nas.Count.next(dl), ul})), Ng.DlNas{assoc, stream, key, ran, N.Nas.seal(keys, N.Ciphered{}, N.Nas.downlink(), dl, Gs.Gsm.dl_transport(p, Gs.Gsm.release_command(p)))} <> Gs.Gsm.Told.acts(Gs.Gsm.releases(key, assoc, stream, ran, more, N.Ctx{keys, N.Nas.Count.next(dl), ul}))) : Sigma<&2, &2, N.Nas.Ctx, _ => List<&2, Ng.Act>>}
+  & {Gs.Gsm.n2_release(key, ue, N.Ctx{keys, dl, ul}, p) == (St.Rephase{key, St.Phase.with_ctx(St.Ue.phase(ue), N.Ctx{keys, N.Nas.Count.next(dl), ul})}, [Ng.UeSend{St.Ue.assoc(ue), St.Ue.stream(ue), key, Ng.Ngap.pdu_release(key, St.Ue.ran_id(ue), p, N.Nas.seal(keys, N.Ciphered{}, N.Nas.downlink(), dl, Gs.Gsm.dl_transport(p, Gs.Gsm.release_command(p))), Ng.Ngap.misc(G.CauseMisc.unspecified()))}]) : Ng.GOut()}
+
 # TS 38.413 §8.2.2.2: the gNB's PDU Session Resource Release Response answers
 # a Command whose sessions the step that sent it already deleted at the UPF.
 # Whatever it names and whoever sends it, it changes no state: one naming a

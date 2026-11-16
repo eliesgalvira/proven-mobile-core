@@ -919,6 +919,14 @@ def L.smf.establish.failure_releases(st, entropy, len, bytes, msg, rest, skey, s
     (em => ek1 => +es => +ep => ec => Fail.dropped(K.Kernel.step(st, F.PfcpData{len, bytes}, entropy), st, skey, s, S.State.pfcp_seq(st), ue, ctx, Step.unmodified(st, entropy, len, bytes, msg, rest, skey, s, guard, request, em, ek1, es, ep, ec), Kn.past(s, S.Modifying{guard, request}, ep, PL.Lv.found_known(S.Sessions.by_seq(Pf.Msg.seq(msg), ss), ss, skey, s, es, PL.Lv.by_seq(Pf.Msg.seq(msg), ss), ek)), Kn.held(s, S.Modifying{guard, request}, ep, {==})),
      eup => ep => ei => ev => eid => eo => +es => +eh => Fail.known(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), skey, s, Rel.by(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), st, Gsm.Gsm.results(st, k, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails), skey, s, PW.Rt.owned(V.PDUSessionResourceSetupResponse.View, x => {x == N.Step.of(st, Gsm.Gsm.results(st, k, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails)) : N.Step()}, st, entropy, assoc, stream, len, bytes, 1, 29, crit, value, ies, c, i => V.PDUSessionResourceSetupResponse.view(i), r => Gsm.Gsm.setup_response_of_view(st, assoc, r), m => Gsm.Gsm.setup_response_key(st, assoc, ran, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails, m), o => Gsm.Gsm.setup_response_ue(st, assoc, k, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), fails, o), V.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{fails}, diag, uli}, amf, k, ran, Some{ue}, ep, ei, {==}, eup, {==}, ev, {==}, eid, {==}, eo, {==}), Rel.join_r(Gsm.Gsm.set_ups(st, k, Gsm.Gsm.list_or(G.PDUSessionResourceSetupItemSURes, oks), S.State.pfcp_seq(st)), Gsm.Gsm.faileds(st, k, fails, seq2), skey, s, Rel.faileds(st, k, pre, psi, transfer, x, post, seq2, skey, s, guard, pti, es, eh))), Kn.past(s, S.Setting{guard, pti}, eh, PL.Lv.found_known(S.Sessions.by_psi(k, psi, ss), ss, skey, s, es, PL.Lv.by_psi(k, psi, ss), ek)), Kn.held(s, S.Setting{guard, pti}, eh, {==})))))
 
+def Rl.then(+a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> {Gsm.Gsm.releases_then(a, r) == (Gsm.Gsm.Told.ctx(r), a <> Gsm.Gsm.Told.acts(r)) : Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>}:
+  match r:
+    case (c, acts):
+      {==}
+
+def L.smf.releases.sent(key, assoc, stream, ran, p, more, ctx, keys, dl, ul, ue):
+  ({==}, (Rl.then(N.DlNas{assoc, stream, key, ran, Sec.Nas.seal(keys, Sec.Ciphered{}, Sec.Nas.downlink(), dl, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Ctx{keys, Sec.Nas.Count.next(dl), ul})), {==}))
+
 def L.smf.release_response.keeps_state(st, entropy, assoc, stream, len, bytes, crit, value, ep):
   PW.Rt.read(x => {K.Kernel.state(x) == st : S.State}, st, entropy, assoc, stream, len, bytes, 1, 28, crit, value, ep, {==}, {==}, {==}, ies => {==})
 
