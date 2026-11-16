@@ -454,10 +454,6 @@ def Acts.stops(+k: U32, acts: List<&2, Act>) -> Bool:
     case a <> more:
       Bool.or(Act.stops(k, a), Acts.stops(k, more))
 
-# The actions xs are among acts, together and in order.
-def Acts.within(+xs: List<&2, Act>, +acts: List<&2, Act>) -> Type:
-  Sigma<&2, &2, List<&2, Act>, pre => Sigma<&2, &2, List<&2, Act>, post => {acts == List.append(&2, Act, pre, List.append(&2, Act, xs, post)) : List<&2, Act>}>>
-
 # Some action starts or stops timer k.
 def Acts.touches(+k: U32, acts: List<&2, Act>) -> Bool:
   match acts:

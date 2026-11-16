@@ -2182,10 +2182,14 @@ law amf.handover.guarded:
 
 # TS 23.502 §4.9.1.3.3: Handover Notify from the target of the handover
 # pending, under the RAN-UE-NGAP-ID it acknowledged with and still free on it,
-# moves the UE to the target; each of the UE's PDU sessions the target did not
-# admit with an IPv4 tunnel is released at the UPF and to the UE too (§4.3.4.2):
-# PDU Session Release Command in DL NAS Transport through the target, the
-# messages protected in turn, the context holding the NAS context they leave.
+# moves the UE to the target, and the step is exactly this: the UE's PDU
+# sessions handed to Sw.Sw.sessions, which repoints those the target admitted
+# with an IPv4 tunnel and deletes the others at the UPF; the context put on
+# the target; the source told to release the UE; PDU Session Release Command
+# to the UE for each session not admitted, in DL NAS Transport through the
+# target (§4.3.4.2, Gs.Gsm.releases), the context holding the NAS context
+# they leave; the guard stopped; a log line; and the guards of the session
+# rows gone stopped (N.Step.of).
 law amf.handover.notify_releases:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -2219,7 +2223,7 @@ law amf.handover.notify_releases:
   for +ef: {St.Ues.ran_free(k, assoc, ran, St.State.ues(st)) == True{} : Bool}
   for +eup: {St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool}
   {Tb.Table.get(St.Ue, k, St.State.ues(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == Some{St.Ue.moved(ue, assoc, ran, s, St.Registered{Gs.Gsm.Told.ctx(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), nh, Some{St.Side{St.Ue.assoc(ue), Some{St.Ue.ran_id(ue)}}}})} : Maybe<&2, St.Ue>}
-  & Ng.Acts.within(Gs.Gsm.Told.acts(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))
+  & {Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy) == Ng.Step.of(st, Ng.Out.also(Ng.Out.join(Sw.Sw.sessions(ts, St.Sessions.of_ue(k, St.State.sessions(st)), St.State.pfcp_seq(st)), (St.Put{k, St.Ue.moved(ue, assoc, ran, s, St.Registered{Gs.Gsm.Told.ctx(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), nh, Some{St.Side{St.Ue.assoc(ue), Some{St.Ue.ran_id(ue)}}}})}, [])), Ng.Release{St.Ue.assoc(ue), St.Ue.stream(ue), k, St.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())} <> List.append(&2, Ng.Act, Gs.Gsm.Told.acts(Gs.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, St.Sessions.of_ue(k, St.State.sessions(st))), ctx)), [Ng.TimerCancel{k}, Ng.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]))) : Ng.Step()}
 
 # TS 38.413 §8.3.3: the side an N2 handover released, the source after
 # Handover Notify or the target after a cancel or the guard firing, answers

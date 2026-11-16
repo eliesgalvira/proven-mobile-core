@@ -1442,9 +1442,9 @@ def L.amf.handover.released_side_completes(st, entropy, assoc, stream, len, byte
 
 # Handover Notify completing
 # --------------------------
-# The UE of a Handover Notify that completes its handover moves to the target
-# with the NAS context the release commands to it leave, which are among the
-# step's actions.
+# A Handover Notify that completes its handover is that handover's outcome,
+# which puts the UE on the target with the NAS context the release commands
+# to it leave.
 
 def Hn.aimed(+ue: S.Ue, +assoc: U32, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +ran: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +sp: B.Digits(), +eph: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, S.Acked{assoc, ran, s, ts}} : S.Phase}, +es: {S.Ue.supi(ue) == Some{sp} : Maybe<&2, B.Digits()>}, +eo: {U32.is_eq(S.Ue.assoc(ue), assoc) == False{} : Bool}) -> {Ho.Ho.aimed(ue, assoc) == True{} : Bool}:
   seph = Equal.sym(S.Phase, S.Ue.phase(ue), S.Handover{ctx, nh, source, S.Acked{assoc, ran, s, ts}}, eph)
@@ -1474,32 +1474,7 @@ def Hn.found(+st: S.State, +assoc: U32, +amf: B.Bytes(), +ran: B.Bytes(), +uli: 
   %sef : {N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, Bool.and(True{}, _))) == T : N.Step()}
   {==}
 
-def Hn.acts_step(+st: S.State, +o: N.GOut()) -> {K.Kernel.actions(N.Step.of(st, o)) == List.append(&2, N.Act, N.Out.acts(o), N.Gone.when(S.Tx.keeps_sessions(N.Out.tx(o)), S.State.sessions(st), S.State.sessions(S.Tx.apply(N.Out.tx(o), st)))) : List<&2, N.Act>}:
-  match o:
-    case (tx, acts):
-      {==}
-
-def Hn.acts_also(+o: N.GOut(), +more: List<&2, N.Act>) -> {N.Out.acts(N.Out.also(o, more)) == List.append(&2, N.Act, N.Out.acts(o), more) : List<&2, N.Act>}:
-  match o:
-    case (tx, acts):
-      {==}
-
-# The release commands among the step's actions.
-def Hn.within(+st: S.State, +a: N.GOut(), +x: N.Act, +t: List<&2, N.Act>, +l: List<&2, N.Act>) -> N.Acts.within(t, K.Kernel.actions(N.Step.of(st, N.Out.also(a, x <> List.append(&2, N.Act, t, l))))):
-  +o = N.Out.also(a, x <> List.append(&2, N.Act, t, l))
-  +j = N.Out.acts(a)
-  +c = N.Gone.when(S.Tx.keeps_sessions(N.Out.tx(o)), S.State.sessions(st), S.State.sessions(S.Tx.apply(N.Out.tx(o), st)))
-  +pre = List.append(&2, N.Act, j, [x])
-  +post = List.append(&2, N.Act, l, c)
-  e1 = Equal.sym(List<&2, N.Act>, K.Kernel.actions(N.Step.of(st, o)), List.append(&2, N.Act, N.Out.acts(o), c), Hn.acts_step(st, o))
-  e2 = Equal.sym(List<&2, N.Act>, N.Out.acts(o), List.append(&2, N.Act, j, x <> List.append(&2, N.Act, t, l)), Hn.acts_also(a, x <> List.append(&2, N.Act, t, l)))
-  e3 = PL.Lv.app_assoc(j, x <> List.append(&2, N.Act, t, l), c)
-  e4 = PL.Lv.app_assoc(j, [x], List.append(&2, N.Act, t, post))
-  e5 = PL.Lv.app_assoc(t, l, c)
-  q : {K.Kernel.actions(N.Step.of(st, o)) == List.append(&2, N.Act, pre, List.append(&2, N.Act, t, post)) : List<&2, N.Act>} = (%e1 : {_ == List.append(&2, N.Act, pre, List.append(&2, N.Act, t, post)) : List<&2, N.Act>}; (%e2 : {List.append(&2, N.Act, _, c) == List.append(&2, N.Act, pre, List.append(&2, N.Act, t, post)) : List<&2, N.Act>}; (%e3 : {_ == List.append(&2, N.Act, pre, List.append(&2, N.Act, t, post)) : List<&2, N.Act>}; (%e4 : {List.append(&2, N.Act, j, List.append(&2, N.Act, x <> List.append(&2, N.Act, t, l), c)) == _ : List<&2, N.Act>}; (%e5 : {List.append(&2, N.Act, j, x <> _) == List.append(&2, N.Act, j, x <> List.append(&2, N.Act, t, post)) : List<&2, N.Act>}; {==})))))
-  (pre, (post, q))
-
-def Hn.of(+st: S.State, +assoc: U32, +k: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>) -> {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, r, s, ts, True{}))))) == Some{S.Ue.moved(ue, assoc, r, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, r, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>} & N.Acts.within(Gsm.Gsm.Told.acts(Gsm.Gsm.releases(k, assoc, s, r, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), K.Kernel.actions(N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, r, s, ts, True{})))):
+def Hn.of(+st: S.State, +assoc: U32, +k: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>) -> {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, r, s, ts, True{}))))) == Some{S.Ue.moved(ue, assoc, r, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, r, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>}:
   +ues = S.State.ues(st)
   +rows = S.Sessions.of_ue(k, S.State.sessions(st))
   +told = Gsm.Gsm.releases(k, assoc, s, r, Sw.Sw.released(ts, rows), ctx)
@@ -1513,11 +1488,14 @@ def Hn.of(+st: S.State, +assoc: U32, +k: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh:
   sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), ues), PT.Tk.render(st, o))
   se = Equal.sym(S.Tx, N.Out.tx(o), S.Both{N.Out.tx(a), S.Put{k, v}}, e12)
   g : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, o)))) == Some{v} : Maybe<&2, S.Ue>} = (%sr : {Tb.Table.get(S.Ue, k, _) == Some{v} : Maybe<&2, S.Ue>}; (%se : {Tb.Table.get(S.Ue, k, PT.Tk.ues(_, ues)) == Some{v} : Maybe<&2, S.Ue>}; PPs.Mv.get_put(k, v, PT.Tk.ues(N.Out.tx(a), ues))))
-  (g, Hn.within(st, N.Out.join(a, b), x, Gsm.Gsm.Told.acts(told), l))
+  g
+
+def Hn.at(+st: S.State, +assoc: U32, +k: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +ran: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +x: N.Step(), +e: {x == N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{})) : N.Step()}) -> {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(x))) == Some{S.Ue.moved(ue, assoc, ran, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>}:
+  se = Equal.sym(N.Step(), x, N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{})), e)
+  %se : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(_))) == Some{S.Ue.moved(ue, assoc, ran, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>}
+  Hn.of(st, assoc, k, ue, ctx, nh, ran, s, ts)
 
 def L.amf.handover.notify_releases(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, ran, uli, k, ue, ctx, nh, source, s, ts, sp, ep, ei, ev, eid, eg, eph, es, eo, ef, eup):
   +T = N.Step.of(st, Ho.Ho.complete(st, assoc, k, ue, ctx, nh, ran, s, ts, True{}))
-  e = PW.Rt.view(V.HandoverNotify.View, x => {x == T : N.Step()}, st, entropy, assoc, stream, len, bytes, 0, 11, crit, value, ies, c, i => V.HandoverNotify.view(i), r => Ho.Ho.notify_of_view(st, assoc, r), Done{V.HandoverNotify.View{amf, ran, uli}}, ep, ei, {==}, eup, {==}, ev, Hn.found(st, assoc, amf, ran, uli, k, ue, ctx, nh, source, s, ts, sp, eid, eg, eph, es, eo, ef))
-  se = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), T, e)
-  %se : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(_))) == Some{S.Ue.moved(ue, assoc, ran, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})} : Maybe<&2, S.Ue>} & N.Acts.within(Gsm.Gsm.Told.acts(Gsm.Gsm.releases(k, assoc, s, ran, Sw.Sw.released(ts, S.Sessions.of_ue(k, S.State.sessions(st))), ctx)), K.Kernel.actions(_))
-  Hn.of(st, assoc, k, ue, ctx, nh, ran, s, ts)
+  +e = PW.Rt.view(V.HandoverNotify.View, x => {x == T : N.Step()}, st, entropy, assoc, stream, len, bytes, 0, 11, crit, value, ies, c, i => V.HandoverNotify.view(i), r => Ho.Ho.notify_of_view(st, assoc, r), Done{V.HandoverNotify.View{amf, ran, uli}}, ep, ei, {==}, eup, {==}, ev, Hn.found(st, assoc, amf, ran, uli, k, ue, ctx, nh, source, s, ts, sp, eid, eg, eph, es, eo, ef))
+  (Hn.at(st, assoc, k, ue, ctx, nh, ran, s, ts, K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), e), e)
