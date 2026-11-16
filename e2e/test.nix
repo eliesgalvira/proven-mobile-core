@@ -13,7 +13,7 @@ let
   };
 in
 {
-  name = "speck5g-e2e";
+  name = "pmc-e2e";
 
   nodes = {
     core = { lib, pkgs, ... }: {

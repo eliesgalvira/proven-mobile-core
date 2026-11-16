@@ -5,7 +5,7 @@
 { buildGoModule, fetchFromGitHub }:
 buildGoModule {
   pname = "packetrusher";
-  version = "2.0.0-speck5g1";
+  version = "2.0.0-pmc1";
   src = fetchFromGitHub {
     owner = "HewlettPackard";
     repo = "PacketRusher";

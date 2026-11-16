@@ -46,7 +46,7 @@
       });
 
       kernel = pkgs.stdenv.mkDerivation {
-        pname = "speck5g-kernel";
+        pname = "pmc-kernel";
         version = "0.1.0";
         src = lib.fileset.toSource { root = ./.; fileset = lib.fileset.difference ./kernel ./kernel/tests; };
         nativeBuildInputs = [ bend pkgs.clang ];
@@ -60,7 +60,7 @@
       };
 
       edge = pkgs.rustPlatform.buildRustPackage {
-        pname = "speck5g-edge";
+        pname = "pmc-edge";
         version = "0.1.0";
         src = lib.fileset.toSource {
           root = ./.;
@@ -73,7 +73,7 @@
 
       # The edge's test binaries, which the edge-sctp check runs where SCTP is loaded.
       edgeTests = edge.overrideAttrs (old: {
-        pname = "speck5g-edge-tests";
+        pname = "pmc-edge-tests";
         nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.jq ];
         buildPhase = ''
           cd edge

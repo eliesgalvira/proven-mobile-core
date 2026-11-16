@@ -14,7 +14,7 @@ eUPF  <-------- UDP 8805 / PFCP ---+
 
 - **Kernel**: `kernel/`. A pure step function plus a thin IO wrapper (`kernel/main.bend`) that reads frames from the edge, calls `step`, and writes the returned actions. Only `main.bend` and anything it alone imports may perform IO. `kernel/PROOF.bend` must never import `main.bend`.
 - **Edge**: `edge/`, a Rust crate producing one binary. It owns every socket, the clock and the randomness. It holds no 5G logic: it moves bytes between SCTP/UDP and the kernel, and runs timers. It is the thin layer in `GLOSSARY.md`.
-- **UPF**: eUPF v0.7.2, started with `feature_ftup`, `feature_ueip` and `pfcp_remote_node` off. Our SMF allocates TEIDs and UE addresses and starts the PFCP association. See [the eUPF research](https://github.com/eliesgalvira/5G-spec-kernel/blob/research/eupf-pfcp/docs/research/eupf-pfcp.md).
+- **UPF**: eUPF v0.7.2, started with `feature_ftup`, `feature_ueip` and `pfcp_remote_node` off. Our SMF allocates TEIDs and UE addresses and starts the PFCP association. See [the eUPF research](https://github.com/eliesgalvira/proven-mobile-core/blob/research/eupf-pfcp/docs/research/eupf-pfcp.md).
 
 ## The step function
 

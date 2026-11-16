@@ -1,6 +1,6 @@
 # What eUPF needs from an SMF over PFCP
 
-Answers [issue #3](https://github.com/eliesgalvira/5G-spec-kernel/issues/3). Researched 2026-11-01 by reading source code only. Nothing here was run against a live eUPF.
+Answers [issue #3](https://github.com/eliesgalvira/proven-mobile-core/issues/3). Researched 2026-11-01 by reading source code only. Nothing here was run against a live eUPF.
 
 ## Sources
 

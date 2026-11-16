@@ -1,6 +1,6 @@
 # NGAP codec: generate from the 3GPP ASN.1, or hand-write each message?
 
-Research for [#4](https://github.com/eliesgalvira/5G-spec-kernel/issues/4), 2026-11-01. Sources are pinned to the versions read. Statements marked *(inferred)* are my conclusions, not something a source says.
+Research for [#4](https://github.com/eliesgalvira/proven-mobile-core/issues/4), 2026-11-01. Sources are pinned to the versions read. Statements marked *(inferred)* are my conclusions, not something a source says.
 
 ## What NGAP asks of the codec
 

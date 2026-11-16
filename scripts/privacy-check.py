@@ -8,7 +8,7 @@ It reads what the push adds: new blobs (also inside gzip, bzip2, xz, ZIP and
 base64), their paths, commit messages, author and committer, and ref names.
 The rules here are generic. Literal private names (machines, users, known ids)
 come from a pattern file outside the repo, read when it exists; its path is
-$SPECK5G_PRIVACY_PATTERNS or ~/.config/5g-spec-kernel/privacy-patterns.json:
+$PMC_PRIVACY_PATTERNS or ~/.config/proven-mobile-core/privacy-patterns.json:
 
     {"words": [...],     whole tokens, also inside camelCase identifiers
      "phrases": [...],   case-insensitive text
@@ -58,7 +58,7 @@ def git(*args: str, input: bytes | None = None) -> bytes:
 
 
 def private_patterns() -> dict:
-    path = Path(os.environ.get("SPECK5G_PRIVACY_PATTERNS") or Path.home() / ".config/5g-spec-kernel/privacy-patterns.json")
+    path = Path(os.environ.get("PMC_PRIVACY_PATTERNS") or Path.home() / ".config/proven-mobile-core/privacy-patterns.json")
     return json.loads(path.read_text()) if path.is_file() else {}
 
 

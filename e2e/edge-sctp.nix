@@ -2,7 +2,7 @@
 # SCTP loaded, where REQUIRE_SCTP=1 makes a test without SCTP fail.
 { edgeTests }:
 {
-  name = "speck5g-edge-sctp";
+  name = "pmc-edge-sctp";
 
   nodes.machine = {
     boot.kernelModules = [ "sctp" ];
