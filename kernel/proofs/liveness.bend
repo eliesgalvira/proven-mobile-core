@@ -3705,16 +3705,16 @@ def Dw.pfcp_msg(-ok: N.GOut() -> Type, +st: S.State, +bytes: B.Bytes(), +r: B.Re
     case Done{(+msg, +rest)}:
       Dw.k1(ok, st, msg, U32.is_eq(Pf.Msg.kind(msg), 1), lift, ek => answered(msg, rest, er, ek), settled)
 
-def Dw.walk(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: PW.Walk.Keep(Q, st), ready: @assoc:U32 -> PW.Walk.Ready(Q, st, assoc), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(R.Route.down(st, assoc)), out: PW.Walk.Out(Q, ok, st), lift: Dw.Lift(ok, st), resend: Dw.Resend(ok, st, ev), answered: Dw.Answered(ok, st, ev), settled: Dw.Settled(ok, st)) -> Q(K.Kernel.step(st, ev, entropy)):
+def Dw.walk(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: PW.Walk.Keep(Q, st), ready: @assoc:U32 -> @s:Bool -> PW.Walk.Ready(Q, st, assoc, s), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(R.Route.down(st, assoc)), out: PW.Walk.Out(Q, ok, st), lift: Dw.Lift(ok, st), resend: Dw.Resend(ok, st, ev), answered: Dw.Answered(ok, st, ev), settled: Dw.Settled(ok, st)) -> Q(K.Kernel.step(st, ev, entropy)):
   match ev:
     case F.Config{len, +tlvs}:
       config(tlvs)
     case F.NgapAssocUp{assoc}:
-      keep([], k => {==}, k => {==})
+      keep([], k => {==}, k => {==}, {==})
     case F.NgapAssocDown{+assoc}:
       down(assoc)
     case F.NgapData{+assoc, +stream, len, +bytes}:
-      PW.Walk.pdu(Q, ok, st, assoc, stream, entropy, Fr.Pdu.read(bytes), keep, ready(assoc), out, +kind => +code => +ies => +ea => lift(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), ea)))
+      PW.Walk.pdu(Q, ok, st, assoc, stream, entropy, Fr.Pdu.read(bytes), keep, ready(assoc, N.NgSetup.supported_request(S.State.config(st), bytes)), out, +kind => +code => +ies => +ea => lift(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), ea)))
     case F.PfcpData{+len, +bytes}:
       out(Gsm.Gsm.pfcp_data(st, bytes), Dw.pfcp_msg(ok, st, bytes, Pf.Msg.read(bytes), {==}, lift, +msg => +rest => er => ek => answered(len, bytes, msg, rest, {==}, er, ek), settled))
     case F.TimerFired{+timer}:
@@ -3731,7 +3731,7 @@ def Lv.settled_w(+st: S.State, +k: U32, +tx: S.Tx, +more: List<&2, N.Act>, +h: {
   P.Bool.and_intro(Lv.actsw(st, more), Lv.homedw(st, tx, S.State.ues(st)), Lv.acts_w(st, more, Lv.ok_acts(st, (tx, more), h)), Lv.weak(st, tx, S.State.ues(st), Lv.ok_homed(st, (tx, more), h)))
 
 # Every procedure's outcome is ok (Lw), or one of the three Dw tells apart.
-def Lv.walk(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: PW.Walk.Keep(Q, st), ready: @assoc:U32 -> PW.Walk.Ready(Q, st, assoc), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(R.Route.down(st, assoc)), out: PW.Walk.Out(Q, o => {Lv.okw(st, o) == True{} : Bool}, st)) -> Q(K.Kernel.step(st, ev, entropy)):
+def Lv.walk(-Q: N.Step() -> Type, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), keep: PW.Walk.Keep(Q, st), ready: @assoc:U32 -> @s:Bool -> PW.Walk.Ready(Q, st, assoc, s), config: @tlvs:List<&2, T.Tlv> -> Q(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), down: @assoc:U32 -> Q(R.Route.down(st, assoc)), out: PW.Walk.Out(Q, o => {Lv.okw(st, o) == True{} : Bool}, st)) -> Q(K.Kernel.step(st, ev, entropy)):
   Dw.walk(Q, o => {Lv.okw(st, o) == True{} : Bool}, st, ev, entropy, keep, ready, config, down, out, +o => +h => Lv.ok_w(st, o, h), +k => +t => +g => +r => ek => eu => em => ep => Lv.resent_w(st, k, t, g, r, em, ep), +len => +bytes => +msg => +rest => ev2 => er => ek => Lw.deleted(st, msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), +k => +tx => +more => ek => h => Lv.settled_w(st, k, tx, more, h))
 
 
@@ -4120,7 +4120,7 @@ def Inv.out(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +
       t(tx, st, e, P.Bool.and_true_r(Lv.actsw(st, acts), Lv.homedw(st, tx, S.State.ues(st)), h))
 
 def Inv.step(-inv: Tb.Table(S.Ue) -> Tb.Table(S.Session) -> Bool, +st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +e: {inv(S.State.ues(st), S.State.sessions(st)) == True{} : Bool}, t: Inv.Tx(inv, st), t2: Inv.Tx(inv, st), down: @a:U32 -> @s:S.State -> {inv(S.State.ues(s), S.State.sessions(s)) == True{} : Bool} -> PW.Walk.Tables(inv, R.Route.drop(s, a)), down2: @a:U32 -> @s:S.State -> {inv(S.State.ues(s), S.State.sessions(s)) == True{} : Bool} -> PW.Walk.Tables(inv, R.Route.drop(s, a))) -> {inv(S.State.ues(K.Kernel.state(K.Kernel.step(st, ev, entropy))), S.State.sessions(K.Kernel.state(K.Kernel.step(st, ev, entropy)))) == True{} : Bool}:
-  Lv.walk(o => PW.Walk.Tables(inv, o), st, ev, entropy, acts => h => cx => e, +a => +id => +ok => +acts => h => cx => PW.Walk.assocs(inv, K.Kernel.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(K.Kernel.state(R.Route.drop(st, a))), ok), List.append(&2, N.Act, K.Kernel.actions(R.Route.drop(st, a)), acts), down2(a, st, e)), +tlvs => PW.Walk.config(inv, S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => down(a, K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), Inv.out(inv, st, Ho.Ho.down(st, a), e, t2, Lv.ok_w(st, Ho.Ho.down(st, a), Lw.ho_down(st, a)))), +o => h => Inv.out(inv, st, o, e, t, h))
+  Lv.walk(o => PW.Walk.Tables(inv, o), st, ev, entropy, acts => h => cx => nr => e, +a => ns => +id => +ok => +acts => h => cx => er => PW.Walk.assocs(inv, K.Kernel.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(K.Kernel.state(R.Route.drop(st, a))), ok), List.append(&2, N.Act, K.Kernel.actions(R.Route.drop(st, a)), acts), down2(a, st, e)), +tlvs => PW.Walk.config(inv, S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => down(a, K.Kernel.state(N.Step.of(st, Ho.Ho.down(st, a))), Inv.out(inv, st, Ho.Ho.down(st, a), e, t2, Lv.ok_w(st, Ho.Ho.down(st, a), Lw.ho_down(st, a)))), +o => h => Inv.out(inv, st, o, e, t, h))
 
 def Un.inv(+st0: S.State, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session)) -> Bool:
   S.Ues.unique(ues)
@@ -4337,7 +4337,7 @@ def Hm.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B
           e
 
 def L.amf.contexts.set_up(st, ev, entropy, e):
-  ({==}, Lv.walk(o => {S.Ues.set_up(S.State.ues(K.Kernel.state(o)), S.State.assocs(K.Kernel.state(o))) == True{} : Bool}, st, ev, entropy, acts => h => cx => e, +a => +id => +ok => acts => h => cx => Hm.ready(st, a, id, ok, e), +tlvs => Hm.config(S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => Hm.down(st, a, e), +o => h => Hm.out(st, o, e, h)))
+  ({==}, Lv.walk(o => {S.Ues.set_up(S.State.ues(K.Kernel.state(o)), S.State.assocs(K.Kernel.state(o))) == True{} : Bool}, st, ev, entropy, acts => h => cx => nr => e, +a => ns => +id => +ok => acts => h => cx => er => Hm.ready(st, a, id, ok, e), +tlvs => Hm.config(S.Cfg.complete(tlvs), st, tlvs, entropy, e), +a => Hm.down(st, a, e), +o => h => Hm.out(st, o, e, h)))
 
 # Contexts stay guarded
 # ---------------------
@@ -4767,9 +4767,9 @@ def Gs.assocs(+st: S.State, +assoc: U32, +as: Tb.Table(B.Bytes()), +acts: List<&
       Gs.stops_pre(k, K.Kernel.actions(R.Route.drop(S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}, assoc)), acts, Gs.down(S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}, assoc, k, s, g, es, eg, eh))
 
 def L.smf.guard.stopped(st, ev, entropy, k, s, g, es, eg, eh):
-  PW.Walk.any(o => {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(o))) == None{} : Maybe<&2, S.Session>} -> {N.Acts.stops(k, K.Kernel.actions(o)) == True{} : Bool}, st, ev, entropy, acts => h => cx => eh => Empty.absurd({N.Acts.stops(k, acts) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh)), +a => +id => +ok => +acts => h => cx => eh => Gs.assocs(st, a, S.Assocs.set(a, id, S.State.assocs(K.Kernel.state(R.Route.drop(st, a))), ok), acts, k, s, g, es, eg, eh), +tlvs => eh => Gs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, s, g, es, eg, eh), +a => eh => Gs.adown(st, a, k, s, g, es, eg, eh), +o => eh => Gs.of(st, o, k, s, g, es, eg, eh))(eh)
+  PW.Walk.any(o => {Tb.Table.get(S.Session, k, S.State.sessions(K.Kernel.state(o))) == None{} : Maybe<&2, S.Session>} -> {N.Acts.stops(k, K.Kernel.actions(o)) == True{} : Bool}, st, ev, entropy, acts => h => cx => nr => eh => Empty.absurd({N.Acts.stops(k, acts) == True{} : Bool}, Gs.kept(S.State.sessions(st), k, s, es, eh)), +a => ns => +id => +ok => +acts => h => cx => er => eh => Gs.assocs(st, a, S.Assocs.set(a, id, S.State.assocs(K.Kernel.state(R.Route.drop(st, a))), ok), acts, k, s, g, es, eg, eh), +tlvs => eh => Gs.config(S.Cfg.complete(tlvs), st, tlvs, entropy, k, s, g, es, eg, eh), +a => eh => Gs.adown(st, a, k, s, g, es, eg, eh), +o => eh => Gs.of(st, o, k, s, g, es, eg, eh))(eh)
 
 def L.amf.release.forgets_ue(st, ev, entropy, k, eo, eg, en):
-  Lv.walk(o => {N.Acts.spare(k, K.Kernel.actions(o)) == True{} : Bool}, st, ev, entropy, acts => h => cx => h(k), +a => +id => +ok => +acts => h => cx => Lv.spare_app(k, K.Kernel.actions(R.Route.drop(st, a)), acts, Lv.drop_spare(st, st, a, k, eo, eg, en, {==}), h(k)), +tlvs => Lv.config_spare(S.Cfg.complete(tlvs), st, tlvs, entropy, k), a => Lv.down_spare(st, a, k, eo, eg, en), +o => h => Lv.spare_of(st, K.Kernel.actions(N.Step.of(st, o)), k, Lv.step_acts(st, o, h), eo, eg, en))
+  Lv.walk(o => {N.Acts.spare(k, K.Kernel.actions(o)) == True{} : Bool}, st, ev, entropy, acts => h => cx => nr => h(k), +a => ns => +id => +ok => +acts => h => cx => er => Lv.spare_app(k, K.Kernel.actions(R.Route.drop(st, a)), acts, Lv.drop_spare(st, st, a, k, eo, eg, en, {==}), h(k)), +tlvs => Lv.config_spare(S.Cfg.complete(tlvs), st, tlvs, entropy, k), a => Lv.down_spare(st, a, k, eo, eg, en), +o => h => Lv.spare_of(st, K.Kernel.actions(N.Step.of(st, o)), k, Lv.step_acts(st, o, h), eo, eg, en))
 
 
