@@ -66,9 +66,9 @@ def Fl.del_if(+key: U32, +t: S.Session, +seq: U32, +more: Tb.Table(S.Session), +
   match b:
     case True{}:
       +request = Up.N4.delete(S.Session.up_seid(t), seq)
-      Fl.join((S.Both{S.Pend{key, Some{S.Deletion{request, seq, S.Guard{0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(t)}, request}, N.TimerStart{None{}, S.Ids.deletion(key), Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
+      Fl.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(t), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(t), request}, N.TimerStart{None{}, key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, later(U32.add(seq, 1)))
     case False{}:
-      later(seq)
+      Fl.join((S.DelSession{key}, []), Up.N4.deletions(more, seq), {==}, later(seq))
 
 def Fl.dels(+rows: Tb.Table(S.Session), +seq: U32) -> {N.Ngap.any_switch_failure(N.Out.acts(Up.N4.deletions(rows, seq))) == False{} : Bool}:
   match rows:
@@ -108,7 +108,7 @@ def Fl.gone(+keeps: Bool, +before: Tb.Table(S.Session), +after: Tb.Table(S.Sessi
 def Fl.session(+skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> {N.Ngap.any_switch_failure(N.Out.acts(Sw.Sw.session(skey, s, seq, t))) == False{} : Bool}:
   match t:
     case None{}:
-      Fl.join((Gsm.Gsm.dels([(skey, s)]), []), Up.N4.deletions([(skey, s)], seq), {==}, Fl.dels([(skey, s)], seq))
+      Fl.dels([(skey, s)], seq)
     case Some{(teid, addr)}:
       {==}
 

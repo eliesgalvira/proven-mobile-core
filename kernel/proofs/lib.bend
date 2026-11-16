@@ -828,6 +828,28 @@ def Bool.or_r(+a: Bool, +b: Bool, +e: {b == True{} : Bool}) -> {Bool.or(a, b) ==
     case False{}:
       e
 
+def Bool.or_false(+a: Bool, +b: Bool, +ea: {a == False{} : Bool}, +eb: {b == False{} : Bool}) -> {Bool.or(a, b) == False{} : Bool}:
+  match a:
+    case True{}:
+      Empty.absurd({Bool.or(True{}, b) == False{} : Bool}, Refute.true_false(ea))
+    case False{}:
+      eb
+
+# What one disjunct gives, the disjunction gives.
+def Bool.or_mono(+x: Bool, +y: Bool, +z: Bool, +h: {Bool.or(x, y) == True{} : Bool}, f: {y == True{} : Bool} -> {z == True{} : Bool}) -> {Bool.or(x, z) == True{} : Bool}:
+  match x:
+    case True{}:
+      {==}
+    case False{}:
+      f(h)
+
+def Bool.or_mono_false(+x: Bool, +y: Bool, +z: Bool, +h: {Bool.or(x, y) == False{} : Bool}, f: {y == False{} : Bool} -> {z == False{} : Bool}) -> {Bool.or(x, z) == False{} : Bool}:
+  match x:
+    case True{}:
+      Empty.absurd({Bool.or(True{}, z) == False{} : Bool}, Refute.true_false(h))
+    case False{}:
+      f(h)
+
 def Bool.or_true_l(a: Bool, +b: Bool, eb: {b == False{} : Bool}, e: {Bool.or(a, b) == True{} : Bool}) -> {a == True{} : Bool}:
   match a:
     case True{}:

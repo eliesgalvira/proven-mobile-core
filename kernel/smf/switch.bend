@@ -86,10 +86,10 @@ def Sw.released(+ts: List<&2, S.Tunnel>, rows: Tb.Table(S.Session)) -> List<&2, 
 def Sw.session(+skey: U32, +s: S.Session, +seq: U32, t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> N.GOut():
   match t:
     case None{}:
-      Gsm.Gsm.forget([(skey, s)], seq)
+      Up.N4.deletions([(skey, s)], seq)
     case Some{(teid, addr)}:
       +request = Up.N4.modify(S.Session.up_seid(s), teid, addr, seq)
-      (S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Repointing{S.Guard{0}, request}}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+      (S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Repointing{S.Guard{0}, request}}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}])
 
 def Sw.sessions(+ts: List<&2, S.Tunnel>, rows: Tb.Table(S.Session), +seq: U32) -> N.GOut():
   match rows:

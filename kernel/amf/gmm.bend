@@ -78,10 +78,9 @@ def Gmm.dl(key: U32, +ue: S.Ue, nas: B.Bytes()) -> N.Act:
 # Forgetting contexts
 # -------------------
 
-# A context forgotten, its sessions released at the UPF.
+# A context forgotten, its sessions deleted at the UPF first.
 def Gmm.forget(+st: S.State, +key: U32) -> N.GOut():
-  +gone = S.Sessions.of_ue(key, S.State.sessions(st))
-  N.Out.join((S.Del{key}, []), Up.N4.deletions(gone, S.State.pfcp_seq(st)))
+  N.Out.join(Up.N4.deletions(S.Sessions.of_ue(key, S.State.sessions(st)), S.State.pfcp_seq(st)), (S.Del{key}, []))
 
 def Gmm.evict(victims: Tb.Table(S.Ue)) -> List<&2, N.Act>:
   match victims:
@@ -101,13 +100,13 @@ def Gmm.sessions(ues: Tb.Table(S.Ue), +sessions: Tb.Table(S.Session)) -> Tb.Tabl
 
 # The one write of a context's identity: it takes its place, and every live
 # context it conflicts with (the same SUPI, 5G-TMSI or RAN id on the
-# association) goes with its sessions, which are deleted at the UPF, and with
-# the target of its pending handover, released. A SUPI enters a context
+# association) goes with its sessions, deleted at the UPF first, and with the
+# target of its pending handover, released. A SUPI enters a context
 # only once 5G-AKA has verified it (Gmm.secure) and a 5G-TMSI is drawn free
 # (Gmm.tmsi), so another gNB's UE is taken over only after authentication.
 def Gmm.place(+st: S.State, +key: U32, +ue: S.Ue) -> N.GOut():
   +victims = S.Ues.evicted(key, ue, S.State.ues(st))
-  N.Out.join((S.Put{key, ue}, Gmm.evict(victims)), Up.N4.deletions(Gmm.sessions(victims, S.State.sessions(st)), S.State.pfcp_seq(st)))
+  N.Out.join(Up.N4.deletions(Gmm.sessions(victims, S.State.sessions(st)), S.State.pfcp_seq(st)), (S.Put{key, ue}, Gmm.evict(victims)))
 
 # UE Context Release Command; the context waits, releasing, for the gNB, and
 # its guard, started again, bounds the wait; the target of its pending

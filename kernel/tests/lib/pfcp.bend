@@ -114,6 +114,8 @@ def sphase_of(p: S.SPhase) -> String:
       "modifying"
     case S.Repointing{g, request}:
       "repointing"
+    case S.Deleting{g, request}:
+      "deleting"
     case S.Active{}:
       "active"
 
@@ -158,6 +160,10 @@ def cancels(actions: List<&2, F.Action>, +id: U32) -> Bool:
 
 def sphase_is(st: S.State, name: String) -> Bool:
   String.eq(sphase_name(session1(S.State.sessions(st))), name)
+
+# The phase of the session under a key, "none" when there is none.
+def sphase_at(st: S.State, +key: U32, name: String) -> Bool:
+  String.eq(sphase_name(Tb.Table.get(S.Session, key, S.State.sessions(st))), name)
 
 # A session's guard timer is its key, the first session's here.
 def key1(t: Tb.Table(S.Session)) -> U32:

@@ -23,22 +23,24 @@ import ../nas/security.bend as Sec
 # The step function, walked once
 # ------------------------------
 # A step ends in one of five ways: the state as it was, with actions that
-# name no UE context (an NGAP PDU or IE list that does not decode, a message
-# from an association without NG Setup, an incomplete Config, an association
-# coming up); an association's UE contexts released and the associations set
-# up changed (NG Setup); a procedure's outcome o rendered by N.Step.of (a
+# name no UE context and start or stop no timer (an NGAP PDU or IE list that
+# does not decode, a message from an association without NG Setup, an
+# incomplete Config, an association coming up); an association's UE contexts
+# released and the associations set up changed (NG Setup); a procedure's
+# outcome o rendered by N.Step.of (a
 # routed NGAP message, a PFCP message, a timer); a new configuration; or an
 # association going down. A property Q of steps holds after every step
 # when it holds after each of them, the outcomes known only by a property ok
 # that each of them has.
 
 def Walk.Keep(-Q: N.Step() -> Type, +st: S.State) -> Type:
-  @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((st, acts))
+  @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.touches(k, acts) == False{} : Bool}) -> Q((st, acts))
 
 # NG Setup: the association's UE-related contexts re-initialised, then the
-# associations set up changed, with actions that name no UE context.
+# associations set up changed, with actions that name no UE context and
+# start or stop no timer.
 def Walk.Ready(-Q: N.Step() -> Type, +st: S.State, +assoc: U32) -> Type:
-  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
+  @id:B.Bytes() -> @ok:Bool -> @acts:List<&2, N.Act> -> (@k:U32 -> {N.Acts.spare(k, acts) == True{} : Bool}) -> (@k:U32 -> {N.Acts.touches(k, acts) == False{} : Bool}) -> Q((S.State.ready(N.Step.state(R.Route.drop(st, assoc)), assoc, id, ok), List.append(&2, N.Act, N.Step.acts(R.Route.drop(st, assoc)), acts)))
 
 def Walk.Out(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State) -> Type:
   @o:N.GOut() -> ok(o) -> Q(N.Step.of(st, o))
@@ -101,16 +103,16 @@ def Walk.d2(-ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kin
 def Walk.setup(-Q: N.Step() -> Type, +st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.NGSetupRequest.View>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc)) -> Q(R.Route.setup(st, assoc, r)):
   match r:
     case Fail{e}:
-      keep(N.Ngap.bad_view(assoc), k => {==})
+      keep(N.Ngap.bad_view(assoc), k => {==}, k => {==})
     case Done{+v}:
-      ready(N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==})
+      ready(N.NgSetup.node(v), N.NgSetup.supported_view(S.State.config(st), v), [N.Setup{assoc, N.NgSetup.reply(S.State.config(st), v)}], k => {==}, k => {==})
 
 def Walk.ready(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, +eb: {S.Assocs.has(assoc, S.State.assocs(st)) == b : Bool}, keep: Walk.Keep(Q, st), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.ready(st, assoc, stream, kind, code, ies, entropy, b)):
   match b:
     case True{}:
       out(R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code)), routed(kind, code, ies, eb))
     case False{}:
-      keep(N.Ngap.unhandled(assoc), k => {==})
+      keep(N.Ngap.unhandled(assoc), k => {==}, k => {==})
 
 def Walk.d1(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +ies: List<&2, Fr.Ie>, +entropy: B.Bytes(), +b: Bool, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.d1(st, assoc, stream, kind, code, ies, entropy, b)):
   match b:
@@ -122,14 +124,14 @@ def Walk.d1(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U
 def Walk.ies(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +entropy: B.Bytes(), +r: Ap.Rd(List<&2, Fr.Ie>), keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_ies(st, assoc, stream, kind, code, entropy, r)):
   match r:
     case Fail{err}:
-      keep(N.Ngap.bad_pdu(assoc), k => {==})
+      keep(N.Ngap.bad_pdu(assoc), k => {==}, k => {==})
     case Done{(+ies, c)}:
       Walk.d1(Q, ok, st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_ng_setup(kind, code), keep, ready, out, routed)
 
 def Walk.pdu(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Fr.Pdu>, keep: Walk.Keep(Q, st), ready: Walk.Ready(Q, st, assoc), out: Walk.Out(Q, ok, st), routed: Walk.Routed(ok, st, assoc, stream, entropy)) -> Q(R.Route.of_pdu(st, assoc, stream, entropy, r)):
   match r:
     case Fail{err}:
-      keep(N.Ngap.bad_pdu(assoc), k => {==})
+      keep(N.Ngap.bad_pdu(assoc), k => {==}, k => {==})
     case Done{Fr.Pdu{kind, code, crit, value}}:
       Walk.ies(Q, ok, st, assoc, stream, U32.to_nat(kind), U32.to_nat(code), entropy, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), keep, ready, out, routed)
 
@@ -138,7 +140,7 @@ def Walk.step(-Q: N.Step() -> Type, -ok: N.GOut() -> Type, +st: S.State, +ev: F.
     case F.Config{len, +tlvs}:
       config(tlvs)
     case F.NgapAssocUp{assoc}:
-      keep([], k => {==})
+      keep([], k => {==}, k => {==})
     case F.NgapAssocDown{assoc}:
       down(assoc)
     case F.NgapData{+assoc, +stream, len, +bytes}:
@@ -315,72 +317,28 @@ def Rt.read_if(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: 
 def Rt.read(-Q: N.Step() -> Type, +st: S.State, +entropy: B.Bytes(), +assoc: U32, +stream: U32, +len: U32, +bytes: B.Bytes(), +kind: U32, +code: U32, +crit: U32, +value: B.Bytes(), +ep: {Fr.Pdu.read(bytes) == Done{Fr.Pdu{kind, code, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>}, +en: {N.Ngap.is_ng_setup(U32.to_nat(kind), U32.to_nat(code)) == False{} : Bool}, bad: Q((st, N.Ngap.bad_pdu(assoc))), refused: Q((st, N.Ngap.unhandled(assoc))), routed: Rt.Routed(Q, st, entropy, assoc, stream, kind, code)) -> Q(K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)):
   Rt.read_if(Q, st, entropy, assoc, stream, len, bytes, kind, code, crit, value, Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}), ep, {==}, en, bad, refused, routed)
 
-# The N4 side
-# -----------
-# A transaction that moves only the N4 side (the link, the pending Session
-# Deletion Requests) and the sequence numbers keeps every context and session;
+# The session side
+# ----------------
+# A transaction that changes no context (sessions changed in place or
+# forgotten, the N4 link, the sequence numbers) keeps the context table;
 # Up.N4.deletions gives one.
 
-def N4s.only(tx: S.Tx) -> Bool:
+def Sx.only(tx: S.Tx) -> Bool:
   match tx:
     case S.Keep{}:
       True{}
     case S.SetLink{link}:
       True{}
-    case S.Pend{key, d}:
+    case S.Revar{key, v}:
+      True{}
+    case S.DelSession{key}:
       True{}
     case S.BumpSeq{n}:
       True{}
     case S.Both{first, second}:
-      Bool.and(N4s.only(first), N4s.only(second))
+      Bool.and(Sx.only(first), Sx.only(second))
     case _:
       False{}
-
-def N4s.Same(+a: S.State, +b: S.State) -> Type:
-  {S.State.ues(a) == S.State.ues(b) : Tb.Table(S.Ue)} & {S.State.sessions(a) == S.State.sessions(b) : Tb.Table(S.Session)}
-
-def N4s.trans(+a: S.State, +b: S.State, +c: S.State, ab: N4s.Same(a, b), bc: N4s.Same(b, c)) -> N4s.Same(a, c):
-  match ab:
-    case (u1, s1):
-      match bc:
-        case (u2, s2):
-          (Equal.trans(Tb.Table(S.Ue), S.State.ues(a), S.State.ues(b), S.State.ues(c), u1, u2), Equal.trans(Tb.Table(S.Session), S.State.sessions(a), S.State.sessions(b), S.State.sessions(c), s1, s2))
-
-def N4s.keeps(+tx: S.Tx, +st: S.State, +e: {N4s.only(tx) == True{} : Bool}) -> N4s.Same(S.Tx.apply(tx, st), st):
-  match tx:
-    case S.Keep{}:
-      ({==}, {==})
-    case S.SetLink{link}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          ({==}, {==})
-    case S.Pend{key, d}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          ({==}, {==})
-    case S.BumpSeq{n}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          ({==}, {==})
-    case S.Both{+first, +second}:
-      +s1 = S.Tx.apply(first, st)
-      N4s.trans(S.Tx.apply(second, s1), s1, st, N4s.keeps(second, s1, P.Bool.and_true_r(N4s.only(first), N4s.only(second), e)), N4s.keeps(first, st, P.Bool.and_true_l(N4s.only(first), N4s.only(second), e)))
-    case S.Put{key, ue}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.Put{key, ue}, st), st), P.Refute.bool(e))
-    case S.Rephase{key, phase}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.Rephase{key, phase}, st), st), P.Refute.bool(e))
-    case S.Del{key}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.Del{key}, st), st), P.Refute.bool(e))
-    case S.PutSession{key, s}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.PutSession{key, s}, st), st), P.Refute.bool(e))
-    case S.Revar{key, v}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.Revar{key, v}, st), st), P.Refute.bool(e))
-    case S.DelSession{key}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.DelSession{key}, st), st), P.Refute.bool(e))
-    case S.Subs{new}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.Subs{new}, st), st), P.Refute.bool(e))
-    case S.BumpUe{key}:
-      Empty.absurd(N4s.Same(S.Tx.apply(S.BumpUe{key}, st), st), P.Refute.bool(e))
 
 def Out.tx_join(+a: N.GOut(), +b: N.GOut()) -> {N.Out.tx(N.Out.join(a, b)) == S.Both{N.Out.tx(a), N.Out.tx(b)} : S.Tx}:
   match a:
@@ -389,30 +347,119 @@ def Out.tx_join(+a: N.GOut(), +b: N.GOut()) -> {N.Out.tx(N.Out.join(a, b)) == S.
         case (tb, ab):
           {==}
 
-def N4s.join(+a: N.GOut(), +b: N.GOut(), +ea: {N4s.only(N.Out.tx(a)) == True{} : Bool}, +eb: {N4s.only(N.Out.tx(b)) == True{} : Bool}) -> {N4s.only(N.Out.tx(N.Out.join(a, b))) == True{} : Bool}:
+def Sx.join(+a: N.GOut(), +b: N.GOut(), +ea: {Sx.only(N.Out.tx(a)) == True{} : Bool}, +eb: {Sx.only(N.Out.tx(b)) == True{} : Bool}) -> {Sx.only(N.Out.tx(N.Out.join(a, b))) == True{} : Bool}:
   e = Equal.sym(S.Tx, N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), N.Out.tx(b)}, Out.tx_join(a, b))
-  (%e : {N4s.only(_) == True{} : Bool}; P.Bool.and_intro(N4s.only(N.Out.tx(a)), N4s.only(N.Out.tx(b)), ea, eb))
+  (%e : {Sx.only(_) == True{} : Bool}; P.Bool.and_intro(Sx.only(N.Out.tx(a)), Sx.only(N.Out.tx(b)), ea, eb))
 
-def N4s.delete_if(+key: U32, +s: S.Session, +seq: U32, +more: Tb.Table(S.Session), +known: Bool, h0: {N4s.only(N.Out.tx(Up.N4.deletions(more, seq))) == True{} : Bool}, h1: {N4s.only(N.Out.tx(Up.N4.deletions(more, U32.add(seq, 1)))) == True{} : Bool}) -> {N4s.only(N.Out.tx(Up.N4.delete_if(key, s, seq, q => Up.N4.deletions(more, q), known))) == True{} : Bool}:
+def Sx.delete_if(+key: U32, +s: S.Session, +seq: U32, +more: Tb.Table(S.Session), +known: Bool, h0: {Sx.only(N.Out.tx(Up.N4.deletions(more, seq))) == True{} : Bool}, h1: {Sx.only(N.Out.tx(Up.N4.deletions(more, U32.add(seq, 1)))) == True{} : Bool}) -> {Sx.only(N.Out.tx(Up.N4.delete_if(key, s, seq, q => Up.N4.deletions(more, q), known))) == True{} : Bool}:
   match known:
     case True{}:
       +request = Up.N4.delete(S.Session.up_seid(s), seq)
-      N4s.join((S.Both{S.Pend{key, Some{S.Deletion{request, seq, S.Guard{0}}}}, S.BumpSeq{1}}, [N.Pfcp{Some{S.Session.ue(s)}, request}, N.TimerStart{None{}, S.Ids.deletion(key), Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, h1)
+      Sx.join((S.Both{S.Revar{key, S.SVar{S.Session.up_seid(s), seq, S.Deleting{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{None{}, key, Up.N4.t1_ms()}]), Up.N4.deletions(more, U32.add(seq, 1)), {==}, h1)
     case False{}:
-      h0
+      Sx.join((S.DelSession{key}, []), Up.N4.deletions(more, seq), {==}, h0)
 
-def N4s.deletions(+rows: Tb.Table(S.Session), +seq: U32) -> {N4s.only(N.Out.tx(Up.N4.deletions(rows, seq))) == True{} : Bool}:
+def Sx.deletions(+rows: Tb.Table(S.Session), +seq: U32) -> {Sx.only(N.Out.tx(Up.N4.deletions(rows, seq))) == True{} : Bool}:
   match rows:
     case Nil{}:
       {==}
     case (+key, +s) <> +more:
-      N4s.delete_if(key, s, seq, more, S.Session.known(s), N4s.deletions(more, seq), N4s.deletions(more, U32.add(seq, 1)))
+      Sx.delete_if(key, s, seq, more, S.Session.known(s), Sx.deletions(more, seq), Sx.deletions(more, U32.add(seq, 1)))
 
-# The state a procedure's outcome leaves is its transaction applied.
-def N4s.render(+st: S.State, +o: N.GOut()) -> {K.Kernel.state(N.Step.of(st, o)) == S.Tx.apply(N.Out.tx(o), st) : S.State}:
-  match o:
-    case (tx, acts):
+# Sessions changed in place
+# -------------------------
+# A change in place keeps a session's identity, and keeps its tag or drops it
+# when the session goes on to be deleted (S.SVar.follows): a session being
+# deleted never belongs to a UE again.
+
+def Tg.Moved(+t: S.Session, +t2: S.Session) -> Data:
+  Either<&2, &2, {S.Session.tag(t2) == S.Session.tag(t) : Maybe<&2, U32>}, {S.Session.tag(t2) == None{} : Maybe<&2, U32>}>
+
+def Tg.go(+id: S.SId, +var: S.SVar, +v: S.SVar, +a: Bool, +ea: {S.SPhase.live(S.SVar.phase(var)) == a : Bool}, +b: Bool, +eb: {S.SPhase.live(S.SVar.phase(v)) == b : Bool}) -> Either<&2, &2, {S.Session.tag(S.Session.revar_if(S.Session{id, var}, v, Bool.or(Bool.not(b), a))) == Tb.Table.hit(U32, S.SId.ue(id), None{}, a) : Maybe<&2, U32>}, {S.Session.tag(S.Session.revar_if(S.Session{id, var}, v, Bool.or(Bool.not(b), a))) == None{} : Maybe<&2, U32>}>:
+  match a:
+    case True{}:
+      match b:
+        case True{}:
+          seb = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(v)), True{}, eb)
+          Inl{(%seb : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == Some{S.SId.ue(id)} : Maybe<&2, U32>}; {==})}
+        case False{}:
+          seb = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(v)), False{}, eb)
+          Inr{(%seb : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == None{} : Maybe<&2, U32>}; {==})}
+    case False{}:
+      match b:
+        case True{}:
+          sea = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(var)), False{}, ea)
+          Inl{(%sea : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == None{} : Maybe<&2, U32>}; {==})}
+        case False{}:
+          seb = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(v)), False{}, eb)
+          Inr{(%seb : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == None{} : Maybe<&2, U32>}; {==})}
+
+def Tg.revar(+t: S.Session, +v: S.SVar, +c: Bool) -> Tg.Moved(t, S.Session.revar_if(t, v, Bool.and(c, S.SVar.follows(v, t)))):
+  match t:
+    case S.Session{+id, +var}:
+      match c:
+        case False{}:
+          Inl{{==}}
+        case True{}:
+          Tg.go(id, var, v, S.SPhase.live(S.SVar.phase(var)), {==}, S.SPhase.live(S.SVar.phase(v)), {==})
+
+def Tg.id(+t: S.Session, +v: S.SVar, +hit: Bool) -> {S.Session.id(S.Session.revar_if(t, v, hit)) == S.Session.id(t) : S.SId}:
+  match t:
+    case S.Session{id, var}:
+      match hit:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+
+def Tg.same_none(+m: Maybe<&2, U32>) -> {S.Maybe.same_u32(m, None{}) == False{} : Bool}:
+  match m:
+    case None{}:
       {==}
+    case Some{x}:
+      {==}
+
+# What told a session apart from m by its tag still does.
+def Tg.same_r(+m: Maybe<&2, U32>, +t: S.Session, +t2: S.Session, h: Tg.Moved(t, t2), +e: {S.Maybe.same_u32(m, S.Session.tag(t)) == False{} : Bool}) -> {S.Maybe.same_u32(m, S.Session.tag(t2)) == False{} : Bool}:
+  match h:
+    case Inl{ee}:
+      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), S.Session.tag(t), ee)
+      (%se : {S.Maybe.same_u32(m, _) == False{} : Bool}; e)
+    case Inr{en}:
+      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), None{}, en)
+      (%se : {S.Maybe.same_u32(m, _) == False{} : Bool}; Tg.same_none(m))
+
+def Tg.same_l(+m: Maybe<&2, U32>, +t: S.Session, +t2: S.Session, h: Tg.Moved(t, t2), +e: {S.Maybe.same_u32(S.Session.tag(t), m) == False{} : Bool}) -> {S.Maybe.same_u32(S.Session.tag(t2), m) == False{} : Bool}:
+  match h:
+    case Inl{ee}:
+      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), S.Session.tag(t), ee)
+      (%se : {S.Maybe.same_u32(_, m) == False{} : Bool}; e)
+    case Inr{en}:
+      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), None{}, en)
+      (%se : {S.Maybe.same_u32(_, m) == False{} : Bool}; {==})
+
+# A session tagged with a UE is that UE's.
+def Tg.ue_go(+u: U32, +x: U32, +h: Bool, +e: {S.Maybe.same_u32(Tb.Table.hit(U32, u, None{}, h), Some{x}) == True{} : Bool}) -> {U32.is_eq(u, x) == True{} : Bool}:
+  match h:
+    case True{}:
+      e
+    case False{}:
+      Empty.absurd({U32.is_eq(u, x) == True{} : Bool}, P.Refute.bool(e))
+
+def Tg.ue(+s: S.Session, +x: U32, +e: {S.Maybe.same_u32(S.Session.tag(s), Some{x}) == True{} : Bool}) -> {U32.is_eq(S.Session.ue(s), x) == True{} : Bool}:
+  Tg.ue_go(S.Session.ue(s), x, S.SPhase.live(S.Session.phase(s)), e)
+
+# An owned session tagged with a UE has that UE's context.
+def Tg.has_go(+u: U32, +x: U32, +h: Bool, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.same_u32(Tb.Table.hit(U32, u, None{}, h), Some{x}) == True{} : Bool}, +e2: {Bool.or(Bool.not(Tb.Table.present(U32, Tb.Table.hit(U32, u, None{}, h))), Tb.Table.has(S.Ue, u, ues)) == True{} : Bool}) -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}:
+  match h:
+    case True{}:
+      ex = P.U32.eq_of_is_eq(u, x, e1)
+      (%ex : {Tb.Table.has(S.Ue, _, ues) == True{} : Bool}; e2)
+    case False{}:
+      Empty.absurd({Tb.Table.has(S.Ue, x, ues) == True{} : Bool}, P.Refute.bool(e1))
+
+def Tg.has(+t: S.Session, +x: U32, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.same_u32(S.Session.tag(t), Some{x}) == True{} : Bool}, +e2: {S.Session.owned(t, ues) == True{} : Bool}) -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}:
+  Tg.has_go(S.Session.ue(t), x, S.SPhase.live(S.Session.phase(t)), ues, e1, e2)
 
 # A context looked up by key
 # --------------------------

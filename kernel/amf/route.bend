@@ -16,16 +16,16 @@ import ./handover.bend as Ho
 # PDU kind and procedure code in turn, so that a proof can follow each branch.
 # Every UE procedure answers with a transaction; NG Setup alone answers directly.
 
-# An association's UEs released, with their sessions, deleted at the UPF,
+# An association's UEs released, their sessions deleted at the UPF first,
 # and the guards of the sessions gone stopped; it is no longer set up.
 def Route.drop(st: S.State, +assoc: U32) -> N.Step():
   match st:
     case S.State{+config, +subs, +assocs, +ues, +sessions, +pfcp_seq, +next_ue, +n4}:
       +left = S.Ues.drop_assoc(assoc, ues)
-      +gone = S.Sessions.sift(S.SOrphan{left}, sessions)
-      +o = Up.N4.deletions(gone, pfcp_seq)
+      +o = Up.N4.deletions(S.Sessions.sift(S.SOrphan{left}, sessions), pfcp_seq)
       +st1 = S.Tx.apply(N.Out.tx(o), S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4})
-      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, S.Sessions.sift(S.SOwned{left}, sessions), S.State.pfcp_seq(st1), next_ue, S.State.n4(st1)}, List.append(&2, N.Act, N.Out.acts(o), N.Gone.cancels(gone, [])))
+      +kept = S.Sessions.sift(S.SOwned{left}, S.State.sessions(st1))
+      (S.State{config, subs, S.Assocs.drop(assoc, assocs), left, kept, S.State.pfcp_seq(st1), next_ue, S.State.n4(st1)}, List.append(&2, N.Act, N.Out.acts(o), N.Gone.cancels(sessions, kept)))
 
 # An association going down: first the N2 handovers it takes part in end
 # (Ho.Ho.down), then its UEs go.

@@ -96,8 +96,6 @@ def Hp.same_still(+tx: S.Tx, +ues: Tb.Table(S.Ue), +j: U32, +e: {Hp.still(tx) ==
       Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.Subs{subs}, ues))) == True{} : Bool}, P.Refute.bool(e))
     case S.SetLink{link}:
       Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.SetLink{link}, ues))) == True{} : Bool}, P.Refute.bool(e))
-    case S.Pend{pk, pd}:
-      Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.Pend{pk, pd}, ues))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpUe{bk}:
       Empty.absurd({S.Ue.same_owner(Tb.Table.get(S.Ue, j, ues), Tb.Table.get(S.Ue, j, PT.Tk.ues(S.BumpUe{bk}, ues))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpSeq{n}:
@@ -417,17 +415,17 @@ def So.parts(+ues: Tb.Table(S.Ue), +e: {Bool.and(S.Ues.unique(ues), S.Ues.single
 def So.part2(+ues: Tb.Table(S.Ue), +e: {Bool.and(S.Ues.unique(ues), S.Ues.single(ues)) == True{} : Bool}) -> {S.Ues.single(ues) == True{} : Bool}:
   P.Bool.and_true_r(S.Ues.unique(ues), S.Ues.single(ues), e)
 
-def So.tx_put(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homed(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
+def So.tx_put(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +ue: S.Ue, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homedw(st0, S.Put{key, ue}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.put(key, ue, ues), S.Sessions.sift(S.SOwned{S.Ues.put(key, ue, ues)}, ss)) == True{} : Bool}:
   +hs = P.Bool.and_true_l(S.Ue.single(ue), PL.Lv.home(st0, ue), P.Bool.and_true_r(S.Phase.guarded(S.Ue.phase(ue)), Bool.and(S.Ue.single(ue), PL.Lv.home(st0, ue)), P.Bool.and_true_r(PL.Lv.keyed(st0, key), Bool.and(S.Phase.guarded(S.Ue.phase(ue)), Bool.and(S.Ue.single(ue), PL.Lv.home(st0, ue))), h)))
   P.Bool.and_intro(S.Ues.unique(S.Ues.put(key, ue, ues)), S.Ues.single(S.Ues.put(key, ue, ues)), PL.Un.tx_put(st0, ep, key, ue, ues, ss, So.parts(ues, e), h), P.Bool.and_intro(S.Ue.single(ue), S.Ues.single(S.Ues.sift(S.Clear{key, ue}, ues)), hs, So.sift(S.Clear{key, ue}, ues, So.part2(ues, e))))
 
-def So.tx_rephase(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homed(st0, S.Rephase{key, p}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
+def So.tx_rephase(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +p: S.Phase, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homedw(st0, S.Rephase{key, p}, ues) == True{} : Bool}) -> {So.inv(st0, S.Ues.rephase(key, p, ues), ss) == True{} : Bool}:
   P.Bool.and_intro(S.Ues.unique(S.Ues.rephase(key, p, ues)), S.Ues.single(S.Ues.rephase(key, p, ues)), PL.Un.tx_rephase(st0, ep, key, p, ues, ss, So.parts(ues, e), h), So.rephase(key, p, ues, So.parts(ues, e), So.part2(ues, e), P.Bool.and_true_r(S.Phase.guarded(p), S.Ue.fits(p, Tb.Table.get(S.Ue, key, ues)), h)))
 
 def So.tx_del(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}) -> {So.inv(st0, S.Ues.del(key, ues), S.Sessions.drop_ue(key, ss)) == True{} : Bool}:
   P.Bool.and_intro(S.Ues.unique(S.Ues.del(key, ues)), S.Ues.single(S.Ues.del(key, ues)), PL.Un.tx_del(st0, ep, key, ues, ss, So.parts(ues, e)), So.sift(S.Except{key}, ues, So.part2(ues, e)))
 
-def So.tx_put_session(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homed(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {So.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
+def So.tx_put_session(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +s: S.Session, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.homedw(st0, S.PutSession{key, s}, ues) == True{} : Bool}) -> {So.inv(st0, ues, S.Sessions.put(key, s, ss)) == True{} : Bool}:
   e
 
 def So.tx_revar(+st0: S.State, +ep: {PL.Inv.none(st0) == True{} : Bool}, +key: U32, +v: S.SVar, +ues: Tb.Table(S.Ue), +ss: Tb.Table(S.Session), +e: {So.inv(st0, ues, ss) == True{} : Bool}, +h: {PL.Lv.revar_ok(st0, v) == True{} : Bool}) -> {So.inv(st0, ues, S.Sessions.revar(key, v, ss)) == True{} : Bool}:
@@ -607,20 +605,6 @@ def Hp.g_guard(+p: S.Phase, +t: U32, +e: {S.Phase.pending(p) == Some{t} : Maybe<
     case S.Releasing{guard}:
       Empty.absurd({Tb.Table.present(S.Guard, S.Phase.guard(S.Releasing{guard})) == True{} : Bool}, P.Refute.none_some(U32, t, e))
 
-def Hp.or_mono(+x: Bool, +y: Bool, +z: Bool, +h: {Bool.or(x, y) == True{} : Bool}, f: {y == True{} : Bool} -> {z == True{} : Bool}) -> {Bool.or(x, z) == True{} : Bool}:
-  match x:
-    case True{}:
-      {==}
-    case False{}:
-      f(h)
-
-def Hp.starts_app(+k: U32, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {N.Acts.starts(k, xs) == True{} : Bool}) -> {N.Acts.starts(k, List.append(&2, N.Act, xs, ys)) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, [], ys)) == True{} : Bool}, P.Refute.bool(h))
-    case +a <> +more:
-      Hp.or_mono(N.Act.starts(k, a), N.Acts.starts(k, more), N.Acts.starts(k, List.append(&2, N.Act, more, ys)), h, hm => Hp.starts_app(k, more, ys, hm))
-
 # A phase change of another key leaves the row under k.
 def Hp.other_row(+key: U32, +p: S.Phase, +k: U32, +k0: U32, +w: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +ne: {U32.is_eq(key, k) == False{} : Bool}, ih: {Tb.Table.get(S.Ue, k, S.Ues.rephase(key, p, more)) == Tb.Table.get(S.Ue, k, more) : Maybe<&2, S.Ue>}) -> {Tb.Table.hit(S.Ue, S.Ue.rephase_if(w, p, U32.is_eq(k0, key)), Tb.Table.get(S.Ue, k, S.Ues.rephase(key, p, more)), U32.is_eq(k0, k)) == Tb.Table.hit(S.Ue, w, Tb.Table.get(S.Ue, k, more), U32.is_eq(k0, k)) : Maybe<&2, S.Ue>}:
   match b:
@@ -649,7 +633,7 @@ def Hp.g_rephase(+st: S.State, +k: U32, +key: U32, +p: S.Phase, +acts: List<&2, 
   match b:
     case True{}:
       es : {Bool.or(Bool.not(True{}), N.Acts.starts(k, acts)) == True{} : Bool} = (%eb : {Bool.or(Bool.not(_), N.Acts.starts(k, acts)) == True{} : Bool}; e)
-      ne => Hp.starts_app(k, acts, [], es)
+      ne => PL.Lv.starts_l(k, acts, [], es)
     case False{}:
       ua = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(S.Rephase{key, p}, st)), PT.Tk.ues(S.Rephase{key, p}, S.State.ues(st)), PT.Tk.ues_apply(S.Rephase{key, p}, st))
       same : {Tb.Table.get(S.Ue, k, S.State.ues(S.Tx.apply(S.Rephase{key, p}, st))) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>} = (%ua : {Tb.Table.get(S.Ue, k, _) == Tb.Table.get(S.Ue, k, S.State.ues(st)) : Maybe<&2, S.Ue>}; Hp.get_other(key, p, k, S.State.ues(st), eb))
@@ -675,8 +659,6 @@ def Hp.g_tx(+st: S.State, +k: U32, +tx: S.Tx, +acts: List<&2, N.Act>, +e: {Bool.
       ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Subs{subs}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Subs{subs}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.SetLink{link}:
       ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.SetLink{link}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.SetLink{link}, st))))) == True{} : Bool}, P.Refute.bool(e))
-    case S.Pend{pk, pd}:
-      ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.Pend{pk, pd}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.Pend{pk, pd}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpUe{bk}:
       ne => Empty.absurd({N.Acts.starts(k, List.append(&2, N.Act, acts, N.Gone.when(S.Tx.keeps_sessions(S.BumpUe{bk}), S.State.sessions(st), S.State.sessions(S.Tx.apply(S.BumpUe{bk}, st))))) == True{} : Bool}, P.Refute.bool(e))
     case S.BumpSeq{n}:

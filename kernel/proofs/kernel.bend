@@ -41,7 +41,7 @@ def Re.none(+key: U32, +v: S.SVar, ss: Tb.Table(S.Session), +k: U32, +eh: {Tb.Ta
     case Nil{}:
       {==}
     case (+k0, +t) <> +more:
-      Re.none_row(S.Session.revar_if(t, v, U32.is_eq(k0, key)), t, Tb.Table.get(S.Session, k, S.Sessions.revar(key, v, more)), Tb.Table.get(S.Session, k, more), U32.is_eq(k0, k), eh, e => Re.none(key, v, more, k, e))
+      Re.none_row(S.Session.revar_if(t, v, Bool.and(U32.is_eq(k0, key), S.SVar.follows(v, t))), t, Tb.Table.get(S.Session, k, S.Sessions.revar(key, v, more)), Tb.Table.get(S.Session, k, more), U32.is_eq(k0, k), eh, e => Re.none(key, v, more, k, e))
 
 def Tx.kept(+tx: S.Tx, +st: S.State, +e: {S.Tx.keeps_sessions(tx) == True{} : Bool}, +k: U32, +eh: {Tb.Table.get(S.Session, k, S.State.sessions(S.Tx.apply(tx, st))) == None{} : Maybe<&2, S.Session>}) -> {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}:
   match tx:
@@ -68,10 +68,6 @@ def Tx.kept(+tx: S.Tx, +st: S.State, +e: {S.Tx.keeps_sessions(tx) == True{} : Bo
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           eh
     case S.SetLink{link}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          eh
-    case S.Pend{pk, pd}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           eh
@@ -178,10 +174,10 @@ def Del.get(+key: U32, ues: Tb.Table(S.Ue)) -> {Tb.Table.get(S.Ue, key, S.Ues.de
     case (+k, +v) <> +more:
       Del.keep(key, k, v, S.Ues.sift(S.Except{key}, more), S.Sieve.keeps(S.Except{key}, k, v), {==}, Del.get(key, more))
 
-def Sessions.drop_keep(+ue: U32, +k: U32, +s: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(U32.is_eq(S.Session.ue(s), ue)) == b : Bool}, ih: {S.Sessions.sift(S.SOf{ue}, rest) == [] : Tb.Table(S.Session)}) -> {S.Sessions.sift(S.SOf{ue}, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : Tb.Table(S.Session)}:
+def Sessions.drop_keep(+ue: U32, +k: U32, +s: S.Session, +rest: Tb.Table(S.Session), b: Bool, eb: {Bool.not(S.Maybe.same_u32(S.Session.tag(s), Some{ue})) == b : Bool}, ih: {S.Sessions.sift(S.SOf{ue}, rest) == [] : Tb.Table(S.Session)}) -> {S.Sessions.sift(S.SOf{ue}, Tb.Table.keep(S.Session, k, s, rest, b)) == [] : Tb.Table(S.Session)}:
   match b:
     case True{}:
-      ne = Equal.sym(Bool, U32.is_eq(S.Session.ue(s), ue), False{}, P.Bool.not_true(U32.is_eq(S.Session.ue(s), ue), eb))
+      ne = Equal.sym(Bool, S.Maybe.same_u32(S.Session.tag(s), Some{ue}), False{}, P.Bool.not_true(S.Maybe.same_u32(S.Session.tag(s), Some{ue}), eb))
       %ne : {Tb.Table.keep(S.Session, k, s, S.Sessions.sift(S.SOf{ue}, rest), _) == [] : Tb.Table(S.Session)}
       ih
     case False{}:
@@ -378,19 +374,12 @@ def Tx.forget_sessions(+key: U32, +st: S.State) -> {S.Sessions.of_ue(key, S.Stat
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       Sessions.drop_none(key, sessions)
 
-def Tx.forget_go(+key: U32, +tx: S.Tx, +st: S.State, h: PW.N4s.Same(S.Tx.apply(tx, S.Tx.apply(S.Del{key}, st)), S.Tx.apply(S.Del{key}, st))) -> {Tb.Table.get(S.Ue, key, S.State.ues(S.Tx.apply(tx, S.Tx.apply(S.Del{key}, st)))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(key, S.State.sessions(S.Tx.apply(tx, S.Tx.apply(S.Del{key}, st)))) == [] : Tb.Table(S.Session)}:
-  match h:
-    case (eu, es):
-      +s1 = S.Tx.apply(S.Del{key}, st)
-      seu = Equal.sym(Tb.Table(S.Ue), S.State.ues(S.Tx.apply(tx, s1)), S.State.ues(s1), eu)
-      ses = Equal.sym(Tb.Table(S.Session), S.State.sessions(S.Tx.apply(tx, s1)), S.State.sessions(s1), es)
-      ((%seu : {Tb.Table.get(S.Ue, key, _) == None{} : Maybe<&2, S.Ue>}; Tx.forget_ue(key, st)), (%ses : {S.Sessions.of_ue(key, _) == [] : Tb.Table(S.Session)}; Tx.forget_sessions(key, st)))
-
-# A context forgotten, the N4 side moved after: no context and no session under its key.
-def Tx.forget(+key: U32, +o: N.GOut(), +more: List<&2, N.Act>, +st: S.State, +en: {PW.N4s.only(N.Out.tx(o)) == True{} : Bool}) -> {Tb.Table.get(S.Ue, key, S.State.ues(K.Kernel.state(N.Step.of(st, N.Out.also(N.Out.join((S.Del{key}, []), o), more))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(key, S.State.sessions(K.Kernel.state(N.Step.of(st, N.Out.also(N.Out.join((S.Del{key}, []), o), more))))) == [] : Tb.Table(S.Session)}:
+# A context forgotten after its sessions' deletions: no context under its key
+# and no session of it.
+def Tx.forget(+key: U32, +o: N.GOut(), +more: List<&2, N.Act>, +st: S.State) -> {Tb.Table.get(S.Ue, key, S.State.ues(K.Kernel.state(N.Step.of(st, N.Out.also(N.Out.join(o, (S.Del{key}, [])), more))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(key, S.State.sessions(K.Kernel.state(N.Step.of(st, N.Out.also(N.Out.join(o, (S.Del{key}, [])), more))))) == [] : Tb.Table(S.Session)}:
   match o:
     case (+tx, acts):
-      Tx.forget_go(key, tx, st, PW.N4s.keeps(tx, S.Tx.apply(S.Del{key}, st), en))
+      (Tx.forget_ue(key, S.Tx.apply(tx, st)), Tx.forget_sessions(key, S.Tx.apply(tx, st)))
 
 def L.amf.release.complete_forgets(st, entropy, assoc, stream, len, bytes, crit, value, ies, c, amf, k, ran, uli, rel, diag, ue, ep, ei, ev, eid, eo, eup):
   sr = Equal.sym(N.Step(), K.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy), N.Step.of(st, R.Route.d2(st, assoc, stream, U32.to_nat(1), U32.to_nat(41), ies, entropy, N.Ngap.is_initial_ue_message(U32.to_nat(1), U32.to_nat(41)))), PW.Rt.routed(st, entropy, assoc, stream, len, bytes, 1, 41, crit, value, ies, c, ep, ei, {==}, eup))
@@ -402,7 +391,7 @@ def L.amf.release.complete_forgets(st, entropy, assoc, stream, len, bytes, crit,
   seo = Equal.sym(Maybe<&2, S.Ue>, Gmm.Gmm.owner(st, assoc, k, ran), Some{ue}, eo)
   %seo : {Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _, S.Ue.released(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran)))))) == None{} : Maybe<&2, S.Ue>} & {S.Sessions.of_ue(k, S.State.sessions(K.Kernel.state(N.Step.of(st, Gmm.Gmm.release_complete_ue(st, assoc, k, _, S.Ue.released(Tb.Table.get(S.Ue, k, S.State.ues(st)), assoc, ran)))))) == [] : Tb.Table(S.Session)}
   +gone = S.Sessions.of_ue(k, S.State.sessions(st))
-  Tx.forget(k, Up.N4.deletions(gone, S.State.pfcp_seq(st)), List.append(&2, N.Act, N.Guard.cancel(k, S.Ue.guard(ue)), List.append(&2, N.Act, Ho.Ho.leg_drop(k, S.Ue.phase(ue), N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified())), [N.Note{F.Info{}, "NGAP: UE context released"}])), st, PW.N4s.deletions(gone, S.State.pfcp_seq(st)))
+  Tx.forget(k, Up.N4.deletions(gone, S.State.pfcp_seq(st)), List.append(&2, N.Act, N.Guard.cancel(k, S.Ue.guard(ue)), List.append(&2, N.Act, Ho.Ho.leg_drop(k, S.Ue.phase(ue), N.Ngap.radio_cause(G.CauseRadioNetwork.unspecified())), [N.Note{F.Info{}, "NGAP: UE context released"}])), st)
 
 # A phase change in place leaves every conflict as it was.
 def Ue.conflicts_rephase(hit: Bool, u: S.Ue, v: S.Ue, p: S.Phase) -> {S.Ue.conflicts(u, S.Ue.rephase_if(v, p, hit)) == S.Ue.conflicts(u, v) : Bool}:
@@ -540,10 +529,6 @@ def Cfgv.tx(tx: S.Tx, +st: S.State) -> {S.State.config(S.Tx.apply(tx, st)) == S.
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           {==}
-    case S.Pend{pk, pd}:
-      match st:
-        case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          {==}
     case S.BumpUe{bk}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
@@ -603,13 +588,13 @@ def Cfgv.config(complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: 
     case True{}:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
-          +st2 : S.State = S.State{Some{S.Cfg.of(tlvs)}, Au.Subscribers.of(S.Cfg.subscribers(S.Cfg.of(tlvs))), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}, []}}
+          +st2 : S.State = S.State{Some{S.Cfg.of(tlvs)}, Au.Subscribers.of(S.Cfg.subscribers(S.Cfg.of(tlvs))), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
           +o : N.GOut() = N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}])
           Cfgv.kept(st2, K.Kernel.state(N.Step.of(st2, o)), Cfgv.render(st2, o), P.Bool.and_true_r(S.Cfg.given_all(tlvs), S.Cfg.valid(S.Cfg.of(tlvs)), ek))
 
 def L.kernel.config.valid(st, ev, entropy, cfg, e, ec):
   +h = Cfgv.of(S.State.config(st), e)
-  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => h, +a => +id => +ok => acts => x => Cfgv.kept(st, S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok)), Equal.trans(Maybe<&2, S.Cfg>, S.State.config(S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok))), S.State.config(N.Step.state(R.Route.drop(st, a))), S.State.config(st), Cfgv.assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok)), Cfgv.down(st, a)), h), +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(R.Route.down(st, a)), Cfgv.down_all(st, a), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
+  +held = PW.Walk.any(o => Cfgv.Held(o), st, ev, entropy, acts => x => cx => h, +a => +id => +ok => acts => x => cx => Cfgv.kept(st, S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok)), Equal.trans(Maybe<&2, S.Cfg>, S.State.config(S.State.with_assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok))), S.State.config(N.Step.state(R.Route.drop(st, a))), S.State.config(st), Cfgv.assocs(N.Step.state(R.Route.drop(st, a)), S.Assocs.set(a, id, S.State.assocs(N.Step.state(R.Route.drop(st, a))), ok)), Cfgv.down(st, a)), h), +tlvs => Cfgv.config(S.Cfg.complete(tlvs), st, tlvs, entropy, {==}, h), +a => Cfgv.kept(st, K.Kernel.state(R.Route.down(st, a)), Cfgv.down_all(st, a), h), +o => Cfgv.kept(st, K.Kernel.state(N.Step.of(st, o)), Cfgv.render(st, o), h))
   ({==}, (%ec : {Cfgv.held(_) == True{} : Bool}; held))
 
 # GHSA-f9c2-535p-3mwc: a PLMN that decodes names a serving network.

@@ -34,11 +34,10 @@ def Kernel.config(complete: Bool, st: S.State, +tlvs: List<&2, T.Tlv>, +entropy:
       match st:
         case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
           +cfg = S.Cfg.of(tlvs)
-          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}, []}}
+          +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
           N.Step.of(st2, N.Out.also(Up.N4.start(st2), [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]))
 
-# A guard timer fired: a UE's, a session's, a pending deletion's, or the N4
-# association's (timer 0).
+# A guard timer fired: a UE's, a session's, or the N4 association's (timer 0).
 def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
   match ok:
     case True{}:
@@ -46,17 +45,10 @@ def Kernel.node_timer(+st: S.State, ok: Bool) -> N.GOut():
     case False{}:
       (S.Keep{}, [])
 
-def Kernel.fired_deletion(+st: S.State, +timer: U32, m: Maybe<&2, S.Deletion>) -> N.GOut():
-  match m:
-    case None{}:
-      Kernel.node_timer(st, U32.is_eq(timer, S.N4.timer()))
-    case Some{d}:
-      Up.N4.deletion_expired(timer, d)
-
 def Kernel.fired_session(+st: S.State, +timer: U32, m: Maybe<&2, S.Session>) -> N.GOut():
   match m:
     case None{}:
-      Kernel.fired_deletion(st, timer, Tb.Table.get(S.Deletion, timer, S.State.deletions(st)))
+      Kernel.node_timer(st, U32.is_eq(timer, S.N4.timer()))
     case Some{+s}:
       Gsm.Gsm.expired(st, timer, s, S.Session.phase(s))
 

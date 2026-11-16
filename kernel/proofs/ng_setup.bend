@@ -53,7 +53,7 @@ def Req.ready(+st: S.State, +assoc: U32, +stream: U32, +kind: Nat, +code: Nat, +
   match b:
     case True{}:
       +o = R.Route.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code))
-      ar = PL.Lv.no_response(st, K.Kernel.actions(N.Step.of(st, o)), PL.Lv.step_acts(st, o, PL.Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), eb)))
+      ar = PL.Lv.no_response(st, K.Kernel.actions(N.Step.of(st, o)), PL.Lv.step_acts(st, o, PL.Lv.ok_w(st, o, PL.Lw.d2(st, assoc, stream, kind, code, ies, entropy, N.Ngap.is_initial_ue_message(kind, code), eb))))
       (%ar : {_ == True{} : Bool}; e)
     case False{}:
       e
