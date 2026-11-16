@@ -4408,23 +4408,6 @@ def Lw.ho_lost(+st: S.State, +k: U32, +u: S.Ue, +leg: S.Leg, +ek: {Lv.live(st, k
 def Lw.dq(+st: S.State, +o: N.GOut(), +h: {Lv.okf(st, o) == True{} : Bool}, +hq: {Lv.quiet(N.Out.tx(o)) == True{} : Bool}) -> {Bool.and(Lv.okf(st, o), Lv.quiet(N.Out.tx(o))) == True{} : Bool}:
   P.Bool.and_intro(Lv.okf(st, o), Lv.quiet(N.Out.tx(o)), h, hq)
 
-# Where no two contexts share a key, the row of the table under a key is the
-# context the key names, so a phase rewritten from it keeps its pair.
-def Lv.paired(+st: S.State, rows: Tb.Table(S.Ue)) -> Bool:
-  match rows:
-    case Nil{}:
-      True{}
-    case (+k, +u) <> more:
-      Bool.and(Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))), Lv.paired(st, more))
-
-def Lv.paired_in(+t: Tb.Table(S.Ue), rows: Tb.Table(S.Ue)) -> Bool:
-  match rows:
-    case Nil{}:
-      True{}
-    case (+k, +u) <> more:
-      +m = Tb.Table.get(S.Ue, k, t)
-      Bool.and(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m)), Lv.paired_in(t, more))
-
 def Lv.chains_self(+n: Maybe<&2, S.Nh>) -> {Lv.chains(n, n) == True{} : Bool}:
   match n:
     case None{}:
@@ -4432,64 +4415,19 @@ def Lv.chains_self(+n: Maybe<&2, S.Nh>) -> {Lv.chains(n, n) == True{} : Bool}:
     case Some{+x}:
       Lv.chains_same(x)
 
-def Lv.paired_row(+k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +ne: {b == False{} : Bool}, +h: {Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.get(S.Ue, k, more))) == True{} : Bool}) -> {Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b))) == True{} : Bool}:
+# Where no two contexts share a key, a row of the table is the context its
+# key names (PF.Fs.Got), so a phase rewritten from it keeps its pair.
+def Lv.chain_got(+st: S.State, +k: U32, +u: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +eb: {S.Ues.unique(S.State.ues(st)) == b : Bool}, +w: PF.Fs.GotIf(b, S.State.ues(st), (k, u) <> more)) -> {Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))) == True{} : Bool}:
   match b:
     case True{}:
-      Empty.absurd({Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Some{u0})) == True{} : Bool}, P.Refute.true_false(ne))
+      match w:
+        case (+eg, w2):
+          +n = S.Phase.nh(S.Ue.phase(u))
+          +sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{u}, eg)
+          P.Bool.or_l(Lv.chains(n, S.Ue.nh(Tb.Table.get(S.Ue, k, S.State.ues(st)))), Bool.not(S.Ues.unique(S.State.ues(st))), (%sg : {Lv.chains(n, S.Ue.nh(_)) == True{} : Bool}; Lv.chains_self(n)))
     case False{}:
-      h
-
-# Rows clear of a row under k0 are found past it.
-def Lv.paired_cons(+k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +rows: Tb.Table(S.Ue), +hc: {S.Ues.clear(k0, u0, rows) == True{} : Bool}, +h: {Lv.paired_in(more, rows) == True{} : Bool}) -> {Lv.paired_in((k0, u0) <> more, rows) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+k, +u) <> +rest:
-      +m = Tb.Table.get(S.Ue, k, more)
-      +x = Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m))
-      +nc = Bool.not(S.Row.conflicts(k0, u0, k, u))
-      +nr = P.Bool.or_false_l(U32.is_eq(k, k0), S.Ue.conflicts(u0, u), P.Bool.not_true(S.Row.conflicts(k0, u0, k, u), P.Bool.and_true_l(nc, S.Ues.clear(k0, u0, rest), hc)))
-      +ne = Equal.trans(Bool, U32.is_eq(k0, k), U32.is_eq(k, k0), False{}, P.U32.sym(k0, k), nr)
-      P.Bool.and_intro(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.hit(S.Ue, u0, m, U32.is_eq(k0, k)))), Lv.paired_in((k0, u0) <> more, rest), Lv.paired_row(k0, u0, more, k, u, U32.is_eq(k0, k), {==}, ne, P.Bool.and_true_l(x, Lv.paired_in(more, rest), h)), Lv.paired_cons(k0, u0, more, rest, P.Bool.and_true_r(nc, S.Ues.clear(k0, u0, rest), hc), P.Bool.and_true_r(x, Lv.paired_in(more, rest), h)))
-
-def Lv.paired_self(+t: Tb.Table(S.Ue), +eu: {S.Ues.unique(t) == True{} : Bool}) -> {Lv.paired_in(t, t) == True{} : Bool}:
-  match t:
-    case Nil{}:
-      {==}
-    case (+k0, +u0) <> +more:
-      +hc = P.Bool.and_true_l(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu)
-      +n = S.Phase.nh(S.Ue.phase(u0))
-      e = Equal.sym(Bool, U32.is_eq(k0, k0), True{}, P.U32.is_eq_refl(k0))
-      hd : {Lv.chains(n, S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), U32.is_eq(k0, k0)))) == True{} : Bool} = (%e : {Lv.chains(n, S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), _))) == True{} : Bool}; Lv.chains_self(n))
-      P.Bool.and_intro(Lv.chains(n, S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), U32.is_eq(k0, k0)))), Lv.paired_in((k0, u0) <> more, more), hd, Lv.paired_cons(k0, u0, more, more, hc, Lv.paired_self(more, P.Bool.and_true_r(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu))))
-
-def Lv.paired_from(+st: S.State, +rows: Tb.Table(S.Ue), +h: {Lv.paired_in(S.State.ues(st), rows) == True{} : Bool}) -> {Lv.paired(st, rows) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+k, +u) <> +more:
-      +m = Tb.Table.get(S.Ue, k, S.State.ues(st))
-      +x = Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m))
-      P.Bool.and_intro(Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))), Lv.paired(st, more), P.Bool.or_l(x, Bool.not(S.Ues.unique(S.State.ues(st))), P.Bool.and_true_l(x, Lv.paired_in(S.State.ues(st), more), h)), Lv.paired_from(st, more, P.Bool.and_true_r(x, Lv.paired_in(S.State.ues(st), more), h)))
-
-def Lv.paired_none(+st: S.State, +rows: Tb.Table(S.Ue), +en: {Bool.not(S.Ues.unique(S.State.ues(st))) == True{} : Bool}) -> {Lv.paired(st, rows) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+k, +u) <> +more:
-      +m = Tb.Table.get(S.Ue, k, S.State.ues(st))
-      P.Bool.and_intro(Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))), Lv.paired(st, more), P.Bool.or_r(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m)), Bool.not(S.Ues.unique(S.State.ues(st))), en), Lv.paired_none(st, more, en))
-
-def Lv.paired_if(+st: S.State, +b: Bool, +eb: {S.Ues.unique(S.State.ues(st)) == b : Bool}) -> {Lv.paired(st, S.State.ues(st)) == True{} : Bool}:
-  match b:
-    case True{}:
-      Lv.paired_from(st, S.State.ues(st), Lv.paired_self(S.State.ues(st), eb))
-    case False{}:
-      seb = Equal.sym(Bool, S.Ues.unique(S.State.ues(st)), False{}, eb)
-      Lv.paired_none(st, S.State.ues(st), (%seb : {Bool.not(_) == True{} : Bool}; {==}))
-
-def Lv.paired_all(+st: S.State) -> {Lv.paired(st, S.State.ues(st)) == True{} : Bool}:
-  Lv.paired_if(st, S.Ues.unique(S.State.ues(st)), {==})
+      +sb = Equal.sym(Bool, S.Ues.unique(S.State.ues(st)), False{}, eb)
+      P.Bool.or_r(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.get(S.Ue, k, S.State.ues(st)))), Bool.not(S.Ues.unique(S.State.ues(st))), (%sb : {Bool.not(_) == True{} : Bool}; {==}))
 
 def Lw.ho_down_leg(+st: S.State, +k: U32, +u: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +target: Bool, +source: Bool, +eh: {Tb.Table.has(S.Ue, k, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, k, Some{nh}) == True{} : Bool}, +more: Tb.Table(S.Ue), +w: PF.Fs.GotIf(S.Ues.unique(S.State.ues(st)), S.State.ues(st), (k, u) <> more), +epu: {S.Phase.nas(S.Ue.phase(u)) == Some{ctx} : Maybe<&2, Sec.Nas.Ctx>}) -> {Bool.and(Lv.okf(st, Ho.Ho.down_leg(k, u, ctx, nh, leg, target, source)), Lv.quiet(N.Out.tx(Ho.Ho.down_leg(k, u, ctx, nh, leg, target, source)))) == True{} : Bool}:
   match target source:
@@ -4526,17 +4464,16 @@ def Lw.ho_down_join(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Bool.and(Lv.
   hq : {Lv.quiet(N.Out.tx(N.Out.join(a, b))) == True{} : Bool} = (%sj : {Lv.quiet(_) == True{} : Bool}; P.Bool.and_intro(Lv.quiet(N.Out.tx(a)), Lv.quiet(N.Out.tx(b)), P.Bool.and_true_r(Lv.okf(st, a), Lv.quiet(N.Out.tx(a)), ha), P.Bool.and_true_r(Lv.okf(st, b), Lv.quiet(N.Out.tx(b)), hb)))
   P.Bool.and_intro(Lv.okf(st, N.Out.join(a, b)), Lv.quiet(N.Out.tx(N.Out.join(a, b))), Lv.join_by(st, a, b, P.Bool.and_true_l(Lv.okf(st, a), Lv.quiet(N.Out.tx(a)), ha), P.Bool.and_true_l(Lv.okf(st, b), Lv.quiet(N.Out.tx(b)), hb), e1 => e2 => PF.Fs.both_amute(st, N.Out.tx(a), N.Out.acts(a), N.Out.tx(b), N.Out.acts(b), e1, e2, ma, mb)), hq)
 
-def Lw.ho_downs(+st: S.State, +assoc: U32, +rows: Tb.Table(S.Ue), +e: {Lv.keys_in(rows, S.State.ues(st)) == True{} : Bool}, +ep: {Lv.paired(st, rows) == True{} : Bool}, +w: PF.Fs.GotIf(S.Ues.unique(S.State.ues(st)), S.State.ues(st), rows)) -> {Bool.and(Lv.okf(st, Ho.Ho.downs(assoc, rows)), Lv.quiet(N.Out.tx(Ho.Ho.downs(assoc, rows)))) == True{} : Bool}:
+def Lw.ho_downs(+st: S.State, +assoc: U32, +rows: Tb.Table(S.Ue), +e: {Lv.keys_in(rows, S.State.ues(st)) == True{} : Bool}, +w: PF.Fs.GotIf(S.Ues.unique(S.State.ues(st)), S.State.ues(st), rows)) -> {Bool.and(Lv.okf(st, Ho.Ho.downs(assoc, rows)), Lv.quiet(N.Out.tx(Ho.Ho.downs(assoc, rows)))) == True{} : Bool}:
   match rows:
     case Nil{}:
       {==}
     case (+k, +u) <> +more:
       +eh = P.Bool.and_true_l(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e)
-      +c = Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u)))
-      Lw.ho_down_join(st, Ho.Ho.down_row(assoc, k, u, S.Ue.phase(u)), Ho.Ho.downs(assoc, more), Lw.ho_down_row(st, assoc, k, u, S.Ue.phase(u), eh, P.Bool.and_true_l(c, Lv.paired(st, more), ep), more, w, {==}), Lw.ho_downs(st, assoc, more, P.Bool.and_true_r(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e), P.Bool.and_true_r(c, Lv.paired(st, more), ep), PF.Fs.got_rest(S.Ues.unique(S.State.ues(st)), S.State.ues(st), k, u, more, w)), PF.Fs.down_row_mute(assoc, k, u, S.Ue.phase(u)), PF.Fs.downs_mute(assoc, more))
+      Lw.ho_down_join(st, Ho.Ho.down_row(assoc, k, u, S.Ue.phase(u)), Ho.Ho.downs(assoc, more), Lw.ho_down_row(st, assoc, k, u, S.Ue.phase(u), eh, Lv.chain_got(st, k, u, more, S.Ues.unique(S.State.ues(st)), {==}, w), more, w, {==}), Lw.ho_downs(st, assoc, more, P.Bool.and_true_r(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e), PF.Fs.got_rest(S.Ues.unique(S.State.ues(st)), S.State.ues(st), k, u, more, w)), PF.Fs.down_row_mute(assoc, k, u, S.Ue.phase(u)), PF.Fs.downs_mute(assoc, more))
 
 def Lw.ho_down_q(+st: S.State, +assoc: U32) -> {Bool.and(Lv.okf(st, Ho.Ho.down(st, assoc)), Lv.quiet(N.Out.tx(Ho.Ho.down(st, assoc)))) == True{} : Bool}:
-  Lw.ho_downs(st, assoc, S.State.ues(st), Pv.refl(S.State.ues(st)), Lv.paired_all(st), PF.Fs.got_all(st))
+  Lw.ho_downs(st, assoc, S.State.ues(st), Pv.refl(S.State.ues(st)), PF.Fs.got_all(st))
 
 def Lw.ho_down(+st: S.State, +assoc: U32) -> {Lv.ok(st, Ho.Ho.down(st, assoc)) == True{} : Bool}:
   Lv.ok_of(st, Ho.Ho.down(st, assoc), P.Bool.and_true_l(Lv.okf(st, Ho.Ho.down(st, assoc)), Lv.quiet(N.Out.tx(Ho.Ho.down(st, assoc))), Lw.ho_down_q(st, assoc)))
