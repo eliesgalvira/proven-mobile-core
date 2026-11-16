@@ -1,5 +1,6 @@
 import Base
 import ../bytes.bend as B
+import ../aper.bend as Ap
 import ../table.bend as Tb
 import ../state.bend as S
 import ../amf/ngap.bend as N
@@ -9,8 +10,11 @@ import ../LAWS.bend as L
 import ../amf/gmm.bend as Gmm
 import ../smf/n4.bend as Up
 import ../smf/gsm.bend as Gsm
+import ../smf/switch.bend as Sw
 import ../amf/handover.bend as Ho
+import ../amf/path_switch.bend as Ps
 import ../ngap/gen/types.bend as G
+import ../frame.bend as F
 
 # Downlink NAS COUNT freshness, outcome by outcome (nas_sec.downlink_fresh)
 # -------------------------------------------------------------------------
@@ -70,6 +74,41 @@ def Fs.sends(+tx: S.Tx, acts: List<&2, N.Act>) -> Bool:
 
 def Fs.nas(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>) -> Bool:
   Bool.and(Fs.sealed(st, tx, acts), Fs.sends(tx, acts))
+
+# What nas_sec.downlink_fresh asks of an outcome where keys name one row each
+# (S.Ues.unique), the premise the law has.
+def Fs.ok(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>) -> Bool:
+  Bool.or(Fs.nas(st, tx, acts), Bool.not(S.Ues.unique(S.State.ues(st))))
+
+def Fs.ok_of(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +h: {Fs.nas(st, tx, acts) == True{} : Bool}) -> {Fs.ok(st, tx, acts) == True{} : Bool}:
+  P.Bool.or_l(Fs.nas(st, tx, acts), Bool.not(S.Ues.unique(S.State.ues(st))), h)
+
+def Fs.or_got(+x: Bool, +h: {Bool.or(x, False{}) == True{} : Bool}) -> {x == True{} : Bool}:
+  match x:
+    case True{}:
+      {==}
+    case False{}:
+      Empty.absurd({False{} == True{} : Bool}, P.Refute.bool(h))
+
+def Fs.or_map(+x: Bool, +y: Bool, +u: Bool, f: {x == True{} : Bool} -> {y == True{} : Bool}, +h: {Bool.or(x, Bool.not(u)) == True{} : Bool}) -> {Bool.or(y, Bool.not(u)) == True{} : Bool}:
+  match u:
+    case True{}:
+      P.Bool.or_l(y, False{}, f(Fs.or_got(x, h)))
+    case False{}:
+      P.Bool.or_r(y, True{}, {==})
+
+def Fs.or_map2(+x1: Bool, +x2: Bool, +y: Bool, +u: Bool, f: {x1 == True{} : Bool} -> {x2 == True{} : Bool} -> {y == True{} : Bool}, +h1: {Bool.or(x1, Bool.not(u)) == True{} : Bool}, +h2: {Bool.or(x2, Bool.not(u)) == True{} : Bool}) -> {Bool.or(y, Bool.not(u)) == True{} : Bool}:
+  match u:
+    case True{}:
+      P.Bool.or_l(y, False{}, f(Fs.or_got(x1, h1), Fs.or_got(x2, h2)))
+    case False{}:
+      P.Bool.or_r(y, True{}, {==})
+
+def Fs.ok_map(+st: S.State, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, f: {Fs.nas(st, ta, aa) == True{} : Bool} -> {Fs.nas(st, tb, ab) == True{} : Bool}, +h: {Fs.ok(st, ta, aa) == True{} : Bool}) -> {Fs.ok(st, tb, ab) == True{} : Bool}:
+  Fs.or_map(Fs.nas(st, ta, aa), Fs.nas(st, tb, ab), S.Ues.unique(S.State.ues(st)), f, h)
+
+def Fs.ok_map2(+st: S.State, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, +tc: S.Tx, +ac: List<&2, N.Act>, f: {Fs.nas(st, ta, aa) == True{} : Bool} -> {Fs.nas(st, tb, ab) == True{} : Bool} -> {Fs.nas(st, tc, ac) == True{} : Bool}, +ha: {Fs.ok(st, ta, aa) == True{} : Bool}, +hb: {Fs.ok(st, tb, ab) == True{} : Bool}) -> {Fs.ok(st, tc, ac) == True{} : Bool}:
+  Fs.or_map2(Fs.nas(st, ta, aa), Fs.nas(st, tb, ab), Fs.nas(st, tc, ac), S.Ues.unique(S.State.ues(st)), f, ha, hb)
 
 # An outcome that writes no row and carries no protected NAS message.
 def Fs.tmute(tx: S.Tx) -> Bool:
@@ -1071,3 +1110,550 @@ def Fs.under_ctx_nas(+st: S.State, +key: U32, +ue: S.Ue, f: Maybe<&2, Sec.Nas.Ct
 # nas_sec.downlink_fresh's part of the outcome.
 def Fs.under_nas(+st: S.State, +key: U32, +ue: S.Ue, f: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Gsm.Item(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, hf: @c:Maybe<&2, Sec.Nas.Ctx> -> Fs.Ii(key, c, f(c))) -> {Fs.nas(st, N.Out.tx(Gsm.Gsm.under(key, ue, f)), N.Out.acts(Gsm.Gsm.under(key, ue, f))) == True{} : Bool}:
   Fs.under_ctx_nas(st, key, ue, f, S.Phase.ctx(S.Ue.phase(ue)), {==}, eg, hf)
+
+# A context with the stored one's keys and COUNT written back, no message.
+def Fs.kept_any(+st: S.State, +key: U32, +q: S.Phase, +c: Sec.Nas.Ctx, +eq: {S.Phase.nas(q) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, +ev: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(q), []) == True{} : Bool}:
+  match c:
+    case Sec.Ctx{+k, +d, +ul}:
+      Fs.kept_holds(st, key, q, k, d, ul, eq, ev)
+
+# The stored context, read off the UE's phase.
+def Fs.view_of(+st: S.State, +key: U32, +ue: S.Ue, +c: Sec.Nas.Ctx, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {S.Phase.ctx(S.Ue.phase(ue)) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}) -> {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}:
+  +sc = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, Fs.ctx(st, key), Some{c}, Fs.ctx_of(st, key, ue, c, eg, ec))
+  (%sc : {Fs.view(_) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}; {==})
+
+def Fs.present_of(+q: S.Phase, +c: Sec.Nas.Ctx, +ec: {S.Phase.ctx(q) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}) -> {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(q)) == True{} : Bool}:
+  +sc = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, S.Phase.ctx(q), Some{c}, ec)
+  (%sc : {Tb.Table.present(Sec.Nas.Ctx, _) == True{} : Bool}; {==})
+
+def Fs.protected_any(+c: Sec.Nas.Ctx, +prot: Sec.Nas.Protection, +plain: B.Bytes()) -> {Sec.Nas.is_protected(Sec.Nas.Protected.msg(Sec.Nas.protect(c, prot, plain))) == True{} : Bool}:
+  match c:
+    case Sec.Ctx{+k, +d, +ul}:
+      Fs.protect_protected(k, d, ul, prot, plain)
+
+# One protected message under the context the UE's phase holds, then an
+# action carrying none, the context moved on written and a transaction that
+# writes no row.
+def Fs.told_pair(+st: S.State, +key: U32, +ue: S.Ue, +c: Sec.Nas.Ctx, +prot: Sec.Nas.Protection, +plain: B.Bytes(), +x: N.Act, +y: N.Act, +r: S.Tx, +ex: {N.Act.nas(x) == Some{(key, Sec.Nas.Protected.msg(Sec.Nas.protect(c, prot, plain)))} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +ey: {Fs.none(N.Act.nas(y)) == True{} : Bool}, +hr: {Fs.tmute(r) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {S.Phase.ctx(S.Ue.phase(ue)) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}) -> {Fs.nas(st, S.Both{S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(Sec.Nas.protect(c, prot, plain)))}, r}, [x, y]) == True{} : Bool}:
+  match c:
+    case Sec.Ctx{+k, +d, +ul}:
+      +c0 : Sec.Nas.Ctx = Sec.Ctx{k, d, ul}
+      +c2 : Sec.Nas.Ctx = Sec.Ctx{k, Sec.Nas.Count.next(d), ul}
+      +q = S.Phase.with_ctx(S.Ue.phase(ue), c2)
+      +hl = Fs.told_leaf(st, key, q, k, d, ul, prot, plain, x, ex, Fs.nas_with(S.Ue.phase(ue), c2, Fs.present_of(S.Ue.phase(ue), c0, ec)), Fs.view_of(st, key, ue, c0, eg, ec))
+      Fs.post_tmute(st, S.Rephase{key, q}, r, [x, y], hr, Fs.app_mute(st, S.Rephase{key, q}, [x], [y], hl, P.Bool.and_intro(Fs.none(N.Act.nas(y)), True{}, ey, {==})))
+
+# A plain NAS message is no protected one.
+def Fs.plain_none(+key: U32, +nas: B.Bytes(), +e: {Sec.Nas.is_protected(nas) == False{} : Bool}) -> {Fs.none(N.Act.nas_if(key, nas, Sec.Nas.is_protected(nas))) == True{} : Bool}:
+  +se = Equal.sym(Bool, Sec.Nas.is_protected(nas), False{}, e)
+  (%se : {Fs.none(N.Act.nas_if(key, nas, _)) == True{} : Bool}; {==})
+
+# A context put, mute deletions before it and mute evictions after, then a
+# protected message to its key and an action carrying none.
+def Fs.place_told(+st: S.State, +key: U32, +ue2: S.Ue, +del: N.GOut(), +ev: List<&2, N.Act>, +x: N.Act, +y: N.Act, +m: B.Bytes(), +hdel: {Fs.mute(N.Out.tx(del), N.Out.acts(del)) == True{} : Bool}, +hev: {Fs.amute(ev) == True{} : Bool}, +hy: {Fs.none(N.Act.nas(y)) == True{} : Bool}, +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +hw: {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), [m]) == True{} : Bool}) -> {Fs.nas(st, N.Out.tx(N.Out.also(N.Out.join(del, (S.Put{key, ue2}, ev)), [x, y])), N.Out.acts(N.Out.also(N.Out.join(del, (S.Put{key, ue2}, ev)), [x, y]))) == True{} : Bool}:
+  match del:
+    case (+td, +ad):
+      +pre = List.append(&2, N.Act, ad, ev)
+      +acts = List.append(&2, N.Act, pre, [x, y])
+      +tx : S.Tx = S.Both{td, S.Put{key, ue2}}
+      +tm = P.Bool.and_true_l(Fs.tmute(td), Fs.amute(ad), hdel)
+      +am = Fs.amute_app(ad, ev, P.Bool.and_true_r(Fs.tmute(td), Fs.amute(ad), hdel), hev)
+      +e1 = Fs.nas_mute_l(key, pre, [x, y], am)
+      +e2 = Fs.one_nas(key, x, m, [y], ex)
+      +e3 : {m <> N.Acts.nas(key, [y]) == [m] : List<&2, B.Bytes()>} = (%Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, [y]), [], Fs.to_none(key, N.Act.nas(y), [], hy)) : {m <> _ == [m] : List<&2, B.Bytes()>}; {==})
+      +en = Equal.trans(List<&2, B.Bytes()>, N.Acts.nas(key, acts), N.Acts.nas(key, [x, y]), [m], e1, Equal.trans(List<&2, B.Bytes()>, N.Acts.nas(key, [x, y]), m <> N.Acts.nas(key, [y]), [m], e2, e3))
+      +sen = Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, acts), [m], en)
+      +hw2 : {Fs.write(st, key, S.Phase.nas(S.Ue.phase(ue2)), acts) == True{} : Bool} = (%sen : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), _) == True{} : Bool}; hw)
+      +sx = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, N.Act.nas(x), Some{(key, m)}, ex)
+      +hsx : {Fs.sent(tx, N.Act.nas(x)) == True{} : Bool} = (%sx : {Fs.sent(tx, _) == True{} : Bool}; P.Bool.or_r(Fs.writes(key, td), U32.is_eq(key, key), P.U32.is_eq_refl(key)))
+      +hs2 = P.Bool.and_intro(Fs.sent(tx, N.Act.nas(x)), Fs.sends(tx, [y]), hsx, P.Bool.and_intro(Fs.sent(tx, N.Act.nas(y)), True{}, Fs.none_sent(tx, N.Act.nas(y), hy), {==}))
+      P.Bool.and_intro(Fs.sealed(st, tx, acts), Fs.sends(tx, acts), P.Bool.and_intro(Fs.sealed(st, td, acts), Fs.write(st, key, S.Phase.nas(S.Ue.phase(ue2)), acts), Fs.tmute_sealed(st, td, acts, tm), hw2), Fs.sends_app(tx, pre, [x, y], Fs.amute_sends(tx, pre, am), hs2))
+
+# A first context, its Security Mode Command under COUNT 0.
+def Fs.smc_holds(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +plain: B.Bytes(), +eb: {b == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {N.Fresh.holds(b, Some{Sec.Ctx{k, Sec.Nas.Count.next(Sec.Nas.Count.zero()), None{}}}, [Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{k, Sec.Nas.Count.zero(), None{}}, Sec.IntegrityNew{}, plain))]) == True{} : Bool}:
+  +sb = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, b, None{}, eb)
+  +ms : List<&2, B.Bytes()> = [Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{k, Sec.Nas.Count.zero(), None{}}, Sec.IntegrityNew{}, plain))]
+  +sr = Equal.sym(Maybe<&2, Sec.Nas.Count>, N.Fresh.run(ms, k, Sec.Nas.Count.zero()), Some{Sec.Nas.Count.next(Sec.Nas.Count.zero())}, Fs.protect_run(k, Sec.Nas.Count.zero(), None{}, Sec.IntegrityNew{}, plain))
+  (%sb : {N.Fresh.holds(_, Some{Sec.Ctx{k, Sec.Nas.Count.next(Sec.Nas.Count.zero()), None{}}}, ms) == True{} : Bool}; (%sr : {N.Fresh.at(_, Sec.Nas.Count.next(Sec.Nas.Count.zero())) == True{} : Bool}; Fs.count_same(Sec.Nas.Count.next(Sec.Nas.Count.zero()))))
+
+# The UE's phase read under its key.
+def Fs.ctx_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == p : S.Phase}) -> {Fs.ctx(st, key) == S.Phase.nas(p) : Maybe<&2, Sec.Nas.Ctx>}:
+  +sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, key, S.State.ues(st)), Some{ue}, eg)
+  (%sg : {S.Ue.nas(_) == S.Phase.nas(p) : Maybe<&2, Sec.Nas.Ctx>}; (%Equal.sym(S.Phase, S.Ue.phase(ue), p, ep) : {S.Phase.nas(_) == S.Phase.nas(p) : Maybe<&2, Sec.Nas.Ctx>}; {==}))
+
+def Fs.view_at(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == p : S.Phase}) -> {Fs.view(Fs.ctx(st, key)) == Fs.view(S.Phase.nas(p)) : Maybe<&2, Fs.KD()>}:
+  +sc = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, Fs.ctx(st, key), S.Phase.nas(p), Fs.ctx_phase(st, key, ue, p, eg, ep))
+  (%sc : {Fs.view(_) == Fs.view(S.Phase.nas(p)) : Maybe<&2, Fs.KD()>}; {==})
+
+# Fs.both, on outcomes.
+def Fs.both_out(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Fs.nas(st, N.Out.tx(a), N.Out.acts(a)) == True{} : Bool}, +hb: {Fs.nas(st, N.Out.tx(b), N.Out.acts(b)) == True{} : Bool}, +hq: {Bool.or(Fs.mute(N.Out.tx(a), N.Out.acts(a)), Fs.mute(N.Out.tx(b), N.Out.acts(b))) == True{} : Bool}) -> {Fs.nas(st, N.Out.tx(N.Out.join(a, b)), N.Out.acts(N.Out.join(a, b))) == True{} : Bool}:
+  match a:
+    case (+ta, +aa):
+      match b:
+        case (+tb, +ab):
+          Fs.both(st, ta, aa, tb, ab, ha, hb, hq)
+
+# One message protected under a context with the stored one's keys and
+# COUNT, the context it leaves written.
+def Fs.told_any(+b: Maybe<&2, Sec.Nas.Ctx>, +c: Sec.Nas.Ctx, +prot: Sec.Nas.Protection, +plain: B.Bytes(), +ev: {Fs.view(b) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(b, Some{Sec.Nas.Protected.ctx(Sec.Nas.protect(c, prot, plain))}, [Sec.Nas.Protected.msg(Sec.Nas.protect(c, prot, plain))]) == True{} : Bool}:
+  match c:
+    case Sec.Ctx{+k, +d, +ul}:
+      Fs.told_write(b, k, d, ul, prot, plain, ev)
+
+def Fs.gone_any(+b: Maybe<&2, Sec.Nas.Ctx>, +c: Sec.Nas.Ctx, +prot: Sec.Nas.Protection, +plain: B.Bytes(), +ev: {Fs.view(b) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(b, None{}, [Sec.Nas.Protected.msg(Sec.Nas.protect(c, prot, plain))]) == True{} : Bool}:
+  match c:
+    case Sec.Ctx{+k, +d, +ul}:
+      Fs.gone_write(b, k, d, ul, prot, plain, ev)
+
+# Context Setup takes the context the Registration Accept leaves.
+def Fs.cs_write(+st: S.State, +key: U32, +ue2: S.Ue, +ctx: Sec.Nas.Ctx, +accept: B.Bytes(), +nh: S.Nh, +epc: {S.Ue.phase(ue2) == S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)), nh, False{}, False{}} : S.Phase}, +ev: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{ctx}) : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), [Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept))]) == True{} : Bool}:
+  +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)), nh, False{}, False{}}
+  (%Equal.sym(S.Phase, S.Ue.phase(ue2), ph, epc) : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(_), [Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept))]) == True{} : Bool}; Fs.told_any(Fs.ctx(st, key), ctx, Sec.Ciphered{}, accept, ev))
+
+def Fs.cs_nas(+g: S.Guard, +c: Sec.Nas.Ctx, +nh: S.Nh, +r: Bool, +cm: Bool) -> {S.Phase.nas(S.ContextSetup{g, c, nh, r, cm}) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}:
+  {==}
+
+# Security Mode Complete: Initial Context Setup with the Registration Accept
+# under the stored context's COUNT, Context Setup taking the next.
+def Fs.sm_nas(+st: S.State, +key: U32, +ue2: S.Ue, +del: N.GOut(), +ev: List<&2, N.Act>, +x: N.Act, +y: N.Act, +ctx: Sec.Nas.Ctx, +accept: B.Bytes(), +nh: S.Nh, +hdel: {Fs.mute(N.Out.tx(del), N.Out.acts(del)) == True{} : Bool}, +hev: {Fs.amute(ev) == True{} : Bool}, +hy: {Fs.none(N.Act.nas(y)) == True{} : Bool}, +ex: {N.Act.nas(x) == Some{(key, Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)))} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +epc: {S.Ue.phase(ue2) == S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)), nh, False{}, False{}} : S.Phase}, +evw: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{ctx}) : Maybe<&2, Fs.KD()>}) -> {Fs.nas(st, N.Out.tx(N.Out.also(N.Out.join(del, (S.Put{key, ue2}, ev)), [x, y])), N.Out.acts(N.Out.also(N.Out.join(del, (S.Put{key, ue2}, ev)), [x, y]))) == True{} : Bool}:
+  Fs.place_told(st, key, ue2, del, ev, x, y, Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)), hdel, hev, hy, ex, Fs.cs_write(st, key, ue2, ctx, accept, nh, epc, evw))
+
+# A protected message to key in front of actions carrying none, the row key
+# written beside a transaction that writes no row.
+def Fs.front_put(+st: S.State, +td: S.Tx, +key: U32, +ue2: S.Ue, +x: N.Act, +m: B.Bytes(), +rest: List<&2, N.Act>, +ht: {Fs.tmute(td) == True{} : Bool}, +hr: {Fs.amute(rest) == True{} : Bool}, +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +hw: {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), [m]) == True{} : Bool}) -> {Fs.nas(st, S.Both{td, S.Put{key, ue2}}, x <> rest) == True{} : Bool}:
+  +tx : S.Tx = S.Both{td, S.Put{key, ue2}}
+  +acts : List<&2, N.Act> = x <> rest
+  +en : {N.Acts.nas(key, acts) == [m] : List<&2, B.Bytes()>} = (%Fs.amute_nas(key, rest, hr) : {N.Acts.nas(key, acts) == m <> _ : List<&2, B.Bytes()>}; Fs.one_nas(key, x, m, rest, ex))
+  +sen = Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, acts), [m], en)
+  +hw2 : {Fs.write(st, key, S.Phase.nas(S.Ue.phase(ue2)), acts) == True{} : Bool} = (%sen : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), _) == True{} : Bool}; hw)
+  +sx = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, N.Act.nas(x), Some{(key, m)}, ex)
+  +hsx : {Fs.sent(tx, N.Act.nas(x)) == True{} : Bool} = (%sx : {Fs.sent(tx, _) == True{} : Bool}; P.Bool.or_r(Fs.writes(key, td), U32.is_eq(key, key), P.U32.is_eq_refl(key)))
+  P.Bool.and_intro(Fs.sealed(st, tx, acts), Fs.sends(tx, acts), P.Bool.and_intro(Fs.sealed(st, td, acts), Fs.write(st, key, S.Phase.nas(S.Ue.phase(ue2)), acts), Fs.tmute_sealed(st, td, acts, ht), hw2), P.Bool.and_intro(Fs.sent(tx, N.Act.nas(x)), Fs.sends(tx, rest), hsx, Fs.amute_sends(tx, rest, hr)))
+
+def Fs.front_place(+st: S.State, +key: U32, +ue2: S.Ue, +del: N.GOut(), +ev: List<&2, N.Act>, +x: N.Act, +rel: N.Act, +more: List<&2, N.Act>, +m: B.Bytes(), +hdel: {Fs.mute(N.Out.tx(del), N.Out.acts(del)) == True{} : Bool}, +hev: {Fs.amute(ev) == True{} : Bool}, +hrel: {Fs.none(N.Act.nas(rel)) == True{} : Bool}, +hmore: {Fs.amute(more) == True{} : Bool}, +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +hw: {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), [m]) == True{} : Bool}) -> {Fs.nas(st, N.Out.tx(N.Out.prepend(rel, N.Out.also(N.Out.join(del, (S.Put{key, ue2}, ev)), more))), x <> N.Out.acts(N.Out.prepend(rel, N.Out.also(N.Out.join(del, (S.Put{key, ue2}, ev)), more)))) == True{} : Bool}:
+  match del:
+    case (+td, +ad):
+      +pre = List.append(&2, N.Act, ad, ev)
+      +hp = Fs.amute_app(ad, ev, P.Bool.and_true_r(Fs.tmute(td), Fs.amute(ad), hdel), hev)
+      +hr = P.Bool.and_intro(Fs.none(N.Act.nas(rel)), Fs.amute(List.append(&2, N.Act, pre, more)), hrel, Fs.amute_app(pre, more, hp, hmore))
+      Fs.front_put(st, td, key, ue2, x, m, rel <> List.append(&2, N.Act, pre, more), P.Bool.and_true_l(Fs.tmute(td), Fs.amute(ad), hdel), hr, ex, hw)
+
+# A protected message in front of UE Context Release Command: the context ends
+# with it.
+def Fs.release_front(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +x: N.Act, +m: B.Bytes(), +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +hw: {N.Fresh.holds(Fs.ctx(st, key), None{}, [m]) == True{} : Bool}, +ep: {S.Ue.phase(S.Ue.with_phase(ue, S.Releasing{S.Guard{0}})) == S.Releasing{S.Guard{0}} : S.Phase}) -> {Fs.nas(st, N.Out.tx(Gmm.Gmm.release(st, key, ue, cause)), x <> N.Out.acts(Gmm.Gmm.release(st, key, ue, cause))) == True{} : Bool}:
+  +ur = S.Ue.with_phase(ue, S.Releasing{S.Guard{0}})
+  +vs = S.Ues.evicted(key, ur, S.State.ues(st))
+  +rel : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}
+  +more : List<&2, N.Act> = N.TimerStart{Some{key}, key, N.Ue.guard_ms()} <> Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause)
+  Fs.front_place(st, key, ur, Up.N4.deletions(Gmm.Gmm.sessions(vs, S.State.sessions(st)), S.State.pfcp_seq(st)), Gmm.Gmm.evict(vs), x, rel, more, m, Fs.deletions_mute(Gmm.Gmm.sessions(vs, S.State.sessions(st)), S.State.pfcp_seq(st)), Fs.evict_mute(vs), {==}, P.Bool.and_intro(True{}, Fs.amute(Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause)), {==}, Fs.leg_mute(key, S.Ue.phase(ue), cause)), ex, (%Equal.sym(S.Phase, S.Ue.phase(ur), S.Releasing{S.Guard{0}}, ep) : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(_), [m]) == True{} : Bool}; hw))
+
+# Verifying an uplink message moves only the uplink COUNT: the context it
+# leaves has the keys and downlink COUNT it had.
+def Fs.Keeps(+c: Sec.Nas.Ctx, r: Result<&2, &2, B.Err, Sec.Nas.Unprotected>) -> Type:
+  match r:
+    case Fail{e}:
+      Unit
+    case Done{Sec.Unprotected{prot, plain, count, c2}}:
+      {Fs.view(Some{c2}) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}
+
+def Fs.open_keeps(+k: Sec.Nas.Keys, +d: Sec.Nas.Count, +ul: Maybe<&2, Sec.Nas.Count>, +count: Sec.Nas.Count, r: Result<&2, &2, B.Err, Sec.Nas.Opened>) -> Fs.Keeps(Sec.Ctx{k, d, ul}, Sec.Nas.u_open(k, d, count, r)):
+  match r:
+    case Fail{e}:
+      Unit{}
+    case Done{Sec.Opened{prot, plain}}:
+      {==}
+
+def Fs.count_keeps(+k: Sec.Nas.Keys, +d: Sec.Nas.Count, +ul: Maybe<&2, Sec.Nas.Count>, +msg: B.Bytes(), r: Result<&2, &2, B.Err, Sec.Nas.Count>) -> Fs.Keeps(Sec.Ctx{k, d, ul}, Sec.Nas.u_count(k, d, msg, r)):
+  match r:
+    case Fail{e}:
+      Unit{}
+    case Done{+count}:
+      Fs.open_keeps(k, d, ul, count, Sec.Nas.open(k, Sec.Nas.uplink(), count, msg))
+
+def Fs.sqn_keeps(+c: Sec.Nas.Ctx, +msg: B.Bytes(), r: B.Read(U32)) -> Fs.Keeps(c, Sec.Nas.u_sqn(c, msg, r)):
+  match c:
+    case Sec.Ctx{+k, +d, +ul}:
+      match r:
+        case Fail{e}:
+          Unit{}
+        case Done{(sqn, rest)}:
+          Fs.count_keeps(k, d, ul, msg, Sec.Nas.estimate(ul, sqn))
+
+def Fs.unprotect_keeps(+c: Sec.Nas.Ctx, +msg: B.Bytes()) -> Fs.Keeps(c, Sec.Nas.unprotect(c, msg)):
+  Fs.sqn_keeps(c, msg, B.u8(List.drop(&2, U32, msg, 6n)))
+
+def Fs.cancel_mute(+key: U32, g: Maybe<&2, S.Guard>) -> {Fs.amute(N.Guard.cancel(key, g)) == True{} : Bool}:
+  match g:
+    case None{}:
+      {==}
+    case Some{guard}:
+      {==}
+
+def Fs.expiry_mute(+key: U32, +ue: S.Ue, +leg: S.Leg) -> {Fs.amute(Ho.Ho.expiry(key, ue, leg)) == True{} : Bool}:
+  match leg:
+    case S.Asked{+t}:
+      Fs.drop_mute(key, S.Asked{t}, Ho.Ho.radio(G.CauseRadioNetwork.tngrelocprep_expiry()))
+    case S.Acked{+t, +r, +s, +ts}:
+      Fs.drop_mute(key, S.Acked{t, r, s, ts}, Ho.Ho.radio(G.CauseRadioNetwork.tngrelocoverall_expiry()))
+
+# A phase that keeps the context the key held, beside actions carrying no
+# protected NAS message.
+def Fs.kept_rephase(+st: S.State, +key: U32, +q: S.Phase, +c: Sec.Nas.Ctx, +acts: List<&2, N.Act>, +eq: {S.Phase.nas(q) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, +ev: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}, +ha: {Fs.amute(acts) == True{} : Bool}) -> {Fs.nas(st, S.Rephase{key, q}, acts) == True{} : Bool}:
+  +sn = Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, acts), [], Fs.amute_nas(key, acts, ha))
+  +hw : {Fs.write(st, key, S.Phase.nas(q), acts) == True{} : Bool} = (%sn : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(q), _) == True{} : Bool}; Fs.kept_any(st, key, q, c, eq, ev))
+  P.Bool.and_intro(Fs.write(st, key, S.Phase.nas(q), acts), Fs.sends(S.Rephase{key, q}, acts), hw, Fs.amute_sends(S.Rephase{key, q}, acts, ha))
+
+def Fs.rephase_none(+st: S.State, +key: U32, +q: S.Phase, +en: {S.Phase.nas(q) == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {Fs.nas(st, S.Rephase{key, q}, []) == True{} : Bool}:
+  (%Equal.sym(Maybe<&2, Sec.Nas.Ctx>, S.Phase.nas(q), None{}, en) : {Bool.and(N.Fresh.holds(Fs.ctx(st, key), _, []), True{}) == True{} : Bool}; {==})
+
+# A context c1 whose keys and COUNT are those messages leave, sealed in turn
+# from the COUNT b held under its keys: what writing c1 after them holds.
+def Fs.holds_after(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +c1: Sec.Nas.Ctx, +ms: List<&2, B.Bytes()>, +eb: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}, +v1: {Fs.view(Some{c1}) == Fs.after_run(k, N.Fresh.run(ms, k, d)) : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(b, Some{c1}, ms) == True{} : Bool}:
+  match c1:
+    case Sec.Ctx{+k1, +d1, +u1}:
+      +er = Fs.pair_l({N.Fresh.run(ms, k, d) == Some{d1} : Maybe<&2, Sec.Nas.Count>}, {k1 == k : Sec.Nas.Keys}, Fs.run_of_view(k, k1, d1, N.Fresh.run(ms, k, d), v1))
+      +ek = Fs.pair_r({N.Fresh.run(ms, k, d) == Some{d1} : Maybe<&2, Sec.Nas.Count>}, {k1 == k : Sec.Nas.Keys}, Fs.run_of_view(k, k1, d1, N.Fresh.run(ms, k, d), v1))
+      (%Equal.sym(Sec.Nas.Keys, k1, k, ek) : {N.Fresh.holds(b, Some{Sec.Ctx{_, d1, u1}}, ms) == True{} : Bool}; Fs.holds_run(b, k, d, d1, u1, ms, eb, er))
+
+# A phase holding c, after messages that all go to key and leave c.
+def Fs.rephase_told(+st: S.State, +key: U32, +q: S.Phase, +c: Sec.Nas.Ctx, +acts: List<&2, N.Act>, +eq: {S.Phase.nas(q) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, +hw: {N.Fresh.holds(Fs.ctx(st, key), Some{c}, N.Acts.nas(key, acts)) == True{} : Bool}, +ht: {Fs.to_key(key, acts) == True{} : Bool}) -> {Fs.nas(st, S.Rephase{key, q}, acts) == True{} : Bool}:
+  +sq = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, S.Phase.nas(q), Some{c}, eq)
+  +hw2 : {Fs.write(st, key, S.Phase.nas(q), acts) == True{} : Bool} = (%sq : {N.Fresh.holds(Fs.ctx(st, key), _, N.Acts.nas(key, acts)) == True{} : Bool}; hw)
+  P.Bool.and_intro(Fs.write(st, key, S.Phase.nas(q), acts), Fs.sends(S.Rephase{key, q}, acts), hw2, Fs.to_key_sends(key, S.Rephase{key, q}, acts, ht, P.U32.is_eq_refl(key)))
+
+# Gsm.releases: one PDU Session Release Command after another, each under the
+# COUNT the one before leaves.
+def Fs.rel_step(+key: U32, +x: N.Act, +m: B.Bytes(), +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +r: N.Told(), +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +es: {Sec.Nas.sealed(k, d, m) == True{} : Bool}, +ih: {Fs.view(Some{Gsm.Gsm.Told.ctx(r)}) == Fs.after_run(k, N.Fresh.run(N.Acts.nas(key, Gsm.Gsm.Told.acts(r)), k, Sec.Nas.Count.next(d))) : Maybe<&2, Fs.KD()>}) -> {Fs.view(Some{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases_then(x, r))}) == Fs.after_run(k, N.Fresh.run(N.Acts.nas(key, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(x, r))), k, d)) : Maybe<&2, Fs.KD()>}:
+  match r:
+    case (+c, +acts):
+      +ms = N.Acts.nas(key, acts)
+      +t1 : {Fs.view(Some{c}) == Fs.after_run(k, N.Fresh.run(m <> ms, k, d)) : Maybe<&2, Fs.KD()>} = (%Equal.sym(Bool, Sec.Nas.sealed(k, d, m), True{}, es) : {Fs.view(Some{c}) == Fs.after_run(k, N.Fresh.then(_, u => N.Fresh.run(ms, k, Sec.Nas.Count.next(d)))) : Maybe<&2, Fs.KD()>}; ih)
+      (%Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, x <> acts), m <> ms, Fs.one_nas(key, x, m, acts, ex)) : {Fs.view(Some{c}) == Fs.after_run(k, N.Fresh.run(_, k, d)) : Maybe<&2, Fs.KD()>}; t1)
+
+def Fs.releases_view(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +psis: List<&2, U32>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +ul: Maybe<&2, Sec.Nas.Count>) -> {Fs.view(Some{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(key, assoc, stream, ran, psis, Sec.Ctx{k, d, ul}))}) == Fs.after_run(k, N.Fresh.run(N.Acts.nas(key, Gsm.Gsm.Told.acts(Gsm.Gsm.releases(key, assoc, stream, ran, psis, Sec.Ctx{k, d, ul}))), k, d)) : Maybe<&2, Fs.KD()>}:
+  match psis:
+    case Nil{}:
+      {==}
+    case +p <> +more:
+      +plain = Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p))
+      +m = Sec.Nas.Protected.msg(Gsm.Gsm.release_nas(Sec.Ctx{k, d, ul}, p))
+      +x : N.Act = N.DlNas{assoc, stream, key, ran, m}
+      Fs.rel_step(key, x, m, k, d, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Ctx{k, Sec.Nas.Count.next(d), ul}), Fs.dl_carries(assoc, stream, key, ran, m, Fs.protect_protected(k, d, ul, Sec.Ciphered{}, plain)), Fs.sealed_seal(k, Sec.Ciphered{}, d, plain), Fs.releases_view(key, assoc, stream, ran, more, k, Sec.Nas.Count.next(d), ul))
+
+def Fs.rel_to_step(+key: U32, +x: N.Act, +m: B.Bytes(), +r: N.Told(), +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +ih: {Fs.to_key(key, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Fs.to_key(key, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(x, r))) == True{} : Bool}:
+  match r:
+    case (c, +acts):
+      +sx = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, N.Act.nas(x), Some{(key, m)}, ex)
+      P.Bool.and_intro(Fs.to_key_m(key, N.Act.nas(x)), Fs.to_key(key, acts), (%sx : {Fs.to_key_m(key, _) == True{} : Bool}; P.U32.is_eq_refl(key)), ih)
+
+def Fs.releases_to(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +psis: List<&2, U32>, +c: Sec.Nas.Ctx) -> {Fs.to_key(key, Gsm.Gsm.Told.acts(Gsm.Gsm.releases(key, assoc, stream, ran, psis, c))) == True{} : Bool}:
+  match psis:
+    case Nil{}:
+      {==}
+    case +p <> +more:
+      +q = Gsm.Gsm.release_nas(c, p)
+      +m = Sec.Nas.Protected.msg(q)
+      Fs.rel_to_step(key, N.DlNas{assoc, stream, key, ran, m}, m, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), Fs.dl_carries(assoc, stream, key, ran, m, Fs.protected_any(c, Sec.Ciphered{}, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))), Fs.releases_to(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
+
+# The releases under the context the key held, the context they leave written.
+def Fs.releases_write(+st: S.State, +key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +psis: List<&2, U32>, +c: Sec.Nas.Ctx, +ev: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(Fs.ctx(st, key), Some{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(key, assoc, stream, ran, psis, c))}, N.Acts.nas(key, Gsm.Gsm.Told.acts(Gsm.Gsm.releases(key, assoc, stream, ran, psis, c)))) == True{} : Bool}:
+  match c:
+    case Sec.Ctx{+k, +d, +ul}:
+      +r = Gsm.Gsm.releases(key, assoc, stream, ran, psis, Sec.Ctx{k, d, ul})
+      Fs.holds_after(Fs.ctx(st, key), k, d, Gsm.Gsm.Told.ctx(r), N.Acts.nas(key, Gsm.Gsm.Told.acts(r)), ev, Fs.releases_view(key, assoc, stream, ran, psis, k, d, ul))
+
+# The items of a PDU Session Resource Setup Response
+# --------------------------------------------------
+
+def Fs.modify_ii(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.modify(key, ue, skey, s, seq, tunnel, c)):
+  match tunnel:
+    case None{}:
+      Fs.give_up_ii(key, ue, skey, s, Gsm.Release{}, seq, c)
+    case Some{(+gnb_teid, +gnb_addr)}:
+      +request = Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)
+      Fs.ii_mute(key, c, (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}]), {==})
+
+def Fs.set_up_phase_ii(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +transfer: B.Bytes(), +seq: U32, +p: S.SPhase, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.set_up_phase(key, ue, skey, s, transfer, seq, p, c)):
+  match p:
+    case S.Setting{guard, pti}:
+      Fs.modify_ii(key, ue, skey, s, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), c)
+    case S.Creating{guard, pti, accept, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session set up at the gNB while not being set up"), {==})
+    case S.Modifying{guard, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session set up at the gNB while not being set up"), {==})
+    case S.Repointing{guard, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session set up at the gNB while not being set up"), {==})
+    case S.Deleting{guard, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session set up at the gNB while not being set up"), {==})
+    case S.Active{}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session set up at the gNB while not being set up"), {==})
+
+def Fs.set_up_ii(+key: U32, +ue: S.Ue, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.set_up(key, ue, transfer, seq, m, c)):
+  match m:
+    case None{}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session set up at the gNB for no session"), {==})
+    case Some{(+skey, +s)}:
+      Fs.set_up_phase_ii(key, ue, skey, s, transfer, seq, S.Session.phase(s), c)
+
+def Fs.set_up_last_ii(+key: U32, +ue: S.Ue, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +again: Bool, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.set_up_last(key, ue, transfer, seq, m, again, c)):
+  match again:
+    case True{}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session named again later in the setup list; this naming ignored"), {==})
+    case False{}:
+      Fs.set_up_ii(key, ue, transfer, seq, m, c)
+
+def Fs.set_ups_ii(+st: S.State, +key: U32, +ue: S.Ue, +items: G.PDUSessionResourceSetupListSURes(), +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.set_ups(st, key, ue, items, seq, c)):
+  match items:
+    case Nil{}:
+      Fs.ii_mute(key, c, (S.Keep{}, []), {==})
+    case G.PDUSessionResourceSetupItemSURes{+psi, +transfer, x} <> +more:
+      +a = Gsm.Gsm.set_up_last(key, ue, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more), c)
+      Fs.ii_then(key, c, Gsm.Gsm.after((S.BumpSeq{1}, []), a), c2 => Gsm.Gsm.set_ups(st, key, ue, more, U32.add(seq, 1), c2), Fs.ii_after(key, c, (S.BumpSeq{1}, []), a, {==}, Fs.set_up_last_ii(key, ue, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more), c)), +c2 => Fs.set_ups_ii(st, key, ue, more, U32.add(seq, 1), c2))
+
+def Fs.failed_phase_ii(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.failed_phase(key, ue, skey, s, seq, p, c)):
+  match p:
+    case S.Setting{guard, +pti}:
+      Fs.give_up_ii(key, ue, skey, s, Gsm.Reply{Gsm.Gsm.reject(S.Session.psi(s), pti, 26)}, seq, c)
+    case S.Creating{guard, pti, accept, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session failed at the gNB while not being set up"), {==})
+    case S.Modifying{guard, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session failed at the gNB while not being set up"), {==})
+    case S.Repointing{guard, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session failed at the gNB while not being set up"), {==})
+    case S.Deleting{guard, request}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session failed at the gNB while not being set up"), {==})
+    case S.Active{}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session failed at the gNB while not being set up"), {==})
+
+def Fs.failed_ii(+key: U32, +ue: S.Ue, +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.failed(key, ue, seq, m, c)):
+  match m:
+    case None{}:
+      Fs.ii_mute(key, c, N.Out.warn("NGAP: PDU session failed at the gNB for no session"), {==})
+    case Some{(+skey, +s)}:
+      Fs.failed_phase_ii(key, ue, skey, s, seq, S.Session.phase(s), c)
+
+def Fs.faileds_ii(+st: S.State, +key: U32, +ue: S.Ue, +items: G.PDUSessionResourceFailedToSetupListSURes(), +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.faileds(st, key, ue, items, seq, c)):
+  match items:
+    case Nil{}:
+      Fs.ii_mute(key, c, (S.Keep{}, []), {==})
+    case G.PDUSessionResourceFailedToSetupItemSURes{+psi, transfer, x} <> +more:
+      +a = Gsm.Gsm.failed(key, ue, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), c)
+      Fs.ii_then(key, c, Gsm.Gsm.after((S.BumpSeq{1}, []), a), c2 => Gsm.Gsm.faileds(st, key, ue, more, U32.add(seq, 1), c2), Fs.ii_after(key, c, (S.BumpSeq{1}, []), a, {==}, Fs.failed_ii(key, ue, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), c)), +c2 => Fs.faileds_ii(st, key, ue, more, U32.add(seq, 1), c2))
+
+def Fs.results_ii(+st: S.State, +key: U32, +ue: S.Ue, +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes(), +seq: U32, +seq2: U32, +c: Maybe<&2, Sec.Nas.Ctx>) -> Fs.Ii(key, c, Gsm.Gsm.then(Gsm.Gsm.set_ups(st, key, ue, oks, seq, c), c2 => Gsm.Gsm.faileds(st, key, ue, fails, seq2, c2))):
+  Fs.ii_then(key, c, Gsm.Gsm.set_ups(st, key, ue, oks, seq, c), c2 => Gsm.Gsm.faileds(st, key, ue, fails, seq2, c2), Fs.set_ups_ii(st, key, ue, oks, seq, c), +c2 => Fs.faileds_ii(st, key, ue, fails, seq2, c2))
+
+# Path Switch: what the UPF is asked is mute.
+def Fs.sw_session_mute(+skey: U32, +s: S.Session, +seq: U32, +t: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> Fs.Mute(Sw.Sw.session(skey, s, seq, t)):
+  match t:
+    case None{}:
+      Fs.deletions_mute([(skey, s)], seq)
+    case Some{(teid, addr)}:
+      {==}
+
+def Fs.sw_sessions_mute(+ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Session), +seq: U32) -> Fs.Mute(Sw.Sw.sessions(ts, rows, seq)):
+  match rows:
+    case Nil{}:
+      {==}
+    case (+skey, +s) <> +more:
+      +o = Sw.Sw.session(skey, s, seq, Sw.Sw.tunnel_for(ts, s))
+      Fs.join_mute(N.Out.join((S.BumpSeq{1}, []), o), Sw.Sw.sessions(ts, more, U32.add(seq, 1)), Fs.join_mute((S.BumpSeq{1}, []), o, {==}, Fs.sw_session_mute(skey, s, seq, Sw.Sw.tunnel_for(ts, s))), Fs.sw_sessions_mute(ts, more, U32.add(seq, 1)))
+
+# A row put whose phase q keeps the context the key held, beside actions
+# carrying no protected NAS message.
+def Fs.kept_put(+st: S.State, +key: U32, +v: S.Ue, +q: S.Phase, +c: Sec.Nas.Ctx, +acts: List<&2, N.Act>, +ep: {S.Ue.phase(v) == q : S.Phase}, +eq: {S.Phase.nas(q) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, +ev: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}, +ha: {Fs.amute(acts) == True{} : Bool}) -> {Fs.nas(st, S.Put{key, v}, acts) == True{} : Bool}:
+  +sn = Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, acts), [], Fs.amute_nas(key, acts, ha))
+  +sp = Equal.sym(S.Phase, S.Ue.phase(v), q, ep)
+  +hw : {Fs.write(st, key, S.Phase.nas(S.Ue.phase(v)), acts) == True{} : Bool} = (%sp : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(_), N.Acts.nas(key, acts)) == True{} : Bool}; (%sn : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(q), _) == True{} : Bool}; Fs.kept_any(st, key, q, c, eq, ev)))
+  P.Bool.and_intro(Fs.write(st, key, S.Phase.nas(S.Ue.phase(v)), acts), Fs.sends(S.Put{key, v}, acts), hw, Fs.amute_sends(S.Put{key, v}, acts, ha))
+
+def Fs.same_mute(+ok: Bool) -> {Fs.amute(Ps.Ps.caps_same(ok)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def Fs.caps_mute(+caps: G.UESecurityCapabilities, +m: Maybe<&2, N.Keyed()>) -> {Fs.amute(Ps.Ps.caps_note(caps, m)) == True{} : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{(+key, +ue)}:
+      Fs.same_mute(B.bytes_eq(Ap.pack(G.UESecurityCapabilities.write(N.Ngap.ue_caps(N.Ue.caps(ue)), 0n, [])), Ap.pack(G.UESecurityCapabilities.write(caps, 0n, []))))
+
+# Mute work, a row put under key, then actions whose messages all go to key.
+def Fs.put_also(+st: S.State, +a: N.GOut(), +key: U32, +v: S.Ue, +more: List<&2, N.Act>, +ha: {Fs.mute(N.Out.tx(a), N.Out.acts(a)) == True{} : Bool}, +ht: {Fs.to_key(key, more) == True{} : Bool}, +hw: {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(v)), N.Acts.nas(key, more)) == True{} : Bool}) -> {Fs.nas(st, N.Out.tx(N.Out.also(N.Out.join(a, (S.Put{key, v}, [])), more)), N.Out.acts(N.Out.also(N.Out.join(a, (S.Put{key, v}, [])), more))) == True{} : Bool}:
+  match a:
+    case (+td, +ad):
+      +pre = List.append(&2, N.Act, ad, [])
+      +acts = List.append(&2, N.Act, pre, more)
+      +tx : S.Tx = S.Both{td, S.Put{key, v}}
+      +am = Fs.amute_app(ad, [], P.Bool.and_true_r(Fs.tmute(td), Fs.amute(ad), ha), {==})
+      +sn = Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, acts), N.Acts.nas(key, more), Fs.nas_mute_l(key, pre, more, am))
+      +hw2 : {Fs.write(st, key, S.Phase.nas(S.Ue.phase(v)), acts) == True{} : Bool} = (%sn : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(v)), _) == True{} : Bool}; hw)
+      +hs = Fs.sends_app(tx, pre, more, Fs.amute_sends(tx, pre, am), Fs.to_key_sends(key, tx, more, ht, P.Bool.or_r(Fs.writes(key, td), U32.is_eq(key, key), P.U32.is_eq_refl(key))))
+      P.Bool.and_intro(Fs.sealed(st, tx, acts), Fs.sends(tx, acts), P.Bool.and_intro(Fs.sealed(st, td, acts), Fs.write(st, key, S.Phase.nas(S.Ue.phase(v)), acts), Fs.tmute_sealed(st, td, acts, P.Bool.and_true_l(Fs.tmute(td), Fs.amute(ad), ha)), hw2), hs)
+
+# Handover Notify: the source released, then the sessions whose tunnels the
+# target did not take, each under the COUNT the one before leaves, the context
+# after them written.
+def Fs.ho_complete_nas(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +r: B.Bytes(), +s: U32, +ts: List<&2, S.Tunnel>, +ev: {Fs.view(Fs.ctx(st, key)) == Fs.view(Some{ctx}) : Maybe<&2, Fs.KD()>}, +ep: {S.Ue.phase(S.Ue.moved(ue, assoc, r, s, S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(key, assoc, s, r, Sw.Sw.released(ts, S.Sessions.of_ue(key, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}})) == S.Registered{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases(key, assoc, s, r, Sw.Sw.released(ts, S.Sessions.of_ue(key, S.State.sessions(st))), ctx)), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}} : S.Phase}) -> {Fs.nas(st, N.Out.tx(Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{})), N.Out.acts(Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{}))) == True{} : Bool}:
+  +rows = S.Sessions.of_ue(key, S.State.sessions(st))
+  +psis = Sw.Sw.released(ts, rows)
+  +told = Gsm.Gsm.releases(key, assoc, s, r, psis, ctx)
+  +ph : S.Phase = S.Registered{Gsm.Gsm.Told.ctx(told), nh, Some{S.Side{S.Ue.assoc(ue), Some{S.Ue.ran_id(ue)}}}}
+  +v = S.Ue.moved(ue, assoc, r, s, ph)
+  +ta = Gsm.Gsm.Told.acts(told)
+  +tail : List<&2, N.Act> = [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}]
+  +x : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}
+  +more : List<&2, N.Act> = x <> List.append(&2, N.Act, ta, tail)
+  +ht = P.Bool.and_intro(True{}, Fs.to_key(key, List.append(&2, N.Act, ta, tail)), {==}, Fs.to_key_app(key, ta, tail, Fs.releases_to(key, assoc, s, r, psis, ctx), {==}))
+  +h0 = Fs.releases_write(st, key, assoc, s, r, psis, ctx, ev)
+  +h1 : {N.Fresh.holds(Fs.ctx(st, key), Some{Gsm.Gsm.Told.ctx(told)}, N.Acts.nas(key, more)) == True{} : Bool} = (%Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(key, List.append(&2, N.Act, ta, tail)), N.Acts.nas(key, ta), Fs.nas_mute_r(key, ta, tail, {==})) : {N.Fresh.holds(Fs.ctx(st, key), Some{Gsm.Gsm.Told.ctx(told)}, _) == True{} : Bool}; h0)
+  +hw : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(v)), N.Acts.nas(key, more)) == True{} : Bool} = (%Equal.sym(S.Phase, S.Ue.phase(v), ph, ep) : {N.Fresh.holds(Fs.ctx(st, key), S.Phase.nas(_), N.Acts.nas(key, more)) == True{} : Bool}; h1)
+  Fs.put_also(st, Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st)), key, v, more, Fs.sw_sessions_mute(ts, rows, S.State.pfcp_seq(st)), ht, hw)
+
+# Rows of a table with every key once
+# -----------------------------------
+# Each row is the one its key reads.
+def Fs.Got(+t: Tb.Table(S.Ue), rows: Tb.Table(S.Ue)) -> Data:
+  match rows:
+    case Nil{}:
+      Unit
+    case (k, u) <> more:
+      Sigma<&2, &2, {Tb.Table.get(S.Ue, k, t) == Some{u} : Maybe<&2, S.Ue>}, _ => Fs.Got(t, more)>
+
+def Fs.GotIf(b: Bool, +t: Tb.Table(S.Ue), +rows: Tb.Table(S.Ue)) -> Data:
+  match b:
+    case True{}:
+      Fs.Got(t, rows)
+    case False{}:
+      Unit
+
+def Fs.got_row(+u0: S.Ue, +more: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +b: Bool, +ne: {b == False{} : Bool}, +e: {Tb.Table.get(S.Ue, k, more) == Some{u} : Maybe<&2, S.Ue>}) -> {Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b) == Some{u} : Maybe<&2, S.Ue>}:
+  match b:
+    case True{}:
+      Empty.absurd({Some{u0} == Some{u} : Maybe<&2, S.Ue>}, P.Refute.true_false(ne))
+    case False{}:
+      e
+
+# Rows clear of a row under k0 are found past it.
+def Fs.got_cons(+k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +rows: Tb.Table(S.Ue), +hc: {S.Ues.clear(k0, u0, rows) == True{} : Bool}, +h: Fs.Got(more, rows)) -> Fs.Got((k0, u0) <> more, rows):
+  match rows:
+    case Nil{}:
+      Unit{}
+    case (+k, +u) <> +rest:
+      match h:
+        case (+e, +h2):
+          +nc = Bool.not(S.Row.conflicts(k0, u0, k, u))
+          +nr = P.Bool.or_false_l(U32.is_eq(k, k0), S.Ue.conflicts(u0, u), P.Bool.not_true(S.Row.conflicts(k0, u0, k, u), P.Bool.and_true_l(nc, S.Ues.clear(k0, u0, rest), hc)))
+          +ne = Equal.trans(Bool, U32.is_eq(k0, k), U32.is_eq(k, k0), False{}, P.U32.sym(k0, k), nr)
+          (Fs.got_row(u0, more, k, u, U32.is_eq(k0, k), ne, e), Fs.got_cons(k0, u0, more, rest, P.Bool.and_true_r(nc, S.Ues.clear(k0, u0, rest), hc), h2))
+
+def Fs.got_self(+t: Tb.Table(S.Ue), +eu: {S.Ues.unique(t) == True{} : Bool}) -> Fs.Got(t, t):
+  match t:
+    case Nil{}:
+      Unit{}
+    case (+k0, +u0) <> +more:
+      +hc = P.Bool.and_true_l(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu)
+      +e = Equal.sym(Bool, U32.is_eq(k0, k0), True{}, P.U32.is_eq_refl(k0))
+      +hd : {Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), U32.is_eq(k0, k0)) == Some{u0} : Maybe<&2, S.Ue>} = (%e : {Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), _) == Some{u0} : Maybe<&2, S.Ue>}; {==})
+      (hd, Fs.got_cons(k0, u0, more, more, hc, Fs.got_self(more, P.Bool.and_true_r(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu))))
+
+def Fs.got_if(+t: Tb.Table(S.Ue), +b: Bool, +eb: {S.Ues.unique(t) == b : Bool}) -> Fs.GotIf(b, t, t):
+  match b:
+    case True{}:
+      Fs.got_self(t, eb)
+    case False{}:
+      Unit{}
+
+def Fs.got_all(+st: S.State) -> Fs.GotIf(S.Ues.unique(S.State.ues(st)), S.State.ues(st), S.State.ues(st)):
+  Fs.got_if(S.State.ues(st), S.Ues.unique(S.State.ues(st)), {==})
+
+def Fs.got_rest(+b: Bool, +t: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +more: Tb.Table(S.Ue), +w: Fs.GotIf(b, t, (k, u) <> more)) -> Fs.GotIf(b, t, more):
+  match b:
+    case True{}:
+      match w:
+        case (e, +w2):
+          w2
+    case False{}:
+      Unit{}
+
+# A row rewritten with the context it holds, its key sent nothing.
+def Fs.row_ok(+st: S.State, +k: U32, +u: S.Ue, +more: Tb.Table(S.Ue), +q: S.Phase, +c: Sec.Nas.Ctx, +acts: List<&2, N.Act>, +b: Bool, +eb: {S.Ues.unique(S.State.ues(st)) == b : Bool}, +w: Fs.GotIf(b, S.State.ues(st), (k, u) <> more), +ep: {S.Phase.nas(S.Ue.phase(u)) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, +eq: {S.Phase.nas(q) == Some{c} : Maybe<&2, Sec.Nas.Ctx>}, +ha: {Fs.amute(acts) == True{} : Bool}) -> {Fs.ok(st, S.Rephase{k, q}, acts) == True{} : Bool}:
+  match b:
+    case True{}:
+      match w:
+        case (+eg, w2):
+          +sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{u}, eg)
+          +sp = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, S.Phase.nas(S.Ue.phase(u)), Some{c}, ep)
+          +ev : {Fs.view(Fs.ctx(st, k)) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>} = (%sg : {Fs.view(S.Ue.nas(_)) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}; (%sp : {Fs.view(_) == Fs.view(Some{c}) : Maybe<&2, Fs.KD()>}; {==}))
+          Fs.ok_of(st, S.Rephase{k, q}, acts, Fs.kept_rephase(st, k, q, c, acts, eq, ev, ha))
+    case False{}:
+      +sb = Equal.sym(Bool, S.Ues.unique(S.State.ues(st)), False{}, eb)
+      P.Bool.or_r(Fs.nas(st, S.Rephase{k, q}, acts), Bool.not(S.Ues.unique(S.State.ues(st))), (%sb : {Bool.not(_) == True{} : Bool}; {==}))
+
+def Fs.lost_mute(+k: U32, +u: S.Ue, +leg: S.Leg) -> {Fs.amute(Ho.Ho.lost(k, u, leg)) == True{} : Bool}:
+  match leg:
+    case S.Asked{t}:
+      {==}
+    case S.Acked{t, r, s, ts}:
+      {==}
+
+# A mute outcome holds what the law asks.
+def Fs.mute_nas(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +hm: {Fs.mute(tx, acts) == True{} : Bool}) -> {Fs.nas(st, tx, acts) == True{} : Bool}:
+  P.Bool.and_intro(Fs.sealed(st, tx, acts), Fs.sends(tx, acts), Fs.tmute_sealed(st, tx, acts, P.Bool.and_true_l(Fs.tmute(tx), Fs.amute(acts), hm)), Fs.amute_sends(tx, acts, P.Bool.and_true_r(Fs.tmute(tx), Fs.amute(acts), hm)))
+
+# Two outcomes in order, neither carrying a protected NAS message.
+def Fs.both_amute(+st: S.State, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, +ha: {Fs.nas(st, ta, aa) == True{} : Bool}, +hb: {Fs.nas(st, tb, ab) == True{} : Bool}, +haa: {Fs.amute(aa) == True{} : Bool}, +hab: {Fs.amute(ab) == True{} : Bool}) -> {Fs.nas(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab)) == True{} : Bool}:
+  +xs = List.append(&2, N.Act, aa, ab)
+  +sa = Fs.sealed_to(st, ta, aa, After{ab}, hab, Fs.sealed_of(st, ta, aa, ha))
+  +sb = Fs.sealed_to(st, tb, ab, Before{aa}, haa, Fs.sealed_of(st, tb, ab, hb))
+  P.Bool.and_intro(Fs.sealed(st, S.Both{ta, tb}, xs), Fs.sends(S.Both{ta, tb}, xs), P.Bool.and_intro(Fs.sealed(st, ta, xs), Fs.sealed(st, tb, xs), sa, sb), Fs.sends_app(S.Both{ta, tb}, aa, ab, Fs.amute_sends(S.Both{ta, tb}, aa, haa), Fs.amute_sends(S.Both{ta, tb}, ab, hab)))
+
+# An association's reset carries no protected NAS message.
+def Fs.down_leg_mute(+k: U32, +u: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +target: Bool, +source: Bool) -> {Fs.amute(N.Out.acts(Ho.Ho.down_leg(k, u, ctx, nh, leg, target, source))) == True{} : Bool}:
+  match target source:
+    case True{} _:
+      Fs.amute_app(Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], Fs.lost_mute(k, u, leg), {==})
+    case False{} True{}:
+      Fs.drop_mute(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()))
+    case False{} False{}:
+      {==}
+
+def Fs.down_row_mute(+assoc: U32, +k: U32, +u: S.Ue, +p: S.Phase) -> {Fs.amute(N.Out.acts(Ho.Ho.down_row(assoc, k, u, p))) == True{} : Bool}:
+  match p:
+    case S.Handover{+ctx, +nh, source, +leg}:
+      Fs.down_leg_mute(k, u, ctx, nh, leg, Ho.Ho.aimed(u, assoc), U32.is_eq(S.Ue.assoc(u), assoc))
+    case S.Created{}:
+      {==}
+    case S.Identifying{guard}:
+      {==}
+    case S.Authenticating{guard, av, resynced, supi}:
+      {==}
+    case S.SecurityMode{guard, ctx, k_amf}:
+      {==}
+    case S.ContextSetup{guard, ctx, nh, response, complete}:
+      {==}
+    case S.Registered{ctx, nh, released}:
+      {==}
+    case S.Switching{guard, ctx, nh, released}:
+      {==}
+    case S.Releasing{guard}:
+      {==}
+
+def Fs.acts_join(+a: N.GOut(), +b: N.GOut()) -> {N.Out.acts(N.Out.join(a, b)) == List.append(&2, N.Act, N.Out.acts(a), N.Out.acts(b)) : List<&2, N.Act>}:
+  match a:
+    case (ta, aa):
+      match b:
+        case (tb, ab):
+          {==}
+
+def Fs.downs_mute(+assoc: U32, +rows: Tb.Table(S.Ue)) -> {Fs.amute(N.Out.acts(Ho.Ho.downs(assoc, rows))) == True{} : Bool}:
+  match rows:
+    case Nil{}:
+      {==}
+    case (+k, +u) <> +more:
+      +a = Ho.Ho.down_row(assoc, k, u, S.Ue.phase(u))
+      +b = Ho.Ho.downs(assoc, more)
+      (%Equal.sym(List<&2, N.Act>, N.Out.acts(N.Out.join(a, b)), List.append(&2, N.Act, N.Out.acts(a), N.Out.acts(b)), Fs.acts_join(a, b)) : {Fs.amute(_) == True{} : Bool}; Fs.amute_app(N.Out.acts(a), N.Out.acts(b), Fs.down_row_mute(assoc, k, u, S.Ue.phase(u)), Fs.downs_mute(assoc, more)))

@@ -621,10 +621,11 @@ def Gmm.release_complete_of_view(st: S.State, assoc: U32, r: Result<&2, &2, B.Er
 # Guard timers
 # ------------
 
-# The last downlink message again, under phase p: plain before a NAS
-# context, and under one sealed afresh, at the COUNT after the last one sent
-# (TS 24.501 §4.4.3.1), integrity protected with the new context in Security
-# Mode, ciphered after.
+# The last downlink message again, under phase p: before a NAS context only
+# as it went, plain, never with a security header no context sealed; under
+# one sealed afresh, at the COUNT after the last one sent (TS 24.501
+# §4.4.3.1), integrity protected with the new context in Security Mode,
+# ciphered after.
 def Gmm.protection(p: S.Phase) -> Sec.Nas.Protection:
   match p:
     case S.SecurityMode{guard, ctx, k_amf}:
@@ -632,10 +633,17 @@ def Gmm.protection(p: S.Phase) -> Sec.Nas.Protection:
     case _:
       Sec.Ciphered{}
 
+def Gmm.plain_again(+key: U32, +ue: S.Ue, p: S.Phase, protected: Bool) -> N.GOut():
+  match protected:
+    case True{}:
+      (S.Rephase{key, p}, [])
+    case False{}:
+      (S.Rephase{key, p}, [Gmm.dl(key, ue, S.Ue.last_dl(ue))])
+
 def Gmm.again_in(+key: U32, +ue: S.Ue, +p: S.Phase, c: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
   match c:
     case None{}:
-      (S.Rephase{key, p}, [Gmm.dl(key, ue, S.Ue.last_dl(ue))])
+      Gmm.plain_again(key, ue, p, Sec.Nas.is_protected(S.Ue.last_dl(ue)))
     case Some{x}:
       +q : Sec.Nas.Protected = Sec.Nas.protect(x, Gmm.protection(p), S.Ue.last_dl(ue))
       (S.Rephase{key, S.Phase.with_ctx(p, Sec.Nas.Protected.ctx(q))}, [Gmm.dl(key, ue, Sec.Nas.Protected.msg(q))])
