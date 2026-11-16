@@ -429,15 +429,6 @@ def Tg.same_r(+m: Maybe<&2, U32>, +t: S.Session, +t2: S.Session, h: Tg.Moved(t, 
       se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), None{}, en)
       (%se : {S.Maybe.same_u32(m, _) == False{} : Bool}; Tg.same_none(m))
 
-def Tg.same_l(+m: Maybe<&2, U32>, +t: S.Session, +t2: S.Session, h: Tg.Moved(t, t2), +e: {S.Maybe.same_u32(S.Session.tag(t), m) == False{} : Bool}) -> {S.Maybe.same_u32(S.Session.tag(t2), m) == False{} : Bool}:
-  match h:
-    case Inl{ee}:
-      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), S.Session.tag(t), ee)
-      (%se : {S.Maybe.same_u32(_, m) == False{} : Bool}; e)
-    case Inr{en}:
-      se = Equal.sym(Maybe<&2, U32>, S.Session.tag(t2), None{}, en)
-      (%se : {S.Maybe.same_u32(_, m) == False{} : Bool}; {==})
-
 # A session tagged with a UE is that UE's.
 def Tg.ue_go(+u: U32, +x: U32, +h: Bool, +e: {S.Maybe.same_u32(Tb.Table.hit(U32, u, None{}, h), Some{x}) == True{} : Bool}) -> {U32.is_eq(u, x) == True{} : Bool}:
   match h:

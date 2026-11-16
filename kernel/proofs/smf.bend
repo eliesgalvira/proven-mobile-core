@@ -79,12 +79,14 @@ def Cf.r(+a: S.Session, +t: S.Session, +t2: S.Session, +h: PW.Tg.Moved(t, t2), +
   sei = Equal.sym(S.SId, S.Session.id(t2), S.Session.id(t), ei)
   (%sei : {Bool.or(U32.is_eq(S.Session.ip(a), S.SId.ip(_)), Bool.or(U32.is_eq(S.Session.teid(a), S.SId.teid(_)), Bool.and(z2, U32.is_eq(S.Session.psi(a), S.SId.psi(_))))) == False{} : Bool}; P.Bool.or_mono_false(U32.is_eq(S.Session.ip(a), S.Session.ip(t)), Bool.or(U32.is_eq(S.Session.teid(a), S.Session.teid(t)), Bool.and(z, U32.is_eq(S.Session.psi(a), S.Session.psi(t)))), Bool.or(U32.is_eq(S.Session.teid(a), S.Session.teid(t)), Bool.and(z2, U32.is_eq(S.Session.psi(a), S.Session.psi(t)))), e, e1 => P.Bool.or_mono_false(U32.is_eq(S.Session.teid(a), S.Session.teid(t)), Bool.and(z, U32.is_eq(S.Session.psi(a), S.Session.psi(t))), Bool.and(z2, U32.is_eq(S.Session.psi(a), S.Session.psi(t))), e1, e2 => Cf.and_mono(z, z2, U32.is_eq(S.Session.psi(a), S.Session.psi(t)), e2, ez => PW.Tg.same_r(S.Session.tag(a), t, t2, h, ez)))))
 
-# Moved at the first place: no conflict is added.
-def Cf.l(+t: S.Session, +t2: S.Session, +b: S.Session, +h: PW.Tg.Moved(t, t2), +ei: {S.Session.id(t2) == S.Session.id(t) : S.SId}, +e: {S.Session.conflicts(t, b) == False{} : Bool}) -> {S.Session.conflicts(t2, b) == False{} : Bool}:
-  +z = S.Maybe.same_u32(S.Session.tag(t), S.Session.tag(b))
-  +z2 = S.Maybe.same_u32(S.Session.tag(t2), S.Session.tag(b))
-  sei = Equal.sym(S.SId, S.Session.id(t2), S.Session.id(t), ei)
-  (%sei : {Bool.or(U32.is_eq(S.SId.ip(_), S.Session.ip(b)), Bool.or(U32.is_eq(S.SId.teid(_), S.Session.teid(b)), Bool.and(z2, U32.is_eq(S.SId.psi(_), S.Session.psi(b))))) == False{} : Bool}; P.Bool.or_mono_false(U32.is_eq(S.Session.ip(t), S.Session.ip(b)), Bool.or(U32.is_eq(S.Session.teid(t), S.Session.teid(b)), Bool.and(z, U32.is_eq(S.Session.psi(t), S.Session.psi(b)))), Bool.or(U32.is_eq(S.Session.teid(t), S.Session.teid(b)), Bool.and(z2, U32.is_eq(S.Session.psi(t), S.Session.psi(b)))), e, e1 => P.Bool.or_mono_false(U32.is_eq(S.Session.teid(t), S.Session.teid(b)), Bool.and(z, U32.is_eq(S.Session.psi(t), S.Session.psi(b))), Bool.and(z2, U32.is_eq(S.Session.psi(t), S.Session.psi(b))), e1, e2 => Cf.and_mono(z, z2, U32.is_eq(S.Session.psi(t), S.Session.psi(b)), e2, ez => PW.Tg.same_l(S.Session.tag(b), t, t2, h, ez)))))
+# Two sessions conflict whichever way round they are compared.
+def Session.conflicts_sym(+a: S.Session, +b: S.Session) -> {S.Session.conflicts(a, b) == S.Session.conflicts(b, a) : Bool}:
+  +l = S.Session.conflicts(a, b)
+  %P.U32.sym(S.Session.ip(a), S.Session.ip(b)) : {l == Bool.or(_, Bool.or(U32.is_eq(S.Session.teid(b), S.Session.teid(a)), Bool.and(S.Maybe.same_u32(S.Session.tag(b), S.Session.tag(a)), U32.is_eq(S.Session.psi(b), S.Session.psi(a))))) : Bool}
+  %P.U32.sym(S.Session.teid(a), S.Session.teid(b)) : {l == Bool.or(U32.is_eq(S.Session.ip(a), S.Session.ip(b)), Bool.or(_, Bool.and(S.Maybe.same_u32(S.Session.tag(b), S.Session.tag(a)), U32.is_eq(S.Session.psi(b), S.Session.psi(a))))) : Bool}
+  %PT.Same.u32_sym(S.Session.tag(a), S.Session.tag(b)) : {l == Bool.or(U32.is_eq(S.Session.ip(a), S.Session.ip(b)), Bool.or(U32.is_eq(S.Session.teid(a), S.Session.teid(b)), Bool.and(_, U32.is_eq(S.Session.psi(b), S.Session.psi(a))))) : Bool}
+  %P.U32.sym(S.Session.psi(a), S.Session.psi(b)) : {l == Bool.or(U32.is_eq(S.Session.ip(a), S.Session.ip(b)), Bool.or(U32.is_eq(S.Session.teid(a), S.Session.teid(b)), Bool.and(S.Maybe.same_u32(S.Session.tag(a), S.Session.tag(b)), _))) : Bool}
+  {==}
 
 def SClear.revar(+key2: U32, +s: S.Session, +key: U32, +v: S.SVar, sessions: Tb.Table(S.Session), +e: {S.Sessions.clear(key2, s, sessions) == True{} : Bool}) -> {S.Sessions.clear(key2, s, S.Sessions.revar(key, v, sessions)) == True{} : Bool}:
   match sessions:
@@ -104,7 +106,7 @@ def SClear.subject(+key: U32, +s: S.Session, +s2: S.Session, +h: PW.Tg.Moved(s, 
     case (+k, +t) <> +more:
       +c = S.SRow.conflicts(key, s, k, t)
       +nc = P.Bool.not_true(c, P.Bool.and_true_l(Bool.not(c), S.Sessions.clear(key, s, more), e))
-      P.Bool.and_intro(Bool.not(S.SRow.conflicts(key, s2, k, t)), S.Sessions.clear(key, s2, more), Cf.not_of(S.SRow.conflicts(key, s2, k, t), P.Bool.or_mono_false(U32.is_eq(k, key), S.Session.conflicts(s, t), S.Session.conflicts(s2, t), nc, ec => Cf.l(s, s2, t, h, ei, ec))), SClear.subject(key, s, s2, h, ei, more, P.Bool.and_true_r(Bool.not(c), S.Sessions.clear(key, s, more), e)))
+      P.Bool.and_intro(Bool.not(S.SRow.conflicts(key, s2, k, t)), S.Sessions.clear(key, s2, more), Cf.not_of(S.SRow.conflicts(key, s2, k, t), P.Bool.or_mono_false(U32.is_eq(k, key), S.Session.conflicts(s, t), S.Session.conflicts(s2, t), nc, ec => (%Session.conflicts_sym(t, s2) : {_ == False{} : Bool}; Cf.r(t, s, s2, h, ei, (%Session.conflicts_sym(s, t) : {_ == False{} : Bool}; ec))))), SClear.subject(key, s, s2, h, ei, more, P.Bool.and_true_r(Bool.not(c), S.Sessions.clear(key, s, more), e)))
 
 def SUnique.revar(+key: U32, +v: S.SVar, sessions: Tb.Table(S.Session), +e: {S.Sessions.unique(sessions) == True{} : Bool}) -> {S.Sessions.unique(S.Sessions.revar(key, v, sessions)) == True{} : Bool}:
   match sessions:
