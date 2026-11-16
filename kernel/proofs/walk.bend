@@ -374,23 +374,23 @@ def Sx.deletions(+rows: Tb.Table(S.Session), +seq: U32) -> {Sx.only(N.Out.tx(Up.
 def Tg.Moved(+t: S.Session, +t2: S.Session) -> Data:
   Either<&2, &2, {S.Session.tag(t2) == S.Session.tag(t) : Maybe<&2, U32>}, {S.Session.tag(t2) == None{} : Maybe<&2, U32>}>
 
-def Tg.go(+id: S.SId, +var: S.SVar, +v: S.SVar, +a: Bool, +ea: {S.SPhase.held(S.SVar.phase(var)) == a : Bool}, +b: Bool, +eb: {S.SPhase.held(S.SVar.phase(v)) == b : Bool}) -> Either<&2, &2, {S.Session.tag(S.Session.revar_if(S.Session{id, var}, v, Bool.or(Bool.not(b), a))) == Tb.Table.hit(U32, S.SId.ue(id), None{}, a) : Maybe<&2, U32>}, {S.Session.tag(S.Session.revar_if(S.Session{id, var}, v, Bool.or(Bool.not(b), a))) == None{} : Maybe<&2, U32>}>:
+def Tg.go(+id: S.SId, +var: S.SVar, +v: S.SVar, +a: Bool, +ea: {S.SPhase.live(S.SVar.phase(var)) == a : Bool}, +b: Bool, +eb: {S.SPhase.live(S.SVar.phase(v)) == b : Bool}) -> Either<&2, &2, {S.Session.tag(S.Session.revar_if(S.Session{id, var}, v, Bool.or(Bool.not(b), a))) == Tb.Table.hit(U32, S.SId.ue(id), None{}, a) : Maybe<&2, U32>}, {S.Session.tag(S.Session.revar_if(S.Session{id, var}, v, Bool.or(Bool.not(b), a))) == None{} : Maybe<&2, U32>}>:
   match a:
     case True{}:
       match b:
         case True{}:
-          seb = Equal.sym(Bool, S.SPhase.held(S.SVar.phase(v)), True{}, eb)
+          seb = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(v)), True{}, eb)
           Inl{(%seb : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == Some{S.SId.ue(id)} : Maybe<&2, U32>}; {==})}
         case False{}:
-          seb = Equal.sym(Bool, S.SPhase.held(S.SVar.phase(v)), False{}, eb)
+          seb = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(v)), False{}, eb)
           Inr{(%seb : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == None{} : Maybe<&2, U32>}; {==})}
     case False{}:
       match b:
         case True{}:
-          sea = Equal.sym(Bool, S.SPhase.held(S.SVar.phase(var)), False{}, ea)
+          sea = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(var)), False{}, ea)
           Inl{(%sea : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == None{} : Maybe<&2, U32>}; {==})}
         case False{}:
-          seb = Equal.sym(Bool, S.SPhase.held(S.SVar.phase(v)), False{}, eb)
+          seb = Equal.sym(Bool, S.SPhase.live(S.SVar.phase(v)), False{}, eb)
           Inr{(%seb : {Tb.Table.hit(U32, S.SId.ue(id), None{}, _) == None{} : Maybe<&2, U32>}; {==})}
 
 def Tg.revar(+t: S.Session, +v: S.SVar, +c: Bool) -> Tg.Moved(t, S.Session.revar_if(t, v, Bool.and(c, S.SVar.follows(v, t)))):
@@ -400,7 +400,7 @@ def Tg.revar(+t: S.Session, +v: S.SVar, +c: Bool) -> Tg.Moved(t, S.Session.revar
         case False{}:
           Inl{{==}}
         case True{}:
-          Tg.go(id, var, v, S.SPhase.held(S.SVar.phase(var)), {==}, S.SPhase.held(S.SVar.phase(v)), {==})
+          Tg.go(id, var, v, S.SPhase.live(S.SVar.phase(var)), {==}, S.SPhase.live(S.SVar.phase(v)), {==})
 
 def Tg.id(+t: S.Session, +v: S.SVar, +hit: Bool) -> {S.Session.id(S.Session.revar_if(t, v, hit)) == S.Session.id(t) : S.SId}:
   match t:
@@ -446,7 +446,7 @@ def Tg.ue_go(+u: U32, +x: U32, +h: Bool, +e: {S.Maybe.same_u32(Tb.Table.hit(U32,
       Empty.absurd({U32.is_eq(u, x) == True{} : Bool}, P.Refute.bool(e))
 
 def Tg.ue(+s: S.Session, +x: U32, +e: {S.Maybe.same_u32(S.Session.tag(s), Some{x}) == True{} : Bool}) -> {U32.is_eq(S.Session.ue(s), x) == True{} : Bool}:
-  Tg.ue_go(S.Session.ue(s), x, S.SPhase.held(S.Session.phase(s)), e)
+  Tg.ue_go(S.Session.ue(s), x, S.SPhase.live(S.Session.phase(s)), e)
 
 # An owned session tagged with a UE has that UE's context.
 def Tg.has_go(+u: U32, +x: U32, +h: Bool, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.same_u32(Tb.Table.hit(U32, u, None{}, h), Some{x}) == True{} : Bool}, +e2: {Bool.or(Bool.not(Tb.Table.present(U32, Tb.Table.hit(U32, u, None{}, h))), Tb.Table.has(S.Ue, u, ues)) == True{} : Bool}) -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}:
@@ -458,7 +458,7 @@ def Tg.has_go(+u: U32, +x: U32, +h: Bool, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.sa
       Empty.absurd({Tb.Table.has(S.Ue, x, ues) == True{} : Bool}, P.Refute.bool(e1))
 
 def Tg.has(+t: S.Session, +x: U32, +ues: Tb.Table(S.Ue), +e1: {S.Maybe.same_u32(S.Session.tag(t), Some{x}) == True{} : Bool}, +e2: {S.Session.owned(t, ues) == True{} : Bool}) -> {Tb.Table.has(S.Ue, x, ues) == True{} : Bool}:
-  Tg.has_go(S.Session.ue(t), x, S.SPhase.held(S.Session.phase(t)), ues, e1, e2)
+  Tg.has_go(S.Session.ue(t), x, S.SPhase.live(S.Session.phase(t)), ues, e1, e2)
 
 # A context looked up by key
 # --------------------------

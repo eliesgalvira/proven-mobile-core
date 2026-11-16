@@ -526,8 +526,8 @@ def SPhase.guard(p: SPhase) -> Maybe<&2, Guard>:
     case Active{}:
       None{}
 
-# A session belongs to its UE until it is being deleted.
-def SPhase.held(p: SPhase) -> Bool:
+# Not being deleted: a session belongs to its UE until it is.
+def SPhase.live(p: SPhase) -> Bool:
   match p:
     case Deleting{guard, request}:
       False{}
@@ -627,7 +627,7 @@ def Session.known(s: Session) -> Bool:
 # The UE a session belongs to, which its actions are tagged with: none once it
 # is being deleted, as that UE may be gone (amf.sessions.owned).
 def Session.tag(+s: Session) -> Maybe<&2, U32>:
-  Tb.Table.hit(U32, Session.ue(s), None{}, SPhase.held(Session.phase(s)))
+  Tb.Table.hit(U32, Session.ue(s), None{}, SPhase.live(Session.phase(s)))
 
 # The session's UE holds a context, or the session is being deleted.
 def Session.owned(+s: Session, +ues: Tb.Table(Ue)) -> Bool:
@@ -970,22 +970,26 @@ def SPhase.fresh(p: SPhase) -> Bool:
     case _:
       False{}
 
-# Every session under the key is being deleted, its guard not fired yet: there
-# is none, or its Session Deletion Request has just gone.
-def Sessions.deleting(+key: U32, sessions: Tb.Table(Session)) -> Bool:
-  match sessions:
-    case Nil{}:
-      True{}
-    case (+k, +s) <> more:
-      Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), SPhase.fresh(Session.phase(s))), Sessions.deleting(key, more))
+# What every session under a key is: not being deleted, or being deleted
+# under a guard that has not fired yet (its Session Deletion Request has just
+# gone). A key no session holds has every such property.
+type SEach is Data:
+  SLive{}
+  SFresh{}
 
-# No session under the key is being deleted.
-def Sessions.held(+key: U32, sessions: Tb.Table(Session)) -> Bool:
+def SEach.holds(e: SEach, +s: Session) -> Bool:
+  match e:
+    case SLive{}:
+      SPhase.live(Session.phase(s))
+    case SFresh{}:
+      SPhase.fresh(Session.phase(s))
+
+def Sessions.each(+key: U32, +e: SEach, sessions: Tb.Table(Session)) -> Bool:
   match sessions:
     case Nil{}:
       True{}
     case (+k, +s) <> more:
-      Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), SPhase.held(Session.phase(s))), Sessions.held(key, more))
+      Bool.and(Bool.or(Bool.not(U32.is_eq(k, key)), SEach.holds(e, s)), Sessions.each(key, e, more))
 
 # Which sessions to keep: those not of a UE, those of one UE, those owned, the
 # orphans, those clear of a session, the victims of one, all but a key. A
@@ -1047,7 +1051,7 @@ def Session.revar_if(s: Session, v: SVar, hit: Bool) -> Session:
 
 # A session being deleted changes only to go on being deleted.
 def SVar.follows(v: SVar, s: Session) -> Bool:
-  Bool.or(Bool.not(SPhase.held(SVar.phase(v))), SPhase.held(Session.phase(s)))
+  Bool.or(Bool.not(SPhase.live(SVar.phase(v))), SPhase.live(Session.phase(s)))
 
 def Sessions.revar(+key: U32, +v: SVar, sessions: Tb.Table(Session)) -> Tb.Table(Session):
   match sessions:
