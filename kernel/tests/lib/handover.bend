@@ -78,22 +78,27 @@ def with_of(+id: U32, +bits: Ap.Bits(), +pdu: B.Bytes(), r: Result<&2, &2, B.Err
 def with_ie(+id: U32, +bits: Ap.Bits(), +pdu: B.Bytes()) -> B.Bytes():
   with_of(id, bits, pdu, Fr.Pdu.read(pdu))
 
-def sent_pick(bytes: B.Bytes(), later: B.Bytes(), hit: Bool) -> B.Bytes():
-  match hit:
-    case True{}:
+def sent_pick(+bytes: B.Bytes(), later: B.Bytes(), hit: Bool, all: Bool) -> B.Bytes():
+  match hit all:
+    case True{} True{}:
+      List.append(&2, U32, bytes, later)
+    case True{} False{}:
       bytes
-    case False{}:
+    case False{} _:
       later
 
-# The first NGAP PDU a step sends on an association.
-def sent_on(+assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
+# The NGAP PDUs a step sends on an association: all of them end to end, or the first.
+def sent(+all: Bool, +assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
   match actions:
     case Nil{}:
       []
     case F.NgapSend{a, stream, len, bytes} <> more:
-      sent_pick(bytes, sent_on(assoc, more), U32.is_eq(a, assoc))
+      sent_pick(bytes, sent(all, assoc, more), U32.is_eq(a, assoc), all)
     case x <> more:
-      sent_on(assoc, more)
+      sent(all, assoc, more)
+
+def sent_on(+assoc: U32, actions: List<&2, F.Action>) -> B.Bytes():
+  sent(False{}, assoc, actions)
 
 def is_pdu(+bytes: B.Bytes(), +kind: U32, +code: U32) -> Bool:
   A.pdu_is(Fr.Pdu.read(bytes), kind, code)
