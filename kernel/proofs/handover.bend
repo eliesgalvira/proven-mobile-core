@@ -1072,7 +1072,7 @@ def Hs.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B
           +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
           +n : List<&2, N.Act> = [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]
           +o = N.Out.also(Up.N4.start(st2), n)
-          Hs.out(st2, k, es, o, PL.Lv.ok_of(st2, o, PL.Lv.also(st2, Up.N4.start(st2), n, PL.Lw.n4_start(st2), {==}, {==})))
+          Hs.out(st2, k, es, o, PL.Lv.ok_of(st2, o, PL.Lv.also(st2, Up.N4.start(st2), n, PL.Lw.n4_start(st2), {==}, {==}, {==})))
 
 def Hs.reset(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, R.Route.reset(st, assoc)):
   +o = Ho.Ho.down(st, assoc)
