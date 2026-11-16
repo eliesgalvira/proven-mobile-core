@@ -2138,7 +2138,7 @@ def Lw.out_verified(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +why:
 
 # PDU Session Resource Release Command: the context's phase takes the NAS context moved on.
 def Lw.out_release(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.n2_release(key, ue, ctx, psi)) == True{} : Bool}:
-  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.release_command(psi)))
+  +p : Sec.Nas.Protected = Gsm.Gsm.release_nas(ctx, psi)
   +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, N.Ngap.pdu_release(key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p), N.Ngap.misc(G.CauseMisc.unspecified()))}
   Lv.leaf(st, S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), Lv.free_ctx(st, key, ue, Sec.Nas.Protected.ctx(p), eg, ec), {==}, {==})
 
@@ -3462,7 +3462,7 @@ def Lw.told_acts(+st: S.State, +key: U32, +assoc: U32, +stream: U32, +ran: B.Byt
     case Nil{}:
       {==}
     case +p <> +more:
-      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))
+      +q : Sec.Nas.Protected = Gsm.Gsm.release_nas(ctx, p)
       Lw.told_then(st, N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), hl, Lw.told_acts(st, key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q), hl))
 
 def Lw.told_stops_then(+tx: S.Tx, +a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>, +ha: {Lv.stop(tx, Lv.cancelled(a)) == True{} : Bool}, +hr: {Lv.stops(tx, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Lv.stops(tx, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(a, r))) == True{} : Bool}:
@@ -3475,7 +3475,7 @@ def Lw.told_stops(+tx: S.Tx, +key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes
     case Nil{}:
       {==}
     case +p <> +more:
-      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))
+      +q : Sec.Nas.Protected = Gsm.Gsm.release_nas(ctx, p)
       Lw.told_stops_then(tx, N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), {==}, Lw.told_stops(tx, key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
 
 def Lw.switch_end(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, +cfg: Maybe<&2, S.Cfg>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.switch_end(key, ue, ctx, nh, released, switched, cfg)) == True{} : Bool}:

@@ -783,7 +783,7 @@ def Ws.tell(+key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +t: Gsm.Tell, +k
     case Gsm.Reply{+sm}:
       Tk.sp_dl(k, u, key, ue, ctx, Gsm.Gsm.dl_transport(psi, sm), hk)
     case Gsm.Release{}:
-      Tk.sp_rephase(k, u, key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.release_command(psi))))), hk)
+      Tk.sp_rephase(k, u, key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(Gsm.Gsm.release_nas(ctx, psi))), hk)
 
 def Ws.to_ue_ctx(+key: U32, +ue: S.Ue, +psi: U32, +t: Gsm.Tell, +ctx: Maybe<&2, Sec.Nas.Ctx>, +k: U32, +u: S.Ue, +hk: {U32.is_eq(k, key) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.to_ue_ctx(key, ue, psi, t, ctx)) == True{} : Bool}:
   match ctx:

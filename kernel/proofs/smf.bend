@@ -861,22 +861,22 @@ def Rel.limit(+skey: U32, +s: S.Session, +p: S.SPhase, +request: B.Bytes(), +fai
 # holding a NAS context.
 
 def Fail.Told(+st: S.State, +s: S.Session, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +acts: List<&2, N.Act>) -> Type:
-  {Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} -> {S.Phase.ctx(S.Ue.phase(ue)) == Some{ctx} : Maybe<&2, Sec.Nas.Ctx>} -> Gsm.Gsm.released(ue, ctx, s, acts)
+  {Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} -> {S.Phase.ctx(S.Ue.phase(ue)) == Some{ctx} : Maybe<&2, Sec.Nas.Ctx>} -> Gsm.Gsm.tells_gnb(ue, ctx, s, acts)
 
-def Rel.tells(+ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, +b: N.GOut(), +rest: List<&2, N.Act>) -> Gsm.Gsm.released(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(N.Out.join(Gsm.Gsm.n2_release(S.Session.ue(s), ue, ctx, S.Session.psi(s)), b)), rest)):
+def Rel.tells(+ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, +b: N.GOut(), +rest: List<&2, N.Act>) -> Gsm.Gsm.tells_gnb(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(N.Out.join(Gsm.Gsm.n2_release(S.Session.ue(s), ue, ctx, S.Session.psi(s)), b)), rest)):
   match b:
     case (tb, +ab):
       (List.append(&2, N.Act, ab, rest), {==})
 
-def Rel.told(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +rest: List<&2, N.Act>, +eu: {Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {S.Phase.ctx(S.Ue.phase(ue)) == Some{ctx} : Maybe<&2, Sec.Nas.Ctx>}) -> Gsm.Gsm.released(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(Gsm.Gsm.drop(st, skey, s, seq)), rest)):
+def Rel.told(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +rest: List<&2, N.Act>, +eu: {Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {S.Phase.ctx(S.Ue.phase(ue)) == Some{ctx} : Maybe<&2, Sec.Nas.Ctx>}) -> Gsm.Gsm.tells_gnb(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(Gsm.Gsm.drop(st, skey, s, seq)), rest)):
   seu = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), Some{ue}, eu)
-  %seu : Gsm.Gsm.released(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(Gsm.Gsm.give_up_m(skey, s, Gsm.Release{}, seq, _)), rest))
+  %seu : Gsm.Gsm.tells_gnb(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(Gsm.Gsm.give_up_m(skey, s, Gsm.Release{}, seq, _)), rest))
   sec = Equal.sym(Maybe<&2, Sec.Nas.Ctx>, S.Phase.ctx(S.Ue.phase(ue)), Some{ctx}, ec)
-  %sec : Gsm.Gsm.released(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(N.Out.join(Gsm.Gsm.to_ue_ctx(S.Session.ue(s), ue, S.Session.psi(s), Gsm.Release{}, _), Up.N4.deletions([(skey, s)], seq))), rest))
+  %sec : Gsm.Gsm.tells_gnb(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(N.Out.join(Gsm.Gsm.to_ue_ctx(S.Session.ue(s), ue, S.Session.psi(s), Gsm.Release{}, _), Up.N4.deletions([(skey, s)], seq))), rest))
   Rel.tells(ue, ctx, s, Up.N4.deletions([(skey, s)], seq), rest)
 
 # The step's first actions are its outcome's.
-def Rel.first(+st: S.State, +o: N.GOut(), +ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, h: @rest:List<&2, N.Act> -> Gsm.Gsm.released(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(o), rest))) -> Gsm.Gsm.released(ue, ctx, s, K.Kernel.actions(N.Step.of(st, o))):
+def Rel.first(+st: S.State, +o: N.GOut(), +ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, h: @rest:List<&2, N.Act> -> Gsm.Gsm.tells_gnb(ue, ctx, s, List.append(&2, N.Act, N.Out.acts(o), rest))) -> Gsm.Gsm.tells_gnb(ue, ctx, s, K.Kernel.actions(N.Step.of(st, o))):
   match o:
     case (+tx, +acts):
       h(N.Gone.when(S.Tx.keeps_sessions(tx), S.State.sessions(st), S.State.sessions(S.Tx.apply(tx, st))))

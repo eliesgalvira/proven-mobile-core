@@ -230,14 +230,18 @@ type Tell is Data:
   Reply{sm: B.Bytes()}
   Release{}
 
-# PDU Session Resource Release Command, the NAS message protected.
+# PDU Session Release Command, #26, protected for the UE.
+def Gsm.release_nas(ctx: Sec.Nas.Ctx, +psi: U32) -> Sec.Nas.Protected:
+  Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.dl_transport(psi, Gsm.release_command(psi)))
+
+# PDU Session Resource Release Command, the NAS message inside.
 def Gsm.n2_release(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32) -> N.GOut():
-  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.dl_transport(psi, Gsm.release_command(psi)))
+  +p : Sec.Nas.Protected = Gsm.release_nas(ctx, psi)
   (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, N.Ngap.pdu_release(key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p), N.Ngap.misc(G.CauseMisc.unspecified()))}])
 
 # The first action tells the UE's gNB to release the session, the PDU Session
 # Release Command inside, protected under ctx.
-def Gsm.released(+ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
+def Gsm.tells_gnb(+ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
   Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, N.Out.acts(Gsm.n2_release(S.Session.ue(s), ue, ctx, S.Session.psi(s))), post) : List<&2, N.Act>}>
 
 def Gsm.tell(key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, psi: U32, t: Tell) -> N.GOut():
@@ -477,7 +481,7 @@ def Gsm.releases(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), psis: Li
     case Nil{}:
       (ctx, [])
     case +p <> more:
-      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.dl_transport(p, Gsm.release_command(p)))
+      +q : Sec.Nas.Protected = Gsm.release_nas(ctx, p)
       Gsm.releases_then(N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
 
 def Gsm.Told.ctx(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sec.Nas.Ctx:
