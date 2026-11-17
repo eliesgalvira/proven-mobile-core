@@ -119,6 +119,13 @@ def rewound(st: S.State, ue: U32) -> S.State:
     case S.State{config, subs, assocs, ues, sessions, pfcp_seq, next_ue, n4}:
       S.State{config, subs, assocs, ues, sessions, pfcp_seq, ue, n4}
 
+def reg_of(m: Maybe<&2, S.Ue>) -> B.Bytes():
+  match m:
+    case None{}:
+      []
+    case Some{u}:
+      S.Ue.reg(u)
+
 def main() -> IO(Unit):
   do IO<Unit>:
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
@@ -147,6 +154,11 @@ def main() -> IO(Unit):
     +ics_cap : B.Bytes() = A.hex_of(A.entry(25n, msgs), "hex")
     C.Check.report("Security Mode Complete: the captured one verifies; Initial Context Setup Request follows", Bool.and(A.phase_is(st3, "context_setup"), Bool.and(A.pdu_is(Fr.Pdu.read(ics), Fr.Pdu.initiating(), 14), Nat.is_eq(A.timer_starts(K.Kernel.frames(o3)), 1n))))
     C.Check.report("Initial Context Setup Request: the captured KgNB, GUAMI, Allowed NSSAI and UE security capabilities", Bool.and(A.same_ie(94, ics, ics_cap), Bool.and(A.same_ie(28, ics, ics_cap), Bool.and(A.same_ie(0, ics, ics_cap), A.same_ie(119, ics, ics_cap)))))
+    +reg2 : B.Bytes() = List.append(&2, U32, List.take(&2, U32, reg_req, Nat.sub(List.length(&2, U32, reg_req), 4n)), [224, 224, 224, 224])
+    +smc2 : B.Bytes() = List.append(&2, U32, [126, 0, 94, 113, 0, U32.from_nat(List.length(&2, U32, reg2))], reg2)
+    +o3b : N.Step() = K.Kernel.step(st2, A.data(1, A.uplink(ran, uli, A.ue_protect(0, smc2))), A.entropy())
+    +ics2 : B.Bytes() = A.first_bytes(A.sends(K.Kernel.frames(o3b)))
+    C.Check.report("Security Mode Complete whose Registration Request carries other UE security capabilities: Initial Context Setup carries those, and the context keeps that request", Bool.and(A.pdu_is(Fr.Pdu.read(ics2), Fr.Pdu.initiating(), 14), Bool.and(Bool.not(A.same_ie(119, ics2, ics_cap)), B.bytes_eq(reg_of(A.ue1(K.Kernel.state(o3b))), reg2))))
     C.Check.report("Registration Accept: ciphered, with the 5G-GUTI from entropy, the TAI, the slice and T3512", B.bytes_eq(List.drop(&2, U32, ics_nas(W.InitialContextSetupRequest.view(A.ies_of(Fr.Pdu.read(ics)))), 7n), [126, 0, 66, 1, 1, 119, 0, 11, 242, 0, 241, 16, 2, 0, 64, 0, 0, 0, 0, 84, 7, 0, 0, 241, 16, 0, 0, 1, 21, 2, 1, 1, 94, 1, 5]))
     +smc : B.Bytes() = A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o2))))
     +o_smc : N.Step() = K.Kernel.step(st2, F.TimerFired{1}, A.entropy())

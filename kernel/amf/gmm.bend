@@ -429,7 +429,7 @@ def Gmm.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), ctx: 
       +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
       +accept = Gmm.registration_accept(c, tmsi)
       +k_gnb = Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count))
-      Gmm.accept_told(st, key, ue, k_amf, k_gnb, accept, reg, tmsi, N.Out.seal(ctx, Sec.Ciphered{}, accept, m => N.Ics{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), c, N.Ue.caps(ue), k_gnb, m}))
+      Gmm.accept_told(st, key, ue, k_amf, k_gnb, accept, reg, tmsi, N.Out.seal(ctx, Sec.Ciphered{}, accept, nas => N.Ics{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), c, N.Ue.caps_of(Mm.Mm.read(reg)), k_gnb, nas}))
     case _ _:
       Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()))
 
