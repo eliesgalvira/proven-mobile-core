@@ -28,6 +28,7 @@ import ./path_switch.bend as PPs
 import ./liveness.bend as PL
 import ./kernel.bend as PK
 import ./smf.bend as PSm
+import ./fresh.bend as PF
 
 # Proofs of the N2 handover laws (ticket 28).
 
@@ -668,12 +669,15 @@ def Hp.fired_ends(+st: S.State, +k: U32, +t: U32, +m: Maybe<&2, S.Ue>, +em: {Tb.
 # transaction that ends its key's handover (PL.Lv.stops), a session settled
 # or gone has its own row's guard stopped, and nothing else stops a guard.
 
-# What every row under a key holds: no handover pending, or a pair the
+# What every row under a key holds: no handover pending; or a pair the
 # context m held before the step chains to (PL.Lv.chains), or, where m held
-# none, the first pair the actions send key's KgNB for (PL.Lv.firsts).
+# none, the first pair the actions send key's KgNB for (PL.Lv.firsts); or a
+# NAS context the messages msgs leave, sealed in turn from what b held
+# (N.Fresh.holds).
 type Rw is Data:
   Idle{}
   From{m: Maybe<&2, S.Ue>, key: U32, acts: List<&2, N.Act>}
+  Fresh{b: Maybe<&2, Sec.Nas.Ctx>, msgs: List<&2, B.Bytes()>}
 
 def Hs.holds(+r: Rw, +p: S.Phase) -> Bool:
   match r:
@@ -681,6 +685,8 @@ def Hs.holds(+r: Rw, +p: S.Phase) -> Bool:
       S.Phase.idle(p)
     case From{+m, +key, +acts}:
       Bool.or(PL.Lv.chains(S.Phase.nh(p), S.Ue.nh(m)), Bool.and(Bool.not(Tb.Table.present(S.Nh, S.Ue.nh(m))), PL.Lv.firsts(S.Phase.nh(p), S.Ue.mode_k_amf(m), key, acts)))
+    case Fresh{+b, +msgs}:
+      N.Fresh.holds(b, S.Phase.nas(p), msgs)
 
 def Hs.rows(+t: U32, +r: Rw, ues: Tb.Table(S.Ue)) -> Bool:
   match ues:
@@ -905,6 +911,8 @@ def Hs.act(+k: U32, +tx: S.Tx, +a: N.Act, +e1: {N.Act.stops(k, a) == True{} : Bo
       Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
     case N.UeSend{assoc, stream, key, bytes}:
       Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
     case N.ErrInd{assoc, cause}:
       Empty.absurd({PL.Lv.idles(k, tx) == True{} : Bool}, P.Refute.bool(e1))
     case N.Setup{assoc, answer}:
@@ -1070,7 +1078,7 @@ def Hs.config(+complete: Bool, +st: S.State, +tlvs: List<&2, T.Tlv>, +entropy: B
           +st2 : S.State = S.State{Some{cfg}, Au.Subscribers.of(S.Cfg.subscribers(cfg)), assocs, ues, sessions, pfcp_seq, next_ue, S.N4{List.take(&2, U32, entropy, 4n), S.Idle{}}}
           +n : List<&2, N.Act> = [N.Note{F.Info{}, "Config: loaded; PFCP association requested"}]
           +o = N.Out.also(Up.N4.start(st2), n)
-          Hs.out(st2, k, es, o, PL.Lv.ok_of(st2, o, PL.Lv.also(st2, Up.N4.start(st2), n, PL.Lw.n4_start(st2), {==}, {==})))
+          Hs.out(st2, k, es, o, PL.Lv.ok_of(st2, o, PL.Lv.also(st2, Up.N4.start(st2), n, PL.Lw.n4_start(st2), {==}, {==}, {==})))
 
 def Hs.reset(+st: S.State, +assoc: U32, +k: U32, +es: {Tb.Table.get(S.Session, k, S.State.sessions(st)) == None{} : Maybe<&2, S.Session>}) -> Hs.Q(k, R.Route.reset(st, assoc)):
   +o = Ho.Ho.down(st, assoc)
@@ -1154,22 +1162,42 @@ def Nc.vacant(+k: U32, +k0: U32, +u0: S.Ue, +r: Rw, +rows: Tb.Table(S.Ue), +hc: 
       n2 : {U32.is_eq(k1, k) == False{} : Bool} = (%ek : {U32.is_eq(k1, _) == False{} : Bool}; n1)
       Hs.other(k, r, k1, v, more, n2, Nc.vacant(k, k0, u0, r, more, P.Bool.and_true_r(nc, S.Ues.clear(k0, u0, more), hc), ek))
 
-def Nc.base_row(+k: U32, +k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +acts: List<&2, N.Act>, +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +hc: {S.Ues.clear(k0, u0, more) == True{} : Bool}, ih: {Hs.rows(k, From{Tb.Table.get(S.Ue, k, more), k, acts}, more) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b), k, acts}, (k0, u0) <> more) == True{} : Bool}:
+# What a row holds before the step, read off the context m under its key.
+type Rk is Data:
+  Chain{key: U32, acts: List<&2, N.Act>}
+  Kept{}
+
+def Hs.from(s: Rk, +m: Maybe<&2, S.Ue>) -> Rw:
+  match s:
+    case Chain{key, acts}:
+      From{m, key, acts}
+    case Kept{}:
+      Fresh{S.Ue.nas(m), []}
+
+def Hs.self(+s: Rk, +u: S.Ue) -> {Hs.holds(Hs.from(s, Some{u}), S.Ue.phase(u)) == True{} : Bool}:
+  match s:
+    case Chain{+key, +acts}:
+      +n = S.Phase.nh(S.Ue.phase(u))
+      P.Bool.or_l(PL.Lv.chains(n, n), Bool.and(Bool.not(Tb.Table.present(S.Nh, n)), PL.Lv.firsts(n, S.Phase.mode_k_amf(S.Ue.phase(u)), key, acts)), PL.Lv.chains_self(n))
+    case Kept{}:
+      PF.Fs.holds_self(S.Phase.nas(S.Ue.phase(u)))
+
+def Nc.base_row(+k: U32, +k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +s: Rk, +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +hc: {S.Ues.clear(k0, u0, more) == True{} : Bool}, ih: {Hs.rows(k, Hs.from(s, Tb.Table.get(S.Ue, k, more)), more) == True{} : Bool}) -> {Hs.rows(k, Hs.from(s, Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b)), (k0, u0) <> more) == True{} : Bool}:
   match b:
     case True{}:
-      +n = S.Phase.nh(S.Ue.phase(u0))
-      +h = Hs.holds(From{Some{u0}, k, acts}, S.Ue.phase(u0))
-      P.Bool.and_intro(Bool.or(Bool.not(U32.is_eq(k0, k)), h), Hs.rows(k, From{Some{u0}, k, acts}, more), P.Bool.or_r(Bool.not(U32.is_eq(k0, k)), h, P.Bool.or_l(PL.Lv.chains(n, n), Bool.and(Bool.not(Tb.Table.present(S.Nh, n)), PL.Lv.firsts(n, S.Phase.mode_k_amf(S.Ue.phase(u0)), k, acts)), PL.Lv.chains_self(n))), Nc.vacant(k, k0, u0, From{Some{u0}, k, acts}, more, hc, P.U32.eq_of_is_eq(k0, k, eb)))
+      +r = Hs.from(s, Some{u0})
+      +h = Hs.holds(r, S.Ue.phase(u0))
+      P.Bool.and_intro(Bool.or(Bool.not(U32.is_eq(k0, k)), h), Hs.rows(k, r, more), P.Bool.or_r(Bool.not(U32.is_eq(k0, k)), h, Hs.self(s, u0)), Nc.vacant(k, k0, u0, r, more, hc, P.U32.eq_of_is_eq(k0, k, eb)))
     case False{}:
-      Hs.other(k, From{Tb.Table.get(S.Ue, k, more), k, acts}, k0, u0, more, eb, ih)
+      Hs.other(k, Hs.from(s, Tb.Table.get(S.Ue, k, more)), k0, u0, more, eb, ih)
 
 # Where no two contexts share a key, every row under k is the context k names.
-def Nc.base(+k: U32, +t: Tb.Table(S.Ue), +acts: List<&2, N.Act>, +eu: {S.Ues.unique(t) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.get(S.Ue, k, t), k, acts}, t) == True{} : Bool}:
+def Nc.base(+k: U32, +t: Tb.Table(S.Ue), +s: Rk, +eu: {S.Ues.unique(t) == True{} : Bool}) -> {Hs.rows(k, Hs.from(s, Tb.Table.get(S.Ue, k, t)), t) == True{} : Bool}:
   match t:
     case Nil{}:
       {==}
     case (+k0, +u0) <> +more:
-      Nc.base_row(k, k0, u0, more, acts, U32.is_eq(k0, k), {==}, P.Bool.and_true_l(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu), Nc.base(k, more, acts, P.Bool.and_true_r(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu)))
+      Nc.base_row(k, k0, u0, more, s, U32.is_eq(k0, k), {==}, P.Bool.and_true_l(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu), Nc.base(k, more, s, P.Bool.and_true_r(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu)))
 
 # A write under key, where no two contexts share a key: it chains to what key
 # held, or, put over a context that held none, takes the first pair the
@@ -1246,7 +1274,7 @@ def Nc.Q(+st: S.State, +k: U32, o: N.Step()) -> Type:
 # An outcome rendered, judged against acts its own actions are part of.
 def Nc.out_with(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +o: N.GOut(), +h: {PL.Lv.ok(st, o) == True{} : Bool}, +acts: List<&2, N.Act>, +hw: {PL.Lv.seeds(st, N.Out.tx(o), acts) == True{} : Bool}) -> {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, S.State.ues(K.Kernel.state(N.Step.of(st, o)))) == True{} : Bool}:
   sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), PT.Tk.render(st, o))
-  (%sr : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, _) == True{} : Bool}; Nc.tx(st, k, acts, eu, N.Out.tx(o), S.State.ues(st), PL.Lv.ok_homed(st, o, h), hw, Nc.base(k, S.State.ues(st), acts, eu)))
+  (%sr : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, _) == True{} : Bool}; Nc.tx(st, k, acts, eu, N.Out.tx(o), S.State.ues(st), PL.Lv.ok_homed(st, o, h), hw, Nc.base(k, S.State.ues(st), Chain{k, acts}, eu)))
 
 def Nc.out(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +o: N.GOut(), +h: {PL.Lv.ok(st, o) == True{} : Bool}) -> Nc.Q(st, k, N.Step.of(st, o)):
   match o:
@@ -1259,7 +1287,7 @@ def Nc.sx(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} :
   +acts = K.Kernel.actions(N.Step.of(st, o))
   sr = Equal.sym(Tb.Table(S.Ue), S.State.ues(K.Kernel.state(N.Step.of(st, o))), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), PT.Tk.render(st, o))
   sx = Equal.sym(Tb.Table(S.Ue), PT.Tk.ues(N.Out.tx(o), S.State.ues(st)), S.State.ues(st), PT.Tk.ues_sx(N.Out.tx(o), S.State.ues(st), hx))
-  (%sr : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, _) == True{} : Bool}; (%sx : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, _) == True{} : Bool}; Nc.base(k, S.State.ues(st), acts, eu)))
+  (%sr : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, _) == True{} : Bool}; (%sx : {Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, acts}, _) == True{} : Bool}; Nc.base(k, S.State.ues(st), Chain{k, acts}, eu)))
 
 def Nc.resend_sx(+k1: U32, +t: S.Session, +p: S.SPhase, +request: B.Bytes(), +more: Bool) -> {PW.Sx.only(N.Out.tx(Gsm.Gsm.resend_if(k1, t, p, request, (S.DelSession{k1}, [N.Note{F.Warn{}, "PFCP: no Session Deletion Response; deletion given up"}]), more))) == True{} : Bool}:
   match more:
@@ -1321,7 +1349,7 @@ def Nc.ready(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{
   PW.Walk.assocs(ues => ss => Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, xs}, ues), x, S.Assocs.set(assoc, id, S.State.assocs(x), ok), [], Nc.reset(st, k, eu, assoc, xs, hw))
 
 def Nc.step(+st: S.State, +ev: F.Evt, +entropy: B.Bytes(), +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}) -> Nc.Q(st, k, K.Kernel.step(st, ev, entropy)):
-  PL.Dw.walk(o => Nc.Q(st, k, o), o => Nc.Q(st, k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => Nc.base(k, S.State.ues(st), acts, eu), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Nc.ready(st, k, eu, assoc, id, ok, acts), +tlvs => PW.Walk.config(ues => ss => Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy))}, ues), S.Cfg.complete(tlvs), st, tlvs, entropy, Nc.base(k, S.State.ues(st), K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy)), eu)), +assoc => Nc.down(st, k, eu, assoc), o => h => h, +o => +h => Nc.out(st, k, eu, o, h), +k1 => +t => +g => +r => ek => eu2 => em => ep => Nc.sx(st, k, eu, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Nc.resend_sx(k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Nc.sx(st, k, eu, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Nc.deleted_sx(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Nc.settled(st, k, eu, k1, tx, more, h))
+  PL.Dw.walk(o => Nc.Q(st, k, o), o => Nc.Q(st, k, N.Step.of(st, o)), st, ev, entropy, +acts => sp => tc => nr => Nc.base(k, S.State.ues(st), Chain{k, acts}, eu), +assoc => ns => +id => +ok => +acts => sp => tc => nr => Nc.ready(st, k, eu, assoc, id, ok, acts), +tlvs => PW.Walk.config(ues => ss => Hs.rows(k, From{Tb.Table.get(S.Ue, k, S.State.ues(st)), k, K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy))}, ues), S.Cfg.complete(tlvs), st, tlvs, entropy, Nc.base(k, S.State.ues(st), Chain{k, K.Kernel.actions(K.Kernel.config(S.Cfg.complete(tlvs), st, tlvs, entropy))}, eu)), +assoc => Nc.down(st, k, eu, assoc), o => h => h, +o => +h => Nc.out(st, k, eu, o, h), +k1 => +t => +g => +r => ek => eu2 => em => ep => Nc.sx(st, k, eu, Gsm.Gsm.expired(st, k1, t, S.Deleting{g, r}), Nc.resend_sx(k1, t, S.Deleting{S.Guard{U32.add(S.Guard.retries(g), 1)}, r}, r, U32.is_lt(S.Guard.retries(g), Up.N4.n1()))), +len => +bytes => +msg => +rest => ev2 => er => ek => Nc.sx(st, k, eu, Gsm.Gsm.deleted(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st))), Nc.deleted_sx(msg, S.Sessions.by_seq(Pf.Msg.seq(msg), S.State.sessions(st)))), +k1 => +tx => +more => ekd => eh => h => Nc.settled(st, k, eu, k1, tx, more, h))
 
 # The row the key names after the step holds what its rows hold.
 def Nc.found_row(+k: U32, +r: Rw, +u0: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +e: {Bool.and(Bool.or(Bool.not(b), Hs.holds(r, S.Ue.phase(u0))), Hs.rows(k, r, more)) == True{} : Bool}, +v: S.Ue, +eg: {Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b) == Some{v} : Maybe<&2, S.Ue>}, ih: {Hs.rows(k, r, more) == True{} : Bool} -> {Tb.Table.get(S.Ue, k, more) == Some{v} : Maybe<&2, S.Ue>} -> {Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}) -> {Hs.holds(r, S.Ue.phase(v)) == True{} : Bool}:
@@ -1382,6 +1410,8 @@ def Nc.act_amf(+ka: B.Bytes(), +k: U32, +k_amf: B.Bytes(), +nh: B.Bytes(), +ncc:
     case N.SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause}:
       Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))
     case N.UeSend{assoc, stream, key, bytes}:
+      Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
       Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))
     case N.ErrInd{assoc, cause}:
       Empty.absurd({ka == k_amf : B.Bytes()}, P.Refute.bool(e))

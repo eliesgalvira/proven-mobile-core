@@ -32,6 +32,7 @@ import ./lib.bend as P
 import ./kernel.bend as PK
 import ./takeover.bend as PT
 import ./walk.bend as PW
+import ./fresh.bend as PF
 
 # Proofs of the liveness laws (ticket 33) and of the invariants every step keeps.
 
@@ -815,9 +816,13 @@ def Lv.idle_fits(+p: S.Phase, +m: Maybe<&2, S.Ue>, +e: {S.Phase.idle(p) == True{
 # An outcome puts no session (okf), or only sessions of contexts (ok); what it
 # starts deleting it asks the UPF to delete under a guard it starts (Lv.arms).
 # Every outcome, those that settle a session included, is okw.
-# What an outcome's actions do, with f what its transaction writes.
-def Lv.does(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, f: Bool) -> Bool:
+# What an outcome's actions do, with f what its transaction writes; every
+# outcome also keeps what nas_sec.downlink_fresh asks of it (PF.Fs.nas).
+def Lv.does0(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, f: Bool) -> Bool:
   Bool.and(Lv.stops(tx, acts), Bool.and(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f))))
+
+def Lv.does(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, f: Bool) -> Bool:
+  Bool.and(PF.Fs.ok(st, tx, acts), Lv.does0(st, tx, acts, f))
 
 def Lv.okf(+st: S.State, +o: N.GOut()) -> Bool:
   Lv.does(st, N.Out.tx(o), N.Out.acts(o), Lv.free(st, N.Out.tx(o)))
@@ -831,33 +836,66 @@ def Lv.okw(+st: S.State, +o: N.GOut()) -> Bool:
 # Composing outcomes
 # ------------------
 
-def Lv.does_intro(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +hs: {Lv.stops(tx, acts) == True{} : Bool}, +hw: {Lv.seeds(st, tx, acts) == True{} : Bool}, +ha: {Lv.acts(st, acts) == True{} : Bool}, +hr: {Lv.arms(tx, acts) == True{} : Bool}, +hf: {f == True{} : Bool}) -> {Lv.does(st, tx, acts, f) == True{} : Bool}:
+def Lv.does0_intro(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +hs: {Lv.stops(tx, acts) == True{} : Bool}, +hw: {Lv.seeds(st, tx, acts) == True{} : Bool}, +ha: {Lv.acts(st, acts) == True{} : Bool}, +hr: {Lv.arms(tx, acts) == True{} : Bool}, +hf: {f == True{} : Bool}) -> {Lv.does0(st, tx, acts, f) == True{} : Bool}:
   +r = Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f))
   P.Bool.and_intro(Lv.stops(tx, acts), Bool.and(Lv.seeds(st, tx, acts), r), hs, P.Bool.and_intro(Lv.seeds(st, tx, acts), r, hw, P.Bool.and_intro(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f), ha, P.Bool.and_intro(Lv.arms(tx, acts), f, hr, hf))))
 
-def Lv.does_stops(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.stops(tx, acts) == True{} : Bool}:
+def Lv.does_ok(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h0: {Lv.does0(st, tx, acts, f) == True{} : Bool}, +hk: {PF.Fs.ok(st, tx, acts) == True{} : Bool}) -> {Lv.does(st, tx, acts, f) == True{} : Bool}:
+  P.Bool.and_intro(PF.Fs.ok(st, tx, acts), Lv.does0(st, tx, acts, f), hk, h0)
+
+def Lv.does_of(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h0: {Lv.does0(st, tx, acts, f) == True{} : Bool}, +hn: {PF.Fs.nas(st, tx, acts) == True{} : Bool}) -> {Lv.does(st, tx, acts, f) == True{} : Bool}:
+  Lv.does_ok(st, tx, acts, f, h0, PF.Fs.ok_of(st, tx, acts, hn))
+
+def Lv.does_intro(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +hs: {Lv.stops(tx, acts) == True{} : Bool}, +hw: {Lv.seeds(st, tx, acts) == True{} : Bool}, +ha: {Lv.acts(st, acts) == True{} : Bool}, +hr: {Lv.arms(tx, acts) == True{} : Bool}, +hf: {f == True{} : Bool}, +hk: {PF.Fs.ok(st, tx, acts) == True{} : Bool}) -> {Lv.does(st, tx, acts, f) == True{} : Bool}:
+  Lv.does_ok(st, tx, acts, f, Lv.does0_intro(st, tx, acts, f, hs, hw, ha, hr, hf), hk)
+
+def Lv.does_core(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.does0(st, tx, acts, f) == True{} : Bool}:
+  P.Bool.and_true_r(PF.Fs.ok(st, tx, acts), Lv.does0(st, tx, acts, f), h)
+
+def Lv.does_fs(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {PF.Fs.ok(st, tx, acts) == True{} : Bool}:
+  P.Bool.and_true_l(PF.Fs.ok(st, tx, acts), Lv.does0(st, tx, acts, f), h)
+
+def Lv.does0_stops(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {Lv.stops(tx, acts) == True{} : Bool}:
   P.Bool.and_true_l(Lv.stops(tx, acts), Bool.and(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f))), h)
 
-def Lv.does_tail(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f))) == True{} : Bool}:
+def Lv.does0_tail(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f))) == True{} : Bool}:
   P.Bool.and_true_r(Lv.stops(tx, acts), Bool.and(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f))), h)
 
-def Lv.does_seeds(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.seeds(st, tx, acts) == True{} : Bool}:
-  P.Bool.and_true_l(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f)), Lv.does_tail(st, tx, acts, f, h))
+def Lv.does0_seeds(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {Lv.seeds(st, tx, acts) == True{} : Bool}:
+  P.Bool.and_true_l(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f)), Lv.does0_tail(st, tx, acts, f, h))
 
-def Lv.does_mid(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f)) == True{} : Bool}:
-  P.Bool.and_true_r(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f)), Lv.does_tail(st, tx, acts, f, h))
+def Lv.does0_mid(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f)) == True{} : Bool}:
+  P.Bool.and_true_r(Lv.seeds(st, tx, acts), Bool.and(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f)), Lv.does0_tail(st, tx, acts, f, h))
+
+def Lv.does0_rest(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.arms(tx, acts), f) == True{} : Bool}:
+  P.Bool.and_true_r(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f), Lv.does0_mid(st, tx, acts, f, h))
+
+def Lv.does0_acts(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {Lv.acts(st, acts) == True{} : Bool}:
+  P.Bool.and_true_l(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f), Lv.does0_mid(st, tx, acts, f, h))
+
+def Lv.does0_arms(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {Lv.arms(tx, acts) == True{} : Bool}:
+  P.Bool.and_true_l(Lv.arms(tx, acts), f, Lv.does0_rest(st, tx, acts, f, h))
+
+def Lv.does0_f(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does0(st, tx, acts, f) == True{} : Bool}) -> {f == True{} : Bool}:
+  P.Bool.and_true_r(Lv.arms(tx, acts), f, Lv.does0_rest(st, tx, acts, f, h))
+
+def Lv.does_stops(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.stops(tx, acts) == True{} : Bool}:
+  Lv.does0_stops(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
+
+def Lv.does_seeds(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.seeds(st, tx, acts) == True{} : Bool}:
+  Lv.does0_seeds(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
 
 def Lv.does_rest(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Bool.and(Lv.arms(tx, acts), f) == True{} : Bool}:
-  P.Bool.and_true_r(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f), Lv.does_mid(st, tx, acts, f, h))
+  Lv.does0_rest(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
 
 def Lv.does_acts(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.acts(st, acts) == True{} : Bool}:
-  P.Bool.and_true_l(Lv.acts(st, acts), Bool.and(Lv.arms(tx, acts), f), Lv.does_mid(st, tx, acts, f, h))
+  Lv.does0_acts(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
 
 def Lv.does_arms(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {Lv.arms(tx, acts) == True{} : Bool}:
-  P.Bool.and_true_l(Lv.arms(tx, acts), f, Lv.does_rest(st, tx, acts, f, h))
+  Lv.does0_arms(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
 
 def Lv.does_f(+st: S.State, +tx: S.Tx, +acts: List<&2, N.Act>, +f: Bool, +h: {Lv.does(st, tx, acts, f) == True{} : Bool}) -> {f == True{} : Bool}:
-  P.Bool.and_true_r(Lv.arms(tx, acts), f, Lv.does_rest(st, tx, acts, f, h))
+  Lv.does0_f(st, tx, acts, f, Lv.does_core(st, tx, acts, f, h))
 
 def Lv.free_homed(+st: S.State, +tx: S.Tx, +ues: Tb.Table(S.Ue), +e: {Lv.free(st, tx) == True{} : Bool}) -> {Lv.homed(st, tx, ues) == True{} : Bool}:
   match tx:
@@ -949,7 +987,7 @@ def Lv.ok_in(+st: S.State, +o: N.GOut(), +ues: Tb.Table(S.Ue), +h: {Lv.okf(st, o
   match o:
     case (+tx, +acts):
       +f = Lv.free(st, tx)
-      Lv.does_intro(st, tx, acts, Lv.homed(st, tx, ues), Lv.does_stops(st, tx, acts, f, h), Lv.does_seeds(st, tx, acts, f, h), Lv.does_acts(st, tx, acts, f, h), Lv.does_arms(st, tx, acts, f, h), Lv.free_homed(st, tx, ues, Lv.does_f(st, tx, acts, f, h)))
+      Lv.does_intro(st, tx, acts, Lv.homed(st, tx, ues), Lv.does_stops(st, tx, acts, f, h), Lv.does_seeds(st, tx, acts, f, h), Lv.does_acts(st, tx, acts, f, h), Lv.does_arms(st, tx, acts, f, h), Lv.free_homed(st, tx, ues, Lv.does_f(st, tx, acts, f, h)), Lv.does_fs(st, tx, acts, f, h))
 
 def Lv.ok_of(+st: S.State, +o: N.GOut(), +h: {Lv.okf(st, o) == True{} : Bool}) -> {Lv.ok(st, o) == True{} : Bool}:
   Lv.ok_in(st, o, S.State.ues(st), h)
@@ -1027,6 +1065,8 @@ def Lv.act_w(+st: S.State, +a: N.Act, +h: {Lv.act(st, a) == True{} : Bool}) -> {
       h
     case N.UeSend{assoc, stream, key, bytes}:
       h
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      h
     case N.ErrInd{assoc, cause}:
       h
     case N.Setup{assoc, answer}:
@@ -1083,7 +1123,7 @@ def Lv.settled(+st: S.State, +k: U32, +u: B.Bytes(), +q: U32, +b: N.GOut(), +ek:
       +ues = S.State.ues(st)
       +r : S.Tx = S.Revar{k, S.SVar{u, q, S.Active{}}}
       +fb = Lv.homed(st, tb, ues)
-      +ho = Lv.does_intro(st, S.Both{r, tb}, ab, Lv.homed(st, S.Both{r, tb}, ues), Lv.stops_r(r, tb, ab, Lv.does_stops(st, tb, ab, fb, hb)), Lv.does_seeds(st, tb, ab, fb, hb), Lv.does_acts(st, tb, ab, fb, hb), Lv.does_arms(st, tb, ab, fb, hb), P.Bool.and_intro(Lv.revar_ok(st, S.SVar{u, q, S.Active{}}), fb, hv, Lv.does_f(st, tb, ab, fb, hb)))
+      +ho = Lv.does_intro(st, S.Both{r, tb}, ab, Lv.homed(st, S.Both{r, tb}, ues), Lv.stops_r(r, tb, ab, Lv.does_stops(st, tb, ab, fb, hb)), Lv.does_seeds(st, tb, ab, fb, hb), Lv.does_acts(st, tb, ab, fb, hb), Lv.does_arms(st, tb, ab, fb, hb), P.Bool.and_intro(Lv.revar_ok(st, S.SVar{u, q, S.Active{}}), fb, hv, Lv.does_f(st, tb, ab, fb, hb)), PF.Fs.ok_map(st, tb, ab, S.Both{r, tb}, ab, h => PF.Fs.pre_tmute(st, r, tb, ab, {==}, h), Lv.does_fs(st, tb, ab, fb, hb)))
       P.Bool.or_r(Lv.ok(st, (S.Both{r, tb}, N.TimerCancel{k} <> ab)), Lv.settles(st, S.Both{r, tb}, N.TimerCancel{k} <> ab), P.Bool.and_intro(Lv.kept(st, k), Bool.and(Tb.Table.has(S.Session, k, S.State.sessions(st)), Lv.ok(st, (S.Both{r, tb}, ab))), ek, P.Bool.and_intro(Tb.Table.has(S.Session, k, S.State.sessions(st)), Lv.ok(st, (S.Both{r, tb}, ab)), eh, ho)))
 
 # What an outcome's actions say of the deletions it starts stays said with
@@ -1211,43 +1251,101 @@ def Lv.arms_r(+tx: S.Tx, +xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +h: {Lv.arm
     case S.BumpSeq{n}:
       {==}
 
-def Lv.leaf(+st: S.State, +tx: S.Tx, +as: List<&2, N.Act>, +ha: {Lv.acts(st, as) == True{} : Bool}, +hf: {Bool.and(Lv.arms(tx, as), Lv.free(st, tx)) == True{} : Bool}, +hs: {Lv.stops(tx, as) == True{} : Bool}, +hw: {Lv.seeds(st, tx, as) == True{} : Bool}) -> {Lv.okf(st, (tx, as)) == True{} : Bool}:
-  Lv.does_intro(st, tx, as, Lv.free(st, tx), hs, hw, ha, P.Bool.and_true_l(Lv.arms(tx, as), Lv.free(st, tx), hf), P.Bool.and_true_r(Lv.arms(tx, as), Lv.free(st, tx), hf))
+def Lv.leaf_ok(+st: S.State, +tx: S.Tx, +as: List<&2, N.Act>, +ha: {Lv.acts(st, as) == True{} : Bool}, +hf: {Bool.and(Lv.arms(tx, as), Lv.free(st, tx)) == True{} : Bool}, +hs: {Lv.stops(tx, as) == True{} : Bool}, +hw: {Lv.seeds(st, tx, as) == True{} : Bool}, +hk: {PF.Fs.ok(st, tx, as) == True{} : Bool}) -> {Lv.okf(st, (tx, as)) == True{} : Bool}:
+  Lv.does_intro(st, tx, as, Lv.free(st, tx), hs, hw, ha, P.Bool.and_true_l(Lv.arms(tx, as), Lv.free(st, tx), hf), P.Bool.and_true_r(Lv.arms(tx, as), Lv.free(st, tx), hf), hk)
 
-def Lv.prepend(+st: S.State, +a: N.Act, +o: N.GOut(), +ha: {Lv.act(st, a) == True{} : Bool}, +h: {Lv.okf(st, o) == True{} : Bool}, +hs: {Lv.stop(N.Out.tx(o), Lv.cancelled(a)) == True{} : Bool}) -> {Lv.okf(st, N.Out.prepend(a, o)) == True{} : Bool}:
+def Lv.leaf(+st: S.State, +tx: S.Tx, +as: List<&2, N.Act>, +ha: {Lv.acts(st, as) == True{} : Bool}, +hf: {Bool.and(Lv.arms(tx, as), Lv.free(st, tx)) == True{} : Bool}, +hs: {Lv.stops(tx, as) == True{} : Bool}, +hw: {Lv.seeds(st, tx, as) == True{} : Bool}, +hn: {PF.Fs.nas(st, tx, as) == True{} : Bool}) -> {Lv.okf(st, (tx, as)) == True{} : Bool}:
+  Lv.leaf_ok(st, tx, as, ha, hf, hs, hw, PF.Fs.ok_of(st, tx, as, hn))
+
+# An action in front that carries no protected NAS message.
+def Lv.prepend_n(+st: S.State, +a: N.Act, +o: N.GOut(), +ha: {Lv.act(st, a) == True{} : Bool}, +h: {Lv.okf(st, o) == True{} : Bool}, +hs: {Lv.stop(N.Out.tx(o), Lv.cancelled(a)) == True{} : Bool}, +hk: {PF.Fs.ok(st, N.Out.tx(o), a <> N.Out.acts(o)) == True{} : Bool}) -> {Lv.okf(st, N.Out.prepend(a, o)) == True{} : Bool}:
   match o:
     case (+tx, +acts):
       +f = Lv.free(st, tx)
       +hr = Lv.does_rest(st, tx, acts, f, h)
-      Lv.leaf(st, tx, a <> acts, Lv.cons(st, a, acts, ha, Lv.does_acts(st, tx, acts, f, h)), P.Bool.and_intro(Lv.arms(tx, a <> acts), f, Lv.arms_r(tx, [a], acts, P.Bool.and_true_l(Lv.arms(tx, acts), f, hr)), P.Bool.and_true_r(Lv.arms(tx, acts), f, hr)), Lv.stops_cons(tx, a, acts, hs, Lv.does_stops(st, tx, acts, f, h)), Lv.seeds_r(st, tx, [a], acts, Lv.does_seeds(st, tx, acts, f, h)))
+      Lv.leaf_ok(st, tx, a <> acts, Lv.cons(st, a, acts, ha, Lv.does_acts(st, tx, acts, f, h)), P.Bool.and_intro(Lv.arms(tx, a <> acts), f, Lv.arms_r(tx, [a], acts, P.Bool.and_true_l(Lv.arms(tx, acts), f, hr)), P.Bool.and_true_r(Lv.arms(tx, acts), f, hr)), Lv.stops_cons(tx, a, acts, hs, Lv.does_stops(st, tx, acts, f, h)), Lv.seeds_r(st, tx, [a], acts, Lv.does_seeds(st, tx, acts, f, h)), hk)
 
-def Lv.also(+st: S.State, +o: N.GOut(), +more: List<&2, N.Act>, +h: {Lv.okf(st, o) == True{} : Bool}, +hm: {Lv.acts(st, more) == True{} : Bool}, +hs: {Lv.stops(N.Out.tx(o), more) == True{} : Bool}) -> {Lv.okf(st, N.Out.also(o, more)) == True{} : Bool}:
+def Lv.prepend(+st: S.State, +a: N.Act, +o: N.GOut(), +ha: {Lv.act(st, a) == True{} : Bool}, +h: {Lv.okf(st, o) == True{} : Bool}, +hs: {Lv.stop(N.Out.tx(o), Lv.cancelled(a)) == True{} : Bool}, +hn: {PF.Fs.none(N.Act.nas(a)) == True{} : Bool}) -> {Lv.okf(st, N.Out.prepend(a, o)) == True{} : Bool}:
+  match o:
+    case (+tx, +acts):
+      Lv.prepend_n(st, a, (tx, acts), ha, h, hs, PF.Fs.ok_map(st, tx, acts, tx, a <> acts, e => PF.Fs.cons(st, tx, a, acts, e, hn), Lv.does_fs(st, tx, acts, Lv.free(st, tx), h)))
+
+# Actions after that carry no protected NAS message.
+def Lv.also(+st: S.State, +o: N.GOut(), +more: List<&2, N.Act>, +h: {Lv.okf(st, o) == True{} : Bool}, +hm: {Lv.acts(st, more) == True{} : Bool}, +hs: {Lv.stops(N.Out.tx(o), more) == True{} : Bool}, +hn: {PF.Fs.amute(more) == True{} : Bool}) -> {Lv.okf(st, N.Out.also(o, more)) == True{} : Bool}:
   match o:
     case (+tx, +acts):
       +f = Lv.free(st, tx)
       +hr = Lv.does_rest(st, tx, acts, f, h)
-      Lv.leaf(st, tx, List.append(&2, N.Act, acts, more), Lv.append(st, acts, more, Lv.does_acts(st, tx, acts, f, h), hm), P.Bool.and_intro(Lv.arms(tx, List.append(&2, N.Act, acts, more)), f, Lv.arms_l(tx, acts, more, P.Bool.and_true_l(Lv.arms(tx, acts), f, hr)), P.Bool.and_true_r(Lv.arms(tx, acts), f, hr)), Lv.stops_app(tx, acts, more, Lv.does_stops(st, tx, acts, f, h), hs), Lv.seeds_l(st, tx, acts, more, Lv.does_seeds(st, tx, acts, f, h)))
+      Lv.leaf_ok(st, tx, List.append(&2, N.Act, acts, more), Lv.append(st, acts, more, Lv.does_acts(st, tx, acts, f, h), hm), P.Bool.and_intro(Lv.arms(tx, List.append(&2, N.Act, acts, more)), f, Lv.arms_l(tx, acts, more, P.Bool.and_true_l(Lv.arms(tx, acts), f, hr)), P.Bool.and_true_r(Lv.arms(tx, acts), f, hr)), Lv.stops_app(tx, acts, more, Lv.does_stops(st, tx, acts, f, h), hs), Lv.seeds_l(st, tx, acts, more, Lv.does_seeds(st, tx, acts, f, h)), PF.Fs.ok_map(st, tx, acts, tx, List.append(&2, N.Act, acts, more), e => PF.Fs.app_mute(st, tx, acts, more, e, hn), Lv.does_fs(st, tx, acts, f, h)))
 
-# Two outcomes in order: what holds of each holds of both, the second calm.
-def Lv.both(+st: S.State, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, +fa: Bool, +fb: Bool, +ha: {Lv.does(st, ta, aa, fa) == True{} : Bool}, +hb: {Lv.does(st, tb, ab, fb) == True{} : Bool}, +hc: {Lv.calm(tb) == True{} : Bool}) -> {Lv.does(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab), Bool.and(fa, fb)) == True{} : Bool}:
-  +ra = Lv.does_rest(st, ta, aa, fa, ha)
-  +rb = Lv.does_rest(st, tb, ab, fb, hb)
+# Two outcomes in order: what holds of each holds of both, the second calm;
+# and what nas_sec.downlink_fresh asks, one of them mute (PF.Fs.mute).
+def Lv.both0(+st: S.State, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, +fa: Bool, +fb: Bool, +ha: {Lv.does0(st, ta, aa, fa) == True{} : Bool}, +hb: {Lv.does0(st, tb, ab, fb) == True{} : Bool}, +hc: {Lv.calm(tb) == True{} : Bool}) -> {Lv.does0(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab), Bool.and(fa, fb)) == True{} : Bool}:
+  +ra = Lv.does0_rest(st, ta, aa, fa, ha)
+  +rb = Lv.does0_rest(st, tb, ab, fb, hb)
   +xs = List.append(&2, N.Act, aa, ab)
-  Lv.does_intro(st, S.Both{ta, tb}, xs, Bool.and(fa, fb), Lv.stops_app(S.Both{ta, tb}, aa, ab, Lv.stops_l(ta, tb, aa, Lv.does_stops(st, ta, aa, fa, ha), hc), Lv.stops_r(ta, tb, ab, Lv.does_stops(st, tb, ab, fb, hb))), P.Bool.and_intro(Lv.seeds(st, ta, xs), Lv.seeds(st, tb, xs), Lv.seeds_l(st, ta, aa, ab, Lv.does_seeds(st, ta, aa, fa, ha)), Lv.seeds_r(st, tb, aa, ab, Lv.does_seeds(st, tb, ab, fb, hb))), Lv.append(st, aa, ab, Lv.does_acts(st, ta, aa, fa, ha), Lv.does_acts(st, tb, ab, fb, hb)), P.Bool.and_intro(Lv.arms(ta, xs), Lv.arms(tb, xs), Lv.arms_l(ta, aa, ab, P.Bool.and_true_l(Lv.arms(ta, aa), fa, ra)), Lv.arms_r(tb, aa, ab, P.Bool.and_true_l(Lv.arms(tb, ab), fb, rb))), P.Bool.and_intro(fa, fb, P.Bool.and_true_r(Lv.arms(ta, aa), fa, ra), P.Bool.and_true_r(Lv.arms(tb, ab), fb, rb)))
+  Lv.does0_intro(st, S.Both{ta, tb}, xs, Bool.and(fa, fb), Lv.stops_app(S.Both{ta, tb}, aa, ab, Lv.stops_l(ta, tb, aa, Lv.does0_stops(st, ta, aa, fa, ha), hc), Lv.stops_r(ta, tb, ab, Lv.does0_stops(st, tb, ab, fb, hb))), P.Bool.and_intro(Lv.seeds(st, ta, xs), Lv.seeds(st, tb, xs), Lv.seeds_l(st, ta, aa, ab, Lv.does0_seeds(st, ta, aa, fa, ha)), Lv.seeds_r(st, tb, aa, ab, Lv.does0_seeds(st, tb, ab, fb, hb))), Lv.append(st, aa, ab, Lv.does0_acts(st, ta, aa, fa, ha), Lv.does0_acts(st, tb, ab, fb, hb)), P.Bool.and_intro(Lv.arms(ta, xs), Lv.arms(tb, xs), Lv.arms_l(ta, aa, ab, P.Bool.and_true_l(Lv.arms(ta, aa), fa, ra)), Lv.arms_r(tb, aa, ab, P.Bool.and_true_l(Lv.arms(tb, ab), fb, rb))), P.Bool.and_intro(fa, fb, P.Bool.and_true_r(Lv.arms(ta, aa), fa, ra), P.Bool.and_true_r(Lv.arms(tb, ab), fb, rb)))
 
-def Lv.join(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Lv.okf(st, a) == True{} : Bool}, +hb: {Lv.okf(st, b) == True{} : Bool}) -> {Lv.okf(st, N.Out.join(a, b)) == True{} : Bool}:
+def Lv.both_by(+st: S.State, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, +fa: Bool, +fb: Bool, +ha: {Lv.does(st, ta, aa, fa) == True{} : Bool}, +hb: {Lv.does(st, tb, ab, fb) == True{} : Bool}, +hc: {Lv.calm(tb) == True{} : Bool}, f: {PF.Fs.nas(st, ta, aa) == True{} : Bool} -> {PF.Fs.nas(st, tb, ab) == True{} : Bool} -> {PF.Fs.nas(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab)) == True{} : Bool}) -> {Lv.does(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab), Bool.and(fa, fb)) == True{} : Bool}:
+  Lv.does_ok(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab), Bool.and(fa, fb), Lv.both0(st, ta, aa, tb, ab, fa, fb, Lv.does_core(st, ta, aa, fa, ha), Lv.does_core(st, tb, ab, fb, hb), hc), PF.Fs.ok_map2(st, ta, aa, tb, ab, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab), f, Lv.does_fs(st, ta, aa, fa, ha), Lv.does_fs(st, tb, ab, fb, hb)))
+
+def Lv.both(+st: S.State, +ta: S.Tx, +aa: List<&2, N.Act>, +tb: S.Tx, +ab: List<&2, N.Act>, +fa: Bool, +fb: Bool, +ha: {Lv.does(st, ta, aa, fa) == True{} : Bool}, +hb: {Lv.does(st, tb, ab, fb) == True{} : Bool}, +hc: {Lv.calm(tb) == True{} : Bool}, +hq: {Bool.or(PF.Fs.mute(ta, aa), PF.Fs.mute(tb, ab)) == True{} : Bool}) -> {Lv.does(st, S.Both{ta, tb}, List.append(&2, N.Act, aa, ab), Bool.and(fa, fb)) == True{} : Bool}:
+  Lv.both_by(st, ta, aa, tb, ab, fa, fb, ha, hb, hc, e1 => e2 => PF.Fs.both(st, ta, aa, tb, ab, e1, e2, hq))
+
+# What every outcome keeps but nas_sec.downlink_fresh: joins keep it
+# whatever their sides send.
+def Lv.okf0(+st: S.State, +o: N.GOut()) -> Bool:
+  Lv.does0(st, N.Out.tx(o), N.Out.acts(o), Lv.free(st, N.Out.tx(o)))
+
+def Lv.okf0_free(+st: S.State, +o: N.GOut(), +h: {Lv.okf0(st, o) == True{} : Bool}) -> {Lv.free(st, N.Out.tx(o)) == True{} : Bool}:
+  Lv.does0_f(st, N.Out.tx(o), N.Out.acts(o), Lv.free(st, N.Out.tx(o)), h)
+
+def Lv.okf_core(+st: S.State, +o: N.GOut(), +h: {Lv.okf(st, o) == True{} : Bool}) -> {Lv.okf0(st, o) == True{} : Bool}:
+  Lv.does_core(st, N.Out.tx(o), N.Out.acts(o), Lv.free(st, N.Out.tx(o)), h)
+
+def Lv.okf_of(+st: S.State, +o: N.GOut(), +h0: {Lv.okf0(st, o) == True{} : Bool}, +hn: {PF.Fs.nas(st, N.Out.tx(o), N.Out.acts(o)) == True{} : Bool}) -> {Lv.okf(st, o) == True{} : Bool}:
+  Lv.does_of(st, N.Out.tx(o), N.Out.acts(o), Lv.free(st, N.Out.tx(o)), h0, hn)
+
+def Lv.okf_ok(+st: S.State, +o: N.GOut(), +h0: {Lv.okf0(st, o) == True{} : Bool}, +hk: {PF.Fs.ok(st, N.Out.tx(o), N.Out.acts(o)) == True{} : Bool}) -> {Lv.okf(st, o) == True{} : Bool}:
+  Lv.does_ok(st, N.Out.tx(o), N.Out.acts(o), Lv.free(st, N.Out.tx(o)), h0, hk)
+
+def Lv.leaf0(+st: S.State, +tx: S.Tx, +as: List<&2, N.Act>, +ha: {Lv.acts(st, as) == True{} : Bool}, +hf: {Bool.and(Lv.arms(tx, as), Lv.free(st, tx)) == True{} : Bool}, +hs: {Lv.stops(tx, as) == True{} : Bool}, +hw: {Lv.seeds(st, tx, as) == True{} : Bool}) -> {Lv.okf0(st, (tx, as)) == True{} : Bool}:
+  Lv.does0_intro(st, tx, as, Lv.free(st, tx), hs, hw, ha, P.Bool.and_true_l(Lv.arms(tx, as), Lv.free(st, tx), hf), P.Bool.and_true_r(Lv.arms(tx, as), Lv.free(st, tx), hf))
+
+def Lv.also0(+st: S.State, +o: N.GOut(), +more: List<&2, N.Act>, +h: {Lv.okf0(st, o) == True{} : Bool}, +hm: {Lv.acts(st, more) == True{} : Bool}, +hs: {Lv.stops(N.Out.tx(o), more) == True{} : Bool}) -> {Lv.okf0(st, N.Out.also(o, more)) == True{} : Bool}:
+  match o:
+    case (+tx, +acts):
+      +f = Lv.free(st, tx)
+      +hr = Lv.does0_rest(st, tx, acts, f, h)
+      Lv.leaf0(st, tx, List.append(&2, N.Act, acts, more), Lv.append(st, acts, more, Lv.does0_acts(st, tx, acts, f, h), hm), P.Bool.and_intro(Lv.arms(tx, List.append(&2, N.Act, acts, more)), f, Lv.arms_l(tx, acts, more, P.Bool.and_true_l(Lv.arms(tx, acts), f, hr)), P.Bool.and_true_r(Lv.arms(tx, acts), f, hr)), Lv.stops_app(tx, acts, more, Lv.does0_stops(st, tx, acts, f, h), hs), Lv.seeds_l(st, tx, acts, more, Lv.does0_seeds(st, tx, acts, f, h)))
+
+def Lv.join0(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Lv.okf0(st, a) == True{} : Bool}, +hb: {Lv.okf0(st, b) == True{} : Bool}) -> {Lv.okf0(st, N.Out.join(a, b)) == True{} : Bool}:
   match a:
     case (+ta, +aa):
       match b:
         case (+tb, +ab):
-          Lv.both(st, ta, aa, tb, ab, Lv.free(st, ta), Lv.free(st, tb), ha, hb, Lv.free_calm(st, tb, Lv.does_f(st, tb, ab, Lv.free(st, tb), hb)))
+          Lv.both0(st, ta, aa, tb, ab, Lv.free(st, ta), Lv.free(st, tb), ha, hb, Lv.free_calm(st, tb, Lv.does0_f(st, tb, ab, Lv.free(st, tb), hb)))
 
-def Lv.ojoin(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ues: Tb.Table(S.Ue), +ha: {Lv.does(st, N.Out.tx(a), N.Out.acts(a), Lv.homed(st, N.Out.tx(a), ues)) == True{} : Bool}, +hb: {Lv.does(st, N.Out.tx(b), N.Out.acts(b), Lv.homed(st, N.Out.tx(b), PT.Tk.ues(N.Out.tx(a), ues))) == True{} : Bool}, +hc: {Lv.calm(N.Out.tx(b)) == True{} : Bool}) -> {Lv.does(st, N.Out.tx(N.Out.join(a, b)), N.Out.acts(N.Out.join(a, b)), Lv.homed(st, N.Out.tx(N.Out.join(a, b)), ues)) == True{} : Bool}:
+def Lv.join_by(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Lv.okf(st, a) == True{} : Bool}, +hb: {Lv.okf(st, b) == True{} : Bool}, f: {PF.Fs.nas(st, N.Out.tx(a), N.Out.acts(a)) == True{} : Bool} -> {PF.Fs.nas(st, N.Out.tx(b), N.Out.acts(b)) == True{} : Bool} -> {PF.Fs.nas(st, S.Both{N.Out.tx(a), N.Out.tx(b)}, List.append(&2, N.Act, N.Out.acts(a), N.Out.acts(b))) == True{} : Bool}) -> {Lv.okf(st, N.Out.join(a, b)) == True{} : Bool}:
   match a:
     case (+ta, +aa):
       match b:
         case (+tb, +ab):
-          Lv.both(st, ta, aa, tb, ab, Lv.homed(st, ta, ues), Lv.homed(st, tb, PT.Tk.ues(ta, ues)), ha, hb, hc)
+          Lv.both_by(st, ta, aa, tb, ab, Lv.free(st, ta), Lv.free(st, tb), ha, hb, Lv.free_calm(st, tb, Lv.does_f(st, tb, ab, Lv.free(st, tb), hb)), f)
+
+def Lv.join(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Lv.okf(st, a) == True{} : Bool}, +hb: {Lv.okf(st, b) == True{} : Bool}, +hq: {Bool.or(PF.Fs.mute(N.Out.tx(a), N.Out.acts(a)), PF.Fs.mute(N.Out.tx(b), N.Out.acts(b))) == True{} : Bool}) -> {Lv.okf(st, N.Out.join(a, b)) == True{} : Bool}:
+  match a:
+    case (+ta, +aa):
+      match b:
+        case (+tb, +ab):
+          Lv.join_by(st, (ta, aa), (tb, ab), ha, hb, e1 => e2 => PF.Fs.both(st, ta, aa, tb, ab, e1, e2, hq))
+
+def Lv.ojoin(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ues: Tb.Table(S.Ue), +ha: {Lv.does(st, N.Out.tx(a), N.Out.acts(a), Lv.homed(st, N.Out.tx(a), ues)) == True{} : Bool}, +hb: {Lv.does(st, N.Out.tx(b), N.Out.acts(b), Lv.homed(st, N.Out.tx(b), PT.Tk.ues(N.Out.tx(a), ues))) == True{} : Bool}, +hc: {Lv.calm(N.Out.tx(b)) == True{} : Bool}, +hq: {Bool.or(PF.Fs.mute(N.Out.tx(a), N.Out.acts(a)), PF.Fs.mute(N.Out.tx(b), N.Out.acts(b))) == True{} : Bool}) -> {Lv.does(st, N.Out.tx(N.Out.join(a, b)), N.Out.acts(N.Out.join(a, b)), Lv.homed(st, N.Out.tx(N.Out.join(a, b)), ues)) == True{} : Bool}:
+  match a:
+    case (+ta, +aa):
+      match b:
+        case (+tb, +ab):
+          Lv.both(st, ta, aa, tb, ab, Lv.homed(st, ta, ues), Lv.homed(st, tb, PT.Tk.ues(ta, ues)), ha, hb, hc, hq)
 
 def Lv.cancel(+st: S.State, +key: U32, +g: Maybe<&2, S.Guard>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}) -> {Lv.acts(st, N.Guard.cancel(key, g)) == True{} : Bool}:
   match g:
@@ -1668,9 +1766,9 @@ def Lv.del_if(+st: S.State, +key: U32, +t: S.Session, +seq: U32, +more: Tb.Table
       +hg = P.Bool.or_r(N.Act.starts_for(key, Up.N4.t1_ms(), x), N.Acts.starts_for(key, Up.N4.t1_ms(), [y]), P.Bool.or_l(N.Act.starts_for(key, Up.N4.t1_ms(), y), False{}, P.Bool.and_intro(U32.is_eq(key, key), True{}, P.U32.is_eq_refl(key), {==})))
       +ha : {Lv.arms(tx, [x, y]) == True{} : Bool} = P.Bool.and_intro(Lv.arms(S.Revar{key, v}, [x, y]), True{}, P.Bool.and_intro(True{}, Bool.and(N.Acts.sends(request, [x, y]), N.Acts.starts_for(key, Up.N4.t1_ms(), [x, y])), {==}, P.Bool.and_intro(N.Acts.sends(request, [x, y]), N.Acts.starts_for(key, Up.N4.t1_ms(), [x, y]), hs, hg)), {==})
       +hf = P.Bool.and_intro(Bool.and(Lv.spare(st, key, v), Lv.revar_ok(st, v)), True{}, P.Bool.and_intro(Lv.spare(st, key, v), Lv.revar_ok(st, v), hk, kv), {==})
-      Lv.join(st, (tx, [x, y]), Up.N4.deletions(more, U32.add(seq, 1)), Lv.leaf(st, tx, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, None{}, key, {==}, hk), {==})), P.Bool.and_intro(Lv.arms(tx, [x, y]), Lv.free(st, tx), ha, hf), {==}, {==}), later(U32.add(seq, 1)))
+      Lv.join(st, (tx, [x, y]), Up.N4.deletions(more, U32.add(seq, 1)), Lv.leaf(st, tx, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, None{}, key, {==}, hk), {==})), P.Bool.and_intro(Lv.arms(tx, [x, y]), Lv.free(st, tx), ha, hf), {==}, {==}, {==}), later(U32.add(seq, 1)), {==})
     case False{}:
-      Lv.join(st, (S.DelSession{key}, []), Up.N4.deletions(more, seq), hk, later(seq))
+      Lv.join(st, (S.DelSession{key}, []), Up.N4.deletions(more, seq), hk, later(seq), {==})
 
 # Session Deletions at the UPF are built from sessions of the state.
 def Lv.dels(+st: S.State, +rows: Tb.Table(S.Session), +seq: U32, +e: {Lv.srows(rows, S.State.sessions(st)) == True{} : Bool}, +ek: {Lv.krows(rows, st) == True{} : Bool}) -> {Lv.okf(st, Up.N4.deletions(rows, seq)) == True{} : Bool}:
@@ -2089,14 +2187,33 @@ def Lv.put_ok(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ep: {S.Ue.phase(
   %sep : {Bool.and(Lv.chain_put(st, key, S.Phase.nh(_)), Bool.and(Lv.keyed(st, key), Bool.and(S.Phase.guarded(_), Bool.and(S.Phase.idle(_), Lv.home(st, ue))))) == True{} : Bool}
   P.Bool.and_intro(Lv.chain_put(st, key, S.Phase.nh(p)), Bool.and(Lv.keyed(st, key), Bool.and(S.Phase.guarded(p), Bool.and(S.Phase.idle(p), Lv.home(st, ue)))), ec, P.Bool.and_intro(Lv.keyed(st, key), Bool.and(S.Phase.guarded(p), Bool.and(S.Phase.idle(p), Lv.home(st, ue))), Lv.keyed_of(st, key, Lv.held_live(st, key, ek)), P.Bool.and_intro(S.Phase.guarded(p), Bool.and(S.Phase.idle(p), Lv.home(st, ue)), eg, P.Bool.and_intro(S.Phase.idle(p), Lv.home(st, ue), ei, ehome))))
 
-def Lw.place(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ep: {S.Ue.phase(ue) == p : S.Phase}, +eg: {S.Phase.guarded(p) == True{} : Bool}, +ei: {S.Phase.idle(p) == True{} : Bool}, +en: {S.Phase.nh(p) == None{} : Maybe<&2, S.Nh>}, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.place(st, key, ue)) == True{} : Bool}:
+# Deleting sessions first, or after: one side of the join is mute.
+def Lv.mute_dels(+rows: Tb.Table(S.Session), +seq: U32, +b: N.GOut()) -> {Bool.or(PF.Fs.mute(N.Out.tx(Up.N4.deletions(rows, seq)), N.Out.acts(Up.N4.deletions(rows, seq))), PF.Fs.mute(N.Out.tx(b), N.Out.acts(b))) == True{} : Bool}:
+  P.Bool.or_l(PF.Fs.mute(N.Out.tx(Up.N4.deletions(rows, seq)), N.Out.acts(Up.N4.deletions(rows, seq))), PF.Fs.mute(N.Out.tx(b), N.Out.acts(b)), PF.Fs.deletions_mute(rows, seq))
+
+def Lw.place0(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ep: {S.Ue.phase(ue) == p : S.Phase}, +eg: {S.Phase.guarded(p) == True{} : Bool}, +ei: {S.Phase.idle(p) == True{} : Bool}, +en: {S.Phase.nh(p) == None{} : Maybe<&2, S.Nh>}, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf0(st, Gmm.Gmm.place(st, key, ue)) == True{} : Bool}:
   +vs = S.Ues.evicted(key, ue, S.State.ues(st))
   +gone = Gmm.Gmm.sessions(S.Ues.evicted(key, ue, S.State.ues(st)), S.State.sessions(st))
-  Lv.join(st, Up.N4.deletions(gone, S.State.pfcp_seq(st)), (S.Put{key, ue}, Gmm.Gmm.evict(vs)), Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_held(vs, S.State.sessions(st)), Lv.krows_held(st, vs)), Lv.leaf(st, S.Put{key, ue}, Gmm.Gmm.evict(vs), Lw.evict(st, vs, Lv.keys_sift(S.Victims{key, ue}, S.State.ues(st))), Lv.put_ok(st, key, ue, p, ep, ek, eg, ei, Lv.chain_none(st, key, p, en), ehome), Lv.evict_stops(S.Put{key, ue}, vs), Lv.seed_none(st, key, ue, p, ep, en, Gmm.Gmm.evict(vs))))
+  +ev = Gmm.Gmm.evict(vs)
+  +d = Up.N4.deletions(gone, S.State.pfcp_seq(st))
+  Lv.join0(st, d, (S.Put{key, ue}, ev), Lv.okf_core(st, d, Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_held(vs, S.State.sessions(st)), Lv.krows_held(st, vs))), Lv.leaf0(st, S.Put{key, ue}, ev, Lw.evict(st, vs, Lv.keys_sift(S.Victims{key, ue}, S.State.ues(st))), Lv.put_ok(st, key, ue, p, ep, ek, eg, ei, Lv.chain_none(st, key, p, en), ehome), Lv.evict_stops(S.Put{key, ue}, vs), Lv.seed_none(st, key, ue, p, ep, en, ev)))
+
+# A context put with no NAS context.
+def Lw.place(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ep: {S.Ue.phase(ue) == p : S.Phase}, +eg: {S.Phase.guarded(p) == True{} : Bool}, +ei: {S.Phase.idle(p) == True{} : Bool}, +en: {S.Phase.nh(p) == None{} : Maybe<&2, S.Nh>}, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +enas: {S.Phase.nas(p) == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {Lv.okf(st, Gmm.Gmm.place(st, key, ue)) == True{} : Bool}:
+  +vs = S.Ues.evicted(key, ue, S.State.ues(st))
+  +gone = Gmm.Gmm.sessions(S.Ues.evicted(key, ue, S.State.ues(st)), S.State.sessions(st))
+  +ev = Gmm.Gmm.evict(vs)
+  +d = Up.N4.deletions(gone, S.State.pfcp_seq(st))
+  +ec : {S.Phase.nas(S.Ue.phase(ue)) == None{} : Maybe<&2, Sec.Nas.Ctx>} = (%Equal.sym(S.Phase, S.Ue.phase(ue), p, ep) : {S.Phase.nas(_) == None{} : Maybe<&2, Sec.Nas.Ctx>}; enas)
+  +hn = P.Bool.and_intro(PF.Fs.write(st, key, S.Phase.nas(S.Ue.phase(ue)), ev), PF.Fs.sends(S.Put{key, ue}, ev), PF.Fs.write_none(st, key, S.Phase.nas(S.Ue.phase(ue)), ev, ec, PF.Fs.amute_nas(key, ev, PF.Fs.evict_mute(vs))), PF.Fs.amute_sends(S.Put{key, ue}, ev, PF.Fs.evict_mute(vs)))
+  +hq = P.Bool.or_l(PF.Fs.mute(N.Out.tx(d), N.Out.acts(d)), PF.Fs.mute(S.Put{key, ue}, ev), PF.Fs.deletions_mute(gone, S.State.pfcp_seq(st)))
+  +hd = Lv.does_fs(st, N.Out.tx(d), N.Out.acts(d), Lv.free(st, N.Out.tx(d)), Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_held(vs, S.State.sessions(st)), Lv.krows_held(st, vs)))
+  +o = Gmm.Gmm.place(st, key, ue)
+  Lv.okf_ok(st, o, Lw.place0(st, key, ue, p, ep, eg, ei, en, ek, ehome), PF.Fs.ok_map(st, N.Out.tx(d), N.Out.acts(d), N.Out.tx(o), N.Out.acts(o), e => PF.Fs.both_out(st, d, (S.Put{key, ue}, ev), e, hn, hq), hd))
 
 def Lw.forget(+st: S.State, +key: U32) -> {Lv.okf(st, Gmm.Gmm.forget(st, key)) == True{} : Bool}:
   +gone = S.Sessions.of_ue(key, S.State.sessions(st))
-  Lv.join(st, Up.N4.deletions(gone, S.State.pfcp_seq(st)), (S.Del{key}, []), Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key)), {==})
+  Lv.join(st, Up.N4.deletions(gone, S.State.pfcp_seq(st)), (S.Del{key}, []), Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key)), {==}, Lv.mute_dels(gone, S.State.pfcp_seq(st), (S.Del{key}, [])))
 
 # 5GSM
 # ----
@@ -2127,49 +2244,63 @@ def Lv.free_ctx(+st: S.State, +key: U32, +ue: S.Ue, +c: Sec.Nas.Ctx, +eg: {Tb.Ta
   +q = S.Phase.with_ctx(S.Ue.phase(ue), c)
   P.Bool.and_intro(Lv.chain(st, key, S.Phase.nh(q)), Bool.and(S.Phase.guarded(q), S.Phase.idle(q)), Lv.chain_at(st, key, ue, S.Ue.phase(ue), eg, {==}, S.Phase.nh(q), Lv.chains_ctx(S.Ue.phase(ue), c)), Lv.g_ctx(S.Ue.phase(ue), c, ec))
 
-def Lw.out_dl(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +plain: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, N.Out.dl(key, ue, ctx, plain)) == True{} : Bool}:
-  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, plain)
-  +x : N.Act = N.DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p)}
-  Lv.leaf(st, S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), Lv.free_ctx(st, key, ue, Sec.Nas.Protected.ctx(p), eg, ec), {==}, {==})
+def Lw.out_dl(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +plain: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, N.Out.dl(key, ue, ctx, plain)) == True{} : Bool}:
+  match ctx:
+    case Sec.Ctx{+k, +d, +ul}:
+      +p : Sec.Nas.Protected = Sec.Nas.protect(Sec.Ctx{k, d, ul}, Sec.Ciphered{}, plain)
+      +x : N.Act = N.DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p)}
+      +c2 : Sec.Nas.Ctx = Sec.Ctx{k, Sec.Nas.Count.next(d), ul}
+      +hn = PF.Fs.told_leaf(st, key, S.Phase.with_ctx(S.Ue.phase(ue), c2), k, d, ul, Sec.Ciphered{}, plain, x, PF.Fs.dl_carries(S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p), PF.Fs.protect_protected(k, d, ul, Sec.Ciphered{}, plain)), PF.Fs.nas_with(S.Ue.phase(ue), c2, ec), ev)
+      Lv.leaf(st, S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), c2)}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), Lv.free_ctx(st, key, ue, c2, eg, ec), {==}, {==}, hn)
 
 # A verified message not acted on: the context's phase keeps its NAS context.
-def Lw.out_verified(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +why: String, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.ok(st, N.Out.verified(key, ue, ctx, why)) == True{} : Bool}:
-  Lv.free_homed(st, S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, S.State.ues(st), Lv.free_ctx(st, key, ue, ctx, eg, ec))
+def Lw.out_verified(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +why: String, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, N.Out.verified(key, ue, ctx, why)) == True{} : Bool}:
+  match ctx:
+    case Sec.Ctx{+k, +d, +ul}:
+      +c : Sec.Nas.Ctx = Sec.Ctx{k, d, ul}
+      +q = S.Phase.with_ctx(S.Ue.phase(ue), c)
+      +hk = PF.Fs.kept_holds(st, key, q, k, d, ul, PF.Fs.nas_with(S.Ue.phase(ue), c, ec), ev)
+      Lv.does_of(st, S.Rephase{key, q}, [N.Note{F.Warn{}, why}], Lv.homed(st, S.Rephase{key, q}, S.State.ues(st)), Lv.free_homed(st, S.Rephase{key, q}, S.State.ues(st), Lv.free_ctx(st, key, ue, c, eg, ec)), P.Bool.and_intro(N.Fresh.holds(PF.Fs.ctx(st, key), S.Phase.nas(q), []), True{}, hk, {==}))
 
-# PDU Session Resource Release Command: the context's phase takes the NAS context moved on.
-def Lw.out_release(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.n2_release(key, ue, ctx, psi)) == True{} : Bool}:
-  +p : Sec.Nas.Protected = Gsm.Gsm.release_nas(ctx, psi)
-  +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, N.Ngap.pdu_release(key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p), N.Ngap.misc(G.CauseMisc.unspecified()))}
-  Lv.leaf(st, S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), Lv.free_ctx(st, key, ue, Sec.Nas.Protected.ctx(p), eg, ec), {==}, {==})
+def Lw.join(+st: S.State) -> PW.It.Join(o => {Lv.okf0(st, o) == True{} : Bool}):
+  +a => +b => ha => hb => Lv.join0(st, a, b, ha, hb)
 
-def Lw.tell(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +t: Gsm.Tell, +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.tell(key, ue, ctx, psi, t)) == True{} : Bool}:
+# What a UE is told of a session given up, its context not written.
+def Lw.told(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +t: Gsm.Tell, +ek: {Lv.held(st, key) == True{} : Bool}) -> {Lv.okf0(st, (S.Keep{}, Gsm.Gsm.Told.acts(Gsm.Gsm.told(key, ue, ctx, psi, t)))) == True{} : Bool}:
   match t:
     case Gsm.Reply{+sm}:
-      Lw.out_dl(st, key, ue, ctx, Gsm.Gsm.dl_transport(psi, sm), ek, ec, eg)
+      +x : N.Act = N.DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.dl_transport(psi, sm)))}
+      Lv.leaf0(st, S.Keep{}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), {==}, {==}, {==})
     case Gsm.Release{}:
-      Lw.out_release(st, key, ue, ctx, psi, ek, ec, eg)
+      +x : N.Act = N.PduRelease{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.release_plain(psi)))}
+      Lv.leaf0(st, S.Keep{}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), {==}, {==}, {==})
 
-def Lw.to_ue_ctx(+st: S.State, +key: U32, +ue: S.Ue, +psi: U32, +t: Gsm.Tell, +ctx: Maybe<&2, Sec.Nas.Ctx>, +ek: {Lv.held(st, key) == True{} : Bool}, +ec: {S.Phase.ctx(S.Ue.phase(ue)) == ctx : Maybe<&2, Sec.Nas.Ctx>}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.to_ue_ctx(key, ue, psi, t, ctx)) == True{} : Bool}:
-  match ctx:
+# The NAS context left, written to the phase of a UE that holds one.
+def Lw.ctx_written(+st: S.State, +key: U32, +ue: S.Ue, +c: Maybe<&2, Sec.Nas.Ctx>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}) -> {Lv.okf0(st, Gsm.Gsm.ctx_written(key, ue, c)) == True{} : Bool}:
+  match c:
     case None{}:
       {==}
-    case Some{+c}:
-      Lw.tell(st, key, ue, c, psi, t, ek, Lv.has_ctx(S.Ue.phase(ue), c, ec), eg)
-
-# The UE of a session is told only when it holds a context.
-def Lw.to_ue_m(+st: S.State, +key: U32, +psi: U32, +t: Gsm.Tell, +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == m : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.to_ue_m(key, psi, t, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      {==}
-    case Some{+ue}:
-      Lw.to_ue_ctx(st, key, ue, psi, t, S.Phase.ctx(S.Ue.phase(ue)), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, em)), {==}, em)
+    case Some{+x}:
+      Lv.leaf0(st, S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), x)}, [], {==}, Lv.free_ctx(st, key, ue, x, eg, ec), {==}, {==})
 
 def Lw.one(+st: S.State, +skey: U32, +s: S.Session, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}) -> {Lv.srows([(skey, s)], S.State.sessions(st)) == True{} : Bool}:
   P.Bool.and_intro(Lv.tagged(S.Session.tag(s), S.State.sessions(st)), True{}, es, {==})
 
+def Lw.give_up_in(+st: S.State, +key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +t: Gsm.Tell, +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>, +ek: {Lv.held(st, key) == True{} : Bool}, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.give_up_in(key, ue, skey, s, t, seq, c))) == True{} : Bool}:
+  PW.It.give_up_in(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), key, ue, skey, s, t, seq, c, +x => Lw.told(st, key, ue, x, S.Session.psi(s), t, ek), Lv.okf_core(st, Up.N4.deletions([(skey, s)], seq), Lv.dels(st, [(skey, s)], seq, Lw.one(st, skey, s, es), Lv.one_kept(st, skey, s, ekd))))
+
+def Lw.give_up_ue(+st: S.State, +skey: U32, +s: S.Session, +t: Gsm.Tell, +seq: U32, +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)) == m : Maybe<&2, S.Ue>}, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.give_up_ue(skey, s, t, seq, m)) == True{} : Bool}:
+  match m:
+    case None{}:
+      Lv.dels(st, [(skey, s)], seq, Lw.one(st, skey, s, es), Lv.one_kept(st, skey, s, ekd))
+    case Some{+ue}:
+      +key = S.Session.ue(s)
+      +ek = Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, em))
+      +o = Gsm.Gsm.give_up_ue(skey, s, t, seq, Some{ue})
+      Lv.okf_of(st, o, PW.It.under(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), key, ue, c => Gsm.Gsm.give_up_in(key, ue, skey, s, t, seq, c), +c => Lw.give_up_in(st, key, ue, skey, s, t, seq, c, ek, es, ekd), +ec => +c => Lw.ctx_written(st, key, ue, c, em, ec)), PF.Fs.under_nas(st, key, ue, c => Gsm.Gsm.give_up_in(key, ue, skey, s, t, seq, c), em, +c => PF.Fs.give_up_ii(key, ue, skey, s, t, seq, c)))
+
 def Lw.give_up(+st: S.State, +skey: U32, +s: S.Session, +t: Gsm.Tell, +seq: U32, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.give_up(st, skey, s, t, seq)) == True{} : Bool}:
-  +m = Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st))
-  Lv.join(st, Gsm.Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), t, m), Up.N4.deletions([(skey, s)], seq), Lw.to_ue_m(st, S.Session.ue(s), S.Session.psi(s), t, m, {==}), Lv.dels(st, [(skey, s)], seq, Lw.one(st, skey, s, es), Lv.one_kept(st, skey, s, ekd)))
+  Lw.give_up_ue(st, skey, s, t, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), {==}, es, ekd)
 
 def Lw.abort(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +cause: U32, +seq: U32, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.abort(st, skey, s, pti, cause, seq)) == True{} : Bool}:
   Lw.give_up(st, skey, s, Gsm.Reply{Gsm.Gsm.reject(S.Session.psi(s), pti, cause)}, seq, es, ekd)
@@ -2310,7 +2441,7 @@ def Lv.kept_miss(+st: S.State, +k: U32, +m: Maybe<&2, S.Session>, +em: {Tb.Table
       Empty.absurd({Lv.kept(st, k) == True{} : Bool}, P.Refute.bool(fk))
 
 # The one path that puts a session: its UE is the context the message names.
-def Lw.create(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +teid: U32, +seid: U32, +v4v6: Bool, +dns: Bool, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +es: {S.Ids.seid(seid) == True{} : Bool}, +fk: {Bool.not(Tb.Table.has(S.Session, seid, S.State.sessions(st))) == True{} : Bool}, +fi: {Bool.not(S.Sessions.holds(S.Ip{}, ip, S.State.sessions(st))) == True{} : Bool}, +ft: {Bool.not(S.Sessions.holds(S.Teid{}, teid, S.State.sessions(st))) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.create(st, key, ue, ctx, cfg, psi, pti, ip, teid, seid, v4v6, dns)) == True{} : Bool}:
+def Lw.create(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +ip: U32, +teid: U32, +seid: U32, +v4v6: Bool, +dns: Bool, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +es: {S.Ids.seid(seid) == True{} : Bool}, +fk: {Bool.not(Tb.Table.has(S.Session, seid, S.State.sessions(st))) == True{} : Bool}, +fi: {Bool.not(S.Sessions.holds(S.Ip{}, ip, S.State.sessions(st))) == True{} : Bool}, +ft: {Bool.not(S.Sessions.holds(S.Teid{}, teid, S.State.sessions(st))) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gsm.Gsm.create(st, key, ue, ctx, cfg, psi, pti, ip, teid, seid, v4v6, dns)) == True{} : Bool}:
   +seq = S.State.pfcp_seq(st)
   +ph = S.Phase.with_ctx(S.Ue.phase(ue), ctx)
   +s : S.Session = S.Session{S.SId{key, psi, ip, teid}, S.SVar{[], seq, S.Creating{S.Guard{0}, pti, Gsm.Gsm.accept(cfg, psi, pti, ip, dns, v4v6), Up.N4.establish(cfg, seid, ip, teid, seq)}}}
@@ -2332,9 +2463,12 @@ def Lw.create(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg
   +hp = P.Bool.and_intro(cl, Bool.and(S.Ids.seid(seid), old), P.Bool.and_true_r(sv, cl, fr), P.Bool.and_intro(S.Ids.seid(seid), old, es, ho))
   +hdo = Lv.ok_in(st, d, rep, hd)
   eu = Equal.sym(Tb.Table(S.Ue), PT.Tk.ues(N.Out.tx(d), rep), rep, PT.Tk.ues_deletions(vs, U32.add(seq, 1), rep))
-  +hpl = Lv.ojoin(st, d, (S.PutSession{seid, s}, []), rep, hdo, P.Bool.and_intro(True{}, Lv.homed(st, S.PutSession{seid, s}, PT.Tk.ues(N.Out.tx(d), rep)), {==}, (%eu : {Lv.homed(st, S.PutSession{seid, s}, _) == True{} : Bool}; hp)), {==})
+  +hpl = Lv.ojoin(st, d, (S.PutSession{seid, s}, []), rep, hdo, P.Bool.and_intro(True{}, Lv.homed(st, S.PutSession{seid, s}, PT.Tk.ues(N.Out.tx(d), rep)), {==}, (%eu : {Lv.homed(st, S.PutSession{seid, s}, _) == True{} : Bool}; hp)), {==}, Lv.mute_dels(vs, U32.add(seq, 1), (S.PutSession{seid, s}, [])))
   +ha = P.Bool.and_intro(Lv.acts(st, [x, y]), Lv.homed(st, S.Both{S.Rephase{key, ph}, S.BumpSeq{1}}, S.State.ues(st)), Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, Some{key}, seid, ek, Lv.kept_miss(st, seid, Tb.Table.get(S.Session, seid, S.State.sessions(st)), {==}, fk)), {==})), hg)
-  Lv.ojoin(st, (S.Both{S.Rephase{key, ph}, S.BumpSeq{1}}, [x, y]), Gsm.Gsm.place(st, seid, s, U32.add(seq, 1)), S.State.ues(st), P.Bool.and_intro(True{}, Bool.and(Lv.acts(st, [x, y]), Lv.homed(st, S.Both{S.Rephase{key, ph}, S.BumpSeq{1}}, S.State.ues(st))), {==}, ha), hpl, Lv.calm_join(d, (S.PutSession{seid, s}, []), Lv.calm_sx(N.Out.tx(d), PW.Sx.deletions(vs, U32.add(seq, 1))), {==}))
+  +hk = PF.Fs.kept_any(st, key, ph, ctx, PF.Fs.nas_with(S.Ue.phase(ue), ctx, ec), ev)
+  +hn = P.Bool.and_intro(Bool.and(N.Fresh.holds(PF.Fs.ctx(st, key), S.Phase.nas(ph), []), True{}), True{}, P.Bool.and_intro(N.Fresh.holds(PF.Fs.ctx(st, key), S.Phase.nas(ph), []), True{}, hk, {==}), {==})
+  +t1 : S.Tx = S.Both{S.Rephase{key, ph}, S.BumpSeq{1}}
+  Lv.ojoin(st, (S.Both{S.Rephase{key, ph}, S.BumpSeq{1}}, [x, y]), Gsm.Gsm.place(st, seid, s, U32.add(seq, 1)), S.State.ues(st), Lv.does_of(st, t1, [x, y], Lv.homed(st, t1, S.State.ues(st)), P.Bool.and_intro(True{}, Bool.and(Lv.acts(st, [x, y]), Lv.homed(st, t1, S.State.ues(st))), {==}, ha), hn), hpl, Lv.calm_join(d, (S.PutSession{seid, s}, []), Lv.calm_sx(N.Out.tx(d), PW.Sx.deletions(vs, U32.add(seq, 1))), {==}), P.Bool.or_r(PF.Fs.mute(t1, [x, y]), PF.Fs.mute(N.Out.tx(Gsm.Gsm.place(st, seid, s, U32.add(seq, 1))), N.Out.acts(Gsm.Gsm.place(st, seid, s, U32.add(seq, 1)))), PF.Fs.join_mute(d, (S.PutSession{seid, s}, []), PF.Fs.deletions_mute(vs, U32.add(seq, 1)), {==})))
 
 # What a request checks out to keys its session with a local SEID, and draws
 # an address, a TEID and a SEID no session holds.
@@ -2479,62 +2613,62 @@ def Ck.validate(+cfg: S.Cfg, +psi: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List
   +t = I.Opts.t1(I.Iei.pdu_session_type(), sm_opts)
   Ck.allocate(Gsm.Gsm.pick(Bool.and(U32.is_lt(0, psi), U32.is_lt(psi, 16)), 95, Gsm.Gsm.pick(Gsm.Gsm.request_type_ok(I.Opts.t1(I.Iei.request_type(), mm_opts)), 31, Gsm.Gsm.pick(Gsm.Gsm.dnn_ok(cfg, I.Opts.find(I.Iei.dnn(), mm_opts)), 27, Gsm.Gsm.pick(Gsm.Gsm.slice_ok(cfg, I.Opts.find(I.Iei.s_nssai(), mm_opts)), 70, Gsm.Gsm.pick(up, 38, Gsm.Gsm.pick(Gsm.Gsm.type_ok(t), 50, None{})))))), Gsm.Gsm.v4v6(t), Gsm.Gsm.dns_asked(I.Opts.find(I.Iei.extended_pco(), sm_opts)), cfg, ss, entropy)
 
-def Lw.checked(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +c: Gsm.Check, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eck: {Ck.ok(c, S.State.sessions(st)) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.checked(st, key, ue, ctx, cfg, psi, pti, c)) == True{} : Bool}:
+def Lw.checked(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +cfg: S.Cfg, +psi: U32, +pti: U32, +c: Gsm.Check, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +eck: {Ck.ok(c, S.State.sessions(st)) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gsm.Gsm.checked(st, key, ue, ctx, cfg, psi, pti, c)) == True{} : Bool}:
   match c:
     case Gsm.Refuse{+cause}:
-      Lv.ok_of(st, Gsm.Gsm.dl(key, ue, ctx, psi, Gsm.Gsm.reject(psi, pti, cause)), Lw.out_dl(st, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.reject(psi, pti, cause)), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ec, eg))
+      Lv.ok_of(st, Gsm.Gsm.dl(key, ue, ctx, psi, Gsm.Gsm.reject(psi, pti, cause)), Lw.out_dl(st, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.reject(psi, pti, cause)), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ec, eg, ev))
     case Gsm.Go{+v4v6, +dns, +ip, +teid, +seid}:
       +ok_s = Ck.seid_ok(Some{seid}, S.State.sessions(st))
       +ok_r = Bool.and(Ck.ip_ok(Some{ip}, S.State.sessions(st)), Ck.teid_ok(Some{teid}, S.State.sessions(st)))
       +hs = P.Bool.and_true_l(ok_s, ok_r, eck)
       +hr = P.Bool.and_true_r(ok_s, ok_r, eck)
       +nk = Bool.not(Tb.Table.has(S.Session, seid, S.State.sessions(st)))
-      Lw.create(st, key, ue, ctx, cfg, psi, pti, ip, teid, seid, v4v6, dns, eg, ec, P.Bool.and_true_l(S.Ids.seid(seid), nk, hs), P.Bool.and_true_r(S.Ids.seid(seid), nk, hs), P.Bool.and_true_l(Ck.ip_ok(Some{ip}, S.State.sessions(st)), Ck.teid_ok(Some{teid}, S.State.sessions(st)), hr), P.Bool.and_true_r(Ck.ip_ok(Some{ip}, S.State.sessions(st)), Ck.teid_ok(Some{teid}, S.State.sessions(st)), hr))
+      Lw.create(st, key, ue, ctx, cfg, psi, pti, ip, teid, seid, v4v6, dns, eg, ec, P.Bool.and_true_l(S.Ids.seid(seid), nk, hs), P.Bool.and_true_r(S.Ids.seid(seid), nk, hs), P.Bool.and_true_l(Ck.ip_ok(Some{ip}, S.State.sessions(st)), Ck.teid_ok(Some{teid}, S.State.sessions(st)), hr), P.Bool.and_true_r(Ck.ip_ok(Some{ip}, S.State.sessions(st)), Ck.teid_ok(Some{teid}, S.State.sessions(st)), hr), ev)
 
-def Lw.gsm_with_cfg(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +pti: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +cfg: Maybe<&2, S.Cfg>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, cfg)) == True{} : Bool}:
+def Lw.gsm_with_cfg(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +pti: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +cfg: Maybe<&2, S.Cfg>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gsm.Gsm.with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, cfg)) == True{} : Bool}:
   match cfg:
     case None{}:
-      Lw.out_verified(st, key, ue, ctx, "5GSM: no configuration", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GSM: no configuration", ec, eg, ev)
     case Some{+c}:
-      Lw.checked(st, key, ue, ctx, c, psi, pti, Gsm.Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st), entropy), eg, ec, Ck.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st), entropy))
+      Lw.checked(st, key, ue, ctx, c, psi, pti, Gsm.Gsm.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st), entropy), eg, ec, Ck.validate(c, psi, mm_opts, sm_opts, Up.N4.up(st), S.State.sessions(st), entropy), ev)
 
-def Lw.establish(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +pti: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.establish(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy)) == True{} : Bool}:
-  Lw.gsm_with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, S.State.config(st), eg, ec)
+def Lw.establish(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +psi: U32, +pti: U32, +mm_opts: List<&2, I.Ie>, +sm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gsm.Gsm.establish(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy)) == True{} : Bool}:
+  Lw.gsm_with_cfg(st, key, ue, ctx, psi, pti, mm_opts, sm_opts, entropy, S.State.config(st), eg, ec, ev)
 
-def Lw.message(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +mm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Sm.Sm>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.message(st, key, ue, ctx, mm_opts, entropy, r)) == True{} : Bool}:
+def Lw.message(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +mm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Sm.Sm>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gsm.Gsm.message(st, key, ue, ctx, mm_opts, entropy, r)) == True{} : Bool}:
   match r:
     case Fail{e}:
-      Lw.out_verified(st, key, ue, ctx, "5GSM: message not understood", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GSM: message not understood", ec, eg, ev)
     case Done{Sm.Sm{+psi, +pti, mt, fields, +opts}}:
       match mt:
         case Sm.EstablishmentRequest{}:
-          Lw.establish(st, key, ue, ctx, psi, pti, mm_opts, opts, entropy, eg, ec)
+          Lw.establish(st, key, ue, ctx, psi, pti, mm_opts, opts, entropy, eg, ec, ev)
         case Sm.EstablishmentAccept{}:
-          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg, ev)
         case Sm.EstablishmentReject{}:
-          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg, ev)
         case Sm.ModificationRequest{}:
-          Lv.ok_of(st, Gsm.Gsm.dl(key, ue, ctx, psi, Gsm.Gsm.modification_reject(psi, pti)), Lw.out_dl(st, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.modification_reject(psi, pti)), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ec, eg))
+          Lv.ok_of(st, Gsm.Gsm.dl(key, ue, ctx, psi, Gsm.Gsm.modification_reject(psi, pti)), Lw.out_dl(st, key, ue, ctx, Gsm.Gsm.dl_transport(psi, Gsm.Gsm.modification_reject(psi, pti)), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ec, eg, ev))
         case Sm.ModificationReject{}:
-          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg, ev)
         case Sm.ReleaseRequest{}:
-          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg, ev)
         case Sm.ReleaseCommand{}:
-          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg, ev)
         case Sm.ReleaseComplete{}:
-          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg, ev)
         case Sm.SmStatus{}:
-          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GSM: message not expected", ec, eg, ev)
 
-def Lw.n1(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +mm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +container: B.Bytes(), +n1: Bool, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.n1(st, key, ue, ctx, mm_opts, entropy, container, n1)) == True{} : Bool}:
+def Lw.n1(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +mm_opts: List<&2, I.Ie>, +entropy: B.Bytes(), +container: B.Bytes(), +n1: Bool, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gsm.Gsm.n1(st, key, ue, ctx, mm_opts, entropy, container, n1)) == True{} : Bool}:
   match n1:
     case True{}:
-      Lw.message(st, key, ue, ctx, mm_opts, entropy, Sm.Sm.read(container), eg, ec)
+      Lw.message(st, key, ue, ctx, mm_opts, entropy, Sm.Sm.read(container), eg, ec, ev)
     case False{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: payload container not N1 SM information", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: payload container not N1 SM information", ec, eg, ev)
 
-def Lw.ul_transport(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +entropy: B.Bytes(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}) -> {Lv.ok(st, Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy)) == True{} : Bool}:
-  Lw.n1(st, key, ue, ctx, opts, entropy, I.Fields.lve2(fields), U32.is_eq(I.Fields.byte1(fields), 1), eg, ec)
+def Lw.ul_transport(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +entropy: B.Bytes(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gsm.Gsm.ul_transport(st, key, ue, ctx, fields, opts, entropy)) == True{} : Bool}:
+  Lw.n1(st, key, ue, ctx, opts, entropy, I.Fields.lve2(fields), U32.is_eq(I.Fields.byte1(fields), 1), eg, ec, ev)
 
 
 # The UPF's answers
@@ -2595,7 +2729,7 @@ def Lw.setup_ue(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +accept: Sm.
       +ek = Lv.has_live(st, S.Session.ue(s), Lv.get_has(S.State.ues(st), S.Session.ue(s), ue, em))
       +v : S.SVar = S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}
       +hv = P.Bool.or_l(Lv.var_ok(v), Bool.not(S.Sessions.known(S.State.sessions(st))), e8)
-      Lv.leaf(st, S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, v}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, Some{S.Session.ue(s)}, skey, ek, ekd), {==})), P.Bool.and_intro(Lv.free(st, S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}), Lv.revar_ok(st, v), Lv.free_ctx(st, S.Session.ue(s), ue, Sec.Nas.Protected.ctx(p), em, Lv.has_ctx(S.Ue.phase(ue), c, ec)), hv), {==}, {==})
+      Lv.leaf(st, S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, v}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, Some{S.Session.ue(s)}, skey, ek, ekd), {==})), P.Bool.and_intro(Lv.free(st, S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}), Lv.revar_ok(st, v), Lv.free_ctx(st, S.Session.ue(s), ue, Sec.Nas.Protected.ctx(p), em, Lv.has_ctx(S.Ue.phase(ue), c, ec)), hv), {==}, {==}, PF.Fs.told_pair(st, S.Session.ue(s), ue, c, Sec.Ciphered{}, Gsm.Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)), x, y, S.Revar{skey, v}, PF.Fs.setup_carries(S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.Gsm.transfer(cf, S.Session.teid(s)), PF.Fs.protected_any(c, Sec.Ciphered{}, Gsm.Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))), {==}, {==}, em, ec))
     case Some{c} None{}:
       Lw.setup_gone(st, skey, s, up_seid, es, ekd)
     case None{} Some{cf}:
@@ -2612,16 +2746,16 @@ def Lw.release(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +ek: {Lv.hel
   +rel : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}
   +ts : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
   +more : List<&2, N.Act> = ts <> Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause)
-  Lv.prepend(st, rel, N.Out.also(Gmm.Gmm.place(st, key, ur), more), Lv.held_live(st, key, ek), Lv.also(st, Gmm.Gmm.place(st, key, ur), more, Lw.place(st, key, ur, S.Releasing{S.Guard{0}}, Lv.p_phase(ue, S.Releasing{S.Guard{0}}), {==}, {==}, {==}, ek, Lv.home_phase(st, ue, S.Releasing{S.Guard{0}}, ehome)), Lv.cons(st, ts, Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause), Lv.ue_start(st, key, N.Ue.guard_ms(), ek), Lw.ho_leg_drop(st, key, S.Ue.phase(ue), cause, ek)), Lv.stops_cons(N.Out.tx(Gmm.Gmm.place(st, key, ur)), ts, Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause), {==}, Lv.leg_drop_stops(N.Out.tx(Gmm.Gmm.place(st, key, ur)), key, S.Ue.phase(ue), cause))), {==})
+  Lv.prepend(st, rel, N.Out.also(Gmm.Gmm.place(st, key, ur), more), Lv.held_live(st, key, ek), Lv.also(st, Gmm.Gmm.place(st, key, ur), more, Lw.place(st, key, ur, S.Releasing{S.Guard{0}}, Lv.p_phase(ue, S.Releasing{S.Guard{0}}), {==}, {==}, {==}, ek, Lv.home_phase(st, ue, S.Releasing{S.Guard{0}}, ehome), {==}), Lv.cons(st, ts, Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause), Lv.ue_start(st, key, N.Ue.guard_ms(), ek), Lw.ho_leg_drop(st, key, S.Ue.phase(ue), cause, ek)), Lv.stops_cons(N.Out.tx(Gmm.Gmm.place(st, key, ur)), ts, Ho.Ho.leg_drop(key, S.Ue.phase(ue), cause), {==}, Lv.leg_drop_stops(N.Out.tx(Gmm.Gmm.place(st, key, ur)), key, S.Ue.phase(ue), cause)), PF.Fs.leg_mute(key, S.Ue.phase(ue), cause)), {==}, {==})
 
-def Lw.refuse(+st: S.State, +key: U32, +ue: S.Ue, +nas: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.refuse(st, key, ue, nas)) == True{} : Bool}:
-  Lv.prepend(st, Gmm.Gmm.dl(key, ue, nas), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), Lv.held_live(st, key, ek), Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek, ehome), {==})
+def Lw.refuse(+st: S.State, +key: U32, +ue: S.Ue, +nas: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +ep: {Sec.Nas.is_protected(nas) == False{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.refuse(st, key, ue, nas)) == True{} : Bool}:
+  Lv.prepend(st, Gmm.Gmm.dl(key, ue, nas), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), Lv.held_live(st, key, ek), Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek, ehome), {==}, PF.Fs.plain_none(key, nas, ep))
 
 def Lw.reject(+st: S.State, +key: U32, +ue: S.Ue, +cause: U32, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.reject(st, key, ue, cause)) == True{} : Bool}:
-  Lw.refuse(st, key, ue, Gmm.Gmm.registration_reject(cause), ek, ehome)
+  Lw.refuse(st, key, ue, Gmm.Gmm.registration_reject(cause), ek, ehome, {==})
 
 def Lw.auth_reject(+st: S.State, +key: U32, +ue: S.Ue, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.auth_reject(st, key, ue)) == True{} : Bool}:
-  Lv.prepend(st, Gmm.Gmm.dl(key, ue, Gmm.Gmm.authentication_reject()), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure())), Lv.held_live(st, key, ek), Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure()), ek, ehome), {==})
+  Lv.prepend(st, Gmm.Gmm.dl(key, ue, Gmm.Gmm.authentication_reject()), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure())), Lv.held_live(st, key, ek), Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.authentication_failure()), ek, ehome), {==}, {==})
 
 
 def Lw.identity_ask(+st: S.State, +key: U32, +ue: S.Ue, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.identity_ask(st, key, ue)) == True{} : Bool}:
@@ -2629,7 +2763,7 @@ def Lw.identity_ask(+st: S.State, +key: U32, +ue: S.Ue, +ek: {Lv.held(st, key) =
   +ue2 = S.Ue.with_dl(ue, S.Identifying{S.Guard{0}}, nas)
   +x : N.Act = Gmm.Gmm.dl(key, ue2, nas)
   +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
-  Lv.also(st, Gmm.Gmm.place(st, key, ue2), [x, y], Lw.place(st, key, ue2, S.Identifying{S.Guard{0}}, Lv.p_dl(ue, S.Identifying{S.Guard{0}}, nas), {==}, {==}, {==}, ek, Lv.home_dl(st, ue, S.Identifying{S.Guard{0}}, nas, ehome)), Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==})), {==})
+  Lv.also(st, Gmm.Gmm.place(st, key, ue2), [x, y], Lw.place(st, key, ue2, S.Identifying{S.Guard{0}}, Lv.p_dl(ue, S.Identifying{S.Guard{0}}, nas), {==}, {==}, {==}, ek, Lv.home_dl(st, ue, S.Identifying{S.Guard{0}}, nas, ehome), {==}), Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==})), {==}, {==})
 
 def Lw.challenge(+st: S.State, +key: U32, +ue: S.Ue, +sub: Au.Subscriber, +snn: B.Bytes(), +entropy: B.Bytes(), +resynced: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.challenge(st, key, ue, sub, snn, entropy, resynced)) == True{} : Bool}:
   +sub2 = Au.Subscriber.with_sqn(sub, Au.Sqn.next(Au.Subscriber.sqn(sub)))
@@ -2639,7 +2773,7 @@ def Lw.challenge(+st: S.State, +key: U32, +ue: S.Ue, +sub: Au.Subscriber, +snn: 
   +x : N.Act = Gmm.Gmm.dl(key, ue2, nas)
   +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
   +tx : S.Tx = S.Subs{Au.Subscribers.update(sub2, S.State.subs(st))}
-  Lv.join(st, Gmm.Gmm.place(st, key, ue2), (tx, [x, y]), Lw.place(st, key, ue2, S.Authenticating{S.Guard{0}, av, resynced, Au.Subscriber.supi(sub2)}, Lv.p_dl(ue, S.Authenticating{S.Guard{0}, av, resynced, Au.Subscriber.supi(sub2)}, nas), {==}, {==}, {==}, ek, Lv.home_dl(st, ue, S.Authenticating{S.Guard{0}, av, resynced, Au.Subscriber.supi(sub2)}, nas, ehome)), Lv.leaf(st, tx, [x, y], Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==})), {==}, {==}, {==}))
+  Lv.join(st, Gmm.Gmm.place(st, key, ue2), (tx, [x, y]), Lw.place(st, key, ue2, S.Authenticating{S.Guard{0}, av, resynced, Au.Subscriber.supi(sub2)}, Lv.p_dl(ue, S.Authenticating{S.Guard{0}, av, resynced, Au.Subscriber.supi(sub2)}, nas), {==}, {==}, {==}, ek, Lv.home_dl(st, ue, S.Authenticating{S.Guard{0}, av, resynced, Au.Subscriber.supi(sub2)}, nas, ehome), {==}), Lv.leaf(st, tx, [x, y], Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==})), {==}, {==}, {==}, {==}), P.Bool.or_r(PF.Fs.mute(N.Out.tx(Gmm.Gmm.place(st, key, ue2)), N.Out.acts(Gmm.Gmm.place(st, key, ue2))), PF.Fs.mute(tx, [x, y]), {==}))
 
 def Lw.by_sub(+st: S.State, +key: U32, +ue: S.Ue, +cfg: S.Cfg, +m: Maybe<&2, Au.Subscriber>, +entropy: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.by_sub(st, key, ue, cfg, m, entropy)) == True{} : Bool}:
   match m:
@@ -2680,11 +2814,11 @@ def Lw.register(+st: S.State, +key: U32, +assoc: U32, +stream: U32, +entropy: B.
       {==}
     case Done{+id}:
       +fresh : S.Ue = Gmm.Gmm.fresh(assoc, ran, stream, nas)
-      Lv.join(st, (S.BumpUe{key}, []), Gmm.Gmm.proceed(st, key, fresh, Gmm.Gmm.start_of(id), entropy), {==}, Lw.proceed(st, key, fresh, Gmm.Gmm.start_of(id), entropy, ek, Lv.home_on(st, fresh, ea)))
+      Lv.join(st, (S.BumpUe{key}, []), Gmm.Gmm.proceed(st, key, fresh, Gmm.Gmm.start_of(id), entropy), {==}, Lw.proceed(st, key, fresh, Gmm.Gmm.start_of(id), entropy, ek, Lv.home_on(st, fresh, ea)), {==})
 
 def Lw.serve(+st: S.State, +key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +nas: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.serve(st, key, assoc, stream, ran, nas)) == True{} : Bool}:
   +fresh : S.Ue = Gmm.Gmm.fresh(assoc, ran, stream, nas)
-  Lv.join(st, (S.BumpUe{key}, []), Gmm.Gmm.refuse(st, key, fresh, Gmm.Gmm.service_reject()), {==}, Lw.refuse(st, key, fresh, Gmm.Gmm.service_reject(), ek, Lv.home_on(st, fresh, ea)))
+  Lv.join(st, (S.BumpUe{key}, []), Gmm.Gmm.refuse(st, key, fresh, Gmm.Gmm.service_reject()), {==}, Lw.refuse(st, key, fresh, Gmm.Gmm.service_reject(), ek, Lv.home_on(st, fresh, ea), {==}), {==})
 
 def Lw.initial_mm(+st: S.State, +key: U32, +assoc: U32, +stream: U32, +entropy: B.Bytes(), +ran: B.Bytes(), +nas: B.Bytes(), +m: Mm.Mm, +ek: {Lv.held(st, key) == True{} : Bool}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.initial_mm(st, key, assoc, stream, entropy, ran, nas, m)) == True{} : Bool}:
   match m:
@@ -2760,18 +2894,28 @@ def Lw.initial_of_view(+st: S.State, +assoc: U32, +stream: U32, +entropy: B.Byte
       Lw.initial(st, assoc, stream, entropy, v, ea)
 
 
-def Lw.secure(+st: S.State, +key: U32, +ue: S.Ue, +supi: B.Digits(), +k_amf: B.Bytes(), +nea: Sec.Nas.Ea, +nia: Sec.Nas.Ia, +caps: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.secure(st, key, ue, supi, k_amf, nea, nia, caps)) == True{} : Bool}:
-  +ctx : Sec.Nas.Ctx = Sec.Ctx{Sec.Keys{Kd.kdf.k_nas_int(k_amf, Sec.Nas.Ia.id(nia)), Kd.kdf.k_nas_enc(k_amf, Sec.Nas.Ea.id(nea)), nea, nia, 1}, Sec.Nas.Count.zero(), None{}}
-  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.IntegrityNew{}, Gmm.Gmm.security_mode_command(U32.or(U32.shln(Sec.Nas.Ea.id(nea), 4n), Sec.Nas.Ia.id(nia)), S.Ue.ngksi(ue), caps))
-  +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, supi), S.SecurityMode{S.Guard{0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p))
-  +x : N.Act = Gmm.Gmm.dl(key, ue2, Sec.Nas.Protected.msg(p))
+def Lw.secure(+st: S.State, +key: U32, +ue: S.Ue, +supi: B.Digits(), +k_amf: B.Bytes(), +nea: Sec.Nas.Ea, +nia: Sec.Nas.Ia, +caps: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +eb: {PF.Fs.ctx(st, key) == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {Lv.okf(st, Gmm.Gmm.secure(st, key, ue, supi, k_amf, nea, nia, caps)) == True{} : Bool}:
+  +keys : Sec.Nas.Keys = Sec.Keys{Kd.kdf.k_nas_int(k_amf, Sec.Nas.Ia.id(nia)), Kd.kdf.k_nas_enc(k_amf, Sec.Nas.Ea.id(nea)), nea, nia, 1}
+  +ctx : Sec.Nas.Ctx = Sec.Ctx{keys, Sec.Nas.Count.zero(), None{}}
+  +smc = Gmm.Gmm.security_mode_command(U32.or(U32.shln(Sec.Nas.Ea.id(nea), 4n), Sec.Nas.Ia.id(nia)), S.Ue.ngksi(ue), caps)
+  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.IntegrityNew{}, smc)
+  +q : S.Phase = S.SecurityMode{S.Guard{0}, Sec.Nas.Protected.ctx(p), k_amf}
+  +ue2 = S.Ue.with_dl(S.Ue.with_supi(ue, supi), q, smc)
+  +m = Sec.Nas.Protected.msg(p)
+  +x : N.Act = Gmm.Gmm.dl(key, S.Ue.with_supi(ue, supi), m)
   +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
-  Lv.also(st, Gmm.Gmm.place(st, key, ue2), [x, y], Lw.place(st, key, ue2, S.SecurityMode{S.Guard{0}, Sec.Nas.Protected.ctx(p), k_amf}, Lv.p_dl(S.Ue.with_supi(ue, supi), S.SecurityMode{S.Guard{0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p)), {==}, {==}, {==}, ek, Lv.home_dl(st, S.Ue.with_supi(ue, supi), S.SecurityMode{S.Guard{0}, Sec.Nas.Protected.ctx(p), k_amf}, Sec.Nas.Protected.msg(p), Lv.home_supi(st, ue, supi, ehome))), Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==})), {==})
+  +ep2 = Lv.p_dl(S.Ue.with_supi(ue, supi), q, smc)
+  +vs = S.Ues.evicted(key, ue2, S.State.ues(st))
+  +gone = Gmm.Gmm.sessions(vs, S.State.sessions(st))
+  +h0 = Lv.also0(st, Gmm.Gmm.place(st, key, ue2), [x, y], Lw.place0(st, key, ue2, q, ep2, {==}, {==}, {==}, ek, Lv.home_dl(st, S.Ue.with_supi(ue, supi), q, smc, Lv.home_supi(st, ue, supi, ehome))), Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==})), {==})
+  +hw : {N.Fresh.holds(PF.Fs.ctx(st, key), S.Phase.nas(S.Ue.phase(ue2)), [m]) == True{} : Bool} = (%Equal.sym(S.Phase, S.Ue.phase(ue2), q, ep2) : {N.Fresh.holds(PF.Fs.ctx(st, key), S.Phase.nas(_), [m]) == True{} : Bool}; PF.Fs.smc_holds(PF.Fs.ctx(st, key), keys, smc, eb))
+  +hn = PF.Fs.place_told(st, key, ue2, Up.N4.deletions(gone, S.State.pfcp_seq(st)), Gmm.Gmm.evict(vs), x, y, m, PF.Fs.deletions_mute(gone, S.State.pfcp_seq(st)), PF.Fs.evict_mute(vs), {==}, PF.Fs.dl_carries(S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), m, PF.Fs.protect_protected(keys, Sec.Nas.Count.zero(), None{}, Sec.IntegrityNew{}, smc)), hw)
+  Lv.okf_of(st, N.Out.also(Gmm.Gmm.place(st, key, ue2), [x, y]), h0, hn)
 
-def Lw.algorithms(+st: S.State, +key: U32, +ue: S.Ue, +supi: B.Digits(), +k_amf: B.Bytes(), +caps: B.Bytes(), +mea: Maybe<&2, Sec.Nas.Ea>, +mia: Maybe<&2, Sec.Nas.Ia>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.algorithms(st, key, ue, supi, k_amf, caps, mea, mia)) == True{} : Bool}:
+def Lw.algorithms(+st: S.State, +key: U32, +ue: S.Ue, +supi: B.Digits(), +k_amf: B.Bytes(), +caps: B.Bytes(), +mea: Maybe<&2, Sec.Nas.Ea>, +mia: Maybe<&2, Sec.Nas.Ia>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +eb: {PF.Fs.ctx(st, key) == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {Lv.okf(st, Gmm.Gmm.algorithms(st, key, ue, supi, k_amf, caps, mea, mia)) == True{} : Bool}:
   match mea mia:
     case Some{+a} Some{+b}:
-      Lw.secure(st, key, ue, supi, k_amf, a, b, caps, ek, ehome)
+      Lw.secure(st, key, ue, supi, k_amf, a, b, caps, ek, ehome, eb)
     case Some{a} None{}:
       Lw.reject(st, key, ue, 23, ek, ehome)
     case None{} Some{b}:
@@ -2779,27 +2923,27 @@ def Lw.algorithms(+st: S.State, +key: U32, +ue: S.Ue, +supi: B.Digits(), +k_amf:
     case None{} None{}:
       Lw.reject(st, key, ue, 23, ek, ehome)
 
-def Lw.keys(+st: S.State, +key: U32, +ue: S.Ue, +av: Au.Av, +supi: B.Digits(), +cfg: Maybe<&2, S.Cfg>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.keys(st, key, ue, av, supi, cfg)) == True{} : Bool}:
+def Lw.keys(+st: S.State, +key: U32, +ue: S.Ue, +av: Au.Av, +supi: B.Digits(), +cfg: Maybe<&2, S.Cfg>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +eb: {PF.Fs.ctx(st, key) == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {Lv.okf(st, Gmm.Gmm.keys(st, key, ue, av, supi, cfg)) == True{} : Bool}:
   match cfg:
     case Some{+c}:
       +caps = N.Ue.caps(ue)
-      Lw.algorithms(st, key, ue, supi, Au.Ausf.k_amf(av, Au.Ausf.snn(S.Cfg.plmn(c)), supi), caps, Gmm.Alg.pick_ea(S.Cfg.nea(c), N.Ngap.cap_byte(caps, 0n)), Gmm.Alg.pick_ia(S.Cfg.nia(c), N.Ngap.cap_byte(caps, 1n)), ek, ehome)
+      Lw.algorithms(st, key, ue, supi, Au.Ausf.k_amf(av, Au.Ausf.snn(S.Cfg.plmn(c)), supi), caps, Gmm.Alg.pick_ea(S.Cfg.nea(c), N.Ngap.cap_byte(caps, 0n)), Gmm.Alg.pick_ia(S.Cfg.nia(c), N.Ngap.cap_byte(caps, 1n)), ek, ehome, eb)
     case None{}:
       Lw.auth_reject(st, key, ue, ek, ehome)
 
-def Lw.verified(+st: S.State, +key: U32, +ue: S.Ue, +av: Au.Av, +supi: B.Digits(), +ok: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.verified(st, key, ue, av, supi, ok)) == True{} : Bool}:
+def Lw.verified(+st: S.State, +key: U32, +ue: S.Ue, +av: Au.Av, +supi: B.Digits(), +ok: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +eb: {PF.Fs.ctx(st, key) == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {Lv.okf(st, Gmm.Gmm.verified(st, key, ue, av, supi, ok)) == True{} : Bool}:
   match ok:
     case True{}:
-      Lw.keys(st, key, ue, av, supi, S.State.config(st), ek, ehome)
+      Lw.keys(st, key, ue, av, supi, S.State.config(st), ek, ehome, eb)
     case False{}:
       Lw.auth_reject(st, key, ue, ek, ehome)
 
-def Lw.response(+st: S.State, +key: U32, +ue: S.Ue, +av: Au.Av, +supi: B.Digits(), +res: Maybe<&2, B.Bytes()>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.response(st, key, ue, av, supi, res)) == True{} : Bool}:
+def Lw.response(+st: S.State, +key: U32, +ue: S.Ue, +av: Au.Av, +supi: B.Digits(), +res: Maybe<&2, B.Bytes()>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +eb: {PF.Fs.ctx(st, key) == None{} : Maybe<&2, Sec.Nas.Ctx>}) -> {Lv.okf(st, Gmm.Gmm.response(st, key, ue, av, supi, res)) == True{} : Bool}:
   match res:
     case None{}:
       Lw.auth_reject(st, key, ue, ek, ehome)
     case Some{+r}:
-      Lw.verified(st, key, ue, av, supi, Au.Ausf.verify(av, r), ek, ehome)
+      Lw.verified(st, key, ue, av, supi, Au.Ausf.verify(av, r), ek, ehome, eb)
 
 def Lw.resynced(+st: S.State, +key: U32, +ue: S.Ue, +sub: Au.Subscriber, +cfg: S.Cfg, +entropy: B.Bytes(), +m: Maybe<&2, B.Bytes()>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.resynced(st, key, ue, sub, cfg, entropy, m)) == True{} : Bool}:
   match m:
@@ -2854,7 +2998,7 @@ def Lw.identity_answer(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), 
       Lw.reject(st, key, ue, 7, ek, ehome)
 
 
-def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +p: S.Phase, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.phase(st, key, ue, entropy, mt, fields, opts, p)) == True{} : Bool}:
+def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +p: S.Phase, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == p : S.Phase}) -> {Lv.okf(st, Gmm.Gmm.phase(st, key, ue, entropy, mt, fields, opts, p)) == True{} : Bool}:
   match mt:
     case Mm.RegistrationRequest{}:
       {==}
@@ -2878,8 +3022,8 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
           {==}
         case S.Identifying{guard}:
           {==}
-        case S.Authenticating{guard, +av, +resynced, +supi}:
-          Lw.response(st, key, ue, av, supi, I.Opts.find(I.Iei.authentication_response_parameter(), opts), ek, ehome)
+        case S.Authenticating{+guard, +av, +resynced, +supi}:
+          Lw.response(st, key, ue, av, supi, I.Opts.find(I.Iei.authentication_response_parameter(), opts), ek, ehome, PF.Fs.ctx_phase(st, key, ue, S.Authenticating{guard, av, resynced, supi}, eg, ep))
         case S.SecurityMode{guard, old, k_amf}:
           {==}
         case S.ContextSetup{guard, old, nh, response, complete}:
@@ -2953,12 +3097,12 @@ def Lw.phase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +mt: Mm.Mm
     case Mm.ServiceReject{}:
       {==}
 
-def Lw.plain(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Mm.Mm>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.plain(st, key, ue, entropy, r)) == True{} : Bool}:
+def Lw.plain(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Mm.Mm>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gmm.Gmm.plain(st, key, ue, entropy, r)) == True{} : Bool}:
   match r:
     case Fail{e}:
       {==}
     case Done{Mm.Mm{+mt, +fields, +opts}}:
-      Lw.phase(st, key, ue, entropy, mt, fields, opts, S.Ue.phase(ue), ek, ehome)
+      Lw.phase(st, key, ue, entropy, mt, fields, opts, S.Ue.phase(ue), ek, ehome, eg, {==})
 
 
 def Lv.app_assoc(xs: List<&2, N.Act>, +ys: List<&2, N.Act>, +zs: List<&2, N.Act>) -> {List.append(&2, N.Act, xs, List.append(&2, N.Act, ys, zs)) == List.append(&2, N.Act, List.append(&2, N.Act, xs, ys), zs) : List<&2, N.Act>}:
@@ -2994,29 +3138,35 @@ def Lv.seed_first(+st: S.State, +key: U32, +ue: S.Ue, +ue2: S.Ue, +ph: S.Phase, 
   h1 : {Lv.firsts(S.Phase.nh(S.Ue.phase(ue2)), S.Ue.mode_k_amf(Tb.Table.get(S.Ue, key, S.State.ues(st))), key, acts) == True{} : Bool} = (%sp2 : {Lv.firsts(S.Phase.nh(_), S.Ue.mode_k_amf(Tb.Table.get(S.Ue, key, S.State.ues(st))), key, acts) == True{} : Bool}; (%sg : {Lv.firsts(Some{n}, S.Ue.mode_k_amf(_), key, acts) == True{} : Bool}; (%sp : {Lv.firsts(Some{n}, S.Phase.mode_k_amf(_), key, acts) == True{} : Bool}; hi)))
   P.Bool.or_l(Lv.firsts(S.Phase.nh(S.Ue.phase(ue2)), S.Ue.mode_k_amf(Tb.Table.get(S.Ue, key, S.State.ues(st))), key, acts), Bool.not(Lv.unpaired(st, key)), h1)
 
-def Lw.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: Sec.Nas.Ctx, +count: Sec.Nas.Count, +opts: List<&2, I.Ie>, +cfg: Maybe<&2, S.Cfg>, +m: Maybe<&2, U32>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +g: S.Guard, +old: Sec.Nas.Ctx, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == S.SecurityMode{g, old, k_amf} : S.Phase}) -> {Lv.okf(st, Gmm.Gmm.sm_complete(st, key, ue, k_amf, ctx, count, opts, cfg, m)) == True{} : Bool}:
+# Security Mode Complete with a configuration and a 5G-TMSI: the Registration
+# Accept, whatever its bytes, in Initial Context Setup.
+def Lw.sm_accept(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: Sec.Nas.Ctx, +count: Sec.Nas.Count, +c: S.Cfg, +tmsi: U32, +reg: B.Bytes(), +accept: B.Bytes(), +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +g: S.Guard, +old: Sec.Nas.Ctx, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == S.SecurityMode{g, old, k_amf} : S.Phase}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, N.Out.also(Gmm.Gmm.place(st, key, S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)), S.Nh.initial(k_amf, Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count))), False{}, False{}}, accept), reg), tmsi)), [N.Ics{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), c, N.Ue.caps_of(Mm.Mm.read(reg)), Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count)), Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, accept))}, N.TimerStart{Some{key}, key, N.Ue.guard_ms()}])) == True{} : Bool}:
+  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, accept)
+  +k_gnb = Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count))
+  +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), S.Nh.initial(k_amf, k_gnb), False{}, False{}}
+  +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, accept), reg), tmsi)
+  +x : N.Act = N.Ics{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), c, N.Ue.caps_of(Mm.Mm.read(reg)), k_gnb, Sec.Nas.Protected.msg(p)}
+  +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
+  +vs = S.Ues.evicted(key, ue2, S.State.ues(st))
+  +gone = Gmm.Gmm.sessions(vs, S.State.sessions(st))
+  +d = Up.N4.deletions(gone, S.State.pfcp_seq(st))
+  +evs = Gmm.Gmm.evict(vs)
+  +tx : S.Tx = S.Put{key, ue2}
+  +epc = Lv.p_ics(ue, ph, accept, reg, tmsi)
+  +hu = Lv.unpaired_at(st, key, ue, S.SecurityMode{g, old, k_amf}, eg, ep)({==})
+  +hp = Lv.put_ok(st, key, ue2, ph, epc, ek, {==}, {==}, P.Bool.or_r(Lv.chain(st, key, S.Phase.nh(ph)), Lv.unpaired(st, key), hu), Lv.home_tmsi(st, S.Ue.with_reg(S.Ue.with_dl(ue, ph, accept), reg), tmsi, Lv.home_reg(st, S.Ue.with_dl(ue, ph, accept), reg, Lv.home_dl(st, ue, ph, accept, ehome))))
+  +hw = Lv.seed_first(st, key, ue, ue2, ph, g, old, k_amf, k_gnb, Sec.Nas.Protected.ctx(p), eg, ep, epc, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), c, N.Ue.caps_of(Mm.Mm.read(reg)), Sec.Nas.Protected.msg(p), [y])
+  +hl = Lv.leaf0(st, tx, List.append(&2, N.Act, evs, [x, y]), Lv.append(st, evs, [x, y], Lw.evict(st, vs, Lv.keys_sift(S.Victims{key, ue2}, S.State.ues(st))), Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==}))), hp, Lv.stops_app(tx, evs, [x, y], Lv.evict_stops(tx, vs), {==}), Lv.seeds_r(st, tx, evs, [x, y], hw))
+  +hj = Lv.join0(st, d, (tx, List.append(&2, N.Act, evs, [x, y])), Lv.okf_core(st, d, Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_held(vs, S.State.sessions(st)), Lv.krows_held(st, vs))), hl)
+  e = Equal.sym(N.GOut(), N.Out.also(N.Out.join(d, (tx, evs)), [x, y]), N.Out.join(d, N.Out.also((tx, evs), [x, y])), Lv.also_join(d, (tx, evs), [x, y]))
+  +h0 : {Lv.okf0(st, N.Out.also(N.Out.join(d, (tx, evs)), [x, y])) == True{} : Bool} = (%e : {Lv.okf0(st, _) == True{} : Bool}; hj)
+  Lv.okf_of(st, N.Out.also(N.Out.join(d, (tx, evs)), [x, y]), h0, PF.Fs.sm_nas(st, key, ue2, d, evs, x, y, ctx, accept, S.Nh.initial(k_amf, k_gnb), PF.Fs.deletions_mute(gone, S.State.pfcp_seq(st)), PF.Fs.evict_mute(vs), {==}, PF.Fs.ics_carries(S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, N.Ue.caps(ue2), k_gnb, Sec.Nas.Protected.msg(p), PF.Fs.protected_any(ctx, Sec.Ciphered{}, accept)), epc, ev))
+
+def Lw.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: Sec.Nas.Ctx, +count: Sec.Nas.Count, +opts: List<&2, I.Ie>, +cfg: Maybe<&2, S.Cfg>, +m: Maybe<&2, U32>, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +g: S.Guard, +old: Sec.Nas.Ctx, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == S.SecurityMode{g, old, k_amf} : S.Phase}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gmm.Gmm.sm_complete(st, key, ue, k_amf, ctx, count, opts, cfg, m)) == True{} : Bool}:
   match cfg m:
     case Some{+c} Some{+tmsi}:
       +reg = I.Bytes.or(I.Opts.find(I.Iei.nas_message_container(), opts), S.Ue.reg(ue))
-      +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.registration_accept(c, tmsi))
-      +k_gnb = Kd.kdf.k_gnb(k_amf, Sec.Nas.Count.value(count))
-      +ph : S.Phase = S.ContextSetup{S.Guard{0}, Sec.Nas.Protected.ctx(p), S.Nh.initial(k_amf, k_gnb), False{}, False{}}
-      +ue2 = S.Ue.with_tmsi(S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi)
-      +x : N.Act = N.Ics{S.Ue.assoc(ue2), S.Ue.stream(ue2), key, S.Ue.ran_id(ue2), c, N.Ue.caps(ue2), k_gnb, Sec.Nas.Protected.msg(p)}
-      +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
-      +vs = S.Ues.evicted(key, ue2, S.State.ues(st))
-      +gone = Gmm.Gmm.sessions(vs, S.State.sessions(st))
-      +d = Up.N4.deletions(gone, S.State.pfcp_seq(st))
-      +ev = Gmm.Gmm.evict(vs)
-      +tx : S.Tx = S.Put{key, ue2}
-      +epc = Lv.p_ics(ue, ph, Sec.Nas.Protected.msg(p), reg, tmsi)
-      +hu = Lv.unpaired_at(st, key, ue, S.SecurityMode{g, old, k_amf}, eg, ep)({==})
-      +hp = Lv.put_ok(st, key, ue2, ph, epc, ek, {==}, {==}, P.Bool.or_r(Lv.chain(st, key, S.Phase.nh(ph)), Lv.unpaired(st, key), hu), Lv.home_tmsi(st, S.Ue.with_reg(S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg), tmsi, Lv.home_reg(st, S.Ue.with_dl(ue, ph, Sec.Nas.Protected.msg(p)), reg, Lv.home_dl(st, ue, ph, Sec.Nas.Protected.msg(p), ehome))))
-      +hw = Lv.seed_first(st, key, ue, ue2, ph, g, old, k_amf, k_gnb, Sec.Nas.Protected.ctx(p), eg, ep, epc, S.Ue.assoc(ue2), S.Ue.stream(ue2), S.Ue.ran_id(ue2), c, N.Ue.caps(ue2), Sec.Nas.Protected.msg(p), [y])
-      +hl = Lv.leaf(st, tx, List.append(&2, N.Act, ev, [x, y]), Lv.append(st, ev, [x, y], Lw.evict(st, vs, Lv.keys_sift(S.Victims{key, ue2}, S.State.ues(st))), Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==}))), hp, Lv.stops_app(tx, ev, [x, y], Lv.evict_stops(tx, vs), {==}), Lv.seeds_r(st, tx, ev, [x, y], hw))
-      +hj = Lv.join(st, d, (tx, List.append(&2, N.Act, ev, [x, y])), Lv.dels(st, gone, S.State.pfcp_seq(st), Lv.srows_held(vs, S.State.sessions(st)), Lv.krows_held(st, vs)), hl)
-      e = Equal.sym(N.GOut(), N.Out.also(N.Out.join(d, (tx, ev)), [x, y]), N.Out.join(d, N.Out.also((tx, ev), [x, y])), Lv.also_join(d, (tx, ev), [x, y]))
-      (%e : {Lv.okf(st, _) == True{} : Bool}; hj)
+      Lw.sm_accept(st, key, ue, k_amf, ctx, count, c, tmsi, reg, Gmm.Gmm.registration_accept(c, tmsi), ek, ehome, g, old, eg, ep, ev)
     case Some{c} None{}:
       Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek, ehome)
     case None{} Some{t}:
@@ -3024,185 +3174,190 @@ def Lw.sm_complete(+st: S.State, +key: U32, +ue: S.Ue, +k_amf: B.Bytes(), +ctx: 
     case None{} None{}:
       Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek, ehome)
 
-def Lw.setup_done(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +both: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.setup_done(st, key, ue, guard, ctx, nh, response, complete, both)) == True{} : Bool}:
+def Lw.setup_done(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +both: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gmm.Gmm.setup_done(st, key, ue, guard, ctx, nh, response, complete, both)) == True{} : Bool}:
   match both:
     case True{}:
       +n : N.Act = N.Note{F.Info{}, "5GMM: UE registered"}
       +tx : S.Tx = S.Rephase{key, S.Registered{ctx, nh, None{}}}
-      Lv.does_intro(st, tx, [N.TimerCancel{key}, n], Lv.free(st, tx), Lv.stops_cons(tx, N.TimerCancel{key}, [n], Lv.idles_rephase(key, S.Registered{ctx, nh, None{}}, {==}), {==}), {==}, Lv.cons(st, N.TimerCancel{key}, [n], eh, {==}), {==}, P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}))
+      Lv.does_intro(st, tx, [N.TimerCancel{key}, n], Lv.free(st, tx), Lv.stops_cons(tx, N.TimerCancel{key}, [n], Lv.idles_rephase(key, S.Registered{ctx, nh, None{}}, {==}), {==}), {==}, Lv.cons(st, N.TimerCancel{key}, [n], eh, {==}), {==}, P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}), PF.Fs.ok_of(st, tx, [N.TimerCancel{key}, n], PF.Fs.kept_rephase(st, key, S.Registered{ctx, nh, None{}}, ctx, [N.TimerCancel{key}, n], {==}, ev, {==})))
     case False{}:
-      P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==})
+      +q : S.Phase = S.ContextSetup{guard, ctx, nh, response, complete}
+      Lv.okf_of(st, (S.Rephase{key, q}, []), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}), PF.Fs.kept_rephase(st, key, q, ctx, [], {==}, ev, {==}))
 
-def Lw.setup_step(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, nh, response, complete)) == True{} : Bool}:
-  Lw.setup_done(st, key, ue, guard, ctx, nh, response, complete, Bool.and(response, complete), eh, ec)
+def Lw.setup_step(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +response: Bool, +complete: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, nh, response, complete)) == True{} : Bool}:
+  Lw.setup_done(st, key, ue, guard, ctx, nh, response, complete, Bool.and(response, complete), eh, ec, ev)
 
-def Lw.dereg_answer(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +switch_off: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.dereg_answer(st, key, ue, ctx, switch_off)) == True{} : Bool}:
+def Lw.dereg_answer(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +switch_off: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gmm.Gmm.dereg_answer(st, key, ue, ctx, switch_off)) == True{} : Bool}:
   match switch_off:
     case True{}:
       Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.deregister()), ek, ehome)
     case False{}:
-      Lv.prepend(st, Gmm.Gmm.dl(key, ue, Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.deregistration_accept()))), Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.deregister())), Lv.held_live(st, key, ek), Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.deregister()), ek, ehome), {==})
+      +m = Sec.Nas.Protected.msg(Sec.Nas.protect(ctx, Sec.Ciphered{}, Gmm.Gmm.deregistration_accept()))
+      +x = Gmm.Gmm.dl(key, ue, m)
+      +cause = N.Ngap.nas_cause(G.CauseNas.deregister())
+      +ex = PF.Fs.dl_carries(S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), m, PF.Fs.protected_any(ctx, Sec.Ciphered{}, Gmm.Gmm.deregistration_accept()))
+      Lv.prepend_n(st, x, Gmm.Gmm.release(st, key, ue, cause), Lv.held_live(st, key, ek), Lw.release(st, key, ue, cause, ek, ehome), {==}, PF.Fs.ok_of(st, N.Out.tx(Gmm.Gmm.release(st, key, ue, cause)), x <> N.Out.acts(Gmm.Gmm.release(st, key, ue, cause)), PF.Fs.release_front(st, key, ue, cause, x, m, ex, PF.Fs.gone_any(PF.Fs.ctx(st, key), ctx, Sec.Ciphered{}, Gmm.Gmm.deregistration_accept(), ev), Lv.p_phase(ue, S.Releasing{S.Guard{0}}))))
 
-def Lw.deregister(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +kind: U32, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.deregister(st, key, ue, ctx, kind)) == True{} : Bool}:
-  Lw.dereg_answer(st, key, ue, ctx, Bool.not(U32.is_eq(U32.and(kind, 8), 0)), ek, ehome)
+def Lw.deregister(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +kind: U32, +ek: {Lv.held(st, key) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gmm.Gmm.deregister(st, key, ue, ctx, kind)) == True{} : Bool}:
+  Lw.dereg_answer(st, key, ue, ctx, Bool.not(U32.is_eq(U32.and(kind, 8), 0)), ek, ehome, ev)
 
 
 # A verified 5GMM message: the UL NAS Transport of a registered UE may put a session.
-def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Sec.Nas.Count, +ctx: Sec.Nas.Ctx, +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +p: S.Phase, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +ep: {S.Ue.phase(ue) == p : S.Phase}) -> {Lv.ok(st, Gmm.Gmm.sphase(st, key, ue, entropy, count, ctx, mt, fields, opts, p)) == True{} : Bool}:
+def Lw.sphase(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Sec.Nas.Count, +ctx: Sec.Nas.Ctx, +mt: Mm.Mm.Type, +fields: List<&2, I.Field>, +opts: List<&2, I.Ie>, +p: S.Phase, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +ep: {S.Ue.phase(ue) == p : S.Phase}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gmm.Gmm.sphase(st, key, ue, entropy, count, ctx, mt, fields, opts, p)) == True{} : Bool}:
   match mt:
     case Mm.RegistrationRequest{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.RegistrationAccept{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.RegistrationComplete{}:
       match p:
         case S.Created{}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Identifying{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Authenticating{guard, av, resynced, supi}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.SecurityMode{guard, old, k_amf}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.ContextSetup{+guard, +old, +nh, +response, +complete}:
-          Lv.ok_of(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, nh, response, True{}), Lw.setup_step(st, key, ue, guard, ctx, nh, response, True{}, Lv.get_has(S.State.ues(st), key, ue, eg), Lv.chain_at(st, key, ue, S.ContextSetup{guard, old, nh, response, complete}, eg, ep, Some{nh}, Lv.chains_same(nh))))
+          Lv.ok_of(st, Gmm.Gmm.setup_step(st, key, ue, guard, ctx, nh, response, True{}), Lw.setup_step(st, key, ue, guard, ctx, nh, response, True{}, Lv.get_has(S.State.ues(st), key, ue, eg), Lv.chain_at(st, key, ue, S.ContextSetup{guard, old, nh, response, complete}, eg, ep, Some{nh}, Lv.chains_same(nh)), ev))
         case S.Registered{old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Switching{guard, old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Handover{old, nh, source, leg}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Releasing{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.RegistrationReject{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.DeregistrationRequestUe{}:
       match p:
         case S.Created{}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Identifying{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Authenticating{guard, av, resynced, supi}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.SecurityMode{guard, old, k_amf}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.ContextSetup{guard, old, nh, response, complete}:
-          Lv.ok_of(st, Gmm.Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields)), Lw.deregister(st, key, ue, ctx, I.Fields.byte1(fields), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome))
+          Lv.ok_of(st, Gmm.Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields)), Lw.deregister(st, key, ue, ctx, I.Fields.byte1(fields), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome, ev))
         case S.Registered{old, nh, released}:
-          Lv.ok_of(st, Gmm.Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields)), Lw.deregister(st, key, ue, ctx, I.Fields.byte1(fields), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome))
+          Lv.ok_of(st, Gmm.Gmm.deregister(st, key, ue, ctx, I.Fields.byte1(fields)), Lw.deregister(st, key, ue, ctx, I.Fields.byte1(fields), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome, ev))
         case S.Switching{guard, old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Handover{old, nh, source, leg}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Releasing{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.DeregistrationAcceptUe{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.ConfigurationUpdateCommand{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.AuthenticationRequest{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.AuthenticationResponse{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.AuthenticationReject{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.AuthenticationFailure{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.IdentityRequest{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.IdentityResponse{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.SecurityModeCommand{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.SecurityModeComplete{}:
       match p:
         case S.Created{}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Identifying{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Authenticating{guard, av, resynced, supi}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.SecurityMode{+guard, +old, +k_amf}:
-          Lv.ok_of(st, Gmm.Gmm.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n))), Lw.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n)), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome, guard, old, eg, ep))
+          Lv.ok_of(st, Gmm.Gmm.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n))), Lw.sm_complete(st, key, ue, k_amf, ctx, count, opts, S.State.config(st), Gmm.Gmm.tmsi(S.State.ues(st), List.drop(&2, U32, entropy, 16n)), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome, guard, old, eg, ep, ev))
         case S.ContextSetup{guard, old, nh, response, complete}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Registered{old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Switching{guard, old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Handover{old, nh, source, leg}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Releasing{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.SecurityModeReject{}:
       match p:
         case S.Created{}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Identifying{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Authenticating{guard, av, resynced, supi}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.SecurityMode{guard, old, k_amf}:
           Lv.ok_of(st, Gmm.Gmm.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified())), Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome))
         case S.ContextSetup{guard, old, nh, response, complete}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Registered{old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Switching{guard, old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Handover{old, nh, source, leg}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Releasing{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.Status{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.UlNasTransport{}:
       match p:
         case S.Created{}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Identifying{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Authenticating{guard, av, resynced, supi}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.SecurityMode{guard, old, k_amf}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.ContextSetup{guard, old, nh, response, complete}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Registered{old, nh, released}:
-          Lw.ul_transport(st, key, ue, ctx, fields, opts, entropy, eg, ec)
+          Lw.ul_transport(st, key, ue, ctx, fields, opts, entropy, eg, ec, ev)
         case S.Switching{guard, old, nh, released}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Handover{old, nh, source, leg}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
         case S.Releasing{guard}:
-          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+          Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.DlNasTransport{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.ServiceRequest{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
     case Mm.ServiceReject{}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not expected in this phase", ec, eg, ev)
 
-def Lw.protected(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Sec.Nas.Count, +ctx: Sec.Nas.Ctx, +r: Result<&2, &2, B.Err, Mm.Mm>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.ok(st, Gmm.Gmm.protected(st, key, ue, entropy, count, ctx, r)) == True{} : Bool}:
+def Lw.protected(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +count: Sec.Nas.Count, +ctx: Sec.Nas.Ctx, +r: Result<&2, &2, B.Err, Mm.Mm>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.ok(st, Gmm.Gmm.protected(st, key, ue, entropy, count, ctx, r)) == True{} : Bool}:
   match r:
     case Fail{e}:
-      Lw.out_verified(st, key, ue, ctx, "5GMM: message not understood", ec, eg)
+      Lw.out_verified(st, key, ue, ctx, "5GMM: message not understood", ec, eg, ev)
     case Done{Mm.Mm{+mt, +fields, +opts}}:
-      Lw.sphase(st, key, ue, entropy, count, ctx, mt, fields, opts, S.Ue.phase(ue), eg, ec, ehome, {==})
+      Lw.sphase(st, key, ue, entropy, count, ctx, mt, fields, opts, S.Ue.phase(ue), eg, ec, ehome, {==}, ev)
 
-def Lw.opened(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +r: Result<&2, &2, B.Err, Sec.Nas.Unprotected>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.ok(st, Gmm.Gmm.opened(st, key, ue, entropy, r)) == True{} : Bool}:
+def Lw.opened(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +c: Sec.Nas.Ctx, +r: Result<&2, &2, B.Err, Sec.Nas.Unprotected>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ec: {Tb.Table.present(Sec.Nas.Ctx, S.Phase.ctx(S.Ue.phase(ue))) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +ev0: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{c}) : Maybe<&2, PF.Fs.KD()>}, hk: PF.Fs.Keeps(c, r)) -> {Lv.ok(st, Gmm.Gmm.opened(st, key, ue, entropy, r)) == True{} : Bool}:
   match r:
     case Fail{e}:
       {==}
     case Done{Sec.Unprotected{prot, +plain, +count, +ctx}}:
-      Lw.protected(st, key, ue, entropy, count, ctx, Mm.Mm.read(plain), eg, ec, ehome)
+      Lw.protected(st, key, ue, entropy, count, ctx, Mm.Mm.read(plain), eg, ec, ehome, Equal.trans(Maybe<&2, PF.Fs.KD()>, PF.Fs.view(PF.Fs.ctx(st, key)), PF.Fs.view(Some{c}), PF.Fs.view(Some{ctx}), ev0, Equal.sym(Maybe<&2, PF.Fs.KD()>, PF.Fs.view(Some{ctx}), PF.Fs.view(Some{c}), hk)))
 
 def Lw.secured(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +nas: B.Bytes(), +m: Maybe<&2, Sec.Nas.Ctx>, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +em: {S.Phase.ctx(S.Ue.phase(ue)) == m : Maybe<&2, Sec.Nas.Ctx>}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.ok(st, Gmm.Gmm.secured(st, key, ue, entropy, nas, m)) == True{} : Bool}:
   match m:
     case None{}:
-      Lv.ok_of(st, Gmm.Gmm.plain(st, key, ue, entropy, Mm.Mm.read(nas)), Lw.plain(st, key, ue, entropy, Mm.Mm.read(nas), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome))
+      Lv.ok_of(st, Gmm.Gmm.plain(st, key, ue, entropy, Mm.Mm.read(nas)), Lw.plain(st, key, ue, entropy, Mm.Mm.read(nas), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), ehome, eg))
     case Some{+ctx}:
-      Lw.opened(st, key, ue, entropy, Sec.Nas.unprotect(ctx, nas), eg, Lv.has_ctx(S.Ue.phase(ue), ctx, em), ehome)
+      Lw.opened(st, key, ue, entropy, ctx, Sec.Nas.unprotect(ctx, nas), eg, Lv.has_ctx(S.Ue.phase(ue), ctx, em), ehome, PF.Fs.view_of(st, key, ue, ctx, eg, em), PF.Fs.unprotect_keeps(ctx, nas))
 
 def Lw.mm(+st: S.State, +key: U32, +ue: S.Ue, +entropy: B.Bytes(), +nas: B.Bytes(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.ok(st, Gmm.Gmm.mm(st, key, ue, entropy, nas)) == True{} : Bool}:
   Lw.secured(st, key, ue, entropy, nas, S.Phase.ctx(S.Ue.phase(ue)), eg, {==}, ehome)
@@ -3246,7 +3401,7 @@ def Lw.setup_phase(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +eg: {Tb.Tab
     case S.SecurityMode{guard, old, k_amf}:
       {==}
     case S.ContextSetup{+guard, +ctx, +nh, +response, +complete}:
-      Lw.setup_step(st, key, ue, guard, ctx, nh, True{}, complete, Lv.get_has(S.State.ues(st), key, ue, eg), Lv.chain_at(st, key, ue, S.ContextSetup{guard, ctx, nh, response, complete}, eg, ep, Some{nh}, Lv.chains_same(nh)))
+      Lw.setup_step(st, key, ue, guard, ctx, nh, True{}, complete, Lv.get_has(S.State.ues(st), key, ue, eg), Lv.chain_at(st, key, ue, S.ContextSetup{guard, ctx, nh, response, complete}, eg, ep, Some{nh}, Lv.chains_same(nh)), PF.Fs.view_at(st, key, ue, S.ContextSetup{guard, ctx, nh, response, complete}, eg, ep))
     case S.Registered{old, nh, released}:
       {==}
     case S.Switching{guard, old, nh, released}:
@@ -3329,7 +3484,7 @@ def Lw.release_complete_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes()
       +tail : List<&2, N.Act> = List.append(&2, N.Act, Ho.Ho.leg_drop(key, S.Ue.phase(ue), c), [N.Note{F.Info{}, "NGAP: UE context released"}])
       +more = List.append(&2, N.Act, N.Guard.cancel(key, S.Ue.guard(ue)), tail)
       +tx = N.Out.tx(Gmm.Gmm.forget(st, key))
-      Lv.also(st, Gmm.Gmm.forget(st, key), more, Lw.forget(st, key), Lv.append(st, N.Guard.cancel(key, S.Ue.guard(ue)), tail, Lv.cancel(st, key, S.Ue.guard(ue), eh), Lv.append(st, Ho.Ho.leg_drop(key, S.Ue.phase(ue), c), [N.Note{F.Info{}, "NGAP: UE context released"}], Lw.ho_leg_drop(st, key, S.Ue.phase(ue), c, Lv.has_held(st, key, eh)), {==})), Lv.stops_app(tx, N.Guard.cancel(key, S.Ue.guard(ue)), tail, Lv.cancel_stops(tx, key, S.Ue.guard(ue), Lv.forget_idles(st, key)), Lv.stops_app(tx, Ho.Ho.leg_drop(key, S.Ue.phase(ue), c), [N.Note{F.Info{}, "NGAP: UE context released"}], Lv.leg_drop_stops(tx, key, S.Ue.phase(ue), c), {==})))
+      Lv.also(st, Gmm.Gmm.forget(st, key), more, Lw.forget(st, key), Lv.append(st, N.Guard.cancel(key, S.Ue.guard(ue)), tail, Lv.cancel(st, key, S.Ue.guard(ue), eh), Lv.append(st, Ho.Ho.leg_drop(key, S.Ue.phase(ue), c), [N.Note{F.Info{}, "NGAP: UE context released"}], Lw.ho_leg_drop(st, key, S.Ue.phase(ue), c, Lv.has_held(st, key, eh)), {==})), Lv.stops_app(tx, N.Guard.cancel(key, S.Ue.guard(ue)), tail, Lv.cancel_stops(tx, key, S.Ue.guard(ue), Lv.forget_idles(st, key)), Lv.stops_app(tx, Ho.Ho.leg_drop(key, S.Ue.phase(ue), c), [N.Note{F.Info{}, "NGAP: UE context released"}], Lv.leg_drop_stops(tx, key, S.Ue.phase(ue), c), {==})), PF.Fs.amute_app(N.Guard.cancel(key, S.Ue.guard(ue)), tail, PF.Fs.cancel_mute(key, S.Ue.guard(ue)), PF.Fs.amute_app(Ho.Ho.leg_drop(key, S.Ue.phase(ue), c), [N.Note{F.Info{}, "NGAP: UE context released"}], PF.Fs.leg_mute(key, S.Ue.phase(ue), c), {==})))
 
 
 def Lw.release_complete_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +m: Maybe<&2, U32>) -> {Lv.okf(st, Gmm.Gmm.release_complete_key(st, assoc, ran, m)) == True{} : Bool}:
@@ -3362,14 +3517,61 @@ def Lw.ho_expiry(+st: S.State, +key: U32, +ue: S.Ue, +leg: S.Leg, +ek: {Lv.held(
 
 def Lw.ho_expired(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +leg: S.Leg, +ek: {Lv.held(st, key) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, leg} : S.Phase}) -> {Lv.okf(st, Ho.Ho.expired(key, ue, ctx, nh, leg)) == True{} : Bool}:
   +n : List<&2, N.Act> = [N.Note{F.Warn{}, "NGAP: N2 handover guard expired; the UE stays with its owner"}]
-  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, List.append(&2, N.Act, Ho.Ho.expiry(key, ue, leg), n), Lv.append(st, Ho.Ho.expiry(key, ue, leg), n, Lw.ho_expiry(st, key, ue, leg, ek), {==}), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, leg}, eg, ep, Some{nh}, Lv.chains_same(nh)), {==}), Lv.stops_app(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, Ho.Ho.expiry(key, ue, leg), n, Lv.expiry_stops(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, key, ue, leg), {==}), {==})
+  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, List.append(&2, N.Act, Ho.Ho.expiry(key, ue, leg), n), Lv.append(st, Ho.Ho.expiry(key, ue, leg), n, Lw.ho_expiry(st, key, ue, leg, ek), {==}), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, leg}, eg, ep, Some{nh}, Lv.chains_same(nh)), {==}), Lv.stops_app(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, Ho.Ho.expiry(key, ue, leg), n, Lv.expiry_stops(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, key, ue, leg), {==}), {==}, PF.Fs.kept_rephase(st, key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, ctx, List.append(&2, N.Act, Ho.Ho.expiry(key, ue, leg), n), {==}, PF.Fs.view_at(st, key, ue, S.Handover{ctx, nh, source, leg}, eg, ep), PF.Fs.amute_app(Ho.Ho.expiry(key, ue, leg), n, PF.Fs.expiry_mute(key, ue, leg), {==})))
 
-def Lw.retry_if(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +p: S.Phase, +ok: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ef: {Lv.free(st, S.Rephase{key, S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})}) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}) -> {Lv.okf(st, Gmm.Gmm.retry_if(st, key, ue, guard, p, ok)) == True{} : Bool}:
+# Another NAS context in a phase leaves what Lv.free reads of it as it was.
+def Lv.free_with_ctx(+st: S.State, +key: U32, +q: S.Phase, +c: Sec.Nas.Ctx, +ef: {Lv.free(st, S.Rephase{key, q}) == True{} : Bool}) -> {Lv.free(st, S.Rephase{key, S.Phase.with_ctx(q, c)}) == True{} : Bool}:
+  match q:
+    case S.Created{}:
+      ef
+    case S.Identifying{guard}:
+      ef
+    case S.Authenticating{guard, av, resynced, supi}:
+      ef
+    case S.SecurityMode{guard, ctx, k_amf}:
+      ef
+    case S.ContextSetup{guard, ctx, nh, response, complete}:
+      ef
+    case S.Registered{ctx, nh, released}:
+      ef
+    case S.Switching{guard, ctx, nh, released}:
+      ef
+    case S.Handover{ctx, nh, source, leg}:
+      ef
+    case S.Releasing{guard}:
+      ef
+
+# The last downlink message again: plain, or none, with no NAS context, and
+# sealed afresh under one.
+def Lw.plain_again(+st: S.State, +key: U32, +ue: S.Ue, +q: S.Phase, +b: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ef: {Lv.free(st, S.Rephase{key, q}) == True{} : Bool}, +en: {S.Phase.nas(q) == None{} : Maybe<&2, Sec.Nas.Ctx>}, +eb: {Sec.Nas.is_protected(S.Ue.last_dl(ue)) == b : Bool}) -> {Lv.okf(st, Gmm.Gmm.plain_again(key, ue, q, b)) == True{} : Bool}:
+  match b:
+    case True{}:
+      Lv.leaf(st, S.Rephase{key, q}, [], {==}, ef, {==}, {==}, PF.Fs.rephase_none(st, key, q, en))
+    case False{}:
+      +x : N.Act = Gmm.Gmm.dl(key, ue, S.Ue.last_dl(ue))
+      Lv.leaf(st, S.Rephase{key, q}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), ef, {==}, {==}, PF.Fs.cons(st, S.Rephase{key, q}, x, [], PF.Fs.rephase_none(st, key, q, en), PF.Fs.plain_none(key, S.Ue.last_dl(ue), eb)))
+
+def Lw.again_in(+st: S.State, +key: U32, +ue: S.Ue, +q: S.Phase, +c: Maybe<&2, Sec.Nas.Ctx>, +ek: {Lv.held(st, key) == True{} : Bool}, +ef: {Lv.free(st, S.Rephase{key, q}) == True{} : Bool}, +ec: {S.Phase.ctx(q) == c : Maybe<&2, Sec.Nas.Ctx>}, +en: {S.Phase.nas(q) == c : Maybe<&2, Sec.Nas.Ctx>}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(c) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gmm.Gmm.again_in(key, ue, q, c)) == True{} : Bool}:
+  match c:
+    case None{}:
+      Lw.plain_again(st, key, ue, q, Sec.Nas.is_protected(S.Ue.last_dl(ue)), ek, ef, en, {==})
+    case Some{+v}:
+      match v:
+        case Sec.Ctx{+k, +d, +ul}:
+          +prot = Gmm.Gmm.protection(q)
+          +plain = S.Ue.last_dl(ue)
+          +m = Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{k, d, ul}, prot, plain))
+          +c2 : Sec.Nas.Ctx = Sec.Ctx{k, Sec.Nas.Count.next(d), ul}
+          +x : N.Act = Gmm.Gmm.dl(key, ue, m)
+          +hn = PF.Fs.told_leaf(st, key, S.Phase.with_ctx(q, c2), k, d, ul, prot, plain, x, PF.Fs.dl_carries(S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), m, PF.Fs.protect_protected(k, d, ul, prot, plain)), PF.Fs.nas_with(q, c2, PF.Fs.present_of(q, Sec.Ctx{k, d, ul}, ec)), ev)
+          Lv.leaf(st, S.Rephase{key, S.Phase.with_ctx(q, c2)}, [x], Lv.cons(st, x, [], Lv.held_live(st, key, ek), {==}), Lv.free_with_ctx(st, key, q, c2, ef), {==}, {==}, hn)
+
+def Lw.retry_if(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +p: S.Phase, +ok: Bool, +ek: {Lv.held(st, key) == True{} : Bool}, +ef: {Lv.free(st, S.Rephase{key, S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})}) == True{} : Bool}, +ehome: {Lv.home(st, ue) == True{} : Bool}, +en: {S.Phase.nas(S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})) == S.Phase.ctx(S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})) : Maybe<&2, Sec.Nas.Ctx>}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(S.Phase.ctx(S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)}))) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gmm.Gmm.retry_if(st, key, ue, guard, p, ok)) == True{} : Bool}:
   match ok:
     case True{}:
-      +x : N.Act = Gmm.Gmm.dl(key, ue, S.Ue.last_dl(ue))
+      +q = S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})
       +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
-      Lv.leaf(st, S.Rephase{key, S.Phase.with_guard(p, S.Guard{U32.add(S.Guard.retries(guard), 1)})}, [x, y], Lv.cons(st, x, [y], Lv.held_live(st, key, ek), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==})), ef, {==}, {==})
+      Lv.also(st, Gmm.Gmm.again(key, ue, q), [y], Lw.again_in(st, key, ue, q, S.Phase.ctx(q), ek, ef, {==}, en, ev), Lv.cons(st, y, [], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==}), {==}, {==})
     case False{}:
       Lw.release(st, key, ue, N.Ngap.nas_cause(G.CauseNas.unspecified()), ek, ehome)
 
@@ -3378,13 +3580,13 @@ def Lw.expired(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ek: {Lv.held(st
     case S.Created{}:
       {==}
     case S.Identifying{+guard}:
-      Lw.retry_if(st, key, ue, guard, S.Identifying{guard}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==}, ehome)
+      Lw.retry_if(st, key, ue, guard, S.Identifying{guard}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==}, ehome, {==}, PF.Fs.view_at(st, key, ue, S.Identifying{guard}, eg, ep))
     case S.Authenticating{+guard, +av, +resynced, +supi}:
-      Lw.retry_if(st, key, ue, guard, S.Authenticating{guard, av, resynced, supi}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==}, ehome)
+      Lw.retry_if(st, key, ue, guard, S.Authenticating{guard, av, resynced, supi}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==}, ehome, {==}, PF.Fs.view_at(st, key, ue, S.Authenticating{guard, av, resynced, supi}, eg, ep))
     case S.SecurityMode{+guard, +ctx, +k_amf}:
-      Lw.retry_if(st, key, ue, guard, S.SecurityMode{guard, ctx, k_amf}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==}, ehome)
+      Lw.retry_if(st, key, ue, guard, S.SecurityMode{guard, ctx, k_amf}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, {==}, ehome, {==}, PF.Fs.view_at(st, key, ue, S.SecurityMode{guard, ctx, k_amf}, eg, ep))
     case S.ContextSetup{+guard, +ctx, +nh, +response, +complete}:
-      Lw.retry_if(st, key, ue, guard, S.ContextSetup{guard, ctx, nh, response, complete}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.ContextSetup{guard, ctx, nh, response, complete}, eg, ep, Some{nh}, Lv.chains_same(nh)), {==}), ehome)
+      Lw.retry_if(st, key, ue, guard, S.ContextSetup{guard, ctx, nh, response, complete}, U32.is_lt(S.Guard.retries(guard), Gmm.Gmm.max_retries()), ek, P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.ContextSetup{guard, ctx, nh, response, complete}, eg, ep, Some{nh}, Lv.chains_same(nh)), {==}), ehome, {==}, PF.Fs.view_at(st, key, ue, S.ContextSetup{guard, ctx, nh, response, complete}, eg, ep))
     case S.Registered{ctx, nh, released}:
       {==}
     case S.Switching{guard, ctx, nh, released}:
@@ -3392,7 +3594,7 @@ def Lw.expired(+st: S.State, +key: U32, +ue: S.Ue, +p: S.Phase, +ek: {Lv.held(st
     case S.Handover{+ctx, +nh, +source, +leg}:
       Lw.ho_expired(st, key, ue, ctx, nh, source, leg, ek, eg, ep)
     case S.Releasing{guard}:
-      Lv.also(st, Gmm.Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}], Lw.forget(st, key), {==}, {==})
+      Lv.also(st, Gmm.Gmm.forget(st, key), [N.Note{F.Warn{}, "NGAP: no UE Context Release Complete; UE context released"}], Lw.forget(st, key), {==}, {==}, {==})
 
 
 def Lw.setup(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +accept: Sm.Sm, +up_seid: B.Bytes(), +m: Maybe<&2, S.Ue>, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +em: {Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)) == m : Maybe<&2, S.Ue>}, +e8: {Nat.is_eq(List.length(&2, U32, up_seid), 8n) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.setup(st, skey, s, pti, accept, up_seid, m)) == True{} : Bool}:
@@ -3448,11 +3650,11 @@ def Lw.switch_failed(+st: S.State, +key: U32, +ue: S.Ue, +psis: List<&2, U32>, +
   +b : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), cause}
   +c : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
   +d : N.Act = N.Note{F.Warn{}, "NGAP: Path Switch failed, no PDU session switched; UE released"}
-  Lv.leaf(st, S.Rephase{key, S.Releasing{S.Guard{0}}}, [a, b, c, d], Lv.cons(st, a, [b, c, d], Lv.held_live(st, key, ek), Lv.cons(st, b, [c, d], Lv.held_live(st, key, ek), Lv.cons(st, c, [d], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==}))), {==}, {==}, {==})
+  Lv.leaf(st, S.Rephase{key, S.Releasing{S.Guard{0}}}, [a, b, c, d], Lv.cons(st, a, [b, c, d], Lv.held_live(st, key, ek), Lv.cons(st, b, [c, d], Lv.held_live(st, key, ek), Lv.cons(st, c, [d], Lv.ue_start(st, key, N.Ue.guard_ms(), ek), {==}))), {==}, {==}, {==}, {==})
 
 # The PDU Session Release Commands a handover sends its UE name its context
 # and stop no timer.
-def Lw.told_then(+st: S.State, +a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>, +ha: {Lv.act(st, a) == True{} : Bool}, +hr: {Lv.acts(st, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Lv.acts(st, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(a, r))) == True{} : Bool}:
+def Lw.told_then(+st: S.State, +a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>, +ha: {Lv.act(st, a) == True{} : Bool}, +hr: {Lv.acts(st, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Lv.acts(st, Gsm.Gsm.Told.acts(N.Out.told_after([a], r))) == True{} : Bool}:
   match r:
     case (c, +acts):
       Lv.cons(st, a, acts, ha, hr)
@@ -3462,10 +3664,10 @@ def Lw.told_acts(+st: S.State, +key: U32, +assoc: U32, +stream: U32, +ran: B.Byt
     case Nil{}:
       {==}
     case +p <> +more:
-      +q : Sec.Nas.Protected = Gsm.Gsm.release_nas(ctx, p)
+      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.release_plain(p))
       Lw.told_then(st, N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), hl, Lw.told_acts(st, key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q), hl))
 
-def Lw.told_stops_then(+tx: S.Tx, +a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>, +ha: {Lv.stop(tx, Lv.cancelled(a)) == True{} : Bool}, +hr: {Lv.stops(tx, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Lv.stops(tx, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(a, r))) == True{} : Bool}:
+def Lw.told_stops_then(+tx: S.Tx, +a: N.Act, +r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>, +ha: {Lv.stop(tx, Lv.cancelled(a)) == True{} : Bool}, +hr: {Lv.stops(tx, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Lv.stops(tx, Gsm.Gsm.Told.acts(N.Out.told_after([a], r))) == True{} : Bool}:
   match r:
     case (c, +acts):
       Lv.stops_cons(tx, a, acts, ha, hr)
@@ -3475,10 +3677,10 @@ def Lw.told_stops(+tx: S.Tx, +key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes
     case Nil{}:
       {==}
     case +p <> +more:
-      +q : Sec.Nas.Protected = Gsm.Gsm.release_nas(ctx, p)
+      +q : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.Gsm.release_plain(p))
       Lw.told_stops_then(tx, N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), {==}, Lw.told_stops(tx, key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
 
-def Lw.switch_end(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, +cfg: Maybe<&2, S.Cfg>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.switch_end(key, ue, ctx, nh, released, switched, cfg)) == True{} : Bool}:
+def Lw.switch_end(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, +cfg: Maybe<&2, S.Cfg>, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gsm.Gsm.switch_end(key, ue, ctx, nh, released, switched, cfg)) == True{} : Bool}:
   match switched:
     case Nil{}:
       match cfg:
@@ -3495,14 +3697,15 @@ def Lw.switch_end(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.
           +r = Gsm.Gsm.releases(key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx)
           +ph : S.Phase = S.Registered{Gsm.Gsm.Told.ctx(r), nh, None{}}
           +tail : List<&2, N.Act> = [N.TimerCancel{key}, N.Note{F.Info{}, "NGAP: Path Switch done"}]
-          Lv.leaf(st, S.Rephase{key, ph}, a <> List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), Lv.cons(st, a, List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), Lv.has_live(st, key, eh), Lv.append(st, Gsm.Gsm.Told.acts(r), tail, Lw.told_acts(st, key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx, Lv.has_live(st, key, eh)), Lv.cons(st, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], eh, {==}))), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}), Lv.stops_cons(S.Rephase{key, ph}, a, List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), {==}, Lv.stops_app(S.Rephase{key, ph}, Gsm.Gsm.Told.acts(r), tail, Lw.told_stops(S.Rephase{key, ph}, key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx), Lv.stops_cons(S.Rephase{key, ph}, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], Lv.idles_rephase(key, ph, {==}), {==}))), {==})
+          Lv.leaf(st, S.Rephase{key, ph}, a <> List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), Lv.cons(st, a, List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), Lv.has_live(st, key, eh), Lv.append(st, Gsm.Gsm.Told.acts(r), tail, Lw.told_acts(st, key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx, Lv.has_live(st, key, eh)), Lv.cons(st, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], eh, {==}))), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}), Lv.stops_cons(S.Rephase{key, ph}, a, List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), {==}, Lv.stops_app(S.Rephase{key, ph}, Gsm.Gsm.Told.acts(r), tail, Lw.told_stops(S.Rephase{key, ph}, key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx), Lv.stops_cons(S.Rephase{key, ph}, N.TimerCancel{key}, [N.Note{F.Info{}, "NGAP: Path Switch done"}], Lv.idles_rephase(key, ph, {==}), {==}))), {==}, PF.Fs.cons(st, S.Rephase{key, ph}, a, List.append(&2, N.Act, Gsm.Gsm.Told.acts(r), tail), PF.Fs.app_mute(st, S.Rephase{key, ph}, Gsm.Gsm.Told.acts(r), tail, PF.Fs.rephase_told(st, key, ph, Gsm.Gsm.Told.ctx(r), Gsm.Gsm.Told.acts(r), {==}, PF.Fs.releases_write(st, key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx, ev), PF.Fs.releases_to(key, S.Ue.assoc(ue), S.Ue.stream(ue), S.Ue.ran_id(ue), released, ctx)), {==}), {==}))
 
-def Lw.switch_next(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, +waits: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.switch_next(st, key, ue, guard, ctx, nh, released, switched, waits)) == True{} : Bool}:
+def Lw.switch_next(+st: S.State, +key: U32, +ue: S.Ue, +guard: S.Guard, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +released: List<&2, U32>, +switched: List<&2, U32>, +waits: Bool, +eh: {Tb.Table.has(S.Ue, key, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}) -> {Lv.okf(st, Gsm.Gsm.switch_next(st, key, ue, guard, ctx, nh, released, switched, waits)) == True{} : Bool}:
   match waits:
     case True{}:
-      P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==})
+      +q : S.Phase = S.Switching{guard, ctx, nh, released}
+      Lv.okf_of(st, (S.Rephase{key, q}, []), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, ec, {==}), PF.Fs.kept_rephase(st, key, q, ctx, [], {==}, ev, {==}))
     case False{}:
-      Lw.switch_end(st, key, ue, ctx, nh, released, switched, S.State.config(st), eh, ec)
+      Lw.switch_end(st, key, ue, ctx, nh, released, switched, S.State.config(st), eh, ec, ev)
 
 def Lw.switch_ue(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool, +ue: S.Ue, +p: S.Phase, +eg: {Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ep: {S.Ue.phase(ue) == p : S.Phase}) -> {Lv.okf(st, Gsm.Gsm.switch_ue(st, skey, s, ok, ue, p)) == True{} : Bool}:
   match p:
@@ -3521,7 +3724,7 @@ def Lw.switch_ue(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool, +ue: S.Ue, 
     case S.Switching{+guard, +ctx, +nh, +released}:
       +key = S.Session.ue(s)
       +psi = S.Session.psi(s)
-      Lw.switch_next(st, key, ue, guard, ctx, nh, Gsm.Gsm.psi_if(psi, released, Bool.not(ok)), Gsm.Gsm.psi_if(psi, Gsm.Gsm.active_psis(key, S.State.sessions(st)), ok), Gsm.Gsm.waits(key, skey, S.State.sessions(st)), Lv.get_has(S.State.ues(st), key, ue, eg), Lv.chain_at(st, key, ue, S.Switching{guard, ctx, nh, released}, eg, ep, Some{nh}, Lv.chains_same(nh)))
+      Lw.switch_next(st, key, ue, guard, ctx, nh, Gsm.Gsm.psi_if(psi, released, Bool.not(ok)), Gsm.Gsm.psi_if(psi, Gsm.Gsm.active_psis(key, S.State.sessions(st)), ok), Gsm.Gsm.waits(key, skey, S.State.sessions(st)), Lv.get_has(S.State.ues(st), key, ue, eg), Lv.chain_at(st, key, ue, S.Switching{guard, ctx, nh, released}, eg, ep, Some{nh}, Lv.chains_same(nh)), PF.Fs.view_at(st, key, ue, S.Switching{guard, ctx, nh, released}, eg, ep))
     case S.Handover{ctx, nh, source, leg}:
       {==}
     case S.Releasing{guard}:
@@ -3535,7 +3738,7 @@ def Lw.switch_of(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool, +m: Maybe<&
       Lw.switch_ue(st, skey, s, ok, ue, S.Ue.phase(ue), em, {==})
 
 def Lw.repointed(+st: S.State, +skey: U32, +s: S.Session, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.repointed(st, skey, s, False{})) == True{} : Bool}:
-  Lv.join(st, Gsm.Gsm.repoint_done(st, skey, s, False{}), Gsm.Gsm.switch_of(st, skey, s, False{}, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st))), Lw.repoint_done(st, skey, s, es, ekd), Lw.switch_of(st, skey, s, False{}, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), {==}))
+  Lv.join(st, Gsm.Gsm.repoint_done(st, skey, s, False{}), Gsm.Gsm.switch_of(st, skey, s, False{}, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st))), Lw.repoint_done(st, skey, s, es, ekd), Lw.switch_of(st, skey, s, False{}, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)), {==}), P.Bool.or_l(PF.Fs.mute(N.Out.tx(Gsm.Gsm.repoint_done(st, skey, s, False{})), N.Out.acts(Gsm.Gsm.repoint_done(st, skey, s, False{}))), PF.Fs.mute(N.Out.tx(Gsm.Gsm.switch_of(st, skey, s, False{}, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))), N.Out.acts(Gsm.Gsm.switch_of(st, skey, s, False{}, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st))))), PF.Fs.deletions_mute([(skey, s)], S.State.pfcp_seq(st))))
 
 def Lw.repointed_f(+st: S.State, +skey: U32, +s: S.Session, +ok: Bool, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}, +eh: {Tb.Table.has(S.Session, skey, S.State.sessions(st)) == True{} : Bool}) -> {Lv.fine(st, Gsm.Gsm.repointed(st, skey, s, ok)) == True{} : Bool}:
   match ok:
@@ -3670,24 +3873,24 @@ def Lw.deleted(+st: S.State, +msg: Pf.Msg, +m: Maybe<&2, Sigma<&2, &2, U32, _ =>
 # The gNB's answer to PDU Session Resource Setup
 # ----------------------------------------------
 
-def Lw.modify(+st: S.State, +skey: U32, +s: S.Session, +pti: U32, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.modify(st, skey, s, pti, seq, tunnel)) == True{} : Bool}:
+def Lw.modify(+st: S.State, +key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.Session.known(s), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.modify(key, ue, skey, s, seq, tunnel, c))) == True{} : Bool}:
   match tunnel:
     case None{}:
-      Lw.drop(st, skey, s, seq, es, ekd)
+      Lw.give_up_in(st, key, ue, skey, s, Gsm.Release{}, seq, c, ekey, es, ekd)
     case Some{(+gnb_teid, +gnb_addr)}:
       +x : N.Act = N.Pfcp{S.Session.tag(s), Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)}
       +y : N.Act = N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}
       +ek = Lv.tagged_live(st, S.Session.tag(s), es)
       +v : S.SVar = S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)}}
-      Lv.leaf(st, S.Both{S.Revar{skey, v}, S.BumpSeq{1}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, S.Session.tag(s), skey, ek, ekd), {==})), P.Bool.and_intro(Lv.revar_ok(st, v), True{}, kf, {==}), {==}, {==})
+      Lv.leaf0(st, S.Both{S.Revar{skey, v}, S.BumpSeq{1}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, S.Session.tag(s), skey, ek, ekd), {==})), P.Bool.and_intro(Lv.revar_ok(st, v), True{}, kf, {==}), {==}, {==})
 
-def Lw.set_up_phase(+st: S.State, +skey: U32, +s: S.Session, +transfer: B.Bytes(), +seq: U32, +p: S.SPhase, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.SPhase.knows(p, S.Session.known(s)), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}, +eki: {Lv.kept_if(st, skey, p) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.set_up_phase(st, skey, s, transfer, seq, p)) == True{} : Bool}:
+def Lw.set_up_phase(+st: S.State, +key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +transfer: B.Bytes(), +seq: U32, +p: S.SPhase, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +kf: {Bool.or(S.SPhase.knows(p, S.Session.known(s)), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}, +eki: {Lv.kept_if(st, skey, p) == True{} : Bool}) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.set_up_phase(key, ue, skey, s, transfer, seq, p, c))) == True{} : Bool}:
   match p:
     case S.Creating{guard, pti, accept, request}:
       {==}
     case S.Setting{+guard, +pti}:
       +ekd = Lv.kept_at(st, skey, S.Setting{guard, pti}, eki, {==})
-      Lw.modify(st, skey, s, pti, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), es, kf, ekd)
+      Lw.modify(st, key, ue, skey, s, seq, Gsm.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), c, ekey, es, kf, ekd)
     case S.Modifying{guard, request}:
       {==}
     case S.Repointing{guard, request}:
@@ -3697,36 +3900,36 @@ def Lw.set_up_phase(+st: S.State, +skey: U32, +s: S.Session, +transfer: B.Bytes(
     case S.Active{}:
       {==}
 
-def Lw.set_up(+st: S.State, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +em: {Lv.found(m, S.State.sessions(st)) == True{} : Bool}, eg: Lv.Got(m, S.State.sessions(st))) -> {Lv.okf(st, Gsm.Gsm.set_up(st, transfer, seq, m)) == True{} : Bool}:
+def Lw.set_up(+st: S.State, +key: U32, +ue: S.Ue, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}, +em: {Lv.found(m, S.State.sessions(st)) == True{} : Bool}, eg: Lv.Got(m, S.State.sessions(st))) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.set_up(key, ue, transfer, seq, m, c))) == True{} : Bool}:
   match m:
     case None{}:
       {==}
     case Some{(+skey, +s)}:
-      Lw.set_up_phase(st, skey, s, transfer, seq, S.Session.phase(s), Lv.owns(skey, s, S.State.sessions(st), em), Lv.knows(skey, s, S.State.sessions(st), em), Lv.kept_got(st, skey, s, eg))
+      Lw.set_up_phase(st, key, ue, skey, s, transfer, seq, S.Session.phase(s), c, ekey, Lv.owns(skey, s, S.State.sessions(st), em), Lv.knows(skey, s, S.State.sessions(st), em), Lv.kept_got(st, skey, s, eg))
 
-def Lw.set_up_last(+st: S.State, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +em: {Lv.found(m, S.State.sessions(st)) == True{} : Bool}, +again: Bool, eg: Lv.Got(m, S.State.sessions(st))) -> {Lv.okf(st, Gsm.Gsm.set_up_last(st, transfer, seq, m, again)) == True{} : Bool}:
+def Lw.set_up_last(+st: S.State, +key: U32, +ue: S.Ue, +transfer: B.Bytes(), +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +em: {Lv.found(m, S.State.sessions(st)) == True{} : Bool}, +again: Bool, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}, eg: Lv.Got(m, S.State.sessions(st))) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.set_up_last(key, ue, transfer, seq, m, again, c))) == True{} : Bool}:
   match again:
     case True{}:
       {==}
     case False{}:
-      Lw.set_up(st, transfer, seq, m, em, eg)
+      Lw.set_up(st, key, ue, transfer, seq, m, c, ekey, em, eg)
 
-def Lw.set_ups(+st: S.State, +key: U32, +items: G.PDUSessionResourceSetupListSURes(), +seq: U32) -> {Lv.okf(st, Gsm.Gsm.set_ups(st, key, items, seq)) == True{} : Bool}:
+def Lw.set_ups(+st: S.State, +key: U32, +ue: S.Ue, +items: G.PDUSessionResourceSetupListSURes(), +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.set_ups(st, key, ue, items, seq, c))) == True{} : Bool}:
   match items:
     case Nil{}:
       {==}
     case G.PDUSessionResourceSetupItemSURes{+psi, +transfer, x} <> +more:
-      +a = Gsm.Gsm.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more))
-      +b = Gsm.Gsm.set_ups(st, key, more, U32.add(seq, 1))
-      Lv.join(st, N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(a, b), {==}, Lv.join(st, a, b, Lw.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Lv.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more), Lv.got_by_psi(key, psi, S.State.sessions(st))), Lw.set_ups(st, key, more, U32.add(seq, 1))))
+      +m = S.Sessions.by_psi(key, psi, S.State.sessions(st))
+      +a = Gsm.Gsm.set_up_last(key, ue, transfer, seq, m, Gsm.Gsm.named(psi, more), c)
+      PW.It.then(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), Gsm.Gsm.after((S.BumpSeq{1}, []), a), c2 => Gsm.Gsm.set_ups(st, key, ue, more, U32.add(seq, 1), c2), PW.It.after(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), (S.BumpSeq{1}, []), a, {==}, Lw.set_up_last(st, key, ue, transfer, seq, m, Lv.by_psi(key, psi, S.State.sessions(st)), Gsm.Gsm.named(psi, more), c, ekey, Lv.got_by_psi(key, psi, S.State.sessions(st)))), +c2 => Lw.set_ups(st, key, ue, more, U32.add(seq, 1), c2, ekey))
 
-def Lw.failed_phase(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +eki: {Lv.kept_if(st, skey, p) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.failed_phase(st, skey, s, seq, p)) == True{} : Bool}:
+def Lw.failed_phase(+st: S.State, +key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +eki: {Lv.kept_if(st, skey, p) == True{} : Bool}) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.failed_phase(key, ue, skey, s, seq, p, c))) == True{} : Bool}:
   match p:
     case S.Creating{guard, pti, accept, request}:
       {==}
     case S.Setting{+guard, +pti}:
       +ekd = Lv.kept_at(st, skey, S.Setting{guard, pti}, eki, {==})
-      Lw.abort(st, skey, s, pti, 26, seq, es, ekd)
+      Lw.give_up_in(st, key, ue, skey, s, Gsm.Reply{Gsm.Gsm.reject(S.Session.psi(s), pti, 26)}, seq, c, ekey, es, ekd)
     case S.Modifying{guard, request}:
       {==}
     case S.Repointing{guard, request}:
@@ -3736,25 +3939,27 @@ def Lw.failed_phase(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SP
     case S.Active{}:
       {==}
 
-def Lw.failed(+st: S.State, +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +em: {Lv.found(m, S.State.sessions(st)) == True{} : Bool}, eg: Lv.Got(m, S.State.sessions(st))) -> {Lv.okf(st, Gsm.Gsm.failed(st, seq, m)) == True{} : Bool}:
+def Lw.failed(+st: S.State, +key: U32, +ue: S.Ue, +seq: U32, +m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}, +em: {Lv.found(m, S.State.sessions(st)) == True{} : Bool}, eg: Lv.Got(m, S.State.sessions(st))) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.failed(key, ue, seq, m, c))) == True{} : Bool}:
   match m:
     case None{}:
       {==}
     case Some{(+skey, +s)}:
-      Lw.failed_phase(st, skey, s, seq, S.Session.phase(s), Lv.owns(skey, s, S.State.sessions(st), em), Lv.kept_got(st, skey, s, eg))
+      Lw.failed_phase(st, key, ue, skey, s, seq, S.Session.phase(s), c, ekey, Lv.owns(skey, s, S.State.sessions(st), em), Lv.kept_got(st, skey, s, eg))
 
-def Lw.faileds(+st: S.State, +key: U32, +items: G.PDUSessionResourceFailedToSetupListSURes(), +seq: U32) -> {Lv.okf(st, Gsm.Gsm.faileds(st, key, items, seq)) == True{} : Bool}:
+def Lw.faileds(+st: S.State, +key: U32, +ue: S.Ue, +items: G.PDUSessionResourceFailedToSetupListSURes(), +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>, +ekey: {Lv.held(st, key) == True{} : Bool}) -> {Lv.okf0(st, Gsm.Gsm.Item.out(Gsm.Gsm.faileds(st, key, ue, items, seq, c))) == True{} : Bool}:
   match items:
     case Nil{}:
       {==}
     case G.PDUSessionResourceFailedToSetupItemSURes{+psi, transfer, x} <> +more:
-      +a = Gsm.Gsm.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)))
-      +b = Gsm.Gsm.faileds(st, key, more, U32.add(seq, 1))
-      Lv.join(st, (S.BumpSeq{1}, []), N.Out.join(a, b), {==}, Lv.join(st, a, b, Lw.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Lv.by_psi(key, psi, S.State.sessions(st)), Lv.got_by_psi(key, psi, S.State.sessions(st))), Lw.faileds(st, key, more, U32.add(seq, 1))))
+      +m = S.Sessions.by_psi(key, psi, S.State.sessions(st))
+      +a = Gsm.Gsm.failed(key, ue, seq, m, c)
+      PW.It.then(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), Gsm.Gsm.after((S.BumpSeq{1}, []), a), c2 => Gsm.Gsm.faileds(st, key, ue, more, U32.add(seq, 1), c2), PW.It.after(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), (S.BumpSeq{1}, []), a, {==}, Lw.failed(st, key, ue, seq, m, c, ekey, Lv.by_psi(key, psi, S.State.sessions(st)), Lv.got_by_psi(key, psi, S.State.sessions(st)))), +c2 => Lw.faileds(st, key, ue, more, U32.add(seq, 1), c2, ekey))
 
-def Lw.results(+st: S.State, +key: U32, +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes()) -> {Lv.okf(st, Gsm.Gsm.results(st, key, oks, fails)) == True{} : Bool}:
-  +seq2 = U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, oks)))
-  Lv.join(st, Gsm.Gsm.set_ups(st, key, oks, S.State.pfcp_seq(st)), Gsm.Gsm.faileds(st, key, fails, seq2), Lw.set_ups(st, key, oks, S.State.pfcp_seq(st)), Lw.faileds(st, key, fails, seq2))
+def Lw.results(+st: S.State, +key: U32, +ue: S.Ue, +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes(), +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.results(st, key, ue, oks, fails)) == True{} : Bool}:
+  +seq = S.State.pfcp_seq(st)
+  +seq2 = U32.add(seq, U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, oks)))
+  +ekey = Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
+  Lv.okf_of(st, Gsm.Gsm.results(st, key, ue, oks, fails), PW.It.under(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), key, ue, c => Gsm.Gsm.then(Gsm.Gsm.set_ups(st, key, ue, oks, seq, c), c2 => Gsm.Gsm.faileds(st, key, ue, fails, seq2, c2)), +c => PW.It.then(o => {Lv.okf0(st, o) == True{} : Bool}, Lw.join(st), Gsm.Gsm.set_ups(st, key, ue, oks, seq, c), c2 => Gsm.Gsm.faileds(st, key, ue, fails, seq2, c2), Lw.set_ups(st, key, ue, oks, seq, c, ekey), +c2 => Lw.faileds(st, key, ue, fails, seq2, c2, ekey)), +ec => +c => Lw.ctx_written(st, key, ue, c, eg, ec)), PF.Fs.under_nas(st, key, ue, c => Gsm.Gsm.then(Gsm.Gsm.set_ups(st, key, ue, oks, seq, c), c2 => Gsm.Gsm.faileds(st, key, ue, fails, seq2, c2)), eg, +c => PF.Fs.results_ii(st, key, ue, oks, fails, seq, seq2, c)))
 
 def Lw.release_noted(+st: S.State, +b: Bool) -> {Lv.okf(st, (S.Keep{}, Gsm.Gsm.release_noted(b))) == True{} : Bool}:
   match b:
@@ -3785,20 +3990,24 @@ def Lw.release_response_of_view(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.
     case Done{V.PDUSessionResourceReleaseResponse.View{+amf, +ran, +items, uli, diagnostics}}:
       Lw.release_answer_key(st, assoc, ran, items, N.Ngap.ue_key(amf))
 
-def Lw.setup_response_ue(+st: S.State, +assoc: U32, +key: U32, +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes(), +m: Maybe<&2, S.Ue>) -> {Lv.okf(st, Gsm.Gsm.setup_response_ue(st, assoc, key, oks, fails, m)) == True{} : Bool}:
+def Lw.results_owned(+st: S.State, +key: U32, +ue: S.Ue, +assoc: U32, +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes(), pr: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>} & {U32.is_eq(S.Ue.assoc(ue), assoc) == True{} : Bool}) -> {Lv.okf(st, Gsm.Gsm.results(st, key, ue, oks, fails)) == True{} : Bool}:
+  match pr:
+    case (+eg, ea):
+      Lw.results(st, key, ue, oks, fails, eg)
+
+def Lw.setup_response_ue(+st: S.State, +assoc: U32, +key: U32, +ran: B.Bytes(), +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes(), +m: Maybe<&2, S.Ue>, +em: {N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran) == m : Maybe<&2, S.Ue>}) -> {Lv.okf(st, Gsm.Gsm.setup_response_ue(st, assoc, key, oks, fails, m)) == True{} : Bool}:
   match m:
     case None{}:
       {==}
-    case Some{ue}:
-      Lw.results(st, key, oks, fails)
-
+    case Some{+ue}:
+      Lw.results_owned(st, key, ue, assoc, oks, fails, PT.Own.get(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran, ue, em))
 
 def Lw.setup_response_key(+st: S.State, +assoc: U32, +ran: B.Bytes(), +oks: G.PDUSessionResourceSetupListSURes(), +fails: G.PDUSessionResourceFailedToSetupListSURes(), +m: Maybe<&2, U32>) -> {Lv.okf(st, Gsm.Gsm.setup_response_key(st, assoc, ran, oks, fails, m)) == True{} : Bool}:
   match m:
     case None{}:
       {==}
     case Some{+key}:
-      Lw.setup_response_ue(st, assoc, key, oks, fails, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran))
+      Lw.setup_response_ue(st, assoc, key, ran, oks, fails, N.Owner.of(Tb.Table.get(S.Ue, key, S.State.ues(st)), assoc, ran), {==})
 
 def Lw.setup_response(+st: S.State, +assoc: U32, +v: V.PDUSessionResourceSetupResponse.View) -> {Lv.okf(st, Gsm.Gsm.setup_response(st, assoc, v)) == True{} : Bool}:
   match v:
@@ -3835,7 +4044,7 @@ def Lw.resend_if(+st: S.State, +skey: U32, +s: S.Session, +p: S.SPhase, +request
       +x : N.Act = N.Pfcp{S.Session.tag(s), request}
       +y : N.Act = N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}
       +v : S.SVar = S.SVar{S.Session.up_seid(s), S.Session.seq(s), p}
-      Lv.leaf(st, S.Revar{skey, v}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, S.Session.tag(s), skey, ek, ekd), {==})), P.Bool.and_intro(Lv.arms(S.Revar{skey, v}, [x, y]), Lv.free(st, S.Revar{skey, v}), Lv.arms_live(skey, p, [x, y], hp), P.Bool.and_intro(Lv.spare(st, skey, v), Lv.revar_ok(st, v), P.Bool.or_r(S.SPhase.live(p), Lv.kept(st, skey), ekd), hv)), {==}, {==})
+      Lv.leaf(st, S.Revar{skey, v}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, S.Session.tag(s), skey, ek, ekd), {==})), P.Bool.and_intro(Lv.arms(S.Revar{skey, v}, [x, y]), Lv.free(st, S.Revar{skey, v}), Lv.arms_live(skey, p, [x, y], hp), P.Bool.and_intro(Lv.spare(st, skey, v), Lv.revar_ok(st, v), P.Bool.or_r(S.SPhase.live(p), Lv.kept(st, skey), ekd), hv)), {==}, {==}, {==})
     case False{}:
       hf
 
@@ -3887,7 +4096,7 @@ def Lw.gave_up(+st: S.State, +req: S.Req) -> {Lv.okf(st, Up.N4.gave_up(st, req))
     case S.Setup{}:
       {==}
     case S.Heartbeat{}:
-      Lv.also(st, Up.N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with the UPF lost"}], Lw.n4_start(st), {==}, {==})
+      Lv.also(st, Up.N4.start(st), [N.Note{F.Warn{}, "PFCP: no Heartbeat Response; association with the UPF lost"}], Lw.n4_start(st), {==}, {==}, {==})
 
 def Lw.again(+st: S.State, +req: S.Req, +request: B.Bytes(), +seq: U32, +resent: U32, +more: Bool) -> {Lv.okf(st, Up.N4.again(st, req, request, seq, resent, more)) == True{} : Bool}:
   match more:
@@ -3931,7 +4140,7 @@ def Lw.ps_session(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +t: Maybe<
       +ek = Lv.tagged_live(st, S.Session.tag(s), es)
       +x : N.Act = N.Pfcp{S.Session.tag(s), request}
       +y : N.Act = N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}
-      Lv.leaf(st, S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Repointing{S.Guard{0}, request}}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, S.Session.tag(s), skey, ek, ekd), {==})), kk, {==}, {==})
+      Lv.leaf(st, S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Repointing{S.Guard{0}, request}}}, [x, y], Lv.cons(st, x, [y], ek, Lv.cons(st, y, [], Lv.s_start(st, S.Session.tag(s), skey, ek, ekd), {==})), kk, {==}, {==}, {==})
 
 def Lw.ps_tun(+st: S.State, +skey: U32, +s: S.Session, +seq: U32, +p: S.SPhase, +m: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +es: {Lv.tagged(S.Session.tag(s), S.State.sessions(st)) == True{} : Bool}, +kn: {Bool.or(S.SPhase.knows(p, S.Session.known(s)), Bool.not(S.Sessions.known(S.State.sessions(st)))) == True{} : Bool}, +ekd: {Lv.kept(st, skey) == True{} : Bool}) -> {Lv.okf(st, Sw.Sw.session(skey, s, seq, Sw.Sw.tunnel(p, m))) == True{} : Bool}:
   match p:
@@ -3960,7 +4169,7 @@ def Lw.ps_sessions(+st: S.State, +ts: List<&2, S.Tunnel>, +rows: Tb.Table(S.Sess
       es = P.Bool.and_true_l(Lv.tagged(S.Session.tag(s), ss), kn, hf)
       ek = P.Bool.and_true_r(Lv.tagged(S.Session.tag(s), ss), kn, hf)
       +o = Sw.Sw.session(skey, s, seq, Sw.Sw.tunnel_for(ts, s))
-      Lv.join(st, N.Out.join((S.BumpSeq{1}, []), o), Sw.Sw.sessions(ts, more, U32.add(seq, 1)), Lv.join(st, (S.BumpSeq{1}, []), o, {==}, Lw.ps_tun(st, skey, s, seq, S.Session.phase(s), Sw.Sw.find(S.Session.psi(s), ts), es, ek, P.Bool.and_true_l(Lv.kept(st, skey), Lv.krows(more, st), ed))), Lw.ps_sessions(st, ts, more, U32.add(seq, 1), hm, P.Bool.and_true_r(Lv.kept(st, skey), Lv.krows(more, st), ed)))
+      Lv.join(st, N.Out.join((S.BumpSeq{1}, []), o), Sw.Sw.sessions(ts, more, U32.add(seq, 1)), Lv.join(st, (S.BumpSeq{1}, []), o, {==}, Lw.ps_tun(st, skey, s, seq, S.Session.phase(s), Sw.Sw.find(S.Session.psi(s), ts), es, ek, P.Bool.and_true_l(Lv.kept(st, skey), Lv.krows(more, st), ed)), {==}), Lw.ps_sessions(st, ts, more, U32.add(seq, 1), hm, P.Bool.and_true_r(Lv.kept(st, skey), Lv.krows(more, st), ed)), P.Bool.or_l(PF.Fs.mute(N.Out.tx(N.Out.join((S.BumpSeq{1}, []), o)), N.Out.acts(N.Out.join((S.BumpSeq{1}, []), o))), PF.Fs.mute(N.Out.tx(Sw.Sw.sessions(ts, more, U32.add(seq, 1))), N.Out.acts(Sw.Sw.sessions(ts, more, U32.add(seq, 1)))), PF.Fs.join_mute((S.BumpSeq{1}, []), o, {==}, PF.Fs.sw_session_mute(skey, s, seq, Sw.Sw.tunnel_for(ts, s)))))
 
 def Lw.ps_go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.Bytes(), +items: G.PDUSessionResourceToBeSwitchedDLList(), +ts: List<&2, S.Tunnel>, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}, +rel: Maybe<&2, S.Side>, +ep: {S.Ue.phase(ue) == S.Registered{ctx, nh, rel} : S.Phase}) -> {Lv.okf(st, Ps.Ps.go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, S.Sessions.of_ue(key, S.State.sessions(st)), True{})) == True{} : Bool}:
   +rows = S.Sessions.of_ue(key, S.State.sessions(st))
@@ -3969,10 +4178,10 @@ def Lw.ps_go(+st: S.State, +assoc: U32, +stream: U32, +amf: B.Bytes(), +ran: B.B
   +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
   +b : N.GOut() = (S.Put{key, v}, [])
   +ek = Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
-  hb = Lv.leaf(st, S.Put{key, v}, [], {==}, Lv.put_ok(st, key, v, p, Lv.p_moved(ue, assoc, ran, stream, p), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), {==}, {==}, P.Bool.or_l(Lv.chain(st, key, Some{S.Nh.next(nh)}), Lv.unpaired(st, key), Lv.chain_at(st, key, ue, S.Registered{ctx, nh, rel}, eg, ep, Some{S.Nh.next(nh)}, Lv.chains_next(nh))), Lv.home_moved(st, ue, assoc, ran, stream, p, ea)), {==}, Lv.paired_seed(st, key, ue, S.Registered{ctx, nh, rel}, eg, ep, {==}, S.Phase.nh(S.Ue.phase(v)), []))
+  hb = Lv.leaf(st, S.Put{key, v}, [], {==}, Lv.put_ok(st, key, v, p, Lv.p_moved(ue, assoc, ran, stream, p), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), {==}, {==}, P.Bool.or_l(Lv.chain(st, key, Some{S.Nh.next(nh)}), Lv.unpaired(st, key), Lv.chain_at(st, key, ue, S.Registered{ctx, nh, rel}, eg, ep, Some{S.Nh.next(nh)}, Lv.chains_next(nh))), Lv.home_moved(st, ue, assoc, ran, stream, p, ea)), {==}, Lv.paired_seed(st, key, ue, S.Registered{ctx, nh, rel}, eg, ep, {==}, S.Phase.nh(S.Ue.phase(v)), []), PF.Fs.kept_put(st, key, v, p, ctx, [], Lv.p_moved(ue, assoc, ran, stream, p), {==}, PF.Fs.view_at(st, key, ue, S.Registered{ctx, nh, rel}, eg, ep), {==}))
   +tm : N.Act = N.TimerStart{Some{key}, key, Ps.Ps.guard_ms()}
   +note : N.Act = N.Note{F.Info{}, "NGAP: Path Switch Request; the UE moved, its PDU sessions being switched"}
-  Lv.also(st, N.Out.join(a, b), [tm, note], Lv.join(st, a, b, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key)), hb), Lv.cons(st, tm, [note], Lv.ue_start(st, key, Ps.Ps.guard_ms(), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))), {==}), {==})
+  Lv.also(st, N.Out.join(a, b), [tm, note], Lv.join(st, a, b, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key)), hb, P.Bool.or_l(PF.Fs.mute(N.Out.tx(a), N.Out.acts(a)), PF.Fs.mute(N.Out.tx(b), N.Out.acts(b)), PF.Fs.sw_sessions_mute(ts, rows, S.State.pfcp_seq(st)))), Lv.cons(st, tm, [note], Lv.ue_start(st, key, Ps.Ps.guard_ms(), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))), {==}), {==}, {==})
 
 def Lw.caps_same(+st: S.State, +ok: Bool) -> {Lv.acts(st, Ps.Ps.caps_same(ok)) == True{} : Bool}:
   match ok:
@@ -4010,7 +4219,7 @@ def Lw.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.
       +ts = Sw.Sw.path_tunnels(items)
       +m = Ps.Ps.named(st, amf)
       +h = PW.Pw.claim(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, stream, amf, ran, items, ts, cause => {==}, +key => +ue => +ctx => +nh => sp => ek => eg => es => +rel => ep => Lw.ps_go(st, assoc, stream, amf, ran, items, ts, key, ue, ctx, nh, eg, ea, rel, ep))
-      Lv.also(st, Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m), Ps.Ps.caps_note(caps, m), h, Lw.caps_note(st, caps, m), Lv.caps_stops(N.Out.tx(Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m)), caps, m))
+      Lv.also(st, Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m), Ps.Ps.caps_note(caps, m), h, Lw.caps_note(st, caps, m), Lv.caps_stops(N.Out.tx(Ps.Ps.claim(st, assoc, stream, amf, ran, items, ts, m)), caps, m), PF.Fs.caps_mute(caps, m))
 
 # N2 handover
 # -----------
@@ -4021,7 +4230,7 @@ def Lw.ps_of_view(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.
 def Lw.ho_fail(+st: S.State, +key: U32, +ue: S.Ue, +cause: G.Cause, +ek: {Lv.held(st, key) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.fail(key, ue, cause)) == True{} : Bool}:
   +x = Ho.Ho.preparation_failure(key, ue, cause)
   +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Required refused"}
-  Lv.leaf(st, S.Keep{}, [x, n], Lv.cons(st, x, [n], Lv.held_live(st, key, ek), {==}), {==}, {==}, {==})
+  Lv.leaf(st, S.Keep{}, [x, n], Lv.cons(st, x, [n], Lv.held_live(st, key, ek), {==}), {==}, {==}, {==}, {==})
 
 # A pending handover's phase, written over the context it belongs to, names
 # that context's owner as its source and another association as its target.
@@ -4034,9 +4243,9 @@ def Lw.ho_fits(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh,
   %sn : {Bool.and(True{}, Bool.not(_)) == True{} : Bool}
   {==}
 
-def Lw.ho_leafok(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +acts: List<&2, N.Act>, +ha: {Lv.acts(st, acts) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}, +hs: {Lv.stops(S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}) -> {Lv.ok(st, (S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts)) == True{} : Bool}:
+def Lw.ho_leafok(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +acts: List<&2, N.Act>, +ha: {Lv.acts(st, acts) == True{} : Bool}, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +ne: {U32.is_eq(S.Leg.target(leg), S.Ue.assoc(ue)) == False{} : Bool}, +hs: {Lv.stops(S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts) == True{} : Bool}, +ec: {Lv.chain(st, key, Some{nh}) == True{} : Bool}, +ev: {PF.Fs.view(PF.Fs.ctx(st, key)) == PF.Fs.view(Some{ctx}) : Maybe<&2, PF.Fs.KD()>}, +hm: {PF.Fs.amute(acts) == True{} : Bool}) -> {Lv.ok(st, (S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}, acts)) == True{} : Bool}:
   +tx : S.Tx = S.Rephase{key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}}
-  Lv.does_intro(st, tx, acts, Lv.homed(st, tx, S.State.ues(st)), hs, {==}, ha, {==}, P.Bool.and_intro(Lv.chain(st, key, Some{nh}), Bool.and(True{}, S.Ue.fits(S.Handover{ctx, nh, S.Ue.assoc(ue), leg}, Tb.Table.get(S.Ue, key, S.State.ues(st)))), ec, Lw.ho_fits(st, key, ue, ctx, nh, leg, eg, ne)))
+  Lv.does_intro(st, tx, acts, Lv.homed(st, tx, S.State.ues(st)), hs, {==}, ha, {==}, P.Bool.and_intro(Lv.chain(st, key, Some{nh}), Bool.and(True{}, S.Ue.fits(S.Handover{ctx, nh, S.Ue.assoc(ue), leg}, Tb.Table.get(S.Ue, key, S.State.ues(st)))), ec, Lw.ho_fits(st, key, ue, ctx, nh, leg, eg, ne)), PF.Fs.ok_of(st, tx, acts, PF.Fs.kept_rephase(st, key, S.Handover{ctx, nh, S.Ue.assoc(ue), leg}, ctx, acts, {==}, ev, hm)))
 
 # The target of a pending handover is not the context's owner.
 def Lw.ho_aimed_ne(+ue: S.Ue, +assoc: U32, +e: {Ho.Ho.aimed(ue, assoc) == True{} : Bool}) -> {U32.is_eq(assoc, S.Ue.assoc(ue)) == False{} : Bool}:
@@ -4073,7 +4282,7 @@ def Lw.ho_prepare(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.
   +x : N.Act = N.UeSend{t, Ho.Ho.stream(), key, Ho.Ho.request(key, cfg, cause, N.Ue.caps(ue), next, i <> more, container)}
   +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
   +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Required; Handover Request sent to the target"}
-  Lw.ho_leafok(st, key, ue, ctx, next, S.Asked{t}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], Lv.ue_start(st, key, N.Ue.guard_ms(), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))), {==})), eg, ne, {==}, Lv.chain_at(st, key, ue, S.Registered{ctx, nh, rel}, eg, eph, Some{next}, Lv.chains_next(nh)))
+  Lw.ho_leafok(st, key, ue, ctx, next, S.Asked{t}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], Lv.ue_start(st, key, N.Ue.guard_ms(), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))), {==})), eg, ne, {==}, Lv.chain_at(st, key, ue, S.Registered{ctx, nh, rel}, eg, eph, Some{next}, Lv.chains_next(nh)), PF.Fs.view_at(st, key, ue, S.Registered{ctx, nh, rel}, eg, eph), {==})
 
 def Lw.ho_required(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverRequired.View>) -> {Lv.ok(st, Ho.Ho.required_of_view(st, assoc, r)) == True{} : Bool}:
   PW.Hw.required(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +ran => +key => +ue => +c => ek => +eo => Lv.ok_of(st, Ho.Ho.fail(key, ue, c), Lw.ho_fail(st, key, ue, c, Lw.owned_held(st, assoc, ran, key, ue, eo))), amf => +ran => +key => +ue => +ctx => +nh => +t => +cfg => +cause => +container => +i => +more => ek => +eo => +ne => +rel => eph => Lw.ho_prepare(st, key, ue, ctx, nh, t, cfg, cause, container, i, more, Lv.owned_get(st, assoc, key, ran, ue, eo), ne, rel, eph))
@@ -4084,7 +4293,7 @@ def Lw.ho_acked(+st: S.State, +assoc: U32, +stream: U32, +key: U32, +ue: S.Ue, +
   +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.command(key, S.Ue.ran_id(ue), ts, container)}
   +y : N.Act = N.TimerStart{Some{key}, key, N.Ue.guard_ms()}
   +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Request Acknowledge; Handover Command sent to the source"}
-  Lw.ho_leafok(st, key, ue, ctx, nh, S.Acked{assoc, ran, stream, ts}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], Lv.ue_start(st, key, N.Ue.guard_ms(), Lw.target_held(st, assoc, key, ue, ep)), {==})), Lw.target_get(st, assoc, key, ue, ep), Lw.target_ne(st, assoc, key, ue, ep), {==}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Asked{t}}, Lw.target_get(st, assoc, key, ue, ep), eph, Some{nh}, Lv.chains_same(nh)))
+  Lw.ho_leafok(st, key, ue, ctx, nh, S.Acked{assoc, ran, stream, ts}, [x, y, n], Lv.cons(st, x, [y, n], ek, Lv.cons(st, y, [n], Lv.ue_start(st, key, N.Ue.guard_ms(), Lw.target_held(st, assoc, key, ue, ep)), {==})), Lw.target_get(st, assoc, key, ue, ep), Lw.target_ne(st, assoc, key, ue, ep), {==}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Asked{t}}, Lw.target_get(st, assoc, key, ue, ep), eph, Some{nh}, Lv.chains_same(nh)), PF.Fs.view_at(st, key, ue, S.Handover{ctx, nh, source, S.Asked{t}}, Lw.target_get(st, assoc, key, ue, ep), eph), {==})
 
 def Lw.ho_ack(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err, V.HandoverRequestAcknowledge.View>) -> {Lv.ok(st, Ho.Ho.ack_of_view(st, assoc, stream, r)) == True{} : Bool}:
   PW.Hw.ack(o => {Lv.ok(st, o) == True{} : Bool}, st, assoc, stream, r, {==}, {==}, amf => +ran => +admitted => +container => +key => +ue => +ctx => +nh => +source => +t => ek => +ep => eph => Lw.ho_acked(st, assoc, stream, key, ue, ran, admitted, container, ctx, nh, source, t, ep, eph))
@@ -4092,7 +4301,7 @@ def Lw.ho_ack(+st: S.State, +assoc: U32, +stream: U32, +r: Result<&2, &2, B.Err,
 def Lw.ho_failed(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +cause: G.Cause, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +t: U32, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +eph: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, S.Asked{t}} : S.Phase}) -> {Lv.okf(st, Ho.Ho.failure_phase(assoc, key, ue, cause, S.Handover{ctx, nh, source, S.Asked{t}})) == True{} : Bool}:
   +x = Ho.Ho.preparation_failure(key, ue, cause)
   +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Failure; Handover Preparation Failure sent to the source"}
-  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, None{}}}, [x, N.TimerCancel{key}, n], Lv.cons(st, x, [N.TimerCancel{key}, n], Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==})), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Asked{t}}, eg, eph, Some{nh}, Lv.chains_same(nh)), {==}), Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, None{}}}, x, [N.TimerCancel{key}, n], {==}, Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, None{}}}, N.TimerCancel{key}, [n], Lv.idles_rephase(key, S.Registered{ctx, nh, None{}}, {==}), {==})), {==})
+  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, None{}}}, [x, N.TimerCancel{key}, n], Lv.cons(st, x, [N.TimerCancel{key}, n], Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==})), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Asked{t}}, eg, eph, Some{nh}, Lv.chains_same(nh)), {==}), Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, None{}}}, x, [N.TimerCancel{key}, n], {==}, Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, None{}}}, N.TimerCancel{key}, [n], Lv.idles_rephase(key, S.Registered{ctx, nh, None{}}, {==}), {==})), {==}, PF.Fs.kept_rephase(st, key, S.Registered{ctx, nh, None{}}, ctx, [x, N.TimerCancel{key}, n], {==}, PF.Fs.view_at(st, key, ue, S.Handover{ctx, nh, source, S.Asked{t}}, eg, eph), {==}))
 
 def Lw.ho_failure(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverFailure.View>) -> {Lv.okf(st, Ho.Ho.failure_of_view(st, assoc, r)) == True{} : Bool}:
   PW.Hw.failure(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +cause => +key => +ue => +ctx => +nh => +source => +t => ek => +ep => eph => Lw.ho_failed(st, assoc, key, ue, cause, ctx, nh, source, t, Lw.target_get(st, assoc, key, ue, ep), eph))
@@ -4105,12 +4314,13 @@ def Lw.ho_complete(+st: S.State, +assoc: U32, +key: U32, +ue: S.Ue, +ctx: Sec.Na
   +v = S.Ue.moved(ue, assoc, r, s, ph)
   +a = Sw.Sw.sessions(ts, rows, S.State.pfcp_seq(st))
   +b : N.GOut() = (S.Put{key, v}, [])
-  hb = Lv.leaf(st, S.Put{key, v}, [], {==}, Lv.put_ok(st, key, v, ph, Lv.p_moved(ue, assoc, r, s, ph), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), {==}, {==}, P.Bool.or_l(Lv.chain(st, key, Some{nh}), Lv.unpaired(st, key), Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, Some{nh}, Lv.chains_same(nh))), Lv.home_moved(st, ue, assoc, r, s, ph, ea)), {==}, Lv.paired_seed(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, {==}, S.Phase.nh(S.Ue.phase(v)), []))
+  hb = Lv.leaf0(st, S.Put{key, v}, [], {==}, Lv.put_ok(st, key, v, ph, Lv.p_moved(ue, assoc, r, s, ph), Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg)), {==}, {==}, P.Bool.or_l(Lv.chain(st, key, Some{nh}), Lv.unpaired(st, key), Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, Some{nh}, Lv.chains_same(nh))), Lv.home_moved(st, ue, assoc, r, s, ph, ea)), {==}, Lv.paired_seed(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph, {==}, S.Phase.nh(S.Ue.phase(v)), []))
   +x : N.Act = N.Release{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Ho.Ho.radio(G.CauseRadioNetwork.successful_handover())}
   +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Notify; the UE moved to the target"}
   +tx = N.Out.tx(N.Out.join(a, b))
   +ta : List<&2, N.Act> = Gsm.Gsm.Told.acts(told)
-  Lv.also(st, N.Out.join(a, b), x <> List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), Lv.join(st, a, b, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key)), hb), Lv.cons(st, x, List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), ek, Lv.append(st, ta, [N.TimerCancel{key}, n], Lw.told_acts(st, key, assoc, s, r, Sw.Sw.released(ts, rows), ctx, ek), Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==}))), Lv.stops_cons(tx, x, List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), {==}, Lv.stops_app(tx, ta, [N.TimerCancel{key}, n], Lw.told_stops(tx, key, assoc, s, r, Sw.Sw.released(ts, rows), ctx), Lv.stops_cons(tx, N.TimerCancel{key}, [n], Lv.idles_join_put(a, key, v, ph, Lv.p_moved(ue, assoc, r, s, ph), {==}), {==}))))
+  +h0 = Lv.also0(st, N.Out.join(a, b), x <> List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), Lv.join0(st, a, b, Lv.okf_core(st, a, Lw.ps_sessions(st, ts, rows, S.State.pfcp_seq(st), Lv.frows_sift(S.SOf{key}, S.State.sessions(st)), Lv.krows_of(st, key))), hb), Lv.cons(st, x, List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), ek, Lv.append(st, ta, [N.TimerCancel{key}, n], Lw.told_acts(st, key, assoc, s, r, Sw.Sw.released(ts, rows), ctx, ek), Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==}))), Lv.stops_cons(tx, x, List.append(&2, N.Act, ta, [N.TimerCancel{key}, n]), {==}, Lv.stops_app(tx, ta, [N.TimerCancel{key}, n], Lw.told_stops(tx, key, assoc, s, r, Sw.Sw.released(ts, rows), ctx), Lv.stops_cons(tx, N.TimerCancel{key}, [n], Lv.idles_join_put(a, key, v, ph, Lv.p_moved(ue, assoc, r, s, ph), {==}), {==}))))
+  Lv.okf_of(st, Ho.Ho.complete(st, assoc, key, ue, ctx, nh, r, s, ts, True{}), h0, PF.Fs.ho_complete_nas(st, assoc, key, ue, ctx, nh, r, s, ts, PF.Fs.view_at(st, key, ue, S.Handover{ctx, nh, source, S.Acked{t, r, s, ts}}, eg, eph), Lv.p_moved(ue, assoc, r, s, ph)))
 
 def Lw.ho_notify(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverNotify.View>, +ea: {S.Assocs.has(assoc, S.State.assocs(st)) == True{} : Bool}) -> {Lv.okf(st, Ho.Ho.notify_of_view(st, assoc, r)) == True{} : Bool}:
   PW.Hw.notify(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => ran => +key => +ue => +ctx => +nh => +source => +t => +r2 => +s => +ts => sp => ek => +ep => eph => es => Lw.ho_complete(st, assoc, key, ue, ctx, nh, source, t, r2, s, ts, Lw.target_get(st, assoc, key, ue, ep), eph, ea))
@@ -4118,7 +4328,7 @@ def Lw.ho_notify(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.Handover
 def Lw.ho_cancel_none(+st: S.State, +key: U32, +ue: S.Ue, +ek: {Lv.held(st, key) == True{} : Bool}) -> {Lv.okf(st, (S.Keep{}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.cancel_ack(key, S.Ue.ran_id(ue))}, N.Note{F.Warn{}, "NGAP: Handover Cancel with no handover pending"}])) == True{} : Bool}:
   +x : N.Act = N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, Ho.Ho.cancel_ack(key, S.Ue.ran_id(ue))}
   +n : N.Act = N.Note{F.Warn{}, "NGAP: Handover Cancel with no handover pending"}
-  Lv.leaf(st, S.Keep{}, [x, n], Lv.cons(st, x, [n], Lv.held_live(st, key, ek), {==}), {==}, {==}, {==})
+  Lv.leaf(st, S.Keep{}, [x, n], Lv.cons(st, x, [n], Lv.held_live(st, key, ek), {==}), {==}, {==}, {==}, {==})
 
 def Lw.ho_cancelled(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +source: U32, +leg: S.Leg, +eg: {Tb.Table.get(S.Ue, key, S.State.ues(st)) == Some{ue} : Maybe<&2, S.Ue>}, +eph: {S.Ue.phase(ue) == S.Handover{ctx, nh, source, leg} : S.Phase}) -> {Lv.okf(st, Ho.Ho.cancel_phase(key, ue, S.Handover{ctx, nh, source, leg})) == True{} : Bool}:
   +ek = Lv.has_live(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))
@@ -4126,13 +4336,13 @@ def Lw.ho_cancelled(+st: S.State, +key: U32, +ue: S.Ue, +ctx: Sec.Nas.Ctx, +nh: 
   +c = Ho.Ho.radio(G.CauseRadioNetwork.handover_cancelled())
   +n : N.Act = N.Note{F.Info{}, "NGAP: Handover Cancel; the target released"}
   +more : List<&2, N.Act> = [N.TimerCancel{key}, n]
-  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, x <> List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), Lv.cons(st, x, List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), ek, Lv.append(st, Ho.Ho.drop(key, leg, c), more, Lw.ho_drop(st, key, leg, c, Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))), Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==}))), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, leg}, eg, eph, Some{nh}, Lv.chains_same(nh)), {==}), Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, x, List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), {==}, Lv.stops_app(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, Ho.Ho.drop(key, leg, c), more, Lv.drop_stops(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, key, leg, c), Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, N.TimerCancel{key}, [n], Lv.idles_rephase(key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, {==}), {==}))), {==})
+  Lv.leaf(st, S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, x <> List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), Lv.cons(st, x, List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), ek, Lv.append(st, Ho.Ho.drop(key, leg, c), more, Lw.ho_drop(st, key, leg, c, Lv.has_held(st, key, Lv.get_has(S.State.ues(st), key, ue, eg))), Lv.cons(st, N.TimerCancel{key}, [n], Lv.get_has(S.State.ues(st), key, ue, eg), {==}))), P.Bool.and_intro(Lv.chain(st, key, Some{nh}), True{}, Lv.chain_at(st, key, ue, S.Handover{ctx, nh, source, leg}, eg, eph, Some{nh}, Lv.chains_same(nh)), {==}), Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, x, List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), {==}, Lv.stops_app(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, Ho.Ho.drop(key, leg, c), more, Lv.drop_stops(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, key, leg, c), Lv.stops_cons(S.Rephase{key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}}, N.TimerCancel{key}, [n], Lv.idles_rephase(key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, {==}), {==}))), {==}, PF.Fs.kept_rephase(st, key, S.Registered{ctx, nh, Some{S.Leg.side(leg)}}, ctx, x <> List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more), {==}, PF.Fs.view_at(st, key, ue, S.Handover{ctx, nh, source, leg}, eg, eph), P.Bool.and_intro(True{}, PF.Fs.amute(List.append(&2, N.Act, Ho.Ho.drop(key, leg, c), more)), {==}, PF.Fs.amute_app(Ho.Ho.drop(key, leg, c), more, PF.Fs.drop_mute(key, leg, c), {==}))))
 
 def Lw.ho_cancel(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.HandoverCancel.View>) -> {Lv.okf(st, Ho.Ho.cancel_of_view(st, assoc, r)) == True{} : Bool}:
   PW.Hw.cancel(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, amf => +ran => +key => +ue => ek => +eo => en => Lw.ho_cancel_none(st, key, ue, Lw.owned_held(st, assoc, ran, key, ue, eo)), amf => +ran => +key => +ue => +ctx => +nh => +source => +leg => ek => +eo => eph => Lw.ho_cancelled(st, key, ue, ctx, nh, source, leg, Lv.owned_get(st, assoc, key, ran, ue, eo), eph))
 
 def Lw.ho_status(+st: S.State, +assoc: U32, +r: Result<&2, &2, B.Err, V.UplinkRANStatusTransfer.View>) -> {Lv.okf(st, Ho.Ho.status_of_view(st, assoc, r)) == True{} : Bool}:
-  PW.Hw.status(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, {==}, amf => +ran => +container => +key => +ue => +t => +r2 => +s => ek => +eo => Lv.leaf(st, S.Keep{}, [N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}], Lv.cons(st, N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}, [], Lw.owned_live(st, assoc, ran, key, ue, eo), {==}), {==}, {==}, {==}))
+  PW.Hw.status(o => {Lv.okf(st, o) == True{} : Bool}, st, assoc, r, {==}, {==}, {==}, amf => +ran => +container => +key => +ue => +t => +r2 => +s => ek => +eo => Lv.leaf(st, S.Keep{}, [N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}], Lv.cons(st, N.UeSend{t, s, key, Ho.Ho.dl_status(key, r2, container)}, [], Lw.owned_live(st, assoc, ran, key, ue, eo), {==}), {==}, {==}, {==}, {==}))
 
 # An association reset (going down, or its NG Setup)
 # ---------------------------------------------------
@@ -4189,23 +4399,6 @@ def Lw.ho_lost(+st: S.State, +k: U32, +u: S.Ue, +leg: S.Leg, +ek: {Lv.live(st, k
 def Lw.dq(+st: S.State, +o: N.GOut(), +h: {Lv.okf(st, o) == True{} : Bool}, +hq: {Lv.quiet(N.Out.tx(o)) == True{} : Bool}) -> {Bool.and(Lv.okf(st, o), Lv.quiet(N.Out.tx(o))) == True{} : Bool}:
   P.Bool.and_intro(Lv.okf(st, o), Lv.quiet(N.Out.tx(o)), h, hq)
 
-# Where no two contexts share a key, the row of the table under a key is the
-# context the key names, so a phase rewritten from it keeps its pair.
-def Lv.paired(+st: S.State, rows: Tb.Table(S.Ue)) -> Bool:
-  match rows:
-    case Nil{}:
-      True{}
-    case (+k, +u) <> more:
-      Bool.and(Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))), Lv.paired(st, more))
-
-def Lv.paired_in(+t: Tb.Table(S.Ue), rows: Tb.Table(S.Ue)) -> Bool:
-  match rows:
-    case Nil{}:
-      True{}
-    case (+k, +u) <> more:
-      +m = Tb.Table.get(S.Ue, k, t)
-      Bool.and(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m)), Lv.paired_in(t, more))
-
 def Lv.chains_self(+n: Maybe<&2, S.Nh>) -> {Lv.chains(n, n) == True{} : Bool}:
   match n:
     case None{}:
@@ -4213,78 +4406,33 @@ def Lv.chains_self(+n: Maybe<&2, S.Nh>) -> {Lv.chains(n, n) == True{} : Bool}:
     case Some{+x}:
       Lv.chains_same(x)
 
-def Lv.paired_row(+k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +k: U32, +u: S.Ue, +b: Bool, +eb: {U32.is_eq(k0, k) == b : Bool}, +ne: {b == False{} : Bool}, +h: {Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.get(S.Ue, k, more))) == True{} : Bool}) -> {Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k, more), b))) == True{} : Bool}:
+# Where no two contexts share a key, a row of the table is the context its
+# key names (PF.Fs.Got), so a phase rewritten from it keeps its pair.
+def Lv.chain_got(+st: S.State, +k: U32, +u: S.Ue, +more: Tb.Table(S.Ue), +b: Bool, +eb: {S.Ues.unique(S.State.ues(st)) == b : Bool}, +w: PF.Fs.GotIf(b, S.State.ues(st), (k, u) <> more)) -> {Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))) == True{} : Bool}:
   match b:
     case True{}:
-      Empty.absurd({Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Some{u0})) == True{} : Bool}, P.Refute.true_false(ne))
+      match w:
+        case (+eg, w2):
+          +n = S.Phase.nh(S.Ue.phase(u))
+          +sg = Equal.sym(Maybe<&2, S.Ue>, Tb.Table.get(S.Ue, k, S.State.ues(st)), Some{u}, eg)
+          P.Bool.or_l(Lv.chains(n, S.Ue.nh(Tb.Table.get(S.Ue, k, S.State.ues(st)))), Bool.not(S.Ues.unique(S.State.ues(st))), (%sg : {Lv.chains(n, S.Ue.nh(_)) == True{} : Bool}; Lv.chains_self(n)))
     case False{}:
-      h
+      +sb = Equal.sym(Bool, S.Ues.unique(S.State.ues(st)), False{}, eb)
+      P.Bool.or_r(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.get(S.Ue, k, S.State.ues(st)))), Bool.not(S.Ues.unique(S.State.ues(st))), (%sb : {Bool.not(_) == True{} : Bool}; {==}))
 
-# Rows clear of a row under k0 are found past it.
-def Lv.paired_cons(+k0: U32, +u0: S.Ue, +more: Tb.Table(S.Ue), +rows: Tb.Table(S.Ue), +hc: {S.Ues.clear(k0, u0, rows) == True{} : Bool}, +h: {Lv.paired_in(more, rows) == True{} : Bool}) -> {Lv.paired_in((k0, u0) <> more, rows) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+k, +u) <> +rest:
-      +m = Tb.Table.get(S.Ue, k, more)
-      +x = Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m))
-      +nc = Bool.not(S.Row.conflicts(k0, u0, k, u))
-      +nr = P.Bool.or_false_l(U32.is_eq(k, k0), S.Ue.conflicts(u0, u), P.Bool.not_true(S.Row.conflicts(k0, u0, k, u), P.Bool.and_true_l(nc, S.Ues.clear(k0, u0, rest), hc)))
-      +ne = Equal.trans(Bool, U32.is_eq(k0, k), U32.is_eq(k, k0), False{}, P.U32.sym(k0, k), nr)
-      P.Bool.and_intro(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(Tb.Table.hit(S.Ue, u0, m, U32.is_eq(k0, k)))), Lv.paired_in((k0, u0) <> more, rest), Lv.paired_row(k0, u0, more, k, u, U32.is_eq(k0, k), {==}, ne, P.Bool.and_true_l(x, Lv.paired_in(more, rest), h)), Lv.paired_cons(k0, u0, more, rest, P.Bool.and_true_r(nc, S.Ues.clear(k0, u0, rest), hc), P.Bool.and_true_r(x, Lv.paired_in(more, rest), h)))
-
-def Lv.paired_self(+t: Tb.Table(S.Ue), +eu: {S.Ues.unique(t) == True{} : Bool}) -> {Lv.paired_in(t, t) == True{} : Bool}:
-  match t:
-    case Nil{}:
-      {==}
-    case (+k0, +u0) <> +more:
-      +hc = P.Bool.and_true_l(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu)
-      +n = S.Phase.nh(S.Ue.phase(u0))
-      e = Equal.sym(Bool, U32.is_eq(k0, k0), True{}, P.U32.is_eq_refl(k0))
-      hd : {Lv.chains(n, S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), U32.is_eq(k0, k0)))) == True{} : Bool} = (%e : {Lv.chains(n, S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), _))) == True{} : Bool}; Lv.chains_self(n))
-      P.Bool.and_intro(Lv.chains(n, S.Ue.nh(Tb.Table.hit(S.Ue, u0, Tb.Table.get(S.Ue, k0, more), U32.is_eq(k0, k0)))), Lv.paired_in((k0, u0) <> more, more), hd, Lv.paired_cons(k0, u0, more, more, hc, Lv.paired_self(more, P.Bool.and_true_r(S.Ues.clear(k0, u0, more), S.Ues.unique(more), eu))))
-
-def Lv.paired_from(+st: S.State, +rows: Tb.Table(S.Ue), +h: {Lv.paired_in(S.State.ues(st), rows) == True{} : Bool}) -> {Lv.paired(st, rows) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+k, +u) <> +more:
-      +m = Tb.Table.get(S.Ue, k, S.State.ues(st))
-      +x = Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m))
-      P.Bool.and_intro(Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))), Lv.paired(st, more), P.Bool.or_l(x, Bool.not(S.Ues.unique(S.State.ues(st))), P.Bool.and_true_l(x, Lv.paired_in(S.State.ues(st), more), h)), Lv.paired_from(st, more, P.Bool.and_true_r(x, Lv.paired_in(S.State.ues(st), more), h)))
-
-def Lv.paired_none(+st: S.State, +rows: Tb.Table(S.Ue), +en: {Bool.not(S.Ues.unique(S.State.ues(st))) == True{} : Bool}) -> {Lv.paired(st, rows) == True{} : Bool}:
-  match rows:
-    case Nil{}:
-      {==}
-    case (+k, +u) <> +more:
-      +m = Tb.Table.get(S.Ue, k, S.State.ues(st))
-      P.Bool.and_intro(Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u))), Lv.paired(st, more), P.Bool.or_r(Lv.chains(S.Phase.nh(S.Ue.phase(u)), S.Ue.nh(m)), Bool.not(S.Ues.unique(S.State.ues(st))), en), Lv.paired_none(st, more, en))
-
-def Lv.paired_if(+st: S.State, +b: Bool, +eb: {S.Ues.unique(S.State.ues(st)) == b : Bool}) -> {Lv.paired(st, S.State.ues(st)) == True{} : Bool}:
-  match b:
-    case True{}:
-      Lv.paired_from(st, S.State.ues(st), Lv.paired_self(S.State.ues(st), eb))
-    case False{}:
-      seb = Equal.sym(Bool, S.Ues.unique(S.State.ues(st)), False{}, eb)
-      Lv.paired_none(st, S.State.ues(st), (%seb : {Bool.not(_) == True{} : Bool}; {==}))
-
-def Lv.paired_all(+st: S.State) -> {Lv.paired(st, S.State.ues(st)) == True{} : Bool}:
-  Lv.paired_if(st, S.Ues.unique(S.State.ues(st)), {==})
-
-def Lw.ho_down_leg(+st: S.State, +k: U32, +u: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +target: Bool, +source: Bool, +eh: {Tb.Table.has(S.Ue, k, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, k, Some{nh}) == True{} : Bool}) -> {Bool.and(Lv.okf(st, Ho.Ho.down_leg(k, u, ctx, nh, leg, target, source)), Lv.quiet(N.Out.tx(Ho.Ho.down_leg(k, u, ctx, nh, leg, target, source)))) == True{} : Bool}:
+def Lw.ho_down_leg(+st: S.State, +k: U32, +u: S.Ue, +ctx: Sec.Nas.Ctx, +nh: S.Nh, +leg: S.Leg, +target: Bool, +source: Bool, +eh: {Tb.Table.has(S.Ue, k, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, k, Some{nh}) == True{} : Bool}, +more: Tb.Table(S.Ue), +w: PF.Fs.GotIf(S.Ues.unique(S.State.ues(st)), S.State.ues(st), (k, u) <> more), +epu: {S.Phase.nas(S.Ue.phase(u)) == Some{ctx} : Maybe<&2, Sec.Nas.Ctx>}) -> {Bool.and(Lv.okf(st, Ho.Ho.down_leg(k, u, ctx, nh, leg, target, source)), Lv.quiet(N.Out.tx(Ho.Ho.down_leg(k, u, ctx, nh, leg, target, source)))) == True{} : Bool}:
   match target source:
     case True{} _:
-      Lw.dq(st, (S.Rephase{k, S.Registered{ctx, nh, None{}}}, List.append(&2, N.Act, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}])), Lv.leaf(st, S.Rephase{k, S.Registered{ctx, nh, None{}}}, List.append(&2, N.Act, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}]), Lv.append(st, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], Lw.ho_lost(st, k, u, leg, Lv.has_live(st, k, eh)), Lv.cons(st, N.TimerCancel{k}, [N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], eh, {==})), P.Bool.and_intro(Lv.chain(st, k, Some{nh}), True{}, ec, {==}), Lv.stops_app(S.Rephase{k, S.Registered{ctx, nh, None{}}}, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], Lv.lost_stops(S.Rephase{k, S.Registered{ctx, nh, None{}}}, k, u, leg), Lv.stops_cons(S.Rephase{k, S.Registered{ctx, nh, None{}}}, N.TimerCancel{k}, [N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], Lv.idles_rephase(k, S.Registered{ctx, nh, None{}}, {==}), {==})), {==}), {==})
+      Lw.dq(st, (S.Rephase{k, S.Registered{ctx, nh, None{}}}, List.append(&2, N.Act, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}])), Lv.leaf_ok(st, S.Rephase{k, S.Registered{ctx, nh, None{}}}, List.append(&2, N.Act, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}]), Lv.append(st, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], Lw.ho_lost(st, k, u, leg, Lv.has_live(st, k, eh)), Lv.cons(st, N.TimerCancel{k}, [N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], eh, {==})), P.Bool.and_intro(Lv.chain(st, k, Some{nh}), True{}, ec, {==}), Lv.stops_app(S.Rephase{k, S.Registered{ctx, nh, None{}}}, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], Lv.lost_stops(S.Rephase{k, S.Registered{ctx, nh, None{}}}, k, u, leg), Lv.stops_cons(S.Rephase{k, S.Registered{ctx, nh, None{}}}, N.TimerCancel{k}, [N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], Lv.idles_rephase(k, S.Registered{ctx, nh, None{}}, {==}), {==})), {==}, PF.Fs.row_ok(st, k, u, more, S.Registered{ctx, nh, None{}}, ctx, List.append(&2, N.Act, Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}]), S.Ues.unique(S.State.ues(st)), {==}, w, epu, {==}, PF.Fs.amute_app(Ho.Ho.lost(k, u, leg), [N.TimerCancel{k}, N.Note{F.Warn{}, "NGAP: the target's UE contexts were re-initialised; N2 handover ended"}], PF.Fs.lost_mute(k, u, leg), {==}))), {==})
     case False{} True{}:
-      Lw.dq(st, (S.Keep{}, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()))), Lv.leaf(st, S.Keep{}, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified())), Lw.ho_drop(st, k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()), Lv.has_held(st, k, eh)), {==}, Lv.drop_stops(S.Keep{}, k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified())), {==}), {==})
+      Lw.dq(st, (S.Keep{}, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()))), Lv.leaf(st, S.Keep{}, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified())), Lw.ho_drop(st, k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()), Lv.has_held(st, k, eh)), {==}, Lv.drop_stops(S.Keep{}, k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified())), {==}, PF.Fs.mute_nas(st, S.Keep{}, Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified())), P.Bool.and_intro(True{}, PF.Fs.amute(Ho.Ho.drop(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()))), {==}, PF.Fs.drop_mute(k, leg, Ho.Ho.radio(G.CauseRadioNetwork.unspecified()))))), {==})
     case False{} False{}:
       {==}
 
-def Lw.ho_down_row(+st: S.State, +assoc: U32, +k: U32, +u: S.Ue, +p: S.Phase, +eh: {Tb.Table.has(S.Ue, k, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, k, S.Phase.nh(p)) == True{} : Bool}) -> {Bool.and(Lv.okf(st, Ho.Ho.down_row(assoc, k, u, p)), Lv.quiet(N.Out.tx(Ho.Ho.down_row(assoc, k, u, p)))) == True{} : Bool}:
+def Lw.ho_down_row(+st: S.State, +assoc: U32, +k: U32, +u: S.Ue, +p: S.Phase, +eh: {Tb.Table.has(S.Ue, k, S.State.ues(st)) == True{} : Bool}, +ec: {Lv.chain(st, k, S.Phase.nh(p)) == True{} : Bool}, +more: Tb.Table(S.Ue), +w: PF.Fs.GotIf(S.Ues.unique(S.State.ues(st)), S.State.ues(st), (k, u) <> more), +epu: {S.Ue.phase(u) == p : S.Phase}) -> {Bool.and(Lv.okf(st, Ho.Ho.down_row(assoc, k, u, p)), Lv.quiet(N.Out.tx(Ho.Ho.down_row(assoc, k, u, p)))) == True{} : Bool}:
   match p:
     case S.Handover{+ctx, +nh, source, +leg}:
-      Lw.ho_down_leg(st, k, u, ctx, nh, leg, Ho.Ho.aimed(u, assoc), U32.is_eq(S.Ue.assoc(u), assoc), eh, ec)
+      Lw.ho_down_leg(st, k, u, ctx, nh, leg, Ho.Ho.aimed(u, assoc), U32.is_eq(S.Ue.assoc(u), assoc), eh, ec, more, w, (%Equal.sym(S.Phase, S.Ue.phase(u), S.Handover{ctx, nh, source, leg}, epu) : {S.Phase.nas(_) == Some{ctx} : Maybe<&2, Sec.Nas.Ctx>}; {==}))
     case S.Created{}:
       {==}
     case S.Identifying{guard}:
@@ -4302,22 +4450,21 @@ def Lw.ho_down_row(+st: S.State, +assoc: U32, +k: U32, +u: S.Ue, +p: S.Phase, +e
     case S.Releasing{guard}:
       {==}
 
-def Lw.ho_down_join(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Bool.and(Lv.okf(st, a), Lv.quiet(N.Out.tx(a))) == True{} : Bool}, +hb: {Bool.and(Lv.okf(st, b), Lv.quiet(N.Out.tx(b))) == True{} : Bool}) -> {Bool.and(Lv.okf(st, N.Out.join(a, b)), Lv.quiet(N.Out.tx(N.Out.join(a, b)))) == True{} : Bool}:
+def Lw.ho_down_join(+st: S.State, +a: N.GOut(), +b: N.GOut(), +ha: {Bool.and(Lv.okf(st, a), Lv.quiet(N.Out.tx(a))) == True{} : Bool}, +hb: {Bool.and(Lv.okf(st, b), Lv.quiet(N.Out.tx(b))) == True{} : Bool}, +ma: {PF.Fs.amute(N.Out.acts(a)) == True{} : Bool}, +mb: {PF.Fs.amute(N.Out.acts(b)) == True{} : Bool}) -> {Bool.and(Lv.okf(st, N.Out.join(a, b)), Lv.quiet(N.Out.tx(N.Out.join(a, b)))) == True{} : Bool}:
   sj = Equal.sym(S.Tx, N.Out.tx(N.Out.join(a, b)), S.Both{N.Out.tx(a), N.Out.tx(b)}, PW.Out.tx_join(a, b))
   hq : {Lv.quiet(N.Out.tx(N.Out.join(a, b))) == True{} : Bool} = (%sj : {Lv.quiet(_) == True{} : Bool}; P.Bool.and_intro(Lv.quiet(N.Out.tx(a)), Lv.quiet(N.Out.tx(b)), P.Bool.and_true_r(Lv.okf(st, a), Lv.quiet(N.Out.tx(a)), ha), P.Bool.and_true_r(Lv.okf(st, b), Lv.quiet(N.Out.tx(b)), hb)))
-  P.Bool.and_intro(Lv.okf(st, N.Out.join(a, b)), Lv.quiet(N.Out.tx(N.Out.join(a, b))), Lv.join(st, a, b, P.Bool.and_true_l(Lv.okf(st, a), Lv.quiet(N.Out.tx(a)), ha), P.Bool.and_true_l(Lv.okf(st, b), Lv.quiet(N.Out.tx(b)), hb)), hq)
+  P.Bool.and_intro(Lv.okf(st, N.Out.join(a, b)), Lv.quiet(N.Out.tx(N.Out.join(a, b))), Lv.join_by(st, a, b, P.Bool.and_true_l(Lv.okf(st, a), Lv.quiet(N.Out.tx(a)), ha), P.Bool.and_true_l(Lv.okf(st, b), Lv.quiet(N.Out.tx(b)), hb), e1 => e2 => PF.Fs.both_amute(st, N.Out.tx(a), N.Out.acts(a), N.Out.tx(b), N.Out.acts(b), e1, e2, ma, mb)), hq)
 
-def Lw.ho_downs(+st: S.State, +assoc: U32, +rows: Tb.Table(S.Ue), +e: {Lv.keys_in(rows, S.State.ues(st)) == True{} : Bool}, +ep: {Lv.paired(st, rows) == True{} : Bool}) -> {Bool.and(Lv.okf(st, Ho.Ho.downs(assoc, rows)), Lv.quiet(N.Out.tx(Ho.Ho.downs(assoc, rows)))) == True{} : Bool}:
+def Lw.ho_downs(+st: S.State, +assoc: U32, +rows: Tb.Table(S.Ue), +e: {Lv.keys_in(rows, S.State.ues(st)) == True{} : Bool}, +w: PF.Fs.GotIf(S.Ues.unique(S.State.ues(st)), S.State.ues(st), rows)) -> {Bool.and(Lv.okf(st, Ho.Ho.downs(assoc, rows)), Lv.quiet(N.Out.tx(Ho.Ho.downs(assoc, rows)))) == True{} : Bool}:
   match rows:
     case Nil{}:
       {==}
     case (+k, +u) <> +more:
       +eh = P.Bool.and_true_l(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e)
-      +c = Lv.chain(st, k, S.Phase.nh(S.Ue.phase(u)))
-      Lw.ho_down_join(st, Ho.Ho.down_row(assoc, k, u, S.Ue.phase(u)), Ho.Ho.downs(assoc, more), Lw.ho_down_row(st, assoc, k, u, S.Ue.phase(u), eh, P.Bool.and_true_l(c, Lv.paired(st, more), ep)), Lw.ho_downs(st, assoc, more, P.Bool.and_true_r(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e), P.Bool.and_true_r(c, Lv.paired(st, more), ep)))
+      Lw.ho_down_join(st, Ho.Ho.down_row(assoc, k, u, S.Ue.phase(u)), Ho.Ho.downs(assoc, more), Lw.ho_down_row(st, assoc, k, u, S.Ue.phase(u), eh, Lv.chain_got(st, k, u, more, S.Ues.unique(S.State.ues(st)), {==}, w), more, w, {==}), Lw.ho_downs(st, assoc, more, P.Bool.and_true_r(Tb.Table.has(S.Ue, k, S.State.ues(st)), Lv.keys_in(more, S.State.ues(st)), e), PF.Fs.got_rest(S.Ues.unique(S.State.ues(st)), S.State.ues(st), k, u, more, w)), PF.Fs.down_row_mute(assoc, k, u, S.Ue.phase(u)), PF.Fs.downs_mute(assoc, more))
 
 def Lw.ho_down_q(+st: S.State, +assoc: U32) -> {Bool.and(Lv.okf(st, Ho.Ho.down(st, assoc)), Lv.quiet(N.Out.tx(Ho.Ho.down(st, assoc)))) == True{} : Bool}:
-  Lw.ho_downs(st, assoc, S.State.ues(st), Pv.refl(S.State.ues(st)), Lv.paired_all(st))
+  Lw.ho_downs(st, assoc, S.State.ues(st), Pv.refl(S.State.ues(st)), PF.Fs.got_all(st))
 
 def Lw.ho_down(+st: S.State, +assoc: U32) -> {Lv.ok(st, Ho.Ho.down(st, assoc)) == True{} : Bool}:
   Lv.ok_of(st, Ho.Ho.down(st, assoc), P.Bool.and_true_l(Lv.okf(st, Ho.Ho.down(st, assoc)), Lv.quiet(N.Out.tx(Ho.Ho.down(st, assoc))), Lw.ho_down_q(st, assoc)))
@@ -4376,6 +4523,8 @@ def Dw.lead(-ok: N.GOut() -> Type, +st: S.State, +tx: S.Tx, +a: N.Act, +more: Li
       Empty.absurd(ok((tx, N.SwitchFail{assoc, stream, ue, amf, ran_id, psis, cause} <> more)), P.Refute.bool(h))
     case N.UeSend{assoc, stream, key, bytes}:
       Empty.absurd(ok((tx, N.UeSend{assoc, stream, key, bytes} <> more)), P.Refute.bool(h))
+    case N.PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      Empty.absurd(ok((tx, N.PduRelease{assoc, stream, key, ran_id, psi, nas} <> more)), P.Refute.bool(h))
     case N.ErrInd{assoc, cause}:
       Empty.absurd(ok((tx, N.ErrInd{assoc, cause} <> more)), P.Refute.bool(h))
     case N.Setup{assoc, answer}:

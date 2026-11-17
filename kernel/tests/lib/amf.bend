@@ -296,3 +296,19 @@ def registered_with(cfg: List<&2, T.Tlv>, +msgs: List<&2, V.Vec>) -> S.State:
 
 def registered(msgs: List<&2, V.Vec>) -> S.State:
   registered_with(config([T.Tlv.make(32, subscriber([0, 0, 0, 0, 0, 32]))]), msgs)
+
+# nas_sec.downlink_fresh for UE key k over the step o from st, where k holds a
+# NAS context after it.
+def fresh(+st: S.State, +k: U32, +o: N.Step()) -> Bool:
+  N.Fresh.holds(S.Ue.nas(Tb.Table.get(S.Ue, k, S.State.ues(st))), S.Ue.nas(Tb.Table.get(S.Ue, k, S.State.ues(K.Kernel.state(o)))), N.Acts.nas(k, K.Kernel.actions(o)))
+
+def head_or(bs: B.Bytes()) -> U32:
+  match bs:
+    case s <> rest:
+      s
+    case _:
+      256
+
+# The sequence number of a protected NAS message.
+def sqn(m: B.Bytes()) -> U32:
+  head_or(List.drop(&2, U32, m, 6n))

@@ -134,6 +134,7 @@ def main() -> IO(Unit):
     +o_hn2 : N.Step() = H.step(H.with_session(st5, 2), H.on(1, ours(H.hex(msgs, 77n))))
     +dl2 : B.Bytes() = H.sent_on(1, K.Kernel.frames(o_hn2))
     C.Check.report("Handover Notify with a second session the target was not asked for: deleted at the UPF, PDU Session Release Command #26 for it to the UE in DL NAS Transport through gNB 1, under the RAN-UE-NGAP-ID it acknowledged with", Bool.and(Nat.is_eq(pfcps(o_hn2), 2n), Bool.and(Nat.is_eq(sends(o_hn2), 2n), Bool.and(H.is_pdu(dl2, 0, 4), Bool.and(A.same_ie(85, dl2, H.hex(msgs, 75n)), B.bytes_eq(H.dl_plain(dl2), H.release_plain(2)))))))
+    C.Check.report("that Handover Notify keeps nas_sec.downlink_fresh: the PDU Session Release Command sealed at the downlink COUNT the UE kept through the handover, the context left on the next", Bool.and(Nat.is_eq(List.length(&2, B.Bytes(), N.Acts.nas(1, K.Kernel.actions(o_hn2))), 1n), A.fresh(H.with_session(st5, 2), 1, o_hn2)))
     +st7 : S.State = H.after(st6, Pc.pfcp_event(Pc.with_seq(H.hex(msgs, 79n), Pc.pfcp_seq(mod))))
     C.Check.report("Session Modification Response: the session active, nothing sent", Bool.and(Pc.sphase_is(st7, "active"), A.phase_is(st7, "registered")))
     C.Check.report("gNB 2's UE Context Release Complete after Handover Notify: accepted, nothing sent, nothing changed", accepted(st7, H.step(st7, H.on(2, H.hex(msgs, 81n)))))

@@ -313,6 +313,16 @@ def Phase.ctx(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
     case _:
       None{}
 
+# The NAS security context a phase holds, in force or not: a UE in N2
+# handover holds the one it goes back to, which Phase.ctx does not give, as
+# no NAS message goes to it while its handover is pending.
+def Phase.nas(p: Phase) -> Maybe<&2, N.Nas.Ctx>:
+  match p:
+    case Handover{ctx, nh, source, leg}:
+      Some{ctx}
+    case other:
+      Phase.ctx(other)
+
 def Phase.with_ctx(p: Phase, c: N.Nas.Ctx) -> Phase:
   match p:
     case SecurityMode{guard, ctx, k_amf}:
@@ -390,7 +400,8 @@ def Phase.owned_by(p: Phase, +a: U32) -> Bool:
 # the stream its InitialUEMessage arrived on, its SUPI once authenticated and
 # its 5G-TMSI once given,
 # the plain Registration Request, the ngKSI in use, its phase and the last
-# downlink NAS message (retransmitted when the guard fires).
+# downlink NAS message, plain: when the guard fires it goes again, sealed
+# afresh under the phase's NAS context if it holds one (Gmm.again).
 type Ue is Data:
   Ue{assoc: U32, ran_id: B.Bytes(), stream: U32, supi: Maybe<&2, B.Digits()>, tmsi: Maybe<&2, U32>, reg: B.Bytes(), ngksi: U32, phase: Phase, last_dl: B.Bytes()}
 
@@ -498,6 +509,13 @@ def Ue.nh(m: Maybe<&2, Ue>) -> Maybe<&2, Nh>:
       None{}
     case Some{u}:
       Phase.nh(Ue.phase(u))
+
+def Ue.nas(m: Maybe<&2, Ue>) -> Maybe<&2, N.Nas.Ctx>:
+  match m:
+    case None{}:
+      None{}
+    case Some{u}:
+      Phase.nas(Ue.phase(u))
 
 def Ue.mode_k_amf(m: Maybe<&2, Ue>) -> Maybe<&2, B.Bytes()>:
   match m:

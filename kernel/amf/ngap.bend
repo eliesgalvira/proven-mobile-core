@@ -357,6 +357,7 @@ type Act is Data:
   DlNas{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), nas: B.Bytes()}
   Ics{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cfg: S.Cfg, caps: B.Bytes(), k_gnb: B.Bytes(), nas: B.Bytes()}
   PduSetup{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), psi: U32, sst: B.Bytes(), nas: B.Bytes(), transfer: B.Bytes()}
+  PduRelease{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), psi: U32, nas: B.Bytes()}
   Release{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), cause: G.Cause}
   SwitchAck{assoc: U32, stream: U32, key: U32, ran_id: B.Bytes(), caps: B.Bytes(), nh: S.Nh, switched: List<&2, U32>, released: List<&2, U32>, sst: B.Bytes()}
   SwitchFail{assoc: U32, stream: U32, ue: Maybe<&2, U32>, amf: B.Bytes(), ran_id: B.Bytes(), psis: List<&2, U32>, cause: G.Cause}
@@ -380,6 +381,8 @@ def Act.render(a: Act) -> F.Action:
       Ngap.send(assoc, stream, Ngap.ics_request(key, ran_id, cfg, caps, k_gnb, nas))
     case PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
       Ngap.send(assoc, stream, Ngap.pdu_setup(key, ran_id, psi, sst, nas, transfer))
+    case PduRelease{assoc, stream, key, ran_id, psi, nas}:
+      Ngap.send(assoc, stream, Ngap.pdu_release(key, ran_id, psi, nas, Ngap.misc(G.CauseMisc.unspecified())))
     case Release{assoc, stream, key, ran_id, cause}:
       Ngap.send(assoc, stream, Ngap.release_command(G.UE_NGAP_IDs_uE_NGAP_ID_pair{G.UE_NGAP_ID_pair{Ngap.big(key), ran_id, None{}}}, cause))
     case SwitchAck{assoc, stream, key, ran_id, caps, nh, switched, released, sst}:
@@ -408,6 +411,8 @@ def Act.ue(a: Act) -> Maybe<&2, U32>:
     case Ics{assoc, stream, key, ran_id, cfg, caps, k_gnb, nas}:
       Some{key}
     case PduSetup{assoc, stream, key, ran_id, psi, sst, nas, transfer}:
+      Some{key}
+    case PduRelease{assoc, stream, key, ran_id, psi, nas}:
       Some{key}
     case Release{assoc, stream, key, ran_id, cause}:
       Some{key}
@@ -524,6 +529,134 @@ def Acts.spare(+k: U32, acts: List<&2, Act>) -> Bool:
       True{}
     case a <> more:
       Bool.and(Bool.not(S.Maybe.same_u32(Act.ue(a), Some{k})), Acts.spare(k, more))
+
+# Downlink NAS COUNT freshness (nas_sec.downlink_fresh)
+# -------------------------------------------------
+# The security protected NAS message an action carries to the UE keyed key.
+def Act.nas_if(+key: U32, +nas: B.Bytes(), p: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+  match p:
+    case True{}:
+      Some{(key, nas)}
+    case False{}:
+      None{}
+
+def Act.nas(a: Act) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
+  match a:
+    case DlNas{assoc, stream, +key, ran_id, +nas}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case Ics{assoc, stream, +key, ran_id, cfg, caps, k_gnb, +nas}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case PduSetup{assoc, stream, +key, ran_id, psi, sst, +nas, transfer}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case PduRelease{assoc, stream, +key, ran_id, psi, +nas}:
+      Act.nas_if(key, nas, Sec.Nas.is_protected(nas))
+    case _:
+      None{}
+
+def Acts.nas_keep(+nas: B.Bytes(), +more: List<&2, B.Bytes()>, hit: Bool) -> List<&2, B.Bytes()>:
+  match hit:
+    case True{}:
+      nas <> more
+    case False{}:
+      more
+
+def Acts.nas_to(+k: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +more: List<&2, B.Bytes()>) -> List<&2, B.Bytes()>:
+  match m:
+    case None{}:
+      more
+    case Some{(+key, +nas)}:
+      Acts.nas_keep(nas, more, U32.is_eq(key, k))
+
+# The security protected NAS messages the actions carry to the UE keyed k, in order.
+def Acts.nas(+k: U32, acts: List<&2, Act>) -> List<&2, B.Bytes()>:
+  match acts:
+    case Nil{}:
+      []
+    case a <> more:
+      Acts.nas_to(k, Act.nas(a), Acts.nas(k, more))
+
+# Messages sealed in turn under keys, the first at COUNT c, each at the COUNT
+# after the one before: the COUNT after the last, or none if one is not.
+def Fresh.then(ok: Bool, later: Unit -> Maybe<&2, Sec.Nas.Count>) -> Maybe<&2, Sec.Nas.Count>:
+  match ok:
+    case True{}:
+      later(Unit{})
+    case False{}:
+      None{}
+
+def Fresh.run(msgs: List<&2, B.Bytes()>, +keys: Sec.Nas.Keys, +c: Sec.Nas.Count) -> Maybe<&2, Sec.Nas.Count>:
+  match msgs:
+    case Nil{}:
+      Some{c}
+    case +m <> more:
+      Fresh.then(Sec.Nas.sealed(keys, c, m), u => Fresh.run(more, keys, Sec.Nas.Count.next(c)))
+
+def Fresh.at(m: Maybe<&2, Sec.Nas.Count>, +d: Sec.Nas.Count) -> Bool:
+  match m:
+    case None{}:
+      False{}
+    case Some{c}:
+      Sec.Nas.Count.same(c, d)
+
+def Fresh.from(b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Bool:
+  match b:
+    case None{}:
+      False{}
+    case Some{Sec.Ctx{+kb, +db, ub}}:
+      Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, kb, db))
+
+# A context that ends: its messages sealed in turn from the downlink COUNT
+# it held, under its keys.
+def Fresh.gone(b: Maybe<&2, Sec.Nas.Ctx>, msgs: List<&2, B.Bytes()>) -> Bool:
+  match msgs:
+    case Nil{}:
+      True{}
+    case +m <> +more:
+      Fresh.from(b, m <> more)
+
+# What a context a, keys ka and downlink COUNT da, written under a key holds
+# against the context b the key held before the step and the messages msgs
+# the step sends the key: they are sealed in turn, each under the COUNT after
+# the one before, and da is the COUNT after the last. Where the key held a
+# context they go under its keys, the first at the COUNT it held, and a keeps
+# those keys: a COUNT starts again at 0 only under a context taken into use
+# where the key held none.
+def Fresh.into(b: Maybe<&2, Sec.Nas.Ctx>, +ka: Sec.Nas.Keys, +da: Sec.Nas.Count, +msgs: List<&2, B.Bytes()>) -> Bool:
+  match b:
+    case None{}:
+      Fresh.at(Fresh.run(msgs, ka, Sec.Nas.Count.zero()), da)
+    case Some{Sec.Ctx{+kb, +db, ub}}:
+      Bool.and(Sec.Nas.Keys.same(kb, ka), Fresh.at(Fresh.run(msgs, kb, db), da))
+
+# With none written, the messages are sealed in turn under b. Stricter than
+# Fresh.Law, which the proofs reach through it: with no context before or
+# after, it refuses every message, where the law takes them under any one
+# context's keys from 0. The tests judge steps by it.
+def Fresh.holds(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Bool:
+  match a:
+    case Some{Sec.Ctx{+ka, +da, ua}}:
+      Fresh.into(b, ka, da, msgs)
+    case None{}:
+      Fresh.gone(b, msgs)
+
+# nas_sec.downlink_fresh for one key, between the context b it held before the
+# step and the context a it holds after: a holds what Fresh.into says. With
+# no context after, the messages are sealed in turn from where b leaves off,
+# under b's keys; where the key held no context either, under the keys of
+# one taken into use from 0.
+def Fresh.Left(b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Data:
+  match b:
+    case None{}:
+      Sigma<&2, &2, Sec.Nas.Keys, x => {Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, x, Sec.Nas.Count.zero())) == True{} : Bool}>
+    case Some{Sec.Ctx{kb, db, ub}}:
+      {Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, kb, db)) == True{} : Bool}
+
+def Fresh.Law(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Type:
+  match a:
+    case Some{Sec.Ctx{ka, da, ua}}:
+      {Fresh.into(b, ka, da, msgs) == True{} : Bool}
+    case None{}:
+      Fresh.Left(b, msgs)
 
 def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
   match acts:
@@ -695,10 +828,59 @@ def Ue.found(m: Maybe<&2, Keyed()>, none: GOut(), go: U32 -> S.Ue -> GOut()) -> 
 def Out.verified(key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, why: String) -> GOut():
   (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), ctx)}, [Note{F.Warn{}, why}])
 
-# A protected downlink NAS message to a UE, its context moved on.
+# What a procedure tells a UE under a NAS context: the context the messages
+# leave, which the next message to the UE is sealed under, and the actions.
+def Told() -> Data:
+  Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, Act>>
+
+# The one place a downlink NAS message is sealed: under the context's
+# downlink COUNT, the context it leaves holding the next (TS 24.501
+# §4.4.3.1), the message in the action mk builds. A procedure tells a UE
+# only through it, so the COUNT a message takes is the one the context it
+# was given holds (nas_sec.downlink_fresh).
+def Out.seal(ctx: Sec.Nas.Ctx, prot: Sec.Nas.Protection, plain: B.Bytes(), mk: B.Bytes() -> Act) -> Told():
+  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, prot, plain)
+  (Sec.Nas.Protected.ctx(p), [mk(Sec.Nas.Protected.msg(p))])
+
+# More told after what was told, under the context it left.
+def Out.told_after(+acts: List<&2, Act>, r: Told()) -> Told():
+  match r:
+    case (c, more):
+      (c, List.append(&2, Act, acts, more))
+
+def Out.then(r: Told(), rest: Sec.Nas.Ctx -> Told()) -> Told():
+  match r:
+    case (c, acts):
+      Out.told_after(acts, rest(c))
+
+# A protected downlink NAS message to a UE, in DL NAS Transport.
+def Out.told_dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> Told():
+  Out.seal(ctx, Sec.Ciphered{}, plain, m => DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), m})
+
+# What was told, the context it leaves written to the phase p.
+def Out.rephased(+key: U32, p: S.Phase, r: Told()) -> GOut():
+  match r:
+    case (c, acts):
+      (S.Rephase{key, S.Phase.with_ctx(p, c)}, acts)
+
+def Out.written(+key: U32, +ue: S.Ue, r: Told()) -> GOut():
+  Out.rephased(key, S.Ue.phase(ue), r)
+
+# What was told in front of an outcome, the context it leaves dropped.
+def Out.prepend_all(acts: List<&2, Act>, o: GOut()) -> GOut():
+  match acts:
+    case Nil{}:
+      o
+    case a <> more:
+      Out.prepend(a, Out.prepend_all(more, o))
+
+def Out.before(r: Told(), o: GOut()) -> GOut():
+  match r:
+    case (c, acts):
+      Out.prepend_all(acts, o)
+
 def Out.dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> GOut():
-  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, plain)
-  (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p)}])
+  Out.written(key, ue, Out.told_dl(key, ue, ctx, plain))
 
 def Ngap.bad_pdu(assoc: U32) -> List<&2, Act>:
   [ErrInd{assoc, Ngap.protocol(G.CauseProtocol.transfer_syntax_error())}, Note{F.Warn{}, "NGAP: PDU rejected, transfer syntax error"}]

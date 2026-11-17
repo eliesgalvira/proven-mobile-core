@@ -230,48 +230,103 @@ type Tell is Data:
   Reply{sm: B.Bytes()}
   Release{}
 
-# PDU Session Release Command, #26, protected for the UE.
-def Gsm.release_nas(ctx: Sec.Nas.Ctx, +psi: U32) -> Sec.Nas.Protected:
-  Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.dl_transport(psi, Gsm.release_command(psi)))
+# PDU Session Release Command, #26, in DL NAS Transport.
+def Gsm.release_plain(+psi: U32) -> B.Bytes():
+  Gsm.dl_transport(psi, Gsm.release_command(psi))
 
-# PDU Session Resource Release Command, the NAS message inside.
+# What the UE is told under ctx: the 5GSM message given, in DL NAS
+# Transport, or the PDU Session Resource Release Command to its gNB, the NAS
+# message inside.
+def Gsm.told(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32, t: Tell) -> N.Told():
+  match t:
+    case Reply{sm}:
+      N.Out.told_dl(key, ue, ctx, Gsm.dl_transport(psi, sm))
+    case Release{}:
+      N.Out.seal(ctx, Sec.Ciphered{}, Gsm.release_plain(psi), m => N.PduRelease{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), psi, m})
+
 def Gsm.n2_release(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32) -> N.GOut():
-  +p : Sec.Nas.Protected = Gsm.release_nas(ctx, psi)
-  (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, [N.UeSend{S.Ue.assoc(ue), S.Ue.stream(ue), key, N.Ngap.pdu_release(key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p), N.Ngap.misc(G.CauseMisc.unspecified()))}])
+  N.Out.written(key, ue, Gsm.told(key, ue, ctx, psi, Release{}))
 
 # The first action tells the UE's gNB to release the session, the PDU Session
 # Release Command inside, protected under ctx.
 def Gsm.tells_gnb(+ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
   Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, N.Out.acts(Gsm.n2_release(S.Session.ue(s), ue, ctx, S.Session.psi(s))), post) : List<&2, N.Act>}>
 
-def Gsm.tell(key: U32, ue: S.Ue, ctx: Sec.Nas.Ctx, psi: U32, t: Tell) -> N.GOut():
-  match t:
-    case Reply{sm}:
-      Gsm.dl(key, ue, ctx, psi, sm)
-    case Release{}:
-      Gsm.n2_release(key, ue, ctx, psi)
+# Some action tells the UE's gNB to release session s of the UE keyed key,
+# the PDU Session Release Command inside, sealed under keys at some
+# downlink COUNT.
+def Gsm.told_gnb(+ue: S.Ue, +key: U32, +keys: Sec.Nas.Keys, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
+  Sigma<&2, &2, Sec.Nas.Count, c => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.PduRelease{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), S.Session.psi(s), Sec.Nas.seal(keys, Sec.Ciphered{}, Sec.Nas.downlink(), c, Gsm.release_plain(S.Session.psi(s)))} <> post) : List<&2, N.Act>}>>>
 
-# The UE of a session, to answer it.
-def Gsm.to_ue_ctx(key: U32, ue: S.Ue, psi: U32, t: Tell, ctx: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
-  match ctx:
+# What a procedure does while the UE's NAS context runs through it: the
+# context it leaves, and its outcome with that context not yet written.
+def Gsm.Item() -> Data:
+  Sigma<&2, &2, Maybe<&2, Sec.Nas.Ctx>, _ => N.GOut()>
+
+# One part, then the rest under the context it leaves.
+def Gsm.after(+o: N.GOut(), r: Gsm.Item()) -> Gsm.Item():
+  match r:
+    case (c, o2):
+      (c, N.Out.join(o, o2))
+
+def Gsm.then(r: Gsm.Item(), rest: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Item()) -> Gsm.Item():
+  match r:
+    case (c, +o):
+      Gsm.after(o, rest(c))
+
+# The context left, written to the UE's phase.
+def Gsm.ctx_written(+key: U32, +ue: S.Ue, c: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
+  match c:
     case None{}:
       (S.Keep{}, [])
-    case Some{c}:
-      Gsm.tell(key, ue, c, psi, t)
+    case Some{x}:
+      (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), x)}, [])
 
-def Gsm.to_ue_m(key: U32, psi: U32, t: Tell, m: Maybe<&2, S.Ue>) -> N.GOut():
+def Gsm.Item.out(r: Gsm.Item()) -> N.GOut():
+  match r:
+    case (c, o):
+      o
+
+def Gsm.settled(+key: U32, +ue: S.Ue, r: Gsm.Item()) -> N.GOut():
+  match r:
+    case (c, o):
+      N.Out.join(Gsm.ctx_written(key, ue, c), o)
+
+# What f does under the NAS context the UE's phase holds, the context it
+# leaves written to the phase once; with none, nothing is written.
+def Gsm.under_ctx(+key: U32, +ue: S.Ue, f: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Item(), c: Maybe<&2, Sec.Nas.Ctx>) -> N.GOut():
+  match c:
+    case None{}:
+      Gsm.Item.out(f(None{}))
+    case Some{x}:
+      Gsm.settled(key, ue, f(Some{x}))
+
+def Gsm.under(+key: U32, +ue: S.Ue, f: Maybe<&2, Sec.Nas.Ctx> -> Gsm.Item()) -> N.GOut():
+  Gsm.under_ctx(key, ue, f, S.Phase.ctx(S.Ue.phase(ue)))
+
+def Gsm.told_then(r: N.Told(), +o: N.GOut()) -> Gsm.Item():
+  match r:
+    case (c, acts):
+      (Some{c}, N.Out.join((S.Keep{}, acts), o))
+
+# A session given up: its UE told under the context c, when it holds one,
+# the session deleted at the UPF.
+def Gsm.give_up_in(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, t: Tell, +seq: U32, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
+  match c:
+    case None{}:
+      (None{}, Up.N4.deletions([(skey, s)], seq))
+    case Some{x}:
+      Gsm.told_then(Gsm.told(key, ue, x, S.Session.psi(s), t), Up.N4.deletions([(skey, s)], seq))
+
+def Gsm.give_up_ue(+skey: U32, +s: S.Session, t: Tell, +seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
-      (S.Keep{}, [])
+      Up.N4.deletions([(skey, s)], seq)
     case Some{+ue}:
-      Gsm.to_ue_ctx(key, ue, psi, t, S.Phase.ctx(S.Ue.phase(ue)))
+      Gsm.under(S.Session.ue(s), ue, c => Gsm.give_up_in(S.Session.ue(s), ue, skey, s, t, seq, c))
 
-# A session given up: its UE told, the session deleted at the UPF.
-def Gsm.give_up_m(+skey: U32, +s: S.Session, t: Tell, seq: U32, m: Maybe<&2, S.Ue>) -> N.GOut():
-  N.Out.join(Gsm.to_ue_m(S.Session.ue(s), S.Session.psi(s), t, m), Up.N4.deletions([(skey, s)], seq))
-
-def Gsm.give_up(st: S.State, skey: U32, +s: S.Session, t: Tell, seq: U32) -> N.GOut():
-  Gsm.give_up_m(skey, s, t, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
+def Gsm.give_up(st: S.State, +skey: U32, +s: S.Session, t: Tell, +seq: U32) -> N.GOut():
+  Gsm.give_up_ue(skey, s, t, seq, Tb.Table.get(S.Ue, S.Session.ue(s), S.State.ues(st)))
 
 # Before the Accept went out, the UE is refused the session.
 def Gsm.abort(st: S.State, skey: U32, +s: S.Session, pti: U32, cause: U32, seq: U32) -> N.GOut():
@@ -434,8 +489,8 @@ def Gsm.setup_gone(+st: S.State, skey: U32, +s: S.Session, up_seid: B.Bytes()) -
 def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, ctx: Maybe<&2, Sec.Nas.Ctx>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match ctx cfg:
     case Some{c} Some{+cf}:
-      +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))
-      (S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}}}, [N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.transfer(cf, S.Session.teid(s))}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+      +r = N.Out.seal(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)), m => N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), m, Gsm.transfer(cf, S.Session.teid(s))})
+      N.Out.join(N.Out.written(S.Session.ue(s), ue, r), (S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}}, [N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}]))
     case _ _:
       Gsm.setup_gone(st, skey, s, up_seid)
 
@@ -471,25 +526,19 @@ def Gsm.established(st: S.State, msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ 
 # Sessions a handover released: PDU Session Release Command (#26) to the UE
 # for each, in DL NAS Transport through its new gNB, which never set them up
 # (TS 23.502 §4.3.4.2), protected in turn; with the NAS context they leave.
-def Gsm.releases_then(+a: N.Act, r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
-  match r:
-    case (c, acts):
-      (c, a <> acts)
-
-def Gsm.releases(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), psis: List<&2, U32>, ctx: Sec.Nas.Ctx) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
+def Gsm.releases(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), psis: List<&2, U32>, ctx: Sec.Nas.Ctx) -> N.Told():
   match psis:
     case Nil{}:
       (ctx, [])
     case +p <> more:
-      +q : Sec.Nas.Protected = Gsm.release_nas(ctx, p)
-      Gsm.releases_then(N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
+      N.Out.then(N.Out.seal(ctx, Sec.Ciphered{}, Gsm.release_plain(p), m => N.DlNas{assoc, stream, key, ran, m}), c => Gsm.releases(key, assoc, stream, ran, more, c))
 
-def Gsm.Told.ctx(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sec.Nas.Ctx:
+def Gsm.Told.ctx(r: N.Told()) -> Sec.Nas.Ctx:
   match r:
     case (c, acts):
       c
 
-def Gsm.Told.acts(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> List<&2, N.Act>:
+def Gsm.Told.acts(r: N.Told()) -> List<&2, N.Act>:
   match r:
     case (c, acts):
       acts
@@ -729,27 +778,27 @@ def Gsm.tunnel_of(r: Ap.Rd(G.PDUSessionResourceSetupResponseTransfer)) -> Maybe<
       Gsm.tunnel(t)
 
 # The UPF is told the gNB's tunnel; the session's guard bounds the wait.
-def Gsm.modify(st: S.State, +skey: U32, +s: S.Session, pti: U32, +seq: U32, tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>) -> N.GOut():
+def Gsm.modify(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +seq: U32, tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match tunnel:
     case None{}:
-      Gsm.drop(st, skey, s, seq)
+      Gsm.give_up_in(key, ue, skey, s, Release{}, seq, c)
     case Some{(gnb_teid, gnb_addr)}:
       +request = Up.N4.modify(S.Session.up_seid(s), gnb_teid, gnb_addr, seq)
-      (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}])
+      (c, (S.Both{S.Revar{skey, S.SVar{S.Session.up_seid(s), seq, S.Modifying{S.Guard{0}, request}}}, S.BumpSeq{1}}, [N.Pfcp{S.Session.tag(s), request}, N.TimerStart{S.Session.tag(s), skey, Up.N4.t1_ms()}]))
 
-def Gsm.set_up_phase(st: S.State, skey: U32, s: S.Session, transfer: B.Bytes(), seq: U32, p: S.SPhase) -> N.GOut():
+def Gsm.set_up_phase(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, transfer: B.Bytes(), +seq: U32, p: S.SPhase, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match p:
     case S.Setting{guard, pti}:
-      Gsm.modify(st, skey, s, pti, seq, Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})))
+      Gsm.modify(key, ue, skey, s, seq, Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})), c)
     case _:
-      N.Out.warn("NGAP: PDU session set up at the gNB while not being set up")
+      (c, N.Out.warn("NGAP: PDU session set up at the gNB while not being set up"))
 
-def Gsm.set_up(st: S.State, transfer: B.Bytes(), seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
+def Gsm.set_up(+key: U32, +ue: S.Ue, transfer: B.Bytes(), +seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match m:
     case None{}:
-      N.Out.warn("NGAP: PDU session set up at the gNB for no session")
+      (c, N.Out.warn("NGAP: PDU session set up at the gNB for no session"))
     case Some{(skey, +s)}:
-      Gsm.set_up_phase(st, skey, s, transfer, seq, S.Session.phase(s))
+      Gsm.set_up_phase(key, ue, skey, s, transfer, seq, S.Session.phase(s), c)
 
 # The setup list names the PDU session again later.
 def Gsm.named(+psi: U32, items: G.PDUSessionResourceSetupListSURes()) -> Bool:
@@ -761,40 +810,40 @@ def Gsm.named(+psi: U32, items: G.PDUSessionResourceSetupListSURes()) -> Bool:
 
 # Only a session's last naming in the list counts, so no item undoes what an
 # earlier one did to the same session.
-def Gsm.set_up_last(st: S.State, transfer: B.Bytes(), seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, again: Bool) -> N.GOut():
+def Gsm.set_up_last(+key: U32, +ue: S.Ue, transfer: B.Bytes(), +seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, again: Bool, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match again:
     case True{}:
-      N.Out.warn("NGAP: PDU session named again later in the setup list; this naming ignored")
+      (c, N.Out.warn("NGAP: PDU session named again later in the setup list; this naming ignored"))
     case False{}:
-      Gsm.set_up(st, transfer, seq, m)
+      Gsm.set_up(key, ue, transfer, seq, m, c)
 
-def Gsm.set_ups(+st: S.State, +key: U32, items: G.PDUSessionResourceSetupListSURes(), +seq: U32) -> N.GOut():
+def Gsm.set_ups(+st: S.State, +key: U32, +ue: S.Ue, items: G.PDUSessionResourceSetupListSURes(), +seq: U32, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match items:
     case Nil{}:
-      (S.Keep{}, [])
+      (c, (S.Keep{}, []))
     case G.PDUSessionResourceSetupItemSURes{+psi, transfer, x} <> +more:
-      N.Out.join(N.Out.also((S.BumpSeq{1}, []), []), N.Out.join(Gsm.set_up_last(st, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.named(psi, more)), Gsm.set_ups(st, key, more, U32.add(seq, 1))))
+      Gsm.then(Gsm.after((S.BumpSeq{1}, []), Gsm.set_up_last(key, ue, transfer, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), Gsm.named(psi, more), c)), c2 => Gsm.set_ups(st, key, ue, more, U32.add(seq, 1), c2))
 
-def Gsm.failed_phase(st: S.State, skey: U32, s: S.Session, seq: U32, p: S.SPhase) -> N.GOut():
+def Gsm.failed_phase(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +seq: U32, p: S.SPhase, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match p:
     case S.Setting{guard, pti}:
-      Gsm.abort(st, skey, s, pti, 26, seq)
+      Gsm.give_up_in(key, ue, skey, s, Reply{Gsm.reject(S.Session.psi(s), pti, 26)}, seq, c)
     case _:
-      N.Out.warn("NGAP: PDU session failed at the gNB while not being set up")
+      (c, N.Out.warn("NGAP: PDU session failed at the gNB while not being set up"))
 
-def Gsm.failed(st: S.State, seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>) -> N.GOut():
+def Gsm.failed(+key: U32, +ue: S.Ue, +seq: U32, m: Maybe<&2, Sigma<&2, &2, U32, _ => S.Session>>, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match m:
     case None{}:
-      N.Out.warn("NGAP: PDU session failed at the gNB for no session")
+      (c, N.Out.warn("NGAP: PDU session failed at the gNB for no session"))
     case Some{(skey, +s)}:
-      Gsm.failed_phase(st, skey, s, seq, S.Session.phase(s))
+      Gsm.failed_phase(key, ue, skey, s, seq, S.Session.phase(s), c)
 
-def Gsm.faileds(+st: S.State, +key: U32, items: G.PDUSessionResourceFailedToSetupListSURes(), +seq: U32) -> N.GOut():
+def Gsm.faileds(+st: S.State, +key: U32, +ue: S.Ue, items: G.PDUSessionResourceFailedToSetupListSURes(), +seq: U32, c: Maybe<&2, Sec.Nas.Ctx>) -> Gsm.Item():
   match items:
     case Nil{}:
-      (S.Keep{}, [])
+      (c, (S.Keep{}, []))
     case G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> more:
-      N.Out.join((S.BumpSeq{1}, []), N.Out.join(Gsm.failed(st, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st))), Gsm.faileds(st, key, more, U32.add(seq, 1))))
+      Gsm.then(Gsm.after((S.BumpSeq{1}, []), Gsm.failed(key, ue, seq, S.Sessions.by_psi(key, psi, S.State.sessions(st)), c)), c2 => Gsm.faileds(st, key, ue, more, U32.add(seq, 1), c2))
 
 def Gsm.list_or(-A: Data, m: Maybe<&2, List<&2, A>>) -> List<&2, A>:
   match m:
@@ -804,16 +853,17 @@ def Gsm.list_or(-A: Data, m: Maybe<&2, List<&2, A>>) -> List<&2, A>:
       xs
 
 # Each session the response names: set up at the gNB, or failed there; one
-# PFCP sequence number is spent per session named.
-def Gsm.results(+st: S.State, +key: U32, +oks: G.PDUSessionResourceSetupListSURes(), fails: G.PDUSessionResourceFailedToSetupListSURes()) -> N.GOut():
-  N.Out.join(Gsm.set_ups(st, key, oks, S.State.pfcp_seq(st)), Gsm.faileds(st, key, fails, U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, oks)))))
+# PFCP sequence number is spent per session named. The UE's NAS context runs
+# through the items in turn and is written once, after the last.
+def Gsm.results(+st: S.State, +key: U32, +ue: S.Ue, +oks: G.PDUSessionResourceSetupListSURes(), fails: G.PDUSessionResourceFailedToSetupListSURes()) -> N.GOut():
+  Gsm.under(key, ue, c => Gsm.then(Gsm.set_ups(st, key, ue, oks, S.State.pfcp_seq(st), c), c2 => Gsm.faileds(st, key, ue, fails, U32.add(S.State.pfcp_seq(st), U32.from_nat(List.length(&2, G.PDUSessionResourceSetupItemSURes, oks))), c2)))
 
 def Gsm.setup_response_ue(st: S.State, assoc: U32, key: U32, oks: G.PDUSessionResourceSetupListSURes(), fails: G.PDUSessionResourceFailedToSetupListSURes(), m: Maybe<&2, S.Ue>) -> N.GOut():
   match m:
     case None{}:
       (S.Keep{}, N.Ngap.unknown_ue(assoc))
-    case Some{ue}:
-      Gsm.results(st, key, oks, fails)
+    case Some{+ue}:
+      Gsm.results(st, key, ue, oks, fails)
 
 def Gsm.setup_response_key(+st: S.State, +assoc: U32, ran: B.Bytes(), oks: G.PDUSessionResourceSetupListSURes(), fails: G.PDUSessionResourceFailedToSetupListSURes(), m: Maybe<&2, U32>) -> N.GOut():
   match m:
