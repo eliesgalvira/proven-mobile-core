@@ -764,13 +764,6 @@ def Ws.written(+key: U32, +ue: S.Ue, +c: Maybe<&2, Sec.Nas.Ctx>, +k: U32, +u: S.
 def Ws.give_up_in(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +t: Gsm.Tell, +seq: U32, +c: Maybe<&2, Sec.Nas.Ctx>, +k: U32, +u: S.Ue) -> {Tk.sp(k, u, Gsm.Gsm.Item.out(Gsm.Gsm.give_up_in(key, ue, skey, s, t, seq, c))) == True{} : Bool}:
   PW.It.give_up_in(o => {Tk.sp(k, u, o) == True{} : Bool}, Ws.join(k, u), key, ue, skey, s, t, seq, c, x => {==}, Tk.sp_deletions(k, u, [(skey, s)], seq))
 
-def Ws.give_up_ue(+skey: U32, +s: S.Session, +t: Gsm.Tell, +seq: U32, +m: Maybe<&2, S.Ue>, +k: U32, +u: S.Ue, +hs: {U32.is_eq(k, S.Session.ue(s)) == False{} : Bool}) -> {Tk.sp(k, u, Gsm.Gsm.give_up_ue(skey, s, t, seq, m)) == True{} : Bool}:
-  match m:
-    case None{}:
-      Tk.sp_deletions(k, u, [(skey, s)], seq)
-    case Some{+ue}:
-      PW.It.under(o => {Tk.sp(k, u, o) == True{} : Bool}, Ws.join(k, u), S.Session.ue(s), ue, c => Gsm.Gsm.give_up_in(S.Session.ue(s), ue, skey, s, t, seq, c), +c => Ws.give_up_in(S.Session.ue(s), ue, skey, s, t, seq, c, k, u), ec => +c => Ws.written(S.Session.ue(s), ue, c, k, u, hs))
-
 def Ws.modify(+key: U32, +ue: S.Ue, +skey: U32, +s: S.Session, +seq: U32, +tunnel: Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, +c: Maybe<&2, Sec.Nas.Ctx>, +k: U32, +u: S.Ue) -> {Tk.sp(k, u, Gsm.Gsm.Item.out(Gsm.Gsm.modify(key, ue, skey, s, seq, tunnel, c))) == True{} : Bool}:
   match tunnel:
     case None{}:
