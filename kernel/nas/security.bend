@@ -284,6 +284,11 @@ def Nas.received_mac(msg: B.Bytes()) -> B.Bytes():
 type Nas.Ctx is Data:
   Ctx{keys: Nas.Keys, dl: Nas.Count, ul: Maybe<&2, Nas.Count>}
 
+def Nas.Ctx.keys(ctx: Nas.Ctx) -> Nas.Keys:
+  match ctx:
+    case Ctx{keys, dl, ul}:
+      keys
+
 def Nas.Ctx.ul(ctx: Nas.Ctx) -> Maybe<&2, Nas.Count>:
   match ctx:
     case Ctx{keys, dl, ul}:

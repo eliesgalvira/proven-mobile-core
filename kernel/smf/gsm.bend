@@ -252,6 +252,12 @@ def Gsm.n2_release(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32) -> N.GOut(
 def Gsm.tells_gnb(+ue: S.Ue, +ctx: Sec.Nas.Ctx, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
   Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, N.Out.acts(Gsm.n2_release(S.Session.ue(s), ue, ctx, S.Session.psi(s))), post) : List<&2, N.Act>}>
 
+# Some action tells the UE's gNB to release session s of the UE keyed key,
+# the PDU Session Release Command inside, sealed under keys at some
+# downlink COUNT.
+def Gsm.told_gnb(+ue: S.Ue, +key: U32, +keys: Sec.Nas.Keys, +s: S.Session, +acts: List<&2, N.Act>) -> Type:
+  Sigma<&2, &2, Sec.Nas.Count, c => Sigma<&2, &2, List<&2, N.Act>, pre => Sigma<&2, &2, List<&2, N.Act>, post => {acts == List.append(&2, N.Act, pre, N.PduRelease{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), S.Session.psi(s), Sec.Nas.seal(keys, Sec.Ciphered{}, Sec.Nas.downlink(), c, Gsm.release_plain(S.Session.psi(s)))} <> post) : List<&2, N.Act>}>>>
+
 # What a procedure does while the UE's NAS context runs through it: the
 # context it leaves, and its outcome with that context not yet written.
 def Gsm.Item() -> Data:

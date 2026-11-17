@@ -1651,10 +1651,14 @@ law smf.establish.reject_leaves_state:
 # the PDU Session Release Command inside, when the UE holds a NAS context
 # (TS 23.502 §4.3.4.2). A setup response that lists the session set up, in
 # the last item naming it, with a tunnel that does not read (Gs.Gsm.modify)
-# sends its Session Deletion Request too, its guard right after it, whatever
-# the items around it do; what its entry is then, items after it that modify
-# another session under the same key would decide, which no reachable state
-# has (smf.ip_pool.unique) but this law does not assume.
+# sends its Session Deletion Request too, its guard right after it, and,
+# when the UE holds a NAS context, the PDU Session Resource Release Command
+# to its gNB with the PDU Session Release Command inside, sealed under the
+# context's keys (Gs.Gsm.told_gnb; at which COUNT, nas_sec.downlink_fresh
+# says), whatever the items around it do. What its entry is then, items
+# after it that modify another session under the same key would decide,
+# which no reachable state has (smf.ip_pool.unique) but this law does not
+# assume.
 law smf.establish.failure_releases:
   for +st: St.State
   for +entropy: B.Bytes()
@@ -1702,7 +1706,7 @@ law smf.establish.failure_releases:
   & ({St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool} -> {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, oks, Some{List.append(&2, G.PDUSessionResourceFailedToSetupItemSURes, pre, G.PDUSessionResourceFailedToSetupItemSURes{psi, transfer, x} <> post)}, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
     -> {St.Sessions.each(skey, St.SFresh{}, St.State.sessions(Ke.Kernel.state(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))) == True{} : Bool} & Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))
   & ({St.Assocs.has(assoc, St.State.assocs(st)) == True{} : Bool} -> {Fr.Pdu.read(bytes) == Done{Fr.Pdu{1, 29, crit, value}} : Result<&2, &2, B.Err, Fr.Pdu>} -> {Fr.Ies.read(Ap.Cur{7n, List.drop(&2, Bool, Ap.unpack(value), 1n)}) == Done{(ies, c)} : Ap.Rd(List<&2, Fr.Ie>)} -> {GV.PDUSessionResourceSetupResponse.view(ies) == Done{GV.PDUSessionResourceSetupResponse.View{amf, ran, Some{List.append(&2, G.PDUSessionResourceSetupItemSURes, opre, G.PDUSessionResourceSetupItemSURes{psi, transfer, x} <> opost)}, fl, diag, uli}} : Result<&2, &2, B.Err, GV.PDUSessionResourceSetupResponse.View>} -> {Ng.Ngap.ue_key(amf) == Some{k} : Maybe<&2, U32>} -> {Ng.Owner.of(Tb.Table.get(St.Ue, k, St.State.ues(st)), assoc, ran) == Some{ue} : Maybe<&2, St.Ue>} -> {Gs.Gsm.named(psi, opost) == False{} : Bool} -> {Gs.Gsm.tunnel_of(G.PDUSessionResourceSetupResponseTransfer.read(Ap.Cur{0n, Ap.unpack(transfer)})) == None{} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>} -> {St.Sessions.by_psi(k, psi, St.State.sessions(st)) == Some{(skey, s)} : Maybe<&2, Sigma<&2, &2, U32, _ => St.Session>>} -> {St.Session.phase(s) == St.Setting{guard, pti} : St.SPhase}
-    -> Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))))))
+    -> Up.N4.deleted(skey, s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy))) & ({St.Phase.ctx(St.Ue.phase(ue)) == Some{ctx} : Maybe<&2, N.Nas.Ctx>} -> Gs.Gsm.told_gnb(ue, k, N.Nas.Ctx.keys(ctx), s, Ke.Kernel.actions(Ke.Kernel.step(st, F.NgapData{assoc, stream, len, bytes}, entropy)))))))
 
 # What the release messages are, so that the laws naming them
 # (smf.establish.failure_releases, amf.path_switch.stored_capabilities,
