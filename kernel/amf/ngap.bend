@@ -530,7 +530,7 @@ def Acts.spare(+k: U32, acts: List<&2, Act>) -> Bool:
     case a <> more:
       Bool.and(Bool.not(S.Maybe.same_u32(Act.ue(a), Some{k})), Acts.spare(k, more))
 
-# Downlink NAS COUNT freshness (nas.downlink.fresh)
+# Downlink NAS COUNT freshness (nas_sec.downlink_fresh)
 # -------------------------------------------------
 # The security protected NAS message an action carries to the UE keyed key.
 def Act.nas_if(+key: U32, +nas: B.Bytes(), p: Bool) -> Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>:
@@ -628,7 +628,10 @@ def Fresh.into(b: Maybe<&2, Sec.Nas.Ctx>, +ka: Sec.Nas.Keys, +da: Sec.Nas.Count,
     case Some{Sec.Ctx{+kb, +db, ub}}:
       Bool.and(Sec.Nas.Keys.same(kb, ka), Fresh.at(Fresh.run(msgs, kb, db), da))
 
-# With none written, the messages are sealed in turn under b.
+# With none written, the messages are sealed in turn under b. Stricter than
+# Fresh.Law, which the proofs reach through it: with no context before or
+# after, it refuses every message, where the law takes them under any one
+# context's keys from 0. The tests judge steps by it.
 def Fresh.holds(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Bool:
   match a:
     case Some{Sec.Ctx{+ka, +da, ua}}:
@@ -636,7 +639,7 @@ def Fresh.holds(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, +msgs: Lis
     case None{}:
       Fresh.gone(b, msgs)
 
-# nas.downlink.fresh for one key, between the context b it held before the
+# nas_sec.downlink_fresh for one key, between the context b it held before the
 # step and the context a it holds after: a holds what Fresh.into says. With
 # no context after, the messages are sealed in turn from where b leaves off,
 # under b's keys; where the key held no context either, under the keys of

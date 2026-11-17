@@ -350,8 +350,11 @@ law nas_sec.count_monotonic:
 # the next step starts where this one ends, and no COUNT is used twice under
 # k's keys. If it holds none, they are still sealed in turn from where k's
 # context left off, under its keys; where k held none either, under one
-# context's keys from 0. It holds where no two contexts share a key
-# (amf.indexes.unique).
+# context's keys from 0, which no context keeps. That last case rests on no
+# two NAS contexts sharing keys, since 5G-AKA derives each context's keys
+# from a fresh RAND, an advancing SQN and the SUPI; no law states it, as it
+# cannot be stated without an assumption about entropy. It holds where no
+# two contexts are stored under the same AMF UE NGAP ID (amf.indexes.unique).
 law nas_sec.downlink_fresh:
   for +st: St.State
   for +ev: F.Evt
