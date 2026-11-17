@@ -339,16 +339,18 @@ law nas_sec.count_monotonic:
 # plaintexts, and the UE drops the second as a replay. Over any step, the
 # security protected NAS messages the actions carry to the UE keyed k (in DL
 # NAS Transport, Initial Context Setup, PDU Session Resource Setup or Release)
-# are each sealed under the COUNT after the one before (Ng.Fresh.run), the
-# first at the downlink COUNT of the NAS context k's phase held before the
-# step (St.Phase.nas, in force or kept through an N2 handover) when they are
-# under the keys it held, at 0 when under new ones, which only a context
-# taken into use by Security Mode holds (TS 24.501 §5.4.2). If k holds a
-# context after the step, its downlink COUNT is the one after the last of
-# them: unchanged when there is none, so the next step starts where this one
-# ends, and no COUNT is used twice under k's keys. If it holds none, they are
-# still sealed in turn under one context's keys, from where k's context left
-# off under its own. It holds where no two contexts share a key
+# are each sealed under the COUNT after the one before (Ng.Fresh.run). Where
+# k's phase held a NAS context before the step (St.Phase.nas, in force or
+# kept through an N2 handover), they go under its keys, the first at its
+# downlink COUNT, and a context k holds after has those very keys; only where
+# k held none do they start at 0, under a context taken into use by Security
+# Mode (TS 24.501 §5.4.2), so keys that seal alike cannot start a held
+# context's COUNT again. If k holds a context after the step, its downlink
+# COUNT is the one after the last of them: unchanged when there is none, so
+# the next step starts where this one ends, and no COUNT is used twice under
+# k's keys. If it holds none, they are still sealed in turn from where k's
+# context left off, under its keys; where k held none either, under one
+# context's keys from 0. It holds where no two contexts share a key
 # (amf.indexes.unique).
 law nas_sec.downlink_fresh:
   for +st: St.State

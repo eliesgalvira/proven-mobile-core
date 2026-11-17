@@ -54,13 +54,10 @@ def Fq.mode(+k: U32, tx: S.Tx, w: Bool) -> Bool:
     case _:
       w
 
-def Fq.Wit(+b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Data:
-  Sigma<&2, &2, Sec.Nas.Keys, x => {Tb.Table.present(Sec.Nas.Count, N.Fresh.run(msgs, x, N.Fresh.start(b, x))) == True{} : Bool}>
-
 def Fq.WitIf(m: Bool, +b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Data:
   match m:
     case True{}:
-      Fq.Wit(b, msgs)
+      N.Fresh.Left(b, msgs)
     case False{}:
       Unit
 
@@ -68,7 +65,7 @@ def Fq.Now(+k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +m: 
   Sigma<&2, &2, {PH.Hs.rows(k, PH.Fresh{b, Fq.msgs_if(m, msgs)}, ues) == True{} : Bool}, _ => Fq.WitIf(m, b, msgs)>
 
 def Fq.Fin(+k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +ues: Tb.Table(S.Ue)) -> Data:
-  Sigma<&2, &2, {PH.Hs.rows(k, PH.Fresh{b, msgs}, ues) == True{} : Bool}, _ => Fq.Wit(b, msgs)>
+  Sigma<&2, &2, {PH.Hs.rows(k, PH.Fresh{b, msgs}, ues) == True{} : Bool}, _ => N.Fresh.Left(b, msgs)>
 
 def Fq.now_rows(+k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +m: Bool, +ues: Tb.Table(S.Ue), +r: Fq.Now(k, b, msgs, m, ues)) -> {PH.Hs.rows(k, PH.Fresh{b, Fq.msgs_if(m, msgs)}, ues) == True{} : Bool}:
   match r:
@@ -86,8 +83,12 @@ def Fq.now_wit(+k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, 
 def Fq.keys0() -> Sec.Nas.Keys:
   Sec.Keys{[], [], Sec.Nea0{}, Sec.Nia2{}, 0}
 
-def Fq.nil_wit(+b: Maybe<&2, Sec.Nas.Ctx>) -> Fq.Wit(b, []):
-  (Fq.keys0(), {==})
+def Fq.nil_wit(+b: Maybe<&2, Sec.Nas.Ctx>) -> N.Fresh.Left(b, []):
+  match b:
+    case None{}:
+      (Fq.keys0(), {==})
+    case Some{Sec.Ctx{kb, db, ub}}:
+      {==}
 
 def Fq.at_present(m: Maybe<&2, Sec.Nas.Count>, +d: Sec.Nas.Count, +h: {N.Fresh.at(m, d) == True{} : Bool}) -> {Tb.Table.present(Sec.Nas.Count, m) == True{} : Bool}:
   match m:
@@ -96,25 +97,31 @@ def Fq.at_present(m: Maybe<&2, Sec.Nas.Count>, +d: Sec.Nas.Count, +h: {N.Fresh.a
     case Some{c}:
       {==}
 
-def Fq.from_wit(+b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +h: {N.Fresh.from(b, msgs) == True{} : Bool}) -> Fq.Wit(b, msgs):
+def Fq.from_wit(+b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +h: {N.Fresh.from(b, msgs) == True{} : Bool}) -> N.Fresh.Left(b, msgs):
   match b:
     case None{}:
-      Empty.absurd(Fq.Wit(None{}, msgs), P.Refute.bool(h))
-    case Some{Sec.Ctx{+kb, +db, ub}}:
-      +e = Equal.sym(Bool, Sec.Nas.Keys.same(kb, kb), True{}, PF.Fs.keys_same(kb))
-      (kb, (%e : {Tb.Table.present(Sec.Nas.Count, N.Fresh.run(msgs, kb, N.Fresh.start_if(db, _))) == True{} : Bool}; h))
+      Empty.absurd(N.Fresh.Left(None{}, msgs), P.Refute.bool(h))
+    case Some{Sec.Ctx{kb, db, ub}}:
+      h
 
-def Fq.gone_wit(+b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +h: {N.Fresh.gone(b, msgs) == True{} : Bool}) -> Fq.Wit(b, msgs):
+def Fq.gone_wit(+b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +h: {N.Fresh.gone(b, msgs) == True{} : Bool}) -> N.Fresh.Left(b, msgs):
   match msgs:
     case Nil{}:
       Fq.nil_wit(b)
     case +m <> +more:
       Fq.from_wit(b, m <> more, h)
 
-def Fq.wit_of(+b: Maybe<&2, Sec.Nas.Ctx>, +c: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +h: {N.Fresh.holds(b, c, msgs) == True{} : Bool}) -> Fq.Wit(b, msgs):
+def Fq.into_wit(+b: Maybe<&2, Sec.Nas.Ctx>, +ka: Sec.Nas.Keys, +da: Sec.Nas.Count, +msgs: List<&2, B.Bytes()>, +h: {N.Fresh.into(b, ka, da, msgs) == True{} : Bool}) -> N.Fresh.Left(b, msgs):
+  match b:
+    case None{}:
+      (ka, Fq.at_present(N.Fresh.run(msgs, ka, Sec.Nas.Count.zero()), da, h))
+    case Some{Sec.Ctx{+kb, +db, ub}}:
+      Fq.at_present(N.Fresh.run(msgs, kb, db), da, P.Bool.and_true_r(Sec.Nas.Keys.same(kb, ka), N.Fresh.at(N.Fresh.run(msgs, kb, db), da), h))
+
+def Fq.wit_of(+b: Maybe<&2, Sec.Nas.Ctx>, +c: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +h: {N.Fresh.holds(b, c, msgs) == True{} : Bool}) -> N.Fresh.Left(b, msgs):
   match c:
     case Some{Sec.Ctx{+ka, +da, ua}}:
-      (ka, Fq.at_present(N.Fresh.run(msgs, ka, N.Fresh.start(b, ka)), da, h))
+      Fq.into_wit(b, ka, da, msgs, h)
     case None{}:
       Fq.gone_wit(b, msgs, h)
 
@@ -392,7 +399,7 @@ def Fq.Law(+st: S.State, +k: U32, +o: N.Step()) -> Type:
 
 def Fq.fin_nil(+k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +ms: List<&2, B.Bytes()>, +ues: Tb.Table(S.Ue), +e: {PH.Hs.rows(k, PH.Fresh{b, []}, ues) == True{} : Bool}, +en: {ms == [] : List<&2, B.Bytes()>}) -> Fq.Fin(k, b, ms, ues):
   +sn = Equal.sym(List<&2, B.Bytes()>, ms, [], en)
-  ((%sn : {PH.Hs.rows(k, PH.Fresh{b, _}, ues) == True{} : Bool}; e), (%sn : Fq.Wit(b, _); Fq.nil_wit(b)))
+  ((%sn : {PH.Hs.rows(k, PH.Fresh{b, _}, ues) == True{} : Bool}; e), (%sn : N.Fresh.Left(b, _); Fq.nil_wit(b)))
 
 def Fq.fin_mode(+k: U32, +tx: S.Tx, +acts: List<&2, N.Act>, +b: Maybe<&2, Sec.Nas.Ctx>, +m: Bool, +em: {Fq.mode(k, tx, False{}) == m : Bool}, +hs: {PF.Fs.sends(tx, acts) == True{} : Bool}, +ues: Tb.Table(S.Ue), +r: Fq.Now(k, b, N.Acts.nas(k, acts), m, ues)) -> Fq.Fin(k, b, N.Acts.nas(k, acts), ues):
   match m:
@@ -423,7 +430,7 @@ def Fq.fin_out(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == Tru
     case (+tx, +acts):
       Fq.fin_of(st, k, eu, tx, acts, Fq.unique_nas(st, tx, acts, eu, PL.Lv.does_fs(st, tx, acts, PL.Lv.homed(st, tx, S.State.ues(st)), h)))
 
-def Fq.law_rows(+k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +ues: Tb.Table(S.Ue), +e: {PH.Hs.rows(k, PH.Fresh{b, msgs}, ues) == True{} : Bool}, +wt: Fq.Wit(b, msgs), +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, ues) == m : Maybe<&2, S.Ue>}) -> N.Fresh.Law(b, S.Ue.nas(m), msgs):
+def Fq.law_rows(+k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>, +ues: Tb.Table(S.Ue), +e: {PH.Hs.rows(k, PH.Fresh{b, msgs}, ues) == True{} : Bool}, +wt: N.Fresh.Left(b, msgs), +m: Maybe<&2, S.Ue>, +em: {Tb.Table.get(S.Ue, k, ues) == m : Maybe<&2, S.Ue>}) -> N.Fresh.Law(b, S.Ue.nas(m), msgs):
   match m:
     case None{}:
       wt
@@ -468,7 +475,7 @@ def Fq.drop_fin(+s: S.State, +assoc: U32, +k: U32, +b: Maybe<&2, Sec.Nas.Ctx>, +
     case (+e, +wt):
       +d = K.Kernel.actions(R.Route.drop(s, assoc))
       +sn = Equal.sym(List<&2, B.Bytes()>, N.Acts.nas(k, List.append(&2, N.Act, ms0, d)), N.Acts.nas(k, ms0), PF.Fs.nas_mute_r(k, ms0, d, Fq.drop_mute(s, assoc)))
-      ((%sn : {PH.Hs.rows(k, PH.Fresh{b, _}, S.State.ues(K.Kernel.state(R.Route.drop(s, assoc)))) == True{} : Bool}; PH.Hs.drop_rows(s, assoc, k, PH.Fresh{b, N.Acts.nas(k, ms0)}, e)), (%sn : Fq.Wit(b, _); wt))
+      ((%sn : {PH.Hs.rows(k, PH.Fresh{b, _}, S.State.ues(K.Kernel.state(R.Route.drop(s, assoc)))) == True{} : Bool}; PH.Hs.drop_rows(s, assoc, k, PH.Fresh{b, N.Acts.nas(k, ms0)}, e)), (%sn : N.Fresh.Left(b, _); wt))
 
 def Fq.reset(+st: S.State, +k: U32, +eu: {S.Ues.unique(S.State.ues(st)) == True{} : Bool}, +assoc: U32) -> Fq.Fin(k, PF.Fs.ctx(st, k), N.Acts.nas(k, N.Step.acts(R.Route.reset(st, assoc))), S.State.ues(N.Step.state(R.Route.reset(st, assoc)))):
   +o = Ho.Ho.down(st, assoc)

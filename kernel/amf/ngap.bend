@@ -591,22 +591,6 @@ def Fresh.run(msgs: List<&2, B.Bytes()>, +keys: Sec.Nas.Keys, +c: Sec.Nas.Count)
     case +m <> more:
       Fresh.then(Sec.Nas.sealed(keys, c, m), u => Fresh.run(more, keys, Sec.Nas.Count.next(c)))
 
-# Where a context's messages start: at the downlink COUNT it held before when
-# they are under the keys it held, at 0 under new ones.
-def Fresh.start_if(+d: Sec.Nas.Count, same: Bool) -> Sec.Nas.Count:
-  match same:
-    case True{}:
-      d
-    case False{}:
-      Sec.Nas.Count.zero()
-
-def Fresh.start(b: Maybe<&2, Sec.Nas.Ctx>, +keys: Sec.Nas.Keys) -> Sec.Nas.Count:
-  match b:
-    case None{}:
-      Sec.Nas.Count.zero()
-    case Some{Sec.Ctx{kb, +d, ul}}:
-      Fresh.start_if(d, Sec.Nas.Keys.same(kb, keys))
-
 def Fresh.at(m: Maybe<&2, Sec.Nas.Count>, +d: Sec.Nas.Count) -> Bool:
   match m:
     case None{}:
@@ -630,28 +614,46 @@ def Fresh.gone(b: Maybe<&2, Sec.Nas.Ctx>, msgs: List<&2, B.Bytes()>) -> Bool:
     case +m <> +more:
       Fresh.from(b, m <> more)
 
-# What a context a written under a key holds against the context b the key
-# held before the step and the messages msgs the step sends the key: they
-# are sealed in turn from where b leaves off, and a holds the COUNT after
-# them; with none written, they are sealed in turn under b.
+# What a context a, keys ka and downlink COUNT da, written under a key holds
+# against the context b the key held before the step and the messages msgs
+# the step sends the key: they are sealed in turn, each under the COUNT after
+# the one before, and da is the COUNT after the last. Where the key held a
+# context they go under its keys, the first at the COUNT it held, and a keeps
+# those keys: a COUNT starts again at 0 only under a context taken into use
+# where the key held none.
+def Fresh.into(b: Maybe<&2, Sec.Nas.Ctx>, +ka: Sec.Nas.Keys, +da: Sec.Nas.Count, +msgs: List<&2, B.Bytes()>) -> Bool:
+  match b:
+    case None{}:
+      Fresh.at(Fresh.run(msgs, ka, Sec.Nas.Count.zero()), da)
+    case Some{Sec.Ctx{+kb, +db, ub}}:
+      Bool.and(Sec.Nas.Keys.same(kb, ka), Fresh.at(Fresh.run(msgs, kb, db), da))
+
+# With none written, the messages are sealed in turn under b.
 def Fresh.holds(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Bool:
   match a:
     case Some{Sec.Ctx{+ka, +da, ua}}:
-      Fresh.at(Fresh.run(msgs, ka, Fresh.start(b, ka)), da)
+      Fresh.into(b, ka, da, msgs)
     case None{}:
       Fresh.gone(b, msgs)
 
 # nas.downlink.fresh for one key, between the context b it held before the
-# step and the context a it holds after: a holds the COUNT after msgs, sealed
-# in turn from where b leaves off; with no context after, msgs are sealed in
-# turn under one context's keys, from where b leaves off under b's keys or
-# from 0 under others.
-def Fresh.Law(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, msgs: List<&2, B.Bytes()>) -> Type:
+# step and the context a it holds after: a holds what Fresh.into says. With
+# no context after, the messages are sealed in turn from where b leaves off,
+# under b's keys; where the key held no context either, under the keys of
+# one taken into use from 0.
+def Fresh.Left(b: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Data:
+  match b:
+    case None{}:
+      Sigma<&2, &2, Sec.Nas.Keys, x => {Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, x, Sec.Nas.Count.zero())) == True{} : Bool}>
+    case Some{Sec.Ctx{kb, db, ub}}:
+      {Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, kb, db)) == True{} : Bool}
+
+def Fresh.Law(b: Maybe<&2, Sec.Nas.Ctx>, a: Maybe<&2, Sec.Nas.Ctx>, +msgs: List<&2, B.Bytes()>) -> Type:
   match a:
     case Some{Sec.Ctx{ka, da, ua}}:
-      {Fresh.at(Fresh.run(msgs, ka, Fresh.start(b, ka)), da) == True{} : Bool}
+      {Fresh.into(b, ka, da, msgs) == True{} : Bool}
     case None{}:
-      Sigma<&2, &2, Sec.Nas.Keys, k => {Tb.Table.present(Sec.Nas.Count, Fresh.run(msgs, k, Fresh.start(b, k))) == True{} : Bool}>
+      Fresh.Left(b, msgs)
 
 def Acts.render(acts: List<&2, Act>) -> List<&2, F.Action>:
   match acts:

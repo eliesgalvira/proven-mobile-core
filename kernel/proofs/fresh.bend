@@ -444,7 +444,7 @@ def Fs.holds_self(+b: Maybe<&2, Sec.Nas.Ctx>) -> {N.Fresh.holds(b, b, []) == Tru
       {==}
     case Some{Sec.Ctx{+k, +d, +ul}}:
       +e = Equal.sym(Bool, Sec.Nas.Keys.same(k, k), True{}, Fs.keys_same(k))
-      (%e : {N.Fresh.at(Some{N.Fresh.start_if(d, _)}, d) == True{} : Bool}; Fs.count_same(d))
+      (%e : {Bool.and(_, N.Fresh.at(Some{d}, d)) == True{} : Bool}; Fs.count_same(d))
 
 # A transaction that writes no row in front of another, or after it, the actions the same.
 def Fs.pre_tmute(+st: S.State, +r: S.Tx, +t: S.Tx, +acts: List<&2, N.Act>, +hr: {Fs.tmute(r) == True{} : Bool}, +h: {Fs.nas(st, t, acts) == True{} : Bool}) -> {Fs.nas(st, S.Both{r, t}, acts) == True{} : Bool}:
@@ -562,10 +562,11 @@ def Fs.kd_dl(m: Maybe<&2, Fs.KD()>, +d0: Sec.Nas.Count) -> Sec.Nas.Count:
     case Some{(k, d)}:
       d
 
-def Fs.start_view(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +e: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}) -> {N.Fresh.start(b, k) == d : Sec.Nas.Count}:
+# Under the stored context's keys, from its COUNT.
+def Fs.into_view(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +da: Sec.Nas.Count, +ms: List<&2, B.Bytes()>, +e: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}) -> {N.Fresh.into(b, k, da, ms) == N.Fresh.at(N.Fresh.run(ms, k, d), da) : Bool}:
   match b:
     case None{}:
-      Empty.absurd({N.Fresh.start(None{}, k) == d : Sec.Nas.Count}, P.Refute.none_some(Fs.KD(), (k, d), e))
+      Empty.absurd({N.Fresh.into(None{}, k, da, ms) == N.Fresh.at(N.Fresh.run(ms, k, d), da) : Bool}, P.Refute.none_some(Fs.KD(), (k, d), e))
     case Some{Sec.Ctx{+kb, +db, ub}}:
       +se = Equal.sym(Maybe<&2, Fs.KD()>, Some{(kb, db)}, Some{(k, d)}, e)
       +ek : {kb == k : Sec.Nas.Keys} = (%se : {Fs.kd_keys(_, k) == k : Sec.Nas.Keys}; {==})
@@ -573,7 +574,7 @@ def Fs.start_view(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Coun
       +sk = Equal.sym(Sec.Nas.Keys, kb, k, ek)
       +sd = Equal.sym(Sec.Nas.Count, db, d, ed)
       +es = Equal.sym(Bool, Sec.Nas.Keys.same(k, k), True{}, Fs.keys_same(k))
-      (%sk : {N.Fresh.start_if(db, Sec.Nas.Keys.same(_, k)) == d : Sec.Nas.Count}; (%es : {N.Fresh.start_if(db, _) == d : Sec.Nas.Count}; (%sd : {_ == d : Sec.Nas.Count}; {==})))
+      (%sk : {Bool.and(Sec.Nas.Keys.same(_, k), N.Fresh.at(N.Fresh.run(ms, _, db), da)) == N.Fresh.at(N.Fresh.run(ms, k, d), da) : Bool}; (%es : {Bool.and(_, N.Fresh.at(N.Fresh.run(ms, k, db), da)) == N.Fresh.at(N.Fresh.run(ms, k, d), da) : Bool}; (%sd : {N.Fresh.at(N.Fresh.run(ms, k, _), da) == N.Fresh.at(N.Fresh.run(ms, k, d), da) : Bool}; {==})))
 
 def Fs.from_view(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +ms: List<&2, B.Bytes()>, +e: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}) -> {N.Fresh.from(b, ms) == Tb.Table.present(Sec.Nas.Count, N.Fresh.run(ms, k, d)) : Bool}:
   match b:
@@ -590,14 +591,14 @@ def Fs.from_view(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count
 # One message sealed under the stored context's COUNT, the next written.
 def Fs.told_write(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +ul: Maybe<&2, Sec.Nas.Count>, +prot: Sec.Nas.Protection, +plain: B.Bytes(), +e: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(b, Some{Sec.Ctx{k, Sec.Nas.Count.next(d), ul}}, [Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{k, d, ul}, prot, plain))]) == True{} : Bool}:
   +ms : List<&2, B.Bytes()> = [Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{k, d, ul}, prot, plain))]
-  +sd = Equal.sym(Sec.Nas.Count, N.Fresh.start(b, k), d, Fs.start_view(b, k, d, e))
+  +si = Equal.sym(Bool, N.Fresh.into(b, k, Sec.Nas.Count.next(d), ms), N.Fresh.at(N.Fresh.run(ms, k, d), Sec.Nas.Count.next(d)), Fs.into_view(b, k, d, Sec.Nas.Count.next(d), ms, e))
   +sr = Equal.sym(Maybe<&2, Sec.Nas.Count>, N.Fresh.run(ms, k, d), Some{Sec.Nas.Count.next(d)}, Fs.protect_run(k, d, ul, prot, plain))
-  (%sd : {N.Fresh.at(N.Fresh.run(ms, k, _), Sec.Nas.Count.next(d)) == True{} : Bool}; (%sr : {N.Fresh.at(_, Sec.Nas.Count.next(d)) == True{} : Bool}; Fs.count_same(Sec.Nas.Count.next(d))))
+  (%si : {_ == True{} : Bool}; (%sr : {N.Fresh.at(_, Sec.Nas.Count.next(d)) == True{} : Bool}; Fs.count_same(Sec.Nas.Count.next(d))))
 
 # The stored context's keys and COUNT written back, no message.
 def Fs.kept_write(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +ul: Maybe<&2, Sec.Nas.Count>, +e: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(b, Some{Sec.Ctx{k, d, ul}}, []) == True{} : Bool}:
-  +sd = Equal.sym(Sec.Nas.Count, N.Fresh.start(b, k), d, Fs.start_view(b, k, d, e))
-  (%sd : {N.Fresh.at(Some{_}, d) == True{} : Bool}; Fs.count_same(d))
+  +si = Equal.sym(Bool, N.Fresh.into(b, k, d, []), N.Fresh.at(Some{d}, d), Fs.into_view(b, k, d, d, [], e))
+  (%si : {_ == True{} : Bool}; Fs.count_same(d))
 
 # One message sealed under the stored context's COUNT, the context gone.
 def Fs.gone_write(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +ul: Maybe<&2, Sec.Nas.Count>, +prot: Sec.Nas.Protection, +plain: B.Bytes(), +e: {Fs.view(b) == Some{(k, d)} : Maybe<&2, Fs.KD()>}) -> {N.Fresh.holds(b, None{}, [Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{k, d, ul}, prot, plain))]) == True{} : Bool}:
@@ -1016,9 +1017,9 @@ def Fs.ctx_of(+st: S.State, +key: U32, +ue: S.Ue, +c: Sec.Nas.Ctx, +eg: {Tb.Tabl
 
 # Messages sealed in turn from the key's COUNT, the COUNT after them written.
 def Fs.holds_run(+b: Maybe<&2, Sec.Nas.Ctx>, +k: Sec.Nas.Keys, +d0: Sec.Nas.Count, +dn: Sec.Nas.Count, +un: Maybe<&2, Sec.Nas.Count>, +ms: List<&2, B.Bytes()>, +eb: {Fs.view(b) == Some{(k, d0)} : Maybe<&2, Fs.KD()>}, +er: {N.Fresh.run(ms, k, d0) == Some{dn} : Maybe<&2, Sec.Nas.Count>}) -> {N.Fresh.holds(b, Some{Sec.Ctx{k, dn, un}}, ms) == True{} : Bool}:
-  +sd = Equal.sym(Sec.Nas.Count, N.Fresh.start(b, k), d0, Fs.start_view(b, k, d0, eb))
+  +si = Equal.sym(Bool, N.Fresh.into(b, k, dn, ms), N.Fresh.at(N.Fresh.run(ms, k, d0), dn), Fs.into_view(b, k, d0, dn, ms, eb))
   +sr = Equal.sym(Maybe<&2, Sec.Nas.Count>, N.Fresh.run(ms, k, d0), Some{dn}, er)
-  (%sd : {N.Fresh.at(N.Fresh.run(ms, k, _), dn) == True{} : Bool}; (%sr : {N.Fresh.at(_, dn) == True{} : Bool}; Fs.count_same(dn)))
+  (%si : {_ == True{} : Bool}; (%sr : {N.Fresh.at(_, dn) == True{} : Bool}; Fs.count_same(dn)))
 
 def Fs.pair_l(-A: Type, -B: Type, pr: A & B) -> A:
   match pr:

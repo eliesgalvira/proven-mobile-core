@@ -13,6 +13,7 @@ import ../step.bend as K
 import ../smf/n4.bend as Up
 import ../smf/gsm.bend as Gs
 import ../amf/ngap.bend as N
+import ../nas/security.bend as Sec
 import ./lib/check.bend as C
 import ./lib/vec.bend as V
 import ./vectors/capture-vectors.bend as Capture
@@ -253,8 +254,25 @@ def association(+msgs: List<&2, V.Vec>, +st_reg: S.State, +o_tick: N.Step()) -> 
     +o_refuse : N.Step() = step(st_lost_reg, A.data(1, A.hex_of(A.entry(30n, msgs), "hex")))
     C.Check.report("with the link down: a new session is refused, Establishment Reject #38", Bool.and(Nat.is_eq(Pc.session_count(K.Kernel.state(o_refuse)), 0n), B.bytes_eq(inner(A.nas_of(A.first_bytes(A.sends(K.Kernel.frames(o_refuse))))), [126, 0, 104, 1, 0, 5, 46, 1, 1, 195, 38, 18, 1])))
 
+# nas_sec.downlink_fresh's statement: keys alike in all the sealing reads
+# (a bearer of 33 is bearer 1 to it) are still the context's, so a message
+# under them goes at the context's COUNT, not at 0, whatever the step leaves.
+def count_rules() -> IO(Unit):
+  +k : Sec.Nas.Keys = Sec.Keys{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1], Sec.Nea2{}, Sec.Nia2{}, 1}
+  +k33 : Sec.Nas.Keys = Sec.Keys{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1], Sec.Nea2{}, Sec.Nia2{}, 33}
+  +plain : B.Bytes() = Gs.Gsm.release_plain(5)
+  +c5 : Sec.Nas.Count = Sec.Count{0, 5}
+  +b : Maybe<&2, Sec.Nas.Ctx> = Some{Sec.Ctx{k, c5, None{}}}
+  +m0 : B.Bytes() = Sec.Nas.seal(k33, Sec.Ciphered{}, Sec.Nas.downlink(), Sec.Nas.Count.zero(), plain)
+  do IO<Unit>:
+    C.Check.report("keys differing only in the bearer's high bits seal the same bytes", B.bytes_eq(m0, Sec.Nas.seal(k, Sec.Ciphered{}, Sec.Nas.downlink(), Sec.Nas.Count.zero(), plain)))
+    C.Check.report("nas_sec.downlink_fresh refuses that message at COUNT 0 when the step leaves no context", Bool.not(N.Fresh.holds(b, None{}, [m0])))
+    C.Check.report("nas_sec.downlink_fresh refuses those keys starting again at 0", Bool.not(N.Fresh.holds(b, Some{Sec.Ctx{k33, Sec.Nas.Count.next(Sec.Nas.Count.zero()), None{}}}, [m0])))
+    C.Check.report("nas_sec.downlink_fresh takes the message at the context's COUNT", N.Fresh.holds(b, Some{Sec.Ctx{k, Sec.Nas.Count.next(c5), None{}}}, [Sec.Nas.seal(k, Sec.Ciphered{}, Sec.Nas.downlink(), c5, plain)]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    count_rules()
     +msgs : List<&2, V.Vec> = V.Vec.items(V.Vec.field(Capture.data(), "messages"))
     stale_guards(msgs)
     +view : Result<&2, &2, B.Err, W.InitialUEMessage.View> = W.InitialUEMessage.view(A.ies_of(Fr.Pdu.read(A.hex_of(A.entry(14n, msgs), "hex"))))
