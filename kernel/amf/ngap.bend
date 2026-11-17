@@ -828,16 +828,51 @@ def Out.verified(key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, why: String) -> GOut():
 def Told() -> Data:
   Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, Act>>
 
-# A protected downlink NAS message to a UE, in DL NAS Transport.
-def Out.told_dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> Told():
-  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, Sec.Ciphered{}, plain)
-  (Sec.Nas.Protected.ctx(p), [DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), Sec.Nas.Protected.msg(p)}])
+# The one place a downlink NAS message is sealed: under the context's
+# downlink COUNT, the context it leaves holding the next (TS 24.501
+# §4.4.3.1), the message in the action mk builds. A procedure tells a UE
+# only through it, so the COUNT a message takes is the one the context it
+# was given holds (nas_sec.downlink_fresh).
+def Out.seal(ctx: Sec.Nas.Ctx, prot: Sec.Nas.Protection, plain: B.Bytes(), mk: B.Bytes() -> Act) -> Told():
+  +p : Sec.Nas.Protected = Sec.Nas.protect(ctx, prot, plain)
+  (Sec.Nas.Protected.ctx(p), [mk(Sec.Nas.Protected.msg(p))])
 
-# What was told, the context it leaves written to the UE's phase.
-def Out.written(+key: U32, +ue: S.Ue, r: Told()) -> GOut():
+# More told after what was told, under the context it left.
+def Out.told_after(+acts: List<&2, Act>, r: Told()) -> Told():
+  match r:
+    case (c, more):
+      (c, List.append(&2, Act, acts, more))
+
+def Out.then(r: Told(), rest: Sec.Nas.Ctx -> Told()) -> Told():
   match r:
     case (c, acts):
-      (S.Rephase{key, S.Phase.with_ctx(S.Ue.phase(ue), c)}, acts)
+      Out.told_after(acts, rest(c))
+
+# A protected downlink NAS message to a UE, in DL NAS Transport.
+def Out.told_dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> Told():
+  Out.seal(ctx, Sec.Ciphered{}, plain, m => DlNas{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), m})
+
+# What was told, the context it leaves written to the phase p.
+def Out.rephased(+key: U32, p: S.Phase, r: Told()) -> GOut():
+  match r:
+    case (c, acts):
+      (S.Rephase{key, S.Phase.with_ctx(p, c)}, acts)
+
+def Out.written(+key: U32, +ue: S.Ue, r: Told()) -> GOut():
+  Out.rephased(key, S.Ue.phase(ue), r)
+
+# What was told in front of an outcome, the context it leaves dropped.
+def Out.prepend_all(acts: List<&2, Act>, o: GOut()) -> GOut():
+  match acts:
+    case Nil{}:
+      o
+    case a <> more:
+      Out.prepend(a, Out.prepend_all(more, o))
+
+def Out.before(r: Told(), o: GOut()) -> GOut():
+  match r:
+    case (c, acts):
+      Out.prepend_all(acts, o)
 
 def Out.dl(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, plain: B.Bytes()) -> GOut():
   Out.written(key, ue, Out.told_dl(key, ue, ctx, plain))

@@ -1308,7 +1308,7 @@ def Fs.rephase_told(+st: S.State, +key: U32, +q: S.Phase, +c: Sec.Nas.Ctx, +acts
 
 # Gsm.releases: one PDU Session Release Command after another, each under the
 # COUNT the one before leaves.
-def Fs.rel_step(+key: U32, +x: N.Act, +m: B.Bytes(), +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +r: N.Told(), +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +es: {Sec.Nas.sealed(k, d, m) == True{} : Bool}, +ih: {Fs.view(Some{Gsm.Gsm.Told.ctx(r)}) == Fs.after_run(k, N.Fresh.run(N.Acts.nas(key, Gsm.Gsm.Told.acts(r)), k, Sec.Nas.Count.next(d))) : Maybe<&2, Fs.KD()>}) -> {Fs.view(Some{Gsm.Gsm.Told.ctx(Gsm.Gsm.releases_then(x, r))}) == Fs.after_run(k, N.Fresh.run(N.Acts.nas(key, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(x, r))), k, d)) : Maybe<&2, Fs.KD()>}:
+def Fs.rel_step(+key: U32, +x: N.Act, +m: B.Bytes(), +k: Sec.Nas.Keys, +d: Sec.Nas.Count, +r: N.Told(), +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +es: {Sec.Nas.sealed(k, d, m) == True{} : Bool}, +ih: {Fs.view(Some{Gsm.Gsm.Told.ctx(r)}) == Fs.after_run(k, N.Fresh.run(N.Acts.nas(key, Gsm.Gsm.Told.acts(r)), k, Sec.Nas.Count.next(d))) : Maybe<&2, Fs.KD()>}) -> {Fs.view(Some{Gsm.Gsm.Told.ctx(N.Out.told_after([x], r))}) == Fs.after_run(k, N.Fresh.run(N.Acts.nas(key, Gsm.Gsm.Told.acts(N.Out.told_after([x], r))), k, d)) : Maybe<&2, Fs.KD()>}:
   match r:
     case (+c, +acts):
       +ms = N.Acts.nas(key, acts)
@@ -1321,11 +1321,11 @@ def Fs.releases_view(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +psi
       {==}
     case +p <> +more:
       +plain = Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p))
-      +m = Sec.Nas.Protected.msg(Gsm.Gsm.release_nas(Sec.Ctx{k, d, ul}, p))
+      +m = Sec.Nas.Protected.msg(Sec.Nas.protect(Sec.Ctx{k, d, ul}, Sec.Ciphered{}, Gsm.Gsm.release_plain(p)))
       +x : N.Act = N.DlNas{assoc, stream, key, ran, m}
       Fs.rel_step(key, x, m, k, d, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Ctx{k, Sec.Nas.Count.next(d), ul}), Fs.dl_carries(assoc, stream, key, ran, m, Fs.protect_protected(k, d, ul, Sec.Ciphered{}, plain)), Fs.sealed_seal(k, Sec.Ciphered{}, d, plain), Fs.releases_view(key, assoc, stream, ran, more, k, Sec.Nas.Count.next(d), ul))
 
-def Fs.rel_to_step(+key: U32, +x: N.Act, +m: B.Bytes(), +r: N.Told(), +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +ih: {Fs.to_key(key, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Fs.to_key(key, Gsm.Gsm.Told.acts(Gsm.Gsm.releases_then(x, r))) == True{} : Bool}:
+def Fs.rel_to_step(+key: U32, +x: N.Act, +m: B.Bytes(), +r: N.Told(), +ex: {N.Act.nas(x) == Some{(key, m)} : Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>}, +ih: {Fs.to_key(key, Gsm.Gsm.Told.acts(r)) == True{} : Bool}) -> {Fs.to_key(key, Gsm.Gsm.Told.acts(N.Out.told_after([x], r))) == True{} : Bool}:
   match r:
     case (c, +acts):
       +sx = Equal.sym(Maybe<&2, Sigma<&2, &2, U32, _ => B.Bytes()>>, N.Act.nas(x), Some{(key, m)}, ex)
@@ -1336,7 +1336,7 @@ def Fs.releases_to(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), +psis:
     case Nil{}:
       {==}
     case +p <> +more:
-      +q = Gsm.Gsm.release_nas(c, p)
+      +q = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.Gsm.release_plain(p))
       +m = Sec.Nas.Protected.msg(q)
       Fs.rel_to_step(key, N.DlNas{assoc, stream, key, ran, m}, m, Gsm.Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)), Fs.dl_carries(assoc, stream, key, ran, m, Fs.protected_any(c, Sec.Ciphered{}, Gsm.Gsm.dl_transport(p, Gsm.Gsm.release_command(p)))), Fs.releases_to(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
 

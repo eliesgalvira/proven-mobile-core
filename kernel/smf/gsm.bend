@@ -230,9 +230,9 @@ type Tell is Data:
   Reply{sm: B.Bytes()}
   Release{}
 
-# PDU Session Release Command, #26, protected for the UE.
-def Gsm.release_nas(ctx: Sec.Nas.Ctx, +psi: U32) -> Sec.Nas.Protected:
-  Sec.Nas.protect(ctx, Sec.Ciphered{}, Gsm.dl_transport(psi, Gsm.release_command(psi)))
+# PDU Session Release Command, #26, in DL NAS Transport.
+def Gsm.release_plain(+psi: U32) -> B.Bytes():
+  Gsm.dl_transport(psi, Gsm.release_command(psi))
 
 # What the UE is told under ctx: the 5GSM message given, in DL NAS
 # Transport, or the PDU Session Resource Release Command to its gNB, the NAS
@@ -242,8 +242,7 @@ def Gsm.told(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32, t: Tell) -> N.To
     case Reply{sm}:
       N.Out.told_dl(key, ue, ctx, Gsm.dl_transport(psi, sm))
     case Release{}:
-      +p : Sec.Nas.Protected = Gsm.release_nas(ctx, psi)
-      (Sec.Nas.Protected.ctx(p), [N.PduRelease{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), psi, Sec.Nas.Protected.msg(p)}])
+      N.Out.seal(ctx, Sec.Ciphered{}, Gsm.release_plain(psi), m => N.PduRelease{S.Ue.assoc(ue), S.Ue.stream(ue), key, S.Ue.ran_id(ue), psi, m})
 
 def Gsm.n2_release(+key: U32, +ue: S.Ue, ctx: Sec.Nas.Ctx, +psi: U32) -> N.GOut():
   N.Out.written(key, ue, Gsm.told(key, ue, ctx, psi, Release{}))
@@ -484,8 +483,8 @@ def Gsm.setup_gone(+st: S.State, skey: U32, +s: S.Session, up_seid: B.Bytes()) -
 def Gsm.setup_ue(st: S.State, +skey: U32, +s: S.Session, pti: U32, accept: Sm.Sm, +up_seid: B.Bytes(), +ue: S.Ue, ctx: Maybe<&2, Sec.Nas.Ctx>, cfg: Maybe<&2, S.Cfg>) -> N.GOut():
   match ctx cfg:
     case Some{c} Some{+cf}:
-      +p : Sec.Nas.Protected = Sec.Nas.protect(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)))
-      (S.Both{S.Rephase{S.Session.ue(s), S.Phase.with_ctx(S.Ue.phase(ue), Sec.Nas.Protected.ctx(p))}, S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}}}, [N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), Sec.Nas.Protected.msg(p), Gsm.transfer(cf, S.Session.teid(s))}, N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}])
+      +r = N.Out.seal(c, Sec.Ciphered{}, Gsm.dl_transport(S.Session.psi(s), Sm.Sm.write(accept)), m => N.PduSetup{S.Ue.assoc(ue), S.Ue.stream(ue), S.Session.ue(s), S.Ue.ran_id(ue), S.Session.psi(s), S.Cfg.sst(cf), m, Gsm.transfer(cf, S.Session.teid(s))})
+      N.Out.join(N.Out.written(S.Session.ue(s), ue, r), (S.Revar{skey, S.SVar{up_seid, S.Session.seq(s), S.Setting{S.Guard{0}, pti}}}, [N.TimerStart{Some{S.Session.ue(s)}, skey, Up.N4.t1_ms()}]))
     case _ _:
       Gsm.setup_gone(st, skey, s, up_seid)
 
@@ -521,25 +520,19 @@ def Gsm.established(st: S.State, msg: Pf.Msg, m: Maybe<&2, Sigma<&2, &2, U32, _ 
 # Sessions a handover released: PDU Session Release Command (#26) to the UE
 # for each, in DL NAS Transport through its new gNB, which never set them up
 # (TS 23.502 §4.3.4.2), protected in turn; with the NAS context they leave.
-def Gsm.releases_then(+a: N.Act, r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
-  match r:
-    case (c, acts):
-      (c, a <> acts)
-
-def Gsm.releases(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), psis: List<&2, U32>, ctx: Sec.Nas.Ctx) -> Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>:
+def Gsm.releases(+key: U32, +assoc: U32, +stream: U32, +ran: B.Bytes(), psis: List<&2, U32>, ctx: Sec.Nas.Ctx) -> N.Told():
   match psis:
     case Nil{}:
       (ctx, [])
     case +p <> more:
-      +q : Sec.Nas.Protected = Gsm.release_nas(ctx, p)
-      Gsm.releases_then(N.DlNas{assoc, stream, key, ran, Sec.Nas.Protected.msg(q)}, Gsm.releases(key, assoc, stream, ran, more, Sec.Nas.Protected.ctx(q)))
+      N.Out.then(N.Out.seal(ctx, Sec.Ciphered{}, Gsm.release_plain(p), m => N.DlNas{assoc, stream, key, ran, m}), c => Gsm.releases(key, assoc, stream, ran, more, c))
 
-def Gsm.Told.ctx(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> Sec.Nas.Ctx:
+def Gsm.Told.ctx(r: N.Told()) -> Sec.Nas.Ctx:
   match r:
     case (c, acts):
       c
 
-def Gsm.Told.acts(r: Sigma<&2, &2, Sec.Nas.Ctx, _ => List<&2, N.Act>>) -> List<&2, N.Act>:
+def Gsm.Told.acts(r: N.Told()) -> List<&2, N.Act>:
   match r:
     case (c, acts):
       acts
